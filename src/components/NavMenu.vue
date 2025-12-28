@@ -41,7 +41,13 @@ const allNavItems = [
     path: '/submit-proposals',
     roles: [UserRole.OVCRIGE],
   },
-
+{
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
+    text: 'Dashboard',
+    path: '/riistaff-dash',
+    roles: [UserRole.RII_STAFF],
+  },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -64,6 +70,14 @@ const allNavItems = [
     text: 'Funded Proposal',
     path: '/funded-prop',
     roles: [UserRole.RII_STAFF],
+  },
+
+  {
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
+    text: 'Dashboard',
+    path: '/ovcaf-dash',
+    roles: [UserRole.OVCAF],
   },
 
   {

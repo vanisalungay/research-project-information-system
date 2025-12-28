@@ -71,29 +71,7 @@
             <button class="review" @click="$router.push('rii-endorse')">Review</button>
           </div>
 
-          <div class="table-row">
-            <span>Educational Infrastructure Project</span>
-            <span>Dr. Cat Moon</span>
-            <span>₱180,000</span>
-            <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rii-endorse')">Review</button>
-          </div>
 
-          <div class="table-row">
-            <span>Healthcare Facility Upgrade</span>
-            <span>Dr. Meow Chan</span>
-            <span>₱220,000</span>
-            <span class="status revision">Revision</span>
-            <button class="review" @click="$router.push('rii-return4rev')">Review</button>
-          </div>
-
-          <div class="table-row">
-            <span>Environmental Conservation Project</span>
-            <span>Dr. Awie Chun</span>
-            <span>₱200,000</span>
-            <span class="status ready">Ready for Funding</span>
-            <button class="review" @click="$router.push('fundrelease')">Review</button>
-          </div>
         </div>
       </div>
 
@@ -107,14 +85,7 @@
               <strong>New proposal submitted:</strong> “Community Development Program 2024”
               <span>2 hours ago</span>
             </li>
-            <li>
-              <strong>Funds released for:</strong> “Youth Empowerment Program” – ₱95,000
-              <span>5 hours ago</span>
-            </li>
-            <li>
-              <strong>Proposal endorsed:</strong> “Educational Infrastructure Project”
-              <span>1 day ago</span>
-            </li>
+           
           </ul>
           <button class="view-activity" @click="$router.push('riistaff-notification')">
             View All Activity

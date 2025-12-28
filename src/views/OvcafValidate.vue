@@ -132,12 +132,9 @@
         <!-- === CONTENT END === -->
       </div>
 
-      <button class="download-btn">DOWNLOAD PROJECT</button>
+      <button class="download-btn" @click="downloadProject">DOWNLOAD PROJECT</button>
     </div>
 
-    <!-- ======================================================= -->
-    <!-- ====== UPDATED MODALS (CONFIRM + SUCCESS ONLY) ======== -->
-    <!-- ======================================================= -->
 
     <!-- APPROVE CONFIRMATION MODAL -->
     <div class="overlay" v-if="showApproveConfirm">
@@ -193,6 +190,15 @@ const confirmReject = () => {
   alert('❌ Request rejected.\nReason: ' + rejectReason.value)
   showRejectModal.value = false
   rejectReason.value = ''
+}
+
+const downloadProject = () => {
+  const link = document.createElement('a')
+  link.href = '/files/project-proposal.pdf'
+  link.download = 'project-proposal.pdf'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 </script>
 
