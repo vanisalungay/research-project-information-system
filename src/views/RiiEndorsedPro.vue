@@ -71,14 +71,22 @@ export default {
       proposals: [
         {
           id: 1,
-          title: 'Community Development Program 2024',
-          proponent: 'Dr. Alien Shippy',
-          category: 'Kalikasan Program',
-          riiEndorsed: '2024-12-11',
-          sentToOVCRIGE: '2024-12-11',
+          title: 'Educational Infrastructure Project',
+          proponent: 'Dr. Cat Moon',
+          category: 'Tanglaw Program',
+          riiEndorsed: '2024-12-09',
+          sentToOVCRIGE: '2024-12-09',
           ovcrigeStatus: 'Pending OVCRIGE Review',
         },
-      
+        {
+          id: 2,
+          title: 'Technology Innovation Initiative',
+          proponent: 'Dr. Blair Gwen',
+          category: 'Tanglaw Program',
+          riiEndorsed: '2024-12-03',
+          sentToOVCRIGE: '2024-12-03',
+          ovcrigeStatus: 'Pending OVCRIGE Review',
+        },
       ],
     }
   },

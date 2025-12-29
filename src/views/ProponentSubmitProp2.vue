@@ -115,12 +115,8 @@
 <script setup>
 import { reactive, ref } from 'vue'
 
-defineProps({ open: Boolean, modalId: String }) 
-const emit = defineEmits([
-  'close',
-  'openPrevious',
-  'openCriteria'
-])
+defineProps({ open: Boolean, modalId: String })
+const emit = defineEmits(['close', 'openPrevious', 'openCriteria'])
 const close = () => emit('close')
 const downloadForm = () => console.log('Download form clicked')
 
@@ -139,14 +135,13 @@ const handleFile = (type, event) => {
 }
 
 // Footer buttons
-const goBack = () => emit('openPrevious', modalId) 
+const goBack = () => emit('openPrevious', modalId)
 const saveDraft = () => emit('close')
 const submitForm = () => emit('close')
 
 const viewCriteria = () => {
   emit('openCriteria')
 }
-
 </script>
 
 <style scoped>

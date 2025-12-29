@@ -1,6 +1,5 @@
 <template>
   <div class="reject-wrapper">
-
     <!-- BACK BUTTON -->
     <button class="back-btn" @click="goToSubmission">← Back to Submission</button>
 
@@ -8,7 +7,6 @@
     <div class="page-header">
       <h2>Reject Proposal</h2>
       <span class="badge-danger">⚠️ Permanent Action</span>
-
     </div>
 
     <p class="subtitle">Provide clear justification for proposal rejection</p>
@@ -16,7 +14,6 @@
     <div class="layout-grid">
       <!-- LEFT SECTION -->
       <div class="left-col">
-
         <!-- PROPOSAL INFORMATION -->
         <div class="card">
           <h3 class="card-title">Proposal Information</h3>
@@ -60,22 +57,22 @@
 
           <div class="form-group">
             <label>Detailed Explanation</label>
-            <textarea rows="5"
-              placeholder="Provide a clear and structured explanation for the rejection decision. Be specific and concise."></textarea>
+            <textarea
+              rows="5"
+              placeholder="Provide a clear and structured explanation for the rejection decision. Be specific and concise."
+            ></textarea>
           </div>
-
 
           <!-- WARNING BOX -->
           <div class="warning-box">
-            ⚠️ Rejection confirmation is permanent and cannot be reversed. The
-            proposal will be locked with a “Rejected” status.
+            ⚠️ Rejection confirmation is permanent and cannot be reversed. The proposal will be
+            locked with a “Rejected” status.
           </div>
         </div>
 
         <!-- REVIEWER SUMMARY -->
         <div class="card">
           <h3 class="card-title">Reviewer's Evaluation Summary</h3>
-
 
           <p class="summary-header"><strong>Assigned Reviewer:</strong> Jane Smith</p>
           <p class="summary-note">Reviewer’s comments are shown below, including key concerns.</p>
@@ -92,13 +89,11 @@
             <textarea rows="4" placeholder="Enter reviewer notes..."></textarea>
           </div>
         </div>
-
       </div>
 
       <!-- RIGHT SECTION -->
       <div class="right-col">
         <div class="side-card">
-
           <h4 class="side-title">Rejection Confirmation</h4>
 
           <p>This action will mark the proposal as <strong>Rejected</strong>.</p>
@@ -114,31 +109,29 @@
           <div class="note-box">
             Ensure the rejection details are properly filled before submitting.
           </div>
-
         </div>
       </div>
     </div>
-<!-- REJECT CONFIRMATION MODAL -->
-<div v-if="showRejectModal" class="modal-overlay">
-  <div class="modal-box">
-    <p>Are you sure you want to reject this proposal?</p>
-    <div class="modal-actions">
-      <button class="cancel-btn" @click="cancelReject">Cancel</button>
-      <button class="reject-btn" @click="confirmReject">Confirm</button>
+    <!-- REJECT CONFIRMATION MODAL -->
+    <div v-if="showRejectModal" class="modal-overlay">
+      <div class="modal-box">
+        <p>Are you sure you want to reject this proposal?</p>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="cancelReject">Cancel</button>
+          <button class="reject-btn" @click="confirmReject">Confirm</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- REJECTION SUCCESS MESSAGE -->
-<div v-if="showRejectSuccess" class="modal-overlay">
-  <div class="modal-box">
-    <p>Proposal rejected successfully!</p>
-    <div class="modal-actions">
-      <button class="reject-btn" @click="closeSuccess">OK</button>
+    <!-- REJECTION SUCCESS MESSAGE -->
+    <div v-if="showRejectSuccess" class="modal-overlay">
+      <div class="modal-box">
+        <p>Proposal rejected successfully!</p>
+        <div class="modal-actions">
+          <button class="reject-btn" @click="closeSuccess">OK</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-
   </div>
 </template>
 
@@ -178,9 +171,7 @@ const closeSuccess = () => {
 // Back button
 const goToSubmission = () => {
   router.push('/assigned-proposals')
-
 }
-
 </script>
 
 <style>
@@ -239,7 +230,7 @@ const goToSubmission = () => {
   background: white;
   padding: 22px;
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .card-title {
@@ -304,7 +295,7 @@ textarea {
   background: white;
   padding: 22px;
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .side-title {

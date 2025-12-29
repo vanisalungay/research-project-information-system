@@ -2,36 +2,6 @@
   <div class="manage-container">
     <h1 class="page-title">MANAGE ACCOUNT</h1>
 
-<<<<<<< HEAD
-=======
-    <!-- TAB MENU -->
-    <div class="tab-menu">
-      <button
-        class="tab-item"
-        :class="{ active: activeTab === 'security' }"
-        @click="goTo('security', '/manage-profile')"
-      >
-        Security
-      </button>
-
-      <button
-        class="tab-item"
-        :class="{ active: activeTab === 'personal' }"
-        @click="goTo('personal', '/profile-info')"
-      >
-        Personal Info
-      </button>
-
-      <button
-        class="tab-item"
-        :class="{ active: activeTab === 'notifications' }"
-        @click="goTo('notifications', '/manage-notifications')"
-      >
-        Notifications
-      </button>
-    </div>
-
->>>>>>> 391b220ce88fa943c21069a1a87610c734347541
     <button class="tab-btn">Profile Information</button>
 
     <div class="form-card">
@@ -230,7 +200,7 @@ input {
 }
 
 .cancel-btn {
- background: #f7d900;
+  background: #f7d900;
   padding: 8px 16px;
   border-radius: 6px;
   border: none;

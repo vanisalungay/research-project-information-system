@@ -43,8 +43,8 @@
 
 <script>
 export default {
-  name: "NotificationsContent"
-};
+  name: 'NotificationsContent',
+}
 </script>
 
 <style scoped>
@@ -55,7 +55,6 @@ export default {
   width: 100%;
   box-sizing: border-box;
 }
-
 
 .title {
   font-size: 20px;

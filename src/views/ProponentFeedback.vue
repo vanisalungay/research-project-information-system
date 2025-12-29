@@ -46,22 +46,18 @@
             <strong>Dr. Juan Reyes</strong>
             <p class="role">Technical Reviewer</p>
           </div>
-          <div class="review-status approved">
-            Approved with minor revisions
-          </div>
+          <div class="review-status approved">Approved with minor revisions</div>
         </div>
 
         <div class="feedback-box">
           <strong>Feedback Summary</strong>
           <p>
-            Strong research design with clear objectives. Methodology is sound
-            and feasible within the proposed timeline.
+            Strong research design with clear objectives. Methodology is sound and feasible within
+            the proposed timeline.
           </p>
         </div>
 
-        <button class="btn-download">
-          Download Full Evaluation Report
-        </button>
+        <button class="btn-download">Download Full Evaluation Report</button>
       </div>
     </div>
 
@@ -82,22 +78,18 @@
             <strong>Dr. Elena Torres</strong>
             <p class="role">Technical Reviewer</p>
           </div>
-          <div class="review-status recommended">
-            Highly Recommended for Approval
-          </div>
+          <div class="review-status recommended">Highly Recommended for Approval</div>
         </div>
 
         <div class="feedback-box">
           <strong>Feedback Summary</strong>
           <p>
-            Excellent proposal with innovative approach. Strong technical
-            foundation and clear implementation plan.
+            Excellent proposal with innovative approach. Strong technical foundation and clear
+            implementation plan.
           </p>
         </div>
 
-        <button class="btn-download">
-          Download Full Evaluation Report
-        </button>
+        <button class="btn-download">Download Full Evaluation Report</button>
       </div>
     </div>
   </div>
@@ -105,8 +97,8 @@
 
 <script>
 export default {
-  name: "ProponentFeedback"
-};
+  name: 'ProponentFeedback',
+}
 </script>
 
 <style scoped>

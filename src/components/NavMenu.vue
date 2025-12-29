@@ -3,7 +3,7 @@
     <ul>
       <li v-for="item in navItems" :key="item.path" :class="{ active: isSelected(item.path) }">
         <router-link :to="item.path">
-          <img :src="isSelected(item.path) ? item.activeIcon : item.icon" />
+          <img class="nav-icon" :src="isSelected(item.path) ? item.activeIcon : item.icon" />
           {{ item.text }}
         </router-link>
       </li>
@@ -20,13 +20,20 @@ import dashboardIcon from '@/assets/images/dashboard.png'
 import dashboardActiveIcon from '@/assets/images/dashboard_active.png'
 import notificationIcon from '@/assets/images/notification.png'
 import notificationActiveIcon from '@/assets/images/notification_active.png'
-import submittedIcon from '@/assets/images/submitted.png'
-
+import submittedIcon from '../assets/images/Add_ring.png'
+import submittedActiveIcon from '../assets/images/Add_ring_active.png'
+import EndorseIcon from '../assets/images/endorse icon.png'
+import EndorseActiveIcon from '../assets/images/endorse_active.png'
+import SettingsIcon from '@/assets/images/Settings.png'
+import SettingsActiveIcon from '@/assets/images/Settings_active.png'
 
 const route = useRoute()
 const userStore = useUserDataStore()
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const allNavItems = [
   {
     icon: dashboardIcon,
@@ -37,14 +44,15 @@ const allNavItems = [
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Dashboard',
-  path: '/proponent-dashboard',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Dashboard',
+    path: '/proponent-dashboard',
+    roles: [UserRole.PROPONENT],
   },
 
   {
+<<<<<<< HEAD
   icon: notificationIcon,
   activeIcon: notificationActiveIcon,
   text: 'Proposals',
@@ -101,13 +109,39 @@ const allNavItems = [
 
 
   {
+=======
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
+    text: 'Notifications',
+    path: '/proponent-notification',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Dashboard',
+    path: '/oc-dashboard',
+    roles: [UserRole.OC],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Notifications',
+    path: '/oc-notification',
+    roles: [UserRole.OC],
+  },
+
+  {
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
     text: 'Submitted Proposals',
     path: '/submit-proposals',
     roles: [UserRole.OVCRIGE],
   },
-{
+  {
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
@@ -123,8 +157,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: EndorseIcon,
+    activeIcon: EndorseActiveIcon,
     text: 'Endorsed Proposals',
     path: '/riiendorsed-prop',
     roles: [UserRole.RII_STAFF],
@@ -155,8 +189,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
     text: 'Submitted Proposals',
     path: '/rii-subproposal',
     roles: [UserRole.RII_STAFF],
@@ -171,8 +205,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: EndorseIcon,
+    activeIcon: EndorseActiveIcon,
     text: 'Endorsed Proposals',
     path: '/endorsed-proposals',
     roles: [UserRole.OVCRIGE],
@@ -187,8 +221,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
     text: 'Assigned Proposals',
     path: '/assigned-proposals',
     roles: [UserRole.REC],
@@ -211,8 +245,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: SettingsIcon,
+    activeIcon: SettingsActiveIcon,
     text: 'Profile Settings',
     path: '/manage-profile',
     roles: [
@@ -225,21 +259,49 @@ const allNavItems = [
     ],
   },
 
+<<<<<<< HEAD
 
 
 ]
 
 
+=======
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Revisions',
+    path: '/revisions',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Proposals',
+    path: '/proposals',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Evaluation Criteria',
+    path: '/evalCriteria',
+    roles: [UserRole.PROPONENT],
+  },
+]
+
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const navItems = computed(() => {
   if (!userStore.user) return []
-  return allNavItems.filter(item =>
-    item.roles.includes(userStore.user.role)
-  )
+  return allNavItems.filter((item) => item.roles.includes(userStore.user.role))
 })
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const isSelected = (path) => route.path === path
-
 </script>
 
 <style scoped>
@@ -274,7 +336,10 @@ li a {
   color: #ffd803;
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 li.active {
   background-color: white;
   border-top-left-radius: 12px;
@@ -298,7 +363,7 @@ router-link {
 }
 
 .nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 30px;
+  height: 30px;
 }
 </style>

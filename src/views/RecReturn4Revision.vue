@@ -48,7 +48,6 @@
           <label>Deadline for Resubmission</label>
           <input type="date" v-model="revisionDate" />
 
-
           <p class="note">The proponent will be notified and must resubmit before this deadline.</p>
         </section>
 
@@ -88,11 +87,20 @@
             <div class="upload-icon">⬆️</div>
             <p>Drag and drop files or click to browse</p>
             <small>PDF, DOC, DOCX (Max 10MB)</small>
-            <button class="select">Select Files</button>
+
+            <button class="select" @click="filePicker.click()">Select Files</button>
+
+            <!-- ✅ hidden input (required for the button to work) -->
+            <input
+              type="file"
+              ref="filePicker"
+              multiple
+              style="display: none"
+              @change="handleFiles"
+            />
           </div>
         </section>
       </div>
-
       <!-- RIGHT SIDE -->
       <div class="right">
         <section class="card">
@@ -101,24 +109,23 @@
           <ul class="checklist">
             <li>
               <input type="checkbox" v-model="checklist[0]" />
-               Comments clearly identify issues
-           </li>
-         <li>
-        <input type="checkbox" v-model="checklist[1]" />
-         Revision deadline has been set
-      </li>
-    <li>
-        <input type="checkbox" v-model="checklist[2]" />
-     Feedback is constructive and specific
-  </li>
-  <li>
-        <input type="checkbox" v-model="checklist[3]" />
-      All necessary documentation is attached
-  </li>
-</ul>
+              Comments clearly identify issues
+            </li>
+            <li>
+              <input type="checkbox" v-model="checklist[1]" />
+              Revision deadline has been set
+            </li>
+            <li>
+              <input type="checkbox" v-model="checklist[2]" />
+              Feedback is constructive and specific
+            </li>
+            <li>
+              <input type="checkbox" v-model="checklist[3]" />
+              All necessary documentation is attached
+            </li>
+          </ul>
 
-
-        <button class="btn primary" @click="goReturnRevision">Return for Revision</button>
+          <button class="btn primary" @click="goReturnRevision">Return for Revision</button>
 
           <div class="info-box">
             The proponent will receive a notification with your comments and the revision deadline.
@@ -128,89 +135,95 @@
     </div>
 
     <!-- CONFIRMATION MODAL -->
-<div v-if="showConfirmModal" class="modal-overlay">
-  <div class="modal-box">
-    <h3>Return this proposal for revision?</h3>
+    <div v-if="showConfirmModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Return this proposal for revision?</h3>
 
-    <div class="modal-actions">
-      <button class="btn cancel" @click="cancelReturn">Cancel</button>
-      <button class="btn primary" @click="confirmReturn">Confirm</button>
+        <div class="modal-actions">
+          <button class="btn cancel" @click="cancelReturn">Cancel</button>
+          <button class="btn primary" @click="confirmReturn">Confirm</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-<!-- SUCCESS MESSAGE -->
-<div v-if="showSuccessMessage" class="success-toast">
-  ✔ Done: Proposal returned for revision.
-</div>
+    <!-- SUCCESS MESSAGE -->
+    <div v-if="showSuccessMessage" class="success-toast">
+      ✔ Done: Proposal returned for revision.
+    </div>
 
-<!-- ERROR MESSAGE -->
-<div v-if="showError" class="error-toast">
-  ⚠ Please complete all required fields before continuing.
-</div>
-
+    <!-- ERROR MESSAGE -->
+    <div v-if="showError" class="error-toast">
+      ⚠ Please complete all required fields before continuing.
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed } from 'vue'
 
-const revisionComment = ref("");
-const revisionDate = ref("");
-const checklist = ref([false, false, false, false]);
+const revisionComment = ref('')
+const revisionDate = ref('')
+const checklist = ref([false, false, false, false])
 
-const showConfirmModal = ref(false);
-const showSuccessMessage = ref(false);
-const showError = ref(false);
+const showConfirmModal = ref(false)
+const showSuccessMessage = ref(false)
+const showError = ref(false)
 
 const quickTemplates = [
-  "Budget allocation requires more detailed breakdown.",
-  "Implementation timeline needs clarification.",
-  "Expected outcomes need quantifiable metrics.",
-  "Risk mitigation strategies should be expanded.",
-  "Community engagement plan needs improvement.",
-  "Supporting documentation is incomplete.",
-];
+  'Budget allocation requires more detailed breakdown.',
+  'Implementation timeline needs clarification.',
+  'Expected outcomes need quantifiable metrics.',
+  'Risk mitigation strategies should be expanded.',
+  'Community engagement plan needs improvement.',
+  'Supporting documentation is incomplete.',
+]
+
+const filePicker = ref(null)
+const selectedFiles = ref([])
+
+const handleFiles = (event: any) => {
+  selectedFiles.value = Array.from(event.target.files)
+  console.log('Selected:', selectedFiles.value)
+}
 
 const applyTemplate = (text: string) => {
   if (revisionComment.value) {
-    revisionComment.value += "\n\n" + text;
+    revisionComment.value += '\n\n' + text
   } else {
-    revisionComment.value = text;
+    revisionComment.value = text
   }
-};
+}
 
 // ✅ VALIDATION
 const isFormValid = computed(() => {
   return (
-    revisionComment.value.trim() !== "" &&
-    revisionDate.value !== "" &&
+    revisionComment.value.trim() !== '' &&
+    revisionDate.value !== '' &&
     checklist.value.every((c) => c === true)
-  );
-});
+  )
+})
 
 const goReturnRevision = () => {
   if (!isFormValid.value) {
-    showError.value = true;
-    setTimeout(() => (showError.value = false), 2000);
-    return;
+    showError.value = true
+    setTimeout(() => (showError.value = false), 2000)
+    return
   }
-  showConfirmModal.value = true;
-};
+  showConfirmModal.value = true
+}
 
 const confirmReturn = () => {
-  showConfirmModal.value = false;
-  showSuccessMessage.value = true;
+  showConfirmModal.value = false
+  showSuccessMessage.value = true
 
   setTimeout(() => {
-    showSuccessMessage.value = false;
-  }, 2000);
-};
+    showSuccessMessage.value = false
+  }, 2000)
+}
 
 const cancelReturn = () => {
-  showConfirmModal.value = false;
-};
+  showConfirmModal.value = false
+}
 </script>
-
 
 <style>
 .page-wrapper {
@@ -316,12 +329,11 @@ input[type='date'] {
 
 .checklist li {
   display: flex;
-  align-items: center;  /* aligns checkbox + text */
-  gap: 2px;             /* small spacing between checkbox and text */
+  align-items: center; /* aligns checkbox + text */
+  gap: 2px; /* small spacing between checkbox and text */
   margin-bottom: 10px;
   font-size: 13px;
 }
-
 
 /* REVISION COMMENTS */
 .label {
@@ -442,10 +454,21 @@ textarea:focus {
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(15px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(15px); }
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
 }
 
 .error-toast {
@@ -459,5 +482,4 @@ textarea:focus {
   font-weight: bold;
   animation: fadeInOut 2s ease;
 }
-
 </style>

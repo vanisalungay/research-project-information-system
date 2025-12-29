@@ -1,7 +1,13 @@
 <template>
   <div class="proposal-view">
+<<<<<<< HEAD
     <div class="back" @click="$router.go(-1)">← Back</div> <br>
     <h1>Community Development Program 2024</h1>
+=======
+    <div class="back" @click="$router.go(-1)">← Back</div>
+    <br />
+    <h1>Community Water and Filtration Enhancement Program 2024</h1>
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
     <p class="subtitle">Proposal ID #1</p>
 
     <!-- 1. Project Profile -->
@@ -18,7 +24,10 @@
       </div>
 
       <p><strong>Implementing College / Department:</strong> College of Engineering</p>
-      <p><strong>Address:</strong> MSU Main Campus, Barangay Fatima, Marawi City, Lanao del Sur, Philippines</p>
+      <p>
+        <strong>Address:</strong> MSU Main Campus, Barangay Fatima, Marawi City, Lanao del Sur,
+        Philippines
+      </p>
     </section>
 
     <!-- 2. Cooperating Agencies -->
@@ -87,7 +96,9 @@
     <section>
       <h2>(9) EXECUTIVE SUMMARY</h2>
       <p>
-        This project aims to provide sustainable water filtration solutions to improve health and sanitation in rural communities in Lanao del Sur. The intervention will include technology deployment, community training, and evaluation of impact.
+        This project aims to provide sustainable water filtration solutions to improve health and
+        sanitation in rural communities in Lanao del Sur. The intervention will include technology
+        deployment, community training, and evaluation of impact.
       </p>
     </section>
 
@@ -95,26 +106,44 @@
     <section>
       <h2>(10) INTRODUCTION</h2>
       <h3>10.1 Rationale / Significance</h3>
-      <p>This project addresses the lack of clean water and poor sanitation in the region, improving public health and quality of life.</p>
+      <p>
+        This project addresses the lack of clean water and poor sanitation in the region, improving
+        public health and quality of life.
+      </p>
 
       <h3>10.2 Scientific Basis / Theoretical Framework</h3>
-      <p>Based on community health and environmental sustainability frameworks emphasizing participatory approaches.</p>
+      <p>
+        Based on community health and environmental sustainability frameworks emphasizing
+        participatory approaches.
+      </p>
 
       <h3>10.3 Objectives</h3>
-      <p><strong>General Objective:</strong> Improve water quality and sanitation in rural communities.</p>
-      <p><strong>Specific Objectives:</strong> Deploy water filtration systems, train local stakeholders, and monitor health outcomes.</p>
+      <p>
+        <strong>General Objective:</strong> Improve water quality and sanitation in rural
+        communities.
+      </p>
+      <p>
+        <strong>Specific Objectives:</strong> Deploy water filtration systems, train local
+        stakeholders, and monitor health outcomes.
+      </p>
     </section>
 
     <!-- 11. Review of Literature -->
     <section>
       <h2>(11) REVIEW OF LITERATURE</h2>
-      <p>Various studies indicate that community-managed water filtration systems significantly reduce water-borne diseases.</p>
+      <p>
+        Various studies indicate that community-managed water filtration systems significantly
+        reduce water-borne diseases.
+      </p>
     </section>
 
     <!-- 12. Methodology -->
     <section>
       <h2>(12) METHODOLOGY</h2>
-      <p>Site selection, stakeholder engagement, system installation, community training, and monitoring.</p>
+      <p>
+        Site selection, stakeholder engagement, system installation, community training, and
+        monitoring.
+      </p>
     </section>
 
     <!-- 13–27 Simplified for brevity -->
@@ -130,7 +159,9 @@
 
     <section>
       <h2>(15) POTENTIAL OUTCOMES</h2>
-      <p>Reduction of water-borne diseases by 30%; improved community awareness on water hygiene.</p>
+      <p>
+        Reduction of water-borne diseases by 30%; improved community awareness on water hygiene.
+      </p>
     </section>
 
     <section>

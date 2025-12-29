@@ -198,9 +198,6 @@ const downloadPdf = () => {
 }
 </script>
 
-
-
-
 <style scoped>
 .proposal-page {
   padding: 24px;

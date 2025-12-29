@@ -236,4 +236,7 @@ const handleRegister = () => {
   cursor: pointer;
   margin-top: 10px;
 }
+label {
+  color: #1f1a3d;
+}
 </style>

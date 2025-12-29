@@ -4,17 +4,11 @@
     <div class="revision-header">
       <h2>Revision Dashboard</h2>
 
-      <div class="revision-count">
-        {{ revisions.length }} Proposals Need Revision
-      </div>
+      <div class="revision-count">{{ revisions.length }} Proposals Need Revision</div>
     </div>
 
     <!-- REVISION CARDS -->
-    <div
-      v-for="revision in revisions"
-      :key="revision.id"
-      class="revision-card"
-    >
+    <div v-for="revision in revisions" :key="revision.id" class="revision-card">
       <!-- CARD HEADER -->
       <div class="card-header">
         <div>
@@ -37,13 +31,9 @@
 
       <!-- ACTION BUTTONS -->
       <div class="card-actions">
-        <button class="submit-btn" @click="submitRevision(revision.id)">
-          ✏️ Submit Revision
-        </button>
+        <button class="submit-btn" @click="submitRevision(revision.id)">✏️ Submit Revision</button>
 
-        <button class="details-btn" @click="viewDetails(revision.id)">
-          👁 View Details
-        </button>
+        <button class="details-btn" @click="viewDetails(revision.id)">👁 View Details</button>
       </div>
     </div>
   </div>
@@ -76,8 +66,7 @@ const revisions = ref<Revision[]>([
     id: 2,
     title: 'Healthcare Facility Upgrade',
     code: 'P-2024-004',
-    comment:
-      'Additional literature review required. Please expand on the sampling methodology.',
+    comment: 'Additional literature review required. Please expand on the sampling methodology.',
     deadline: '5 days left',
   },
 ])
@@ -85,7 +74,6 @@ const revisions = ref<Revision[]>([
 const submitRevision = () => {
   router.push('/submit-revision')
 }
-
 
 const viewDetails = (id: number) => {
   router.push(`proponent-prop-details`)

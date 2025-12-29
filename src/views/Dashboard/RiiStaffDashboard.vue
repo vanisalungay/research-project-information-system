@@ -1,3 +1,4 @@
+krisha, [29/12/2025 2:12 pm]
 <template>
   <div class="dashboard">
     <!-- Header -->
@@ -20,10 +21,10 @@
       <div class="card">
         <div>
           <p class="label">Endorsed Proposals</p>
-          <h3>3</h3>
+          <h3>2</h3>
           <span class="sub">75% approval rate</span>
         </div>
-        <div class="icon green">✔</div>
+        <div class="icon green">✔️</div>
       </div>
 
       <div class="card">
@@ -71,7 +72,13 @@
             <button class="review" @click="$router.push('rii-endorse')">Review</button>
           </div>
 
-
+          <div class="table-row">
+            <span>Healthcare Facility Upgrade</span>
+            <span>Dr. Meow Chan</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rii-endorse')">Review</button>
+          </div>
         </div>
       </div>
 
@@ -85,7 +92,6 @@
               <strong>New proposal submitted:</strong> “Community Development Program 2024”
               <span>2 hours ago</span>
             </li>
-           
           </ul>
           <button class="view-activity" @click="$router.push('riistaff-notification')">
             View All Activity
@@ -186,7 +192,6 @@ export default {
   padding: 16px;
   border-radius: 12px;
 }
-
 .panel-header {
   display: flex;
   justify-content: space-between;

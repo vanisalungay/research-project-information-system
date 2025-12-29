@@ -1,15 +1,12 @@
 <template>
   <div class="assign-container">
-
     <!-- PAGE TITLE -->
     <h2 class="page-title">Assign Reviewer</h2>
     <p class="page-sub">Select a recommended reviewer for this proposal</p>
 
     <div class="content-row">
-
       <!-- LEFT SIDE – REVIEWER LIST -->
       <div class="reviewer-list">
-
         <div
           class="reviewer-card"
           v-for="(rev, index) in reviewers"
@@ -18,7 +15,7 @@
           :class="{ selected: selectedReviewer?.id === rev.id }"
         >
           <div class="profile-row">
-           <img class="profile-pic" src="https://via.placeholder.com/60" />
+            <img class="profile-pic" src="https://via.placeholder.com/60" />
 
             <div>
               <h3>{{ rev.name }}</h3>
@@ -37,7 +34,6 @@
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- RIGHT SIDE – SUMMARY -->
@@ -45,13 +41,15 @@
         <h3>Assignment Summary</h3>
 
         <div v-if="!selectedReviewer" class="placeholder">
-<img class="placeholder-icon" src="https://via.placeholder.com/80?text=User" />
-          <p>Select a reviewer from the list<br>to continue</p>
+          <img class="placeholder-icon" src="https://via.placeholder.com/80?text=User" />
+          <p>Select a reviewer from the list<br />to continue</p>
         </div>
 
         <div v-else class="summary-info">
           <h4>{{ selectedReviewer.name }}</h4>
-          <p class="rating">⭐️ {{ selectedReviewer.rating }} • {{ selectedReviewer.reviews }} reviews</p>
+          <p class="rating">
+            ⭐️ {{ selectedReviewer.rating }} • {{ selectedReviewer.reviews }} reviews
+          </p>
 
           <div class="chip-row">
             <span class="chip" v-for="tag in selectedReviewer.expertise" :key="tag">
@@ -59,51 +57,47 @@
             </span>
           </div>
 
-        <button class="assign-btn" @click="openConfirmation">
-            Assign Reviewer
-        </button>
+          <button class="assign-btn" @click="openConfirmation">Assign Reviewer</button>
         </div>
       </div>
-
     </div>
     <!-- CONFIRMATION MODAL -->
-<div v-if="showConfirmModal" class="modal-backdrop">
-  <div class="modal-box">
-    <h3>Assign this reviewer?</h3>
-    <p>This will assign <strong>{{ selectedReviewer.name }}</strong> to this proposal.</p>
+    <div v-if="showConfirmModal" class="modal-backdrop">
+      <div class="modal-box">
+        <h3>Assign this reviewer?</h3>
+        <p>
+          This will assign <strong>{{ selectedReviewer.name }}</strong> to this proposal.
+        </p>
 
-    <div class="modal-actions">
-      <button class="cancel-btn" @click="showConfirmModal = false">Cancel</button>
-      <button class="confirm-btn" @click="confirmAssignment">Confirm</button>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showConfirmModal = false">Cancel</button>
+          <button class="confirm-btn" @click="confirmAssignment">Confirm</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- SUCCESS MESSAGE -->
-<div v-if="showSuccessMessage" class="success-toast">
-  Reviewer successfully assigned!
-</div>
-
+    <!-- SUCCESS MESSAGE -->
+    <div v-if="showSuccessMessage" class="success-toast">Reviewer successfully assigned!</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref } from 'vue'
 
 const reviewers = ref([
   {
     id: 1,
-    name: "Dr. Jane Smith",
+    name: 'Dr. Jane Smith',
     rating: 4.8,
     reviews: 45,
-    expertise: ["Community Development", "Social Impact", "Project Management"],
+    expertise: ['Community Development', 'Social Impact', 'Project Management'],
   },
   {
     id: 2,
-    name: "Dr. Michael Chen",
+    name: 'Dr. Michael Chen',
     rating: 4.9,
     reviews: 52,
-    expertise: ["Technology Innovation", "Digital Transformation", "Community Development"],
+    expertise: ['Technology Innovation', 'Digital Transformation', 'Community Development'],
   },
 ])
 
@@ -122,7 +116,6 @@ function confirmAssignment() {
     showSuccessMessage.value = false
   }, 2000)
 }
-
 
 const selectedReviewer = ref(null)
 
@@ -268,7 +261,7 @@ function selectReviewer(reviewer) {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -322,5 +315,4 @@ function selectReviewer(reviewer) {
   z-index: 1000;
   box-shadow: 0 0 10px #aaa;
 }
-
 </style>
