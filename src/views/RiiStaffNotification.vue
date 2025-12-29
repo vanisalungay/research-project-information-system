@@ -95,17 +95,7 @@ export default {
     return {
       activeTab: 'all',
       notifications: [
-        {
-          id: 1,
-          type: 'review',
-          title: 'New Proposal Submitted',
-          message:
-            'Educational Infrastructure Project has been submitted and requires your review.',
-          proposal: 'Educational Infrastructure Project',
-          date: '2024-12-14 09:30 AM',
-          icon: '📄',
-          read: false,
-        },
+       
         {
           id: 2,
           type: 'endorse',
@@ -117,17 +107,7 @@ export default {
           icon: '🟡',
           read: false,
         },
-        {
-          id: 3,
-          type: 'release',
-          title: 'Funding Approved by OVCF',
-          message: 'Agricultural Research Program has received funding approval from OVCF.',
-          proposal: 'Agricultural Research Program',
-          amount: 200000,
-          date: '2024-12-13 02:45 PM',
-          icon: '💲',
-          read: true,
-        },
+       
       ],
     }
   },

@@ -13,7 +13,7 @@
 
           <div class="header-actions">
             <button class="outline" @click="showModal = true">See Detailed Proposal</button>
-            <button class="outline">Download All Documents</button>
+            <button class="outline" @click="downloadAll">Download All Documents</button>
           </div>
         </div>
 
@@ -173,7 +173,7 @@
       <div class="proposal-modal">
         <!-- HEADER -->
         <div class="proposal-header">
-          <button class="download-btn">Download Form</button>
+          <button class="download-btn" @click="downloadForm">Download Form</button>
           <button class="close-btn" @click="showModal = false">✕</button>
         </div>
 
@@ -354,7 +354,38 @@ export default {
   data() {
     return {
       showModal: false,
+      files: [
+        'project-proposal.pdf',
+        'budget-breakdown.xlsx',
+        'timeline.pdf',
+        'endorsement-letter.pdf',
+      ],
     }
+  },
+  methods: {
+    downloadFile(fileName) {
+      const link = document.createElement('a')
+      link.href = `/files/${fileName}`
+      link.download = fileName
+      link.href = '/files/proposal-form.pdf'
+    link.download = 'proposal-form.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+
+    downloadAll() {
+      this.files.forEach((file, index) => {
+        setTimeout(() => {
+          this.downloadFile(file)
+        }, index * 300) // small delay to avoid browser blocking
+      })
+    },
+
+    
+    downloadForm() {
+      this.downloadFile('proposal-form.pdf')
+    },
   },
 }
 </script>
@@ -539,6 +570,8 @@ label {
   background: white;
   padding: 8px 12px;
   border-radius: 8px;
+  color: #2c274c; 
+
 }
 
 /* MODAL */
