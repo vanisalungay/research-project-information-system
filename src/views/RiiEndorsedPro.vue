@@ -78,24 +78,7 @@ export default {
           sentToOVCRIGE: '2024-12-11',
           ovcrigeStatus: 'Pending OVCRIGE Review',
         },
-        {
-          id: 2,
-          title: 'Educational Infrastructure Project',
-          proponent: 'Dr. Cat Moon',
-          category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-09',
-          sentToOVCRIGE: '2024-12-09',
-          ovcrigeStatus: 'Approved by OVCRIGE',
-        },
-        {
-          id: 3,
-          title: 'Environmental Conservation Project',
-          proponent: 'Dr. Awie Chun',
-          category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-01',
-          sentToOVCRIGE: '2024-12-01',
-          ovcrigeStatus: 'Approved by OVCRIGE',
-        },
+      
       ],
     }
   },

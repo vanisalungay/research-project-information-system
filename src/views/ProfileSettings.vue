@@ -387,22 +387,39 @@ const cancelNotif = () => window.history.back()
   display: flex;
   flex-direction: column;
 }
+/* PERSONAL INFO SPECIALIZATION CHECKBOXES */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 20px;
+}
 
 .checkbox-grid label {
-  align-items: right;
+  display: flex;
+  align-items: center; /* vertically centers checkbox and text */
+  gap: 8px; /* spacing between checkbox and text */
   font-weight: normal;
+  color: white;
+  cursor: pointer;
 }
 
-/* Notifications page checkboxes */
+/* NOTIFICATIONS PAGE CHECKBOXES */
 .section label {
-  align-items: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: normal;
+  color: white;
+  cursor: pointer;
 }
 
-/* Make checkbox itself consistent */
+/* Standardize all checkboxes */
 input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
   margin: 0;
 }
+
 .form-box {
   background: #1c1a3c;
   padding: 40px;

@@ -39,10 +39,11 @@
         <label>Password</label>
         <input type="password" v-model="password" placeholder="Enter your password" />
         <p class="forgot"><a href="/register">Forgot password?</a></p>
-        <div class="remember">
-          <input type="checkbox" />
-          <label>Remember me</label>
-        </div>
+       <div class="remember">
+       <input type="checkbox" id="remember" />
+         <label for="remember">Remember me</label>
+          </div>
+
 
         <button class="login-btn">Sign In</button>
 
@@ -175,7 +176,7 @@ const handleLogin = async () => {
   font-size: 12px;
 }
 
-.login-form {
+.login-form label{
   margin-top: 20px;
   display: flex;
   flex-direction: column;
@@ -191,11 +192,24 @@ const handleLogin = async () => {
   color: #1f1a3d;
 }
 
+/* REMEMBER ME ALIGNMENT FIX */
 .remember {
   display: flex;
-  align-items: center;
+  align-items: center; /* vertically center checkbox and label */
+  gap: 10px; /* space between checkbox and text */
   margin-bottom: 15px;
-  gap: 6px;
+}
+
+.remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0; /* remove default margin */
+}
+
+.remember label {
+  font-size: 14px;
+  color: #1f1a3d;
+  cursor: pointer;
 }
 
 .login-btn {

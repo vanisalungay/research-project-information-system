@@ -20,6 +20,8 @@ import dashboardIcon from '@/assets/images/dashboard.png'
 import dashboardActiveIcon from '@/assets/images/dashboard_active.png'
 import notificationIcon from '@/assets/images/notification.png'
 import notificationActiveIcon from '@/assets/images/notification_active.png'
+import submittedIcon from '@/assets/images/submitted.png'
+
 
 const route = useRoute()
 const userStore = useUserDataStore()
@@ -75,7 +77,13 @@ const allNavItems = [
     path: '/submit-proposals',
     roles: [UserRole.OVCRIGE],
   },
-
+{
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
+    text: 'Dashboard',
+    path: '/riistaff-dash',
+    roles: [UserRole.RII_STAFF],
+  },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -98,6 +106,14 @@ const allNavItems = [
     text: 'Funded Proposal',
     path: '/funded-prop',
     roles: [UserRole.RII_STAFF],
+  },
+
+  {
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
+    text: 'Dashboard',
+    path: '/ovcaf-dash',
+    roles: [UserRole.OVCAF],
   },
 
   {

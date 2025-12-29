@@ -60,7 +60,6 @@
         <section class="card actions-card">
           <h3>OVCRIGE Actions</h3>
 
-          <button class="btn primary" @click="showApproveConfirm = true">Approve Proposal</button>
 
           <button class="btn primary" @click="goToAssignReviewer">Assign / Change Reviewer</button>
 
