@@ -40,6 +40,40 @@ const allNavItems = [
   },
 
   {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Dashboard',
+  path: '/proponent-dashboard',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Notifications',
+  path: '/proponent-notification',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Dashboard',
+  path: '/oc-dashboard',
+  roles: [UserRole.OC],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Notifications',
+  path: '/oc-notification',
+  roles: [UserRole.OC],
+  },
+
+
+
+  {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
     text: 'Submitted Proposals',
@@ -162,6 +196,31 @@ const allNavItems = [
       UserRole.RII_STAFF,
       UserRole.PROPONENT,
     ],
+  },
+
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Revisions',
+  path: '/revisions',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Proposals',
+  path: '/proposals',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Evaluation Criteria',
+  path: '/evalCriteria',
+  roles: [UserRole.PROPONENT],
   },
 ]
 

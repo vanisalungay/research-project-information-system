@@ -55,6 +55,18 @@ import RecRejectProposal from '../views/RecRejectProposal.vue'
 import RecReturn4Revision from '../views/RecReturn4Revision.vue'
 import RecNotification from '../views/RecNotification.vue'
 
+import ProponentNotifications from '@/views/ProponentNotifications.vue'
+import ProponentRevision from '@/views/ProponentRevision.vue'
+import ProponentProposals from '@/views/ProponentProposals.vue'
+import ProponentEvalCriteria from '@/views/ProponentEvalCriteria.vue'
+import ProponentFeedback from '@/views/ProponentFeedback.vue'
+import ProponentSubmitRev from '@/views/ProponentSubmitRev.vue'
+import ProponentDashboard from '../views/Dashboard/ProponentDashboard.vue'
+import OCDashboard from '../views/Dashboard/OCDashboard.vue'
+import OCNotifications from '../views/OCNotifications.vue'
+import ProponentPropDetails from '../views/ProponentPropDetails.vue'
+import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
+
 const routes = [
   {
     path: '/',
@@ -90,8 +102,7 @@ const routes = [
 
       // { path: 'radmin-dash', component: RAdminDashboard },
 
-      { path: 'oc/final-approval/:id', component: OCFinalApproval },
-      { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
+      { path: 'create-account', component: CreateAccount },
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
@@ -106,6 +117,24 @@ const routes = [
       { path: 'reject-proposal', component: RecRejectProposal },
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
+
+      { path: 'proponent-notification', component: ProponentNotifications },
+      { path: 'revisions', component: ProponentRevision },
+      { path: 'proposals', component: ProponentProposals },
+      { path: 'evalCriteria', component: ProponentEvalCriteria },
+      { path: 'proponent-feedback', component: ProponentFeedback },
+      { path: 'submit-revision', component: ProponentSubmitRev },
+      { path: 'proponent-dashboard', component: ProponentDashboard },
+      { path: 'proponent-prop-details', component: ProponentPropDetails },
+      { path: 'detailed-proposal', name: 'ProponentDetiailedProp', component: ProponentDetiailedProp },
+
+      { path: 'oc/final-approval/:id', component: OCFinalApproval },
+      { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
+      { path: 'oc-dashboard', component: OCDashboard },
+      { path: 'oc-notification', component: OCNotifications },
+
+
+
     ],
   },
   {
