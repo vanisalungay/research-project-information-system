@@ -89,7 +89,7 @@ const selectedRole = ref('PROPONENT') // default selected
 const handleLogin = async () => {
   const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
   if (isLoggedIn) {
-    router.push('/proponent-dashboard')
+    router.push('/home')
   } else {
     errorMessage.value = 'Invalid email or password.'
   }
