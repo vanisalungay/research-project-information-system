@@ -1,3 +1,4 @@
+krisha, [29/12/2025 2:12 pm]
 <template>
   <div class="dashboard">
     <!-- Header -->
@@ -20,10 +21,10 @@
       <div class="card">
         <div>
           <p class="label">Endorsed Proposals</p>
-          <h3>3</h3>
+          <h3>2</h3>
           <span class="sub">75% approval rate</span>
         </div>
-        <div class="icon green">✔</div>
+        <div class="icon green">✔️</div>
       </div>
 
       <div class="card">
@@ -64,12 +65,21 @@
           </div>
 
           <div class="table-row">
-            <span>Community Development Program 2024</span>
-            <span>Dr. Alien Shippy</span>
-            <span>₱150,000</span>
-            <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rii-endorse')">Review</button>
-          </div>
+  <span>Community Development Program 2024</span>
+  <span>Dr. Alien Shippy</span>
+  <span>₱150,000</span>
+  <span class="status pending">Pending</span>
+  <button class="review" @click="$router.push('rii-endorse')">Review</button>
+</div>
+
+<div class="table-row">
+  <span>Healthcare Facility Upgrade</span>
+  <span>Dr. Meow Chan</span>
+  <span>₱150,000</span>
+  <span class="status pending">Pending</span>
+  <button class="review" @click="$router.push('rii-endorse')">Review</button>
+</div>
+
 
 
         </div>
@@ -186,7 +196,6 @@ export default {
   padding: 16px;
   border-radius: 12px;
 }
-
 .panel-header {
   display: flex;
   justify-content: space-between;

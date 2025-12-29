@@ -65,7 +65,7 @@ const email = ref('')
 const password = ref('')
 
 const showDropdown = ref(false)
-const loginDialog = (ref < HTMLDialogElement) | (null > null)
+const loginDialog = ref(null)
 loginDialog.value?.showModal()
 
 const toggleDropdown = () => {

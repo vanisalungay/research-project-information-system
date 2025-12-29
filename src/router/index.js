@@ -65,7 +65,7 @@ const routes = [
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
-
+      
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riistaff-dash', component: RiiStaffDashboard },
@@ -78,7 +78,6 @@ const routes = [
       { path: 'fundviewprop', component: FundViewProp },
       { path: 'fundrelease', component: FundRelease },
       { path: 'riifunded', component: RiiFundedPro },
-      { path: 'create-account', component: CreateAccount },
       { path: 'manage-notifications', component: Notification },
       // { path: 'riistaff-dash', component: RiiStaffDashboard },
       { path: 'riiadmin-ver', component: RiiAdminVerification },
@@ -91,7 +90,6 @@ const routes = [
 
       // { path: 'radmin-dash', component: RAdminDashboard },
 
-      { path: 'create-account', component: CreateAccount },
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'review-prop', component: OvcReviewProposal },
@@ -117,6 +115,7 @@ const routes = [
     children: [
       { path: 'login', component: Login },
       { path: 'about', component: About },
+      { path: 'create-account', component: CreateAccount },
     ],
   },
 ]

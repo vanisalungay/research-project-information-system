@@ -52,8 +52,7 @@
             </span>
           </td>
           <td>
-            <button
-              v-if="proposal.status !== 'Endorsed'"
+           <button
               class="review-btn"
               @click="$router.push('fundviewprop')"
             >
@@ -73,6 +72,7 @@
 <script>
 export default {
   name: 'SubmittedProposals',
+
   data() {
     return {
       search: '',
@@ -89,14 +89,32 @@ export default {
         },
         {
           id: 2,
+          title: 'Educational Infrastructure Project',
+          program: 'Tanglaw Program',
+          proponent: 'Dr. Cat Moon',
+          date: '2024-12-05',
+          budget: 150000,
+          status: 'Endorsed',
+        },
+      
+        {
+          id: 3,
           title: 'Healthcare Facility Upgrade',
           program: 'Kalikasan Program',
           proponent: 'Dr. Meow Chan',
           date: '2024-12-05',
           budget: 220000,
-          status: 'Revision',
+          status: 'Pending',
         },
-       
+        {
+          id: 4,
+          title: 'Technology Innovation Initiative',
+          program: 'Tanglaw Program',
+          proponent: 'Dr. Blair Gwen',
+          date: '2024-12-03',
+          budget: 220000,
+          status: 'Endorsed',
+        },
       ],
     }
   },
@@ -108,7 +126,8 @@ export default {
           p.title.toLowerCase().includes(this.search.toLowerCase()) ||
           p.program.toLowerCase().includes(this.search.toLowerCase())
 
-        const matchesStatus = this.selectedStatus === '' || p.status === this.selectedStatus
+        const matchesStatus =
+          this.selectedStatus === '' || p.status === this.selectedStatus
 
         return matchesSearch && matchesStatus
       })
@@ -119,6 +138,7 @@ export default {
     reviewProposal(proposal) {
       alert(`Reviewing:\n\n${proposal.title}\nProponent: ${proposal.proponent}`)
     },
+
     resetFilters() {
       this.search = ''
       this.selectedStatus = ''
@@ -131,8 +151,8 @@ export default {
 .page {
   padding: 32px;
   font-family: Arial, sans-serif;
-  width: 500%;
-  max-width: 135%;
+  width: 100%;
+  max-width: 100%;
 }
 
 .subtitle {
@@ -142,7 +162,7 @@ export default {
 
 .controls {
   display: flex;
-  flex-wrap: wrap; /* allow items to expand and move */
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 24px;
   width: 100%;
@@ -168,17 +188,31 @@ export default {
 .proposals-table {
   width: 100%;
   border-collapse: collapse;
-}
-
-.proposals-table thead {
-  background-color: #3f3b74;
-  color: white;
+  table-layout: fixed;
 }
 
 .proposals-table th,
 .proposals-table td {
   padding: 12px;
   border-bottom: 1px solid #eee;
+  word-wrap: break-word;
+}
+
+.proposals-table th:nth-child(4),
+.proposals-table td:nth-child(4) {
+  text-align: right;
+}
+
+.proposals-table th:nth-child(5),
+.proposals-table td:nth-child(5),
+.proposals-table th:nth-child(6),
+.proposals-table td:nth-child(6) {
+  text-align: center;
+}
+
+.proposals-table th:nth-child(7),
+.proposals-table td:nth-child(7) {
+  text-align: center;
 }
 
 .subtext {

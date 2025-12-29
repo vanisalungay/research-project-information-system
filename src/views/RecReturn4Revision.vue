@@ -78,21 +78,24 @@
         </section>
 
         <!-- OPTIONAL ATTACHMENTS -->
-        <section class="card">
-          <h3>Optional Attachments</h3>
-          <p class="hint">
-            Upload additional documents or notes to help the proponent with revisions.
-          </p>
+       <section class="card">
+  <h3>Optional Attachments</h3>
+  <p class="hint">
+    Upload additional documents or notes to help the proponent with revisions.
+  </p>
 
-          <div class="upload-box">
-            <div class="upload-icon">⬆️</div>
-            <p>Drag and drop files or click to browse</p>
-            <small>PDF, DOC, DOCX (Max 10MB)</small>
-            <button class="select">Select Files</button>
-          </div>
-        </section>
-      </div>
+  <div class="upload-box">
+    <div class="upload-icon">⬆️</div>
+    <p>Drag and drop files or click to browse</p>
+    <small>PDF, DOC, DOCX (Max 10MB)</small>
 
+    <button class="select" @click="filePicker.click()">Select Files</button>
+
+    <!-- ✅ hidden input (required for the button to work) -->
+    <input type="file" ref="filePicker" multiple style="display:none" @change="handleFiles" />
+  </div>
+</section>
+ </div>
       <!-- RIGHT SIDE -->
       <div class="right">
         <section class="card">
@@ -170,6 +173,15 @@ const quickTemplates = [
   "Community engagement plan needs improvement.",
   "Supporting documentation is incomplete.",
 ];
+
+const filePicker = ref(null);
+const selectedFiles = ref([]);
+
+const handleFiles = (event: any) => {
+  selectedFiles.value = Array.from(event.target.files);
+  console.log("Selected:", selectedFiles.value);
+};
+
 
 const applyTemplate = (text: string) => {
   if (revisionComment.value) {

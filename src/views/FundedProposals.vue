@@ -1,3 +1,4 @@
+krisha, [29/12/2025 2:29 pm]
 <template>
   <div class="page">
     <!-- Header -->
@@ -8,17 +9,17 @@
     <div class="stats">
       <div class="card">
         <p>Total Funded</p>
-        <h3>{{ totalFunded }}</h3>
+        <h3>2</h3>
       </div>
 
       <div class="card">
         <p>Funds Released</p>
-        <h3>{{ fundsReleased }}</h3>
+        <h3>2</h3>
       </div>
 
       <div class="card">
         <p>Pending Release</p>
-        <h3>{{ pendingRelease }}</h3>
+        <h3>1</h3>
       </div>
 
       <div class="card highlight">
@@ -94,16 +95,16 @@ export default {
       proposals: [
         {
           id: 1,
-          title: 'Youth Empowerment Program',
-          proponent: 'Dr. Quennsi Jane',
+          title: 'Community Development Program',
+          proponent: 'Dr. Allen Shippy',
           totalBudget: 95000,
           released: 95000,
           releaseDate: '2024-11-28',
         },
         {
           id: 2,
-          title: 'Environmental Conservation Project',
-          proponent: 'Dr. Avie Chun',
+          title: 'Healthcare Facility Upgrade',
+          proponent: 'Dr. Meow Chan',
           totalBudget: 200000,
           released: 200000,
           releaseDate: '2024-12-01',
@@ -180,7 +181,6 @@ export default {
   padding: 10px;
   margin-bottom: 16px;
 }
-
 /* TABLE */
 .table {
   width: 100%;

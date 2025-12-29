@@ -69,8 +69,8 @@ export default {
       /* 🔔 These values align with notification & validate pages */
       proposals: [
         {
-          title: 'Community-Based water Filtration System',
-          proponent: 'Engr. John Delos Reyes',
+          title: 'Community Development Program 2024',
+          proponent: 'Dr. Aljon Shipay',
           amount: '₱ 250,000.00',
         },
         {
@@ -206,11 +206,9 @@ export default {
   border: 2px solid #2c2b4f;
   padding: 10px;
 }
-
 .table-row {
   height: 50px;
 }
-
 /* BUTTON */
 .validate-btn {
   background: #2c2b4f;
