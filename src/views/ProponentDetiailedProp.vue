@@ -1,8 +1,13 @@
 <template>
   <div class="proposal-view">
+<<<<<<< HEAD
+    <div class="back" @click="$router.go(-1)">← Back</div> <br>
+    <h1>Community Development Program 2024</h1>
+=======
     <div class="back" @click="$router.go(-1)">← Back</div>
     <br />
     <h1>Community Water and Filtration Enhancement Program 2024</h1>
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
     <p class="subtitle">Proposal ID #1</p>
 
     <!-- 1. Project Profile -->

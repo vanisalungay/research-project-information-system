@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <!-- User Info Dropdown -->
+    
     <div class="user-info" @click="toggleDropdown">
       <img src="@/assets/images/avatar.png" alt="User Avatar" class="user-avatar" />
 
@@ -24,7 +24,7 @@
         </p>
       </div>
 
-      <!-- Dropdown -->
+      
       <div v-if="showDropdown" class="dropdown-menu">
         <button
           v-for="menuItem in menuItems"
@@ -113,7 +113,7 @@ const handleMenuItemClick = (menuItemData) => {
 }
 
 const menuItems = []
-// if rii admin, push SWITCH TO RII STAFF
+
 if (userStore.user?.role === UserRole.RII_ADMIN) menuItems.push('SWITCH TO RII STAFF')
 
 if (userStore.user?.role === UserRole.RII_STAFF) menuItems.push('SWITCH TO RII ADMIN')
@@ -159,7 +159,7 @@ menuItems.push('LOGOUT')
   text-align: left;
 }
 
-/* User Info */
+
 .user-info {
   display: flex;
   gap: 12px;
@@ -184,7 +184,7 @@ menuItems.push('LOGOUT')
   font-size: 14px;
   color: #fff;
 }
-/* User Info */
+
 .user-info {
   position: relative;
   display: flex;
@@ -240,7 +240,7 @@ menuItems.push('LOGOUT')
 
 .login-dialog {
   position: fixed;
-  inset: 0; /* top:0 right:0 bottom:0 left:0 */
+  inset: 0; 
   width: 100vw;
   height: 100vh;
 

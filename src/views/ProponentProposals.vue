@@ -44,7 +44,7 @@
 
       <tbody>
         <tr>
-          <td>Community Water and Filtration Enhancement Program 2024</td>
+          <td>Community Development Program 2024</td>
           <td>Punla/Dagat</td>
           <td><span class="status pending">Pending</span></td>
           <td>2024-12-10</td>
@@ -53,7 +53,7 @@
         </tr>
 
         <tr>
-          <td>Educational Infrastructure Project</td>
+          <td>Healthcare Facility Upgrade</td>
           <td>Tanglaw</td>
           <td><span class="status approved">Approved</span></td>
           <td>2024-12-08</td>
@@ -61,59 +61,6 @@
           <td><button class="btn-view">View</button></td>
         </tr>
 
-        <tr>
-          <td>Healthcare Facility Upgrade</td>
-          <td>Punla</td>
-          <td><span class="status revision">Revision</span></td>
-          <td>2024-12-05</td>
-          <td>Sarah Lee</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
-
-        <tr>
-          <td>Technology Innovation Initiative</td>
-          <td>Negosyo</td>
-          <td><span class="status submitted">Submitted</span></td>
-          <td>2024-12-03</td>
-          <td>Pending</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
-
-        <tr>
-          <td>Environmental Conservation Project</td>
-          <td>Dagaat</td>
-          <td><span class="status approved">Approved</span></td>
-          <td>2024-11-28</td>
-          <td>Tom Wilson</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
-
-        <tr>
-          <td>Youth Empowerment Program</td>
-          <td>Tanglaw</td>
-          <td><span class="status draft">Draft</span></td>
-          <td>-</td>
-          <td>-</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
-
-        <tr>
-          <td>Agricultural Development Initiative</td>
-          <td>Kalikasan</td>
-          <td><span class="status rejected">Rejected</span></td>
-          <td>2024-11-20</td>
-          <td>Lisa Brown</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
-
-        <tr>
-          <td>Infrastructure Modernization Plan</td>
-          <td>Negosyo</td>
-          <td><span class="status pending">Pending</span></td>
-          <td>2024-12-09</td>
-          <td>David Chen</td>
-          <td><button class="btn-view">View</button></td>
-        </tr>
       </tbody>
     </table>
   </div>

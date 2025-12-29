@@ -261,7 +261,7 @@ li a {
   height: 100%;
   text-decoration: none;
   font-weight: bold;
-  /* font-size: 20px; */
+  
   color: #ffd803;
 }
 

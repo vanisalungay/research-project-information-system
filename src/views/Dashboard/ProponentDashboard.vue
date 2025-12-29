@@ -8,7 +8,7 @@
         <div class="stats-row">
           <div class="stat-box">
             <span class="stat-label">Active Proposals</span>
-            <span class="stat-value">6</span>
+            <span class="stat-value">2</span>
           </div>
 
           <div class="stat-box pending">
@@ -18,7 +18,7 @@
 
           <div class="stat-box approved">
             <span class="stat-label">Approved</span>
-            <span class="stat-value">2</span>
+            <span class="stat-value">0</span>
           </div>
         </div>
       </div>
@@ -44,7 +44,11 @@
             Revision Deadlines
             <span class="pill">2 Pending</span>
           </div>
+<<<<<<< HEAD
+          <div class="proposal-name">Community Development Program 2024</div>
+=======
           <div class="proposal-name">Community-Based Marine Resource Management</div>
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
           <div class="proposal-id">P-2024-003</div>
         </div>
       </div>
@@ -71,7 +75,7 @@
 
         <div class="panel-item">
           <div>
-            <div class="item-title">Sustainable Aquaculture Practices</div>
+            <div class="item-title">Community Development Program 2024</div>
             <div class="item-meta">P-2024-001 • 2024-11-20</div>
           </div>
           <span class="status under-review">Under Review</span>
@@ -79,12 +83,15 @@
 
         <div class="panel-item">
           <div>
-            <div class="item-title">AI-Driven Crop Disease Detection</div>
+            <div class="item-title">Healthcare Facility Upgrade</div>
             <div class="item-meta">P-2024-002 • 2024-11-18</div>
           </div>
           <span class="status approved">Approved</span>
         </div>
 
+<<<<<<< HEAD
+        
+=======
         <div class="panel-item">
           <div>
             <div class="item-title">Community-Based Marine Resource Management</div>
@@ -92,6 +99,7 @@
           </div>
           <span class="status revision">Revision Required</span>
         </div>
+>>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
       </div>
 
       <!-- REVIEWER FEEDBACK -->
