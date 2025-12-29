@@ -1,7 +1,7 @@
 <template>
   <div class="edit-proposal-container">
      <div class="back" @click="$router.go(-1)">← Back to Dashboard</div> <br>
-    <!-- Top info bar -->
+    
     <div class="top-bar">
       <h3>
         Edit Proposal
@@ -10,7 +10,7 @@
       <p class="top-subtitle">Update your proposal information and resubmit for review</p>
     </div>
 
-    <!-- Notice box -->
+    
     <div class="notice-box">
       <p>
         <strong>⚠️ You are editing an existing proposal</strong><br />
@@ -20,7 +20,7 @@
     </div>
 
     <div class="main-content">
-      <!-- Sections left block -->
+      
       <div class="sections">
         <div class="section-steps">
           <button
@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <!-- Form right block -->
+      
       <div class="form-section">
         <div class="form-header">
           <h4>Basic Information</h4>
@@ -218,7 +218,6 @@ export default {
   padding: 30px 40px;
 }
 
-/* Top bar with title and badge */
 .top-bar {
   margin-bottom: 10px;
   flex-shrink: 0;
@@ -251,7 +250,6 @@ export default {
   margin-top: 5px;
 }
 
-/* Notice box */
 .notice-box {
   background: #fef9e5;
   border: 1px solid #f1da4e;
@@ -270,7 +268,6 @@ export default {
   font-weight: 700;
 }
 
-/* Main content flex fills remaining space */
 .main-content {
   display: flex;
   gap: 30px;
@@ -279,7 +276,6 @@ export default {
   overflow: hidden;
 }
 
-/* Left side sections fills full height */
 .sections {
   width: 230px;
   background: #fff;
@@ -297,7 +293,6 @@ export default {
   overflow-y: auto;
 }
 
-/* Section steps as buttons */
 .section-steps {
   display: flex;
   flex-direction: column;
@@ -344,7 +339,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* Changes summary block */
 .changes-summary {
   margin-top: 25px;
   font-size: 12px;
@@ -377,7 +371,6 @@ export default {
   overflow-y: auto;
 }
 
-/* Header and progress bar */
 .form-header {
   margin-bottom: 25px;
   flex-shrink: 0;
@@ -406,7 +399,6 @@ export default {
   width: 25%;
 }
 
-/* Form label and input styling */
 .form-label {
   display: block;
   font-weight: 600;
@@ -451,7 +443,6 @@ textarea:focus {
   margin-top: 0;
 }
 
-/* Buttons row */
 .buttons-row {
   margin-top: auto;
   display: flex;
@@ -459,7 +450,6 @@ textarea:focus {
   padding-bottom: 10px;
 }
 
-/* Buttons styling */
 .btn {
   padding: 9px 22px;
   font-weight: 700;
@@ -475,7 +465,6 @@ textarea:focus {
   transition: background-color 0.25s ease;
 }
 
-/* Previous button */
 .btn.previous {
   background: #f0f0f0;
   color: #555;
@@ -485,7 +474,6 @@ textarea:focus {
   background: #d6d6d6;
 }
 
-/* Save draft button */
 .btn.save-draft {
   background: #e0e0e0;
   color: #333;
@@ -495,7 +483,6 @@ textarea:focus {
   background: #c0c0c0;
 }
 
-/* Save button */
 .btn.save {
   background: #ffca18;
   color: #1e293b;
@@ -505,7 +492,6 @@ textarea:focus {
   background: #e0b717;
 }
 
-/* Save icon svg */
 .icon-save {
   width: 16px;
   height: 16px;

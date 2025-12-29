@@ -2,7 +2,6 @@
   <div class="revision-wrapper">
     <!-- PAGE HEADER -->
     <div class="revision-header">
-      <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
       <h2>Revision Dashboard</h2>
 
       <div class="revision-count">
@@ -67,7 +66,7 @@ type Revision = {
 const revisions = ref<Revision[]>([
   {
     id: 1,
-    title: 'Community-Based Marine Resource Management',
+    title: 'Community Development Program 2024',
     code: 'P-2024-003',
     comment:
       'Please clarify the methodology section and provide more details on the community engagement strategy.',
@@ -75,7 +74,7 @@ const revisions = ref<Revision[]>([
   },
   {
     id: 2,
-    title: 'Biodiversity Assessment in Protected Forest Areas',
+    title: 'Healthcare Facility Upgrade',
     code: 'P-2024-004',
     comment:
       'Additional literature review required. Please expand on the sampling methodology.',

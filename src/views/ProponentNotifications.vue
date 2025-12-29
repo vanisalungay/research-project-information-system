@@ -43,7 +43,7 @@
         class="notification-thread"
         >
         
-        <p class="thread-title"> Thread: Community-Based Marine Resource Management </p>
+        <p class="thread-title"> Thread: Community Development Program 2024 </p>
         
         <div class="thread-item">
             <div class="thread-header"> REC Committee • requested revision </div>

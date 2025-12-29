@@ -16,8 +16,8 @@ import OvcReviewProposal from '../views/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
 import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
-//import OCFinalApproval from '../views/OCFinalApproval.vue'
-//import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
+
+
 
 import RiiAdminDashboard from '@/views/Dashboard/RiiAdminDashboard.vue'
 import RiiStaffNotification from '@/views/RiiStaffNotification.vue'
@@ -92,7 +92,7 @@ const routes = [
       { path: 'riifunded', component: RiiFundedPro },
       { path: 'create-account', component: CreateAccount },
       { path: 'manage-notifications', component: Notification },
-      // { path: 'riistaff-dash', component: RiiStaffDashboard },
+      
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riiadmin-notif', component: RiiAdminNotification },
@@ -101,7 +101,7 @@ const routes = [
       { path: 'ovcaf-notification', component: OvcafNotification },
       { path: 'ovcaf-dash', component: OvcafDashboard },
 
-      // { path: 'radmin-dash', component: RAdminDashboard },
+      
 
       { path: 'create-account', component: CreateAccount },
       { path: 'review-prop', component: OvcReviewProposal },
@@ -158,12 +158,12 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserDataStore()
   userStore.hydrate()
 
-  // public pages (login, about, etc.)
+  
   if (to.matched.some((record) => record.meta.public)) {
     return next()
   }
 
-  // protected pages
+  
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!userStore.isLoggedIn) {
       return next({ path: 'login' })

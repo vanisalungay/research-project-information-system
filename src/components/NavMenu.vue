@@ -26,7 +26,7 @@ import submittedIcon from '@/assets/images/submitted.png'
 const route = useRoute()
 const userStore = useUserDataStore()
 
-// PURE JAVASCRIPT – no types
+
 const allNavItems = [
   {
     icon: dashboardIcon,
@@ -47,10 +47,40 @@ const allNavItems = [
   {
   icon: notificationIcon,
   activeIcon: notificationActiveIcon,
+  text: 'Proposals',
+  path: '/proposals',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Evaluation Criteria',
+  path: '/evalCriteria',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
+  text: 'Revisions',
+  path: '/revisions',
+  roles: [UserRole.PROPONENT],
+  },
+
+  {
+  icon: notificationIcon,
+  activeIcon: notificationActiveIcon,
   text: 'Notifications',
   path: '/proponent-notification',
   roles: [UserRole.PROPONENT],
   },
+
+  
+
+  
+
+  
 
   {
   icon: notificationIcon,
@@ -196,32 +226,10 @@ const allNavItems = [
   },
 
 
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Revisions',
-  path: '/revisions',
-  roles: [UserRole.PROPONENT],
-  },
 
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Proposals',
-  path: '/proposals',
-  roles: [UserRole.PROPONENT],
-  },
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Evaluation Criteria',
-  path: '/evalCriteria',
-  roles: [UserRole.PROPONENT],
-  },
 ]
 
-// Filter nav items based on user role
+
 const navItems = computed(() => {
   if (!userStore.user) return []
   return allNavItems.filter(item =>
@@ -229,7 +237,7 @@ const navItems = computed(() => {
   )
 })
 
-// Check if path is active
+
 const isSelected = (path) => route.path === path
 
 </script>
@@ -262,11 +270,11 @@ li a {
   height: 100%;
   text-decoration: none;
   font-weight: bold;
-  /* font-size: 20px; */
+  
   color: #ffd803;
 }
 
-/* selected background */
+
 li.active {
   background-color: white;
   border-top-left-radius: 12px;

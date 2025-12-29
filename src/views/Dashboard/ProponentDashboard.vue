@@ -8,7 +8,7 @@
         <div class="stats-row">
           <div class="stat-box">
             <span class="stat-label">Active Proposals</span>
-            <span class="stat-value">6</span>
+            <span class="stat-value">2</span>
           </div>
 
           <div class="stat-box pending">
@@ -18,7 +18,7 @@
 
           <div class="stat-box approved">
             <span class="stat-label">Approved</span>
-            <span class="stat-value">2</span>
+            <span class="stat-value">0</span>
           </div>
         </div>
       </div>
@@ -26,10 +26,7 @@
 
     <!-- SEARCH -->
     <div class="search-container">
-      <input
-        type="text"
-        placeholder="Search your proposals by title, ID, or status..."
-      />
+      <input type="text" placeholder="Search your proposals by title, ID, or status..." />
     </div>
 
     <!-- REVISION DEADLINE -->
@@ -37,8 +34,8 @@
       <div class="deadline-left">
         <div class="deadline-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2"/>
-            <path d="M12 6v6l4 2" stroke="#000" stroke-width="2"/>
+            <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2" />
+            <path d="M12 6v6l4 2" stroke="#000" stroke-width="2" />
           </svg>
         </div>
 
@@ -47,9 +44,7 @@
             Revision Deadlines
             <span class="pill">2 Pending</span>
           </div>
-          <div class="proposal-name">
-            Community-Based Marine Resource Management
-          </div>
+          <div class="proposal-name">Community Development Program 2024</div>
           <div class="proposal-id">P-2024-003</div>
         </div>
       </div>
@@ -59,9 +54,7 @@
           <span>Deadline</span>
           <strong>5 days left</strong>
         </div>
-        <button class="submit-btn" @click="goToRevision">
-  Submit Revision
-</button>
+        <button class="submit-btn" @click="goToRevision">Submit Revision</button>
       </div>
     </section>
 
@@ -69,17 +62,16 @@
       <!-- RECENTLY SUBMITTED -->
       <div class="panel">
         <div class="panel-header">
-  <div>
-    Recently Submitted Proposals
-    <span class="count-badge">6</span>
-  </div>
-  <a @click="goToProposals" style="cursor: pointer;">View All</a>
-</div>
-
+          <div>
+            Recently Submitted Proposals
+            <span class="count-badge">6</span>
+          </div>
+          <a @click="goToProposals" style="cursor: pointer">View All</a>
+        </div>
 
         <div class="panel-item">
           <div>
-            <div class="item-title">Sustainable Aquaculture Practices</div>
+            <div class="item-title">Community Development Program 2024</div>
             <div class="item-meta">P-2024-001 • 2024-11-20</div>
           </div>
           <span class="status under-review">Under Review</span>
@@ -87,21 +79,13 @@
 
         <div class="panel-item">
           <div>
-            <div class="item-title">AI-Driven Crop Disease Detection</div>
+            <div class="item-title">Healthcare Facility Upgrade</div>
             <div class="item-meta">P-2024-002 • 2024-11-18</div>
           </div>
           <span class="status approved">Approved</span>
         </div>
 
-        <div class="panel-item">
-          <div>
-            <div class="item-title">
-              Community-Based Marine Resource Management
-            </div>
-            <div class="item-meta">P-2024-003 • 2024-11-22</div>
-          </div>
-          <span class="status revision">Revision Required</span>
-        </div>
+        
       </div>
 
       <!-- REVIEWER FEEDBACK -->
@@ -133,9 +117,7 @@
         <div class="feedback-item">
           <span class="dot yellow"></span>
           <div>
-            <div>
-              Revision deadline for P-2024-004 is approaching (5 days left)
-            </div>
+            <div>Revision deadline for P-2024-004 is approaching (5 days left)</div>
             <small>2 days ago</small>
           </div>
         </div>
@@ -153,13 +135,12 @@ function goToRevision() {
 }
 
 function goToProposals() {
-  router.push('/proposals') 
+  router.push('/proposals')
 }
 
 function goToFeedback() {
   router.push('/proponent-feedback')
 }
-
 </script>
 
 <style scoped>
@@ -168,7 +149,7 @@ function goToFeedback() {
   padding: 2rem;
   background: #f3f4f6;
   min-height: 100vh;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* WELCOME */
@@ -221,12 +202,12 @@ function goToFeedback() {
 }
 
 .stat-box.pending {
-  background: rgba(255,193,7,0.25);
+  background: rgba(255, 193, 7, 0.25);
   color: white;
 }
 
 .stat-box.approved {
-  background: rgba(40,167,69,0.25);
+  background: rgba(40, 167, 69, 0.25);
 }
 
 /* SEARCH */

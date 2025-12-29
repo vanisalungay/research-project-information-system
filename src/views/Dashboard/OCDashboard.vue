@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-content">
-    <!-- SUMMARY CARDS -->
+    
     <div class="summary-cards">
       <div class="card">
         <p class="card-title">Pending Final Approval</p>
@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- PROPOSALS FOR FINAL APPROVAL -->
+    
     <div class="section">
       <h3>Proposals for Final Approval</h3>
 
@@ -36,7 +36,7 @@
       </div>
     </div>
 
-    <!-- APPROVED PROPOSALS -->
+    
     <div class="section">
       <h3>Approved Proposals</h3>
 
@@ -113,7 +113,7 @@ export default {
   padding: 24px;
 }
 
-/* SUMMARY CARDS */
+
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -139,7 +139,7 @@ export default {
   font-weight: bold;
 }
 
-/* SECTIONS */
+
 .section {
   margin-bottom: 32px;
 }
@@ -148,7 +148,7 @@ export default {
   margin-bottom: 16px;
 }
 
-/* PROPOSALS */
+
 .proposal-card {
   background: #ffffff;
   padding: 16px;
@@ -174,7 +174,7 @@ export default {
   color: #777;
 }
 
-/* STATUS BADGES */
+
 .status {
   padding: 4px 10px;
   border-radius: 12px;
@@ -191,7 +191,7 @@ export default {
   color: #2e7d32;
 }
 
-/* BUTTON */
+
 .action-btn {
   margin-top: 12px;
   width: 100%;
