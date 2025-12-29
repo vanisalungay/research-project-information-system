@@ -115,13 +115,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'   
+import { useRouter } from 'vue-router'
 
-const router = useRouter()              
+const router = useRouter()
 
-const attachments = ref([
-  { name: 'project-proposal.pdf', url: '/files/project-proposal.pdf' }
-])
+const attachments = ref([{ name: 'project-proposal.pdf', url: '/files/project-proposal.pdf' }])
 
 const downloadFile = (file) => {
   const link = document.createElement('a')
@@ -133,7 +131,7 @@ const downloadFile = (file) => {
 }
 
 const goToDetailed = () => {
-  router.push('/rec-prop')               
+  router.push('/rec-prop')
 }
 
 const downloadAll = () => {

@@ -1,7 +1,8 @@
 <template>
   <div class="edit-proposal-container">
-     <div class="back" @click="$router.go(-1)">← Back to Dashboard</div> <br>
-    
+    <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
+    <br />
+
     <div class="top-bar">
       <h3>
         Edit Proposal
@@ -10,7 +11,6 @@
       <p class="top-subtitle">Update your proposal information and resubmit for review</p>
     </div>
 
-    
     <div class="notice-box">
       <p>
         <strong>⚠️ You are editing an existing proposal</strong><br />
@@ -20,7 +20,6 @@
     </div>
 
     <div class="main-content">
-      
       <div class="sections">
         <div class="section-steps">
           <button
@@ -46,7 +45,6 @@
         </div>
       </div>
 
-      
       <div class="form-section">
         <div class="form-header">
           <h4>Basic Information</h4>

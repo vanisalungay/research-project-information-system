@@ -192,7 +192,6 @@ export default {
 }
 </script>
 
-
 <style scoped>
 .page {
   padding: 24px;
@@ -319,7 +318,6 @@ export default {
   width: 89%;
 }
 
-
 .recommendation {
   background: #ecfdf3;
   border-radius: 12px;
@@ -327,7 +325,6 @@ export default {
   font-size: 14px;
   color: #065f46;
 }
-
 
 .summary-text {
   font-size: 14px;
@@ -383,7 +380,6 @@ textarea {
   z-index: 999;
 }
 
-
 .modal {
   width: 460px;
   background: #ffffff;
@@ -391,7 +387,6 @@ textarea {
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   padding: 20px;
 }
-
 
 .modal-header {
   display: flex;

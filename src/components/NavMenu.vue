@@ -191,7 +191,7 @@ const allNavItems = [
     roles: [UserRole.OVCRIGE],
   },
 
-{
+  {
     icon: proposalIcon,
     activeIcon: proposalActiveIcon,
     text: 'Proposals',
@@ -265,7 +265,7 @@ li a {
   height: 100%;
   text-decoration: none;
   font-weight: bold;
-  
+
   color: #ffd803;
 }
 

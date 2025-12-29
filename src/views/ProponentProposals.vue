@@ -60,7 +60,6 @@
           <td>Mike Johnson</td>
           <td><button class="btn-view" @click="viewProposal(index)">View</button></td>
         </tr>
-
       </tbody>
     </table>
   </div>

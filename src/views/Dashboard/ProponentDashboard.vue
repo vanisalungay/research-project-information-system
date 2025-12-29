@@ -84,8 +84,6 @@
           </div>
           <span class="status approved">Approved</span>
         </div>
-
-        
       </div>
 
       <!-- REVIEWER FEEDBACK -->

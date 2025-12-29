@@ -174,7 +174,7 @@ onMounted(() => {
 })
 
 const goToDetailed = () => {
-  router.push('/rec-prop')               
+  router.push('/rec-prop')
 }
 const downloadFile = (file) => {
   const link = document.createElement('a')

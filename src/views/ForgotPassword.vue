@@ -25,12 +25,7 @@
 
       <form class="forgot-form" @submit.prevent="handleReset">
         <label>Email Address</label>
-        <input
-          type="email"
-          v-model="email"
-          placeholder="you@msunaawan.edu.ph"
-          required
-        />
+        <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
 
         <button class="login-btn">Send Reset Link</button>
 

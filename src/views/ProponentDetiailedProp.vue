@@ -1,6 +1,7 @@
 <template>
   <div class="proposal-view">
-    <div class="back" @click="$router.go(-1)">← Back</div> <br>
+    <div class="back" @click="$router.go(-1)">← Back</div>
+    <br />
     <h1>Community Development Program 2024</h1>
     <p class="subtitle">Proposal ID #1</p>
 
@@ -229,9 +230,7 @@
   </div>
 </template>
 
-<script setup>
-
-</script>
+<script setup></script>
 
 <style scoped>
 .proposal-view {

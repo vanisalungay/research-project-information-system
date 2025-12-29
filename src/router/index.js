@@ -18,8 +18,6 @@ import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
 import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
 
-
-
 import RiiAdminDashboard from '@/views/Dashboard/RiiAdminDashboard.vue'
 import RiiStaffNotification from '@/views/RiiStaffNotification.vue'
 import RiiAdminVerification from '@/views/RiiAdminVerification.vue'
@@ -77,7 +75,6 @@ const routes = [
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
-      
 
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
@@ -92,7 +89,7 @@ const routes = [
       { path: 'fundrelease', component: FundRelease },
       { path: 'riifunded', component: RiiFundedPro },
       { path: 'manage-notifications', component: Notification },
-      
+
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riiadmin-notif', component: RiiAdminNotification },
@@ -101,7 +98,6 @@ const routes = [
       { path: 'ovcaf-notification', component: OvcafNotification },
       { path: 'ovcaf-dash', component: OvcafDashboard },
 
-      
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
@@ -116,7 +112,7 @@ const routes = [
       { path: 'reject-proposal', component: RecRejectProposal },
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
-        { path: 'rec-prop', component: RecDetailedProp },
+      { path: 'rec-prop', component: RecDetailedProp },
 
       { path: 'proponent-notification', component: ProponentNotifications },
       { path: 'revisions', component: ProponentRevision },
@@ -137,7 +133,6 @@ const routes = [
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
       { path: 'oc-detailed', component: OcDetailedProposal },
-
     ],
   },
   {
@@ -148,7 +143,7 @@ const routes = [
       { path: 'login', component: Login },
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
-       { path: 'register', component: ForgotPassword},
+      { path: 'register', component: ForgotPassword },
     ],
   },
 ]
@@ -162,12 +157,10 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserDataStore()
   userStore.hydrate()
 
-  
   if (to.matched.some((record) => record.meta.public)) {
     return next()
   }
 
-  
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!userStore.isLoggedIn) {
       return next({ path: 'login' })
