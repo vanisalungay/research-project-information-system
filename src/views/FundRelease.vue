@@ -265,7 +265,7 @@ const closeSuccess = () => {
   padding: 14px;
   border-radius: 10px;
   background: #f9fafb;
-  color: #000; 
+  color: #000;
 }
 
 input,

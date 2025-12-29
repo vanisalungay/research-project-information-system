@@ -16,7 +16,6 @@
     <div class="content-area">
       <!-- BODY CONTENT -->
       <div class="proposal-body">
-
         <!-- 1. PROJECT PROFILE -->
         <h4>1. PROJECT PROFILE</h4>
 
@@ -127,7 +126,6 @@
           filtration system that provides clean and safe drinking water to underserved households in
           Naawan, Misamis Oriental...
         </p>
-
       </div>
 
       <button class="download-btn" @click="downloadProject">DOWNLOAD PROJECT</button>
@@ -296,7 +294,6 @@ const downloadProject = () => {
   border-radius: 10px;
   cursor: pointer;
 }
-
 
 .overlay {
   position: fixed;

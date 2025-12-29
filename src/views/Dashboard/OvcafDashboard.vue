@@ -61,7 +61,6 @@ export default {
 
   data() {
     return {
-   
       proposals: [
         {
           title: 'Community Development Program 2024',

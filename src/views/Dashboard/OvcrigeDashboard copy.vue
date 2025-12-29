@@ -152,7 +152,6 @@ const goToReview = () => {
   font-family: Poppins, sans-serif;
 }
 
-
 .sidebar {
   width: 220px;
   background: #ffdf00;
@@ -264,7 +263,6 @@ td {
   padding: 6px 12px;
   border-radius: 6px;
 }
-
 
 .notifications {
   background: white;

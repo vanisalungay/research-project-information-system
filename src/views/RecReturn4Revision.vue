@@ -56,14 +56,21 @@
           <h3>Revision Comments</h3>
 
           <label class="label">Comments to Proponent</label>
-          <textarea v-model="revisionComment"
-            placeholder="List the specific issues that need to be addressed..."></textarea>
+          <textarea
+            v-model="revisionComment"
+            placeholder="List the specific issues that need to be addressed..."
+          ></textarea>
 
           <p class="quick-title">Quick Templates (click to apply)</p>
 
           <div class="quick-templates">
-            <button v-for="(template, index) in quickTemplates" :key="index" type="button" class="template-btn"
-              @click="applyTemplate(template)">
+            <button
+              v-for="(template, index) in quickTemplates"
+              :key="index"
+              type="button"
+              class="template-btn"
+              @click="applyTemplate(template)"
+            >
               {{ template }}
             </button>
           </div>
@@ -83,7 +90,13 @@
 
             <button class="select" @click="filePicker.click()">Select Files</button>
 
-            <input type="file" ref="filePicker" multiple style="display: none" @change="handleFiles" />
+            <input
+              type="file"
+              ref="filePicker"
+              multiple
+              style="display: none"
+              @change="handleFiles"
+            />
           </div>
         </section>
       </div>

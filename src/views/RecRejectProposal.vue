@@ -57,8 +57,10 @@
 
           <div class="form-group">
             <label>Detailed Explanation</label>
-            <textarea rows="5"
-              placeholder="Provide a clear and structured explanation for the rejection decision. Be specific and concise."></textarea>
+            <textarea
+              rows="5"
+              placeholder="Provide a clear and structured explanation for the rejection decision. Be specific and concise."
+            ></textarea>
           </div>
 
           <!-- WARNING BOX -->
@@ -142,7 +144,6 @@ const router = useRouter()
 const showRejectModal = ref(false)
 const showRejectSuccess = ref(false)
 
-
 const rejectProposal = () => {
   showRejectModal.value = true
 }
@@ -160,9 +161,7 @@ const confirmReject = () => {
 // Close success modal
 const closeSuccess = () => {
   showRejectSuccess.value = false
-
 }
-
 
 const goToSubmission = () => {
   router.push('/assigned-proposals')
@@ -174,7 +173,6 @@ const goToSubmission = () => {
   padding: 25px 30px;
   background: #f4f5fa;
 }
-
 
 .back-btn {
   background: transparent;
@@ -269,7 +267,6 @@ textarea {
   color: #a62828;
 }
 
-
 .summary-header {
   margin-bottom: 4px;
 }
@@ -279,7 +276,6 @@ textarea {
   color: #555;
   margin-bottom: 12px;
 }
-
 
 .side-card {
   background: white;

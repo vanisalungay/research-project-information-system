@@ -9,7 +9,6 @@
         </div>
       </header>
 
-  
       <section class="stats">
         <div class="stat-card">
           <p>Assigned Proposal</p>
@@ -30,7 +29,6 @@
         </div>
       </section>
 
-    
       <section class="content">
         <div class="table-card">
           <div class="table-header">
@@ -69,7 +67,6 @@
           </table>
         </div>
 
-       
         <aside class="notif-card">
           <h3>Notifications</h3>
 

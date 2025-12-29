@@ -83,7 +83,7 @@ const roles = [
   { name: 'OC', desc: 'Office of the Chancellor', value: UserRole.OC },
 ]
 
-const selectedRole = ref('PROPONENT') 
+const selectedRole = ref('PROPONENT')
 
 const handleLogin = async () => {
   const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
@@ -193,8 +193,8 @@ const handleLogin = async () => {
 
 .remember {
   display: flex;
-  align-items: center; 
-  gap: 10px; 
+  align-items: center;
+  gap: 10px;
   margin-bottom: 15px;
 }
 

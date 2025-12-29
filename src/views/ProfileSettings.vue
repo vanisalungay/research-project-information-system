@@ -396,8 +396,8 @@ const cancelNotif = () => window.history.back()
 
 .checkbox-grid label {
   display: flex;
-  align-items: center; 
-  gap: 8px; 
+  align-items: center;
+  gap: 8px;
   font-weight: normal;
   color: white;
   cursor: pointer;

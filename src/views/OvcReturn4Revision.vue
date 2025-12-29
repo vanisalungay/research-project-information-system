@@ -178,7 +178,6 @@ const applyTemplate = (text) => {
   }
 }
 
-
 const isFormValid = computed(() => {
   return (
     revisionComment.value.trim() !== '' &&

@@ -16,7 +16,6 @@
       </p>
     </div>
 
-  
     <div class="right-panel">
       <h2 class="welcome">CREATE ACCOUNT</h2>
       <p class="subtitle">Register to access the Research Project Information System</p>

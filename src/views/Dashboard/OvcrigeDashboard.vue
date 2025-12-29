@@ -88,7 +88,6 @@
           </table>
         </section>
 
-   
         <aside class="notifications">
           <h3>Notifications</h3>
 

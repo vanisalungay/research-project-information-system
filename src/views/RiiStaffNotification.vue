@@ -6,15 +6,23 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button v-for="tab in tabs" :key="tab.key" :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key">
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key"
+      >
         {{ tab.label }} ({{ tab.count }})
       </button>
     </div>
 
     <!-- Notification List -->
-    <div v-for="notification in filteredNotifications" :key="notification.id" class="notification"
-      :class="{ unread: !notification.read }">
+    <div
+      v-for="notification in filteredNotifications"
+      :key="notification.id"
+      class="notification"
+      :class="{ unread: !notification.read }"
+    >
       <!-- Icon -->
       <div class="icon">{{ notification.icon }}</div>
 
@@ -41,15 +49,27 @@
         </div>
 
         <div class="actions">
-          <button v-if="notification.type === 'review'" class="action-btn" @click="$router.push('fundviewprop')">
+          <button
+            v-if="notification.type === 'review'"
+            class="action-btn"
+            @click="$router.push('fundviewprop')"
+          >
             Review Proposal
           </button>
 
-          <button v-if="notification.type === 'endorse'" class="action-btn" @click="$router.push('rii-endorse')">
+          <button
+            v-if="notification.type === 'endorse'"
+            class="action-btn"
+            @click="$router.push('rii-endorse')"
+          >
             Review & Endorse
           </button>
 
-          <button v-if="notification.type === 'release'" class="action-btn" @click="$router.push('fundrelease')">
+          <button
+            v-if="notification.type === 'release'"
+            class="action-btn"
+            @click="$router.push('fundrelease')"
+          >
             Release Funds
           </button>
         </div>

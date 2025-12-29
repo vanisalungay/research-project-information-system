@@ -378,7 +378,7 @@ export default {
       this.files.forEach((file, index) => {
         setTimeout(() => {
           this.downloadFile(file)
-        }, index * 300) 
+        }, index * 300)
       })
     },
 
