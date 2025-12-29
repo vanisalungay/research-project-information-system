@@ -1,7 +1,10 @@
+xarxhaa, [29/12/2025 11:01 pm]
 <template>
   <div class="proposal-view">
+
     <div class="back" @click="$router.go(-1)">← Back</div> <br>
     <h1>Community Development Program 2024</h1>
+
     <p class="subtitle">Proposal ID #1</p>
 
     <!-- 1. Project Profile -->
@@ -122,7 +125,10 @@
       </p>
     </section>
 
-    <!-- 11. Review of Literature -->
+    <!-- 11.
+
+xarxhaa, [29/12/2025 11:01 pm]
+Review of Literature -->
     <section>
       <h2>(11) REVIEW OF LITERATURE</h2>
       <p>
@@ -230,7 +236,7 @@
 </template>
 
 <script setup>
-
+// This component is read-only, no props or reactive data needed.
 </script>
 
 <style scoped>

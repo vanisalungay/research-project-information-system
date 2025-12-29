@@ -68,8 +68,8 @@ export default {
       forFinalApproval: [
         {
           id: 1,
-          title: 'Sustainable Aquaculture Systems in Coastal Communities',
-          category: 'Dagat',
+          title: 'Community Development Program 2024',
+          category: 'Dagat/Punla',
           adviser: 'Dr. Maria Santos',
           date: 'Dec 13, 2024',
         },

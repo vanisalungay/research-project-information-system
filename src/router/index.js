@@ -65,6 +65,7 @@ import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCNotifications from '../views/OCNotifications.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
+import OcDetailedProposal from '../components/OcDetailedProposal.vue'
 
 const routes = [
   {
@@ -101,8 +102,6 @@ const routes = [
       { path: 'ovcaf-dash', component: OvcafDashboard },
 
       
-
-      { path: 'create-account', component: CreateAccount },
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
@@ -137,6 +136,8 @@ const routes = [
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
+      { path: 'oc-detailed', component: OcDetailedProposal },
+
     ],
   },
   {

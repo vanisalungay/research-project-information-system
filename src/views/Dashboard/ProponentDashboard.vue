@@ -44,11 +44,7 @@
             Revision Deadlines
             <span class="pill">2 Pending</span>
           </div>
-<<<<<<< HEAD
           <div class="proposal-name">Community Development Program 2024</div>
-=======
-          <div class="proposal-name">Community-Based Marine Resource Management</div>
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
           <div class="proposal-id">P-2024-003</div>
         </div>
       </div>
@@ -89,17 +85,7 @@
           <span class="status approved">Approved</span>
         </div>
 
-<<<<<<< HEAD
         
-=======
-        <div class="panel-item">
-          <div>
-            <div class="item-title">Community-Based Marine Resource Management</div>
-            <div class="item-meta">P-2024-003 • 2024-11-22</div>
-          </div>
-          <span class="status revision">Revision Required</span>
-        </div>
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
       </div>
 
       <!-- REVIEWER FEEDBACK -->

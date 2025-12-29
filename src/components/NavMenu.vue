@@ -60,8 +60,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
     path: '/oc-dashboard',
     roles: [UserRole.OC],
@@ -120,7 +120,13 @@ const allNavItems = [
     path: '/ovcaf-dash',
     roles: [UserRole.OVCAF],
   },
-
+  {
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
+    text: 'Dashboard',
+    path: '/riiadmin-dash',
+    roles: [UserRole.RII_ADMIN],
+  },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -185,6 +191,28 @@ const allNavItems = [
     roles: [UserRole.OVCRIGE],
   },
 
+{
+    icon: proposalIcon,
+    activeIcon: proposalActiveIcon,
+    text: 'Proposals',
+    path: '/proposals',
+    roles: [UserRole.PROPONENT],
+  },
+  {
+    icon: revisionIcon,
+    activeIcon: revisionActiveIcon,
+    text: 'Revisions',
+    path: '/revisions',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: EndorseIcon,
+    activeIcon: EndorseActiveIcon,
+    text: 'Evaluation Criteria',
+    path: '/evalCriteria',
+    roles: [UserRole.PROPONENT],
+  },
   {
     icon: SettingsIcon,
     activeIcon: SettingsActiveIcon,
@@ -198,30 +226,6 @@ const allNavItems = [
       UserRole.RII_STAFF,
       UserRole.PROPONENT,
     ],
-  },
-
-  {
-    icon: revisionIcon,
-    activeIcon: revisionActiveIcon,
-    text: 'Revisions',
-    path: '/revisions',
-    roles: [UserRole.PROPONENT],
-  },
-
-  {
-    icon: proposalIcon,
-    activeIcon: proposalActiveIcon,
-    text: 'Proposals',
-    path: '/proposals',
-    roles: [UserRole.PROPONENT],
-  },
-
-  {
-    icon: EndorseIcon,
-    activeIcon: EndorseActiveIcon,
-    text: 'Evaluation Criteria',
-    path: '/evalCriteria',
-    roles: [UserRole.PROPONENT],
   },
 ]
 
