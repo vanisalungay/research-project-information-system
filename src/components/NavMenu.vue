@@ -20,6 +20,8 @@ import dashboardIcon from '@/assets/images/dashboard.png'
 import dashboardActiveIcon from '@/assets/images/dashboard_active.png'
 import notificationIcon from '@/assets/images/notification.png'
 import notificationActiveIcon from '@/assets/images/notification_active.png'
+import submittedIcon from '@/assets/images/submitted.png'
+
 
 const route = useRoute()
 const userStore = useUserDataStore()

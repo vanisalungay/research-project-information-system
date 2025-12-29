@@ -118,17 +118,67 @@
         </div>
       </div>
     </div>
+<!-- REJECT CONFIRMATION MODAL -->
+<div v-if="showRejectModal" class="modal-overlay">
+  <div class="modal-box">
+    <p>Are you sure you want to reject this proposal?</p>
+    <div class="modal-actions">
+      <button class="cancel-btn" @click="cancelReject">Cancel</button>
+      <button class="reject-btn" @click="confirmReject">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- REJECTION SUCCESS MESSAGE -->
+<div v-if="showRejectSuccess" class="modal-overlay">
+  <div class="modal-box">
+    <p>Proposal rejected successfully!</p>
+    <div class="modal-actions">
+      <button class="reject-btn" @click="closeSuccess">OK</button>
+    </div>
+  </div>
+</div>
 
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// Modal states
+const showRejectModal = ref(false)
+const showRejectSuccess = ref(false)
+
+// Open reject confirmation modal
+const rejectProposal = () => {
+  showRejectModal.value = true
+}
+
+// Close reject confirmation modal
+const cancelReject = () => {
+  showRejectModal.value = false
+}
+
+// Confirm rejection
+const confirmReject = () => {
+  showRejectModal.value = false
+  showRejectSuccess.value = true
+}
+
+// Close success modal
+const closeSuccess = () => {
+  showRejectSuccess.value = false
+  // Optionally, redirect if needed:
+  // router.push('/assigned-proposals')
+}
+
+// Back button
 const goToSubmission = () => {
   router.push('/assigned-proposals')
+
 }
 
 </script>
