@@ -83,7 +83,7 @@ const roles = [
   { name: 'OC', desc: 'Office of the Chancellor', value: UserRole.OC },
 ]
 
-const selectedRole = ref('PROPONENT') // default selected
+const selectedRole = ref('PROPONENT') 
 
 const handleLogin = async () => {
   const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
@@ -191,18 +191,17 @@ const handleLogin = async () => {
   color: #1f1a3d;
 }
 
-/* REMEMBER ME ALIGNMENT FIX */
 .remember {
   display: flex;
-  align-items: center; /* vertically center checkbox and label */
-  gap: 10px; /* space between checkbox and text */
+  align-items: center; 
+  gap: 10px; 
   margin-bottom: 15px;
 }
 
 .remember input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  margin: 0; /* remove default margin */
+  margin: 0;
 }
 
 .remember label {

@@ -48,9 +48,7 @@
         </div>
       </div>
 
-      <!-- CONTENT GRID -->
       <div>
-        <!-- TABLE -->
         <section class="table-section">
           <div class="table-header">
             <h3>Latest Submitted Proposals</h3>
@@ -154,7 +152,7 @@ const goToReview = () => {
   font-family: Poppins, sans-serif;
 }
 
-/* SIDEBAR */
+
 .sidebar {
   width: 220px;
   background: #ffdf00;
@@ -184,14 +182,12 @@ const goToReview = () => {
   color: white;
 }
 
-/* MAIN */
 .main {
   flex: 1;
   background: #f6f7fb;
   padding: 20px;
 }
 
-/* TOP BAR */
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -203,7 +199,6 @@ const goToReview = () => {
   font-size: 13px;
 }
 
-/* STATS */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -217,14 +212,12 @@ const goToReview = () => {
   border-radius: 10px;
 }
 
-/* CONTENT */
 .content {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 20px;
 }
 
-/* TABLE */
 .table-section {
   background: white;
   padding: 15px;
@@ -272,7 +265,7 @@ td {
   border-radius: 6px;
 }
 
-/* NOTIFICATIONS */
+
 .notifications {
   background: white;
   padding: 15px;

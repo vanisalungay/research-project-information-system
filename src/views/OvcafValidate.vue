@@ -16,7 +16,6 @@
     <div class="content-area">
       <!-- BODY CONTENT -->
       <div class="proposal-body">
-        <!-- === CONTENT START (your content pasted exactly) === -->
 
         <!-- 1. PROJECT PROFILE -->
         <h4>1. PROJECT PROFILE</h4>
@@ -129,7 +128,6 @@
           Naawan, Misamis Oriental...
         </p>
 
-        <!-- === CONTENT END === -->
       </div>
 
       <button class="download-btn" @click="downloadProject">DOWNLOAD PROJECT</button>
@@ -299,7 +297,6 @@ const downloadProject = () => {
   cursor: pointer;
 }
 
-/* ======== MODAL STYLES BELOW (UNCHANGED CONTENT ABOVE) ======== */
 
 .overlay {
   position: fixed;

@@ -50,10 +50,8 @@
         <!-- Remarks -->
         <section class="card">
           <h3>Endorsement Remarks</h3>
-          <textarea
-            v-model="remarks"
-            placeholder="Add any additional comments or conditions for this endorsement..."
-          ></textarea>
+          <textarea v-model="remarks"
+            placeholder="Add any additional comments or conditions for this endorsement..."></textarea>
         </section>
 
         <!-- Review Info -->
@@ -97,21 +95,13 @@
         <h3>{{ modalTitle }}</h3>
         <p v-if="modalType === 'return'">Please provide a reason for returning this proposal.</p>
 
-        <textarea
-          v-if="modalType === 'return'"
-          v-model="reason"
-          placeholder="Enter reason..."
-        ></textarea>
+        <textarea v-if="modalType === 'return'" v-model="reason" placeholder="Enter reason..."></textarea>
 
         <div class="modal-actions">
           <button class="btn cancel" @click="closeModal">Cancel</button>
 
-          <button
-            class="btn confirm"
-            :class="modalType === 'return' ? 'danger' : 'success'"
-            :disabled="modalType === 'return' && !reason"
-            @click="confirmAction"
-          >
+          <button class="btn confirm" :class="modalType === 'return' ? 'danger' : 'success'"
+            :disabled="modalType === 'return' && !reason" @click="confirmAction">
             Confirm
           </button>
         </div>
@@ -262,7 +252,7 @@ textarea {
 .check input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  accent-color: #facc15; /* yellow highlight */
+  accent-color: #facc15;
   cursor: pointer;
 }
 
@@ -280,6 +270,7 @@ textarea {
   color: #1f2937;
   font-weight: bold;
 }
+
 .endorse:disabled {
   background: #fef3c7;
   cursor: not-allowed;
@@ -318,16 +309,20 @@ textarea {
   background: #16a34a;
   color: white;
 }
+
 .confirm.danger {
   background: #b91c1c;
 }
+
 .cancel {
   background: #e5e7eb;
 }
+
 .tag {
   color: #16a34a;
   font-weight: bold;
 }
+
 .hint {
   font-size: 12px;
   color: #6b7280;

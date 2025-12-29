@@ -76,21 +76,13 @@
         <p>{{ modalMessage }}</p>
 
         <!-- Reject Reason -->
-        <textarea
-          v-if="modalType === 'reject'"
-          v-model="rejectReason"
-          placeholder="Enter reason for rejection..."
-          class="reason-box"
-        ></textarea>
+        <textarea v-if="modalType === 'reject'" v-model="rejectReason" placeholder="Enter reason for rejection..."
+          class="reason-box"></textarea>
 
         <div class="modal-actions">
           <button class="btn cancel" @click="closeModal">Cancel</button>
-          <button
-            class="btn"
-            :class="modalType"
-            :disabled="modalType === 'reject' && !rejectReason"
-            @click="confirmAction"
-          >
+          <button class="btn" :class="modalType" :disabled="modalType === 'reject' && !rejectReason"
+            @click="confirmAction">
             Confirm
           </button>
         </div>

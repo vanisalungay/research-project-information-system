@@ -2,7 +2,6 @@
   <div class="dashboard-layout">
     <!-- MAIN -->
     <div class="main">
-      <!-- TOP BAR -->
       <header class="topbar">
         <div>
           <h2>REC Dashboard</h2>
@@ -10,7 +9,7 @@
         </div>
       </header>
 
-      <!-- STATS -->
+  
       <section class="stats">
         <div class="stat-card">
           <p>Assigned Proposal</p>
@@ -31,9 +30,8 @@
         </div>
       </section>
 
-      <!-- CONTENT -->
+    
       <section class="content">
-        <!-- TABLE -->
         <div class="table-card">
           <div class="table-header">
             <h3>Latest Assigned Proposals</h3>
@@ -71,7 +69,7 @@
           </table>
         </div>
 
-        <!-- NOTIFICATIONS -->
+       
         <aside class="notif-card">
           <h3>Notifications</h3>
 
@@ -118,7 +116,6 @@ const goToMeeting = () => {
 </script>
 
 <style>
-/* NO CHANGES — kept exactly as is */
 .dashboard-layout {
   display: flex;
   height: 100vh;

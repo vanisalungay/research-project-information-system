@@ -56,21 +56,14 @@
           <h3>Revision Comments</h3>
 
           <label class="label">Comments to Proponent</label>
-          <textarea
-            v-model="revisionComment"
-            placeholder="List the specific issues that need to be addressed..."
-          ></textarea>
+          <textarea v-model="revisionComment"
+            placeholder="List the specific issues that need to be addressed..."></textarea>
 
           <p class="quick-title">Quick Templates (click to apply)</p>
 
           <div class="quick-templates">
-            <button
-              v-for="(template, index) in quickTemplates"
-              :key="index"
-              type="button"
-              class="template-btn"
-              @click="applyTemplate(template)"
-            >
+            <button v-for="(template, index) in quickTemplates" :key="index" type="button" class="template-btn"
+              @click="applyTemplate(template)">
               {{ template }}
             </button>
           </div>
@@ -90,14 +83,7 @@
 
             <button class="select" @click="filePicker.click()">Select Files</button>
 
-            <!-- ✅ hidden input (required for the button to work) -->
-            <input
-              type="file"
-              ref="filePicker"
-              multiple
-              style="display: none"
-              @change="handleFiles"
-            />
+            <input type="file" ref="filePicker" multiple style="display: none" @change="handleFiles" />
           </div>
         </section>
       </div>
@@ -322,14 +308,14 @@ input[type='date'] {
 /* CHECKLIST */
 .checklist {
   list-style: none;
-  padding: px; /* you wrote 5, must have px */
+  padding: 5px;
   margin: 0;
 }
 
 .checklist li {
   display: flex;
-  align-items: center; /* aligns checkbox + text */
-  gap: 2px; /* small spacing between checkbox and text */
+  align-items: center;
+  gap: 2px;
   margin-bottom: 10px;
   font-size: 13px;
 }
@@ -413,6 +399,7 @@ textarea:focus {
   border-radius: 8px;
   margin-top: 12px;
 }
+
 /* MODAL OVERLAY */
 .modal-overlay {
   position: fixed;
@@ -457,13 +444,16 @@ textarea:focus {
     opacity: 0;
     transform: translateY(15px);
   }
+
   10% {
     opacity: 1;
     transform: translateY(0);
   }
+
   90% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translateY(15px);

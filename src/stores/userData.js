@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
-// JS replacement for enum
+// 
 export const UserRole = {
   PROPONENT: 'PROPONENT',
   RII_ADMIN: 'RII_ADMIN',

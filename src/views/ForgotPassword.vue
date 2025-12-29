@@ -1,6 +1,5 @@
 <template>
   <div class="login-wrapper">
-    <!-- LEFT PANEL (same as login) -->
     <div class="left-panel">
       <img src="@/assets/images/logo.png" class="school-logo" />
 
@@ -16,7 +15,6 @@
       </p>
     </div>
 
-    <!-- RIGHT PANEL -->
     <div class="right-panel">
       <h2 class="welcome">Forgot Password</h2>
       <p class="subtitle">

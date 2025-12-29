@@ -6,23 +6,15 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
-      >
+      <button v-for="tab in tabs" :key="tab.key" :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key">
         {{ tab.label }} ({{ tab.count }})
       </button>
     </div>
 
     <!-- Notification List -->
-    <div
-      v-for="notification in filteredNotifications"
-      :key="notification.id"
-      class="notification"
-      :class="{ unread: !notification.read }"
-    >
+    <div v-for="notification in filteredNotifications" :key="notification.id" class="notification"
+      :class="{ unread: !notification.read }">
       <!-- Icon -->
       <div class="icon">{{ notification.icon }}</div>
 
@@ -48,29 +40,16 @@
           <small>{{ notification.date }}</small>
         </div>
 
-        <!-- ACTION BUTTONS (ADDED) -->
         <div class="actions">
-          <button
-            v-if="notification.type === 'review'"
-            class="action-btn"
-            @click="$router.push('fundviewprop')"
-          >
+          <button v-if="notification.type === 'review'" class="action-btn" @click="$router.push('fundviewprop')">
             Review Proposal
           </button>
 
-          <button
-            v-if="notification.type === 'endorse'"
-            class="action-btn"
-            @click="$router.push('rii-endorse')"
-          >
+          <button v-if="notification.type === 'endorse'" class="action-btn" @click="$router.push('rii-endorse')">
             Review & Endorse
           </button>
 
-          <button
-            v-if="notification.type === 'release'"
-            class="action-btn"
-            @click="$router.push('fundrelease')"
-          >
+          <button v-if="notification.type === 'release'" class="action-btn" @click="$router.push('fundrelease')">
             Release Funds
           </button>
         </div>
@@ -146,8 +125,6 @@ export default {
     dismiss(notification) {
       this.notifications = this.notifications.filter((n) => n.id !== notification.id)
     },
-
-    // BUTTON HANDLERS (ADDED)
     reviewProposal(notification) {
       notification.read = true
       console.log('Review Proposal:', notification.proposal)
@@ -169,8 +146,8 @@ export default {
 <style scoped>
 .page {
   width: 500%;
-  max-width: 135%; /* prevents it from becoming too wide on big screens */
-  padding: 24px 40px; /* reduce side whitespace */
+  max-width: 135%;
+  padding: 24px 40px;
   font-family: Arial, sans-serif;
 }
 

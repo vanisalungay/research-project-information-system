@@ -178,7 +178,7 @@ const applyTemplate = (text) => {
   }
 }
 
-// ✅ VALIDATION
+
 const isFormValid = computed(() => {
   return (
     revisionComment.value.trim() !== '' &&
@@ -187,8 +187,6 @@ const isFormValid = computed(() => {
   )
 })
 
-// ❌ Your original version was broken
-// ✅ FIXED goReturnRevision()
 const goReturnRevision = () => {
   if (!isFormValid.value) {
     showError.value = true
@@ -318,7 +316,6 @@ input[type='date'] {
   font-size: 13px;
 }
 
-/* REVISION COMMENTS */
 .label {
   font-size: 13px;
   color: #555;

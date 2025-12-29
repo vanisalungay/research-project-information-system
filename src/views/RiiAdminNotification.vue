@@ -8,23 +8,15 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
-      >
+      <button v-for="tab in tabs" :key="tab.key" :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key">
         {{ tab.label }} ({{ tab.count }})
       </button>
     </div>
 
     <!-- Notification List -->
-    <div
-      v-for="notification in filteredNotifications"
-      :key="notification.id"
-      class="notification"
-      :class="{ unread: !notification.read }"
-    >
+    <div v-for="notification in filteredNotifications" :key="notification.id" class="notification"
+      :class="{ unread: !notification.read }">
       <!-- Icon -->
       <div class="icon">{{ notification.icon }}</div>
 

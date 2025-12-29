@@ -63,7 +63,7 @@ import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCNotifications from '../views/OCNotifications.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
-import OcDetailedProposal from '../components/OcDetailedProposal.vue'
+import OcDetailedProposal from '../views/OcDetailedProposal.vue'
 
 const routes = [
   {

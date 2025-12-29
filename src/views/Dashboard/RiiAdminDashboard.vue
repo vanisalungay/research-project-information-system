@@ -98,7 +98,6 @@ const defaultUsers = ref([
 
 const users = ref(JSON.parse(localStorage.getItem('riiAdminUsers') || 'null') || defaultUsers)
 
-// save to local storage
 localStorage.setItem('riiAdminUsers', JSON.stringify(users.value))
 
 const filteredUsers = computed(() => {

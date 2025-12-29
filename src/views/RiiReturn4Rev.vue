@@ -161,7 +161,6 @@ export default {
 </script>
 
 <style scoped>
-/* HARD OVERRIDE to stop sidebar color bleed */
 .page,
 .page * {
   color: #1f2937;
