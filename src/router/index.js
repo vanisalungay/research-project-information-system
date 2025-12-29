@@ -8,6 +8,7 @@ import About from '../views/About.vue'
 import ProfileSettings from '../views/ProfileSettings.vue'
 import ProfileInformation from '../views/ProfileInformation.vue'
 import Notification from '../views/Notification.vue'
+import ForgotPassword from '../views/ForgotPassword.vue'
 
 import CreateAccount from '../views/CreateAccount.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
@@ -51,6 +52,7 @@ import RecMeetingDetails from '../views/RecMeetingDetails.vue'
 import RecRejectProposal from '../views/RecRejectProposal.vue'
 import RecReturn4Revision from '../views/RecReturn4Revision.vue'
 import RecNotification from '../views/RecNotification.vue'
+import RecDetailedProp from '../views/RecDetailedProp.vue'
 
 import ProponentNotifications from '@/views/ProponentNotifications.vue'
 import ProponentRevision from '@/views/ProponentRevision.vue'
@@ -74,6 +76,7 @@ const routes = [
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
+      
 
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
@@ -114,6 +117,7 @@ const routes = [
       { path: 'reject-proposal', component: RecRejectProposal },
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
+        { path: 'rec-prop', component: RecDetailedProp },
 
       { path: 'proponent-notification', component: ProponentNotifications },
       { path: 'revisions', component: ProponentRevision },
@@ -143,6 +147,7 @@ const routes = [
       { path: 'login', component: Login },
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
+       { path: 'register', component: ForgotPassword},
     ],
   },
 ]

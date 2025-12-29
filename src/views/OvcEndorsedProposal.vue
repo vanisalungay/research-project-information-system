@@ -53,7 +53,7 @@ const proposals = ref([
   {
     title: 'Educational Infrastructure Project',
     proponent: 'Dr. Cat Moon',
-    category: 'Tanggaw Program',
+    category: 'Tanglaw Program',
     date: '2024-12-09',
     budget: '₱180,000',
     score: 85,
@@ -61,7 +61,7 @@ const proposals = ref([
   {
     title: 'Technology Innovation Initiative',
     proponent: 'Dr. Blair Gwen',
-    category: 'Tanggaw Program',
+    category: 'Tanglaw Program',
     date: '2024-12-03',
     budget: '₱95,000',
     score: 92,

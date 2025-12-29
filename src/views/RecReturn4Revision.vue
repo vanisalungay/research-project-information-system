@@ -193,7 +193,6 @@ const applyTemplate = (text: string) => {
   }
 }
 
-// ✅ VALIDATION
 const isFormValid = computed(() => {
   return (
     revisionComment.value.trim() !== '' &&

@@ -26,6 +26,10 @@ import EndorseIcon from '../assets/images/endorse icon.png'
 import EndorseActiveIcon from '../assets/images/endorse_active.png'
 import SettingsIcon from '@/assets/images/Settings.png'
 import SettingsActiveIcon from '@/assets/images/Settings_active.png'
+import revisionIcon from '@/assets/images/revision.png'
+import revisionActiveIcon from '@/assets/images/revision_active.png'
+import proposalIcon from '@/assets/images/proposal.png'
+import proposalActiveIcon from '@/assets/images/proposal_active.png'
 
 const route = useRoute()
 const userStore = useUserDataStore()
@@ -40,8 +44,8 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: dashboardIcon,
+    activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
     path: '/proponent-dashboard',
     roles: [UserRole.PROPONENT],
@@ -197,24 +201,24 @@ const allNavItems = [
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: revisionIcon,
+    activeIcon: revisionActiveIcon,
     text: 'Revisions',
     path: '/revisions',
     roles: [UserRole.PROPONENT],
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: proposalIcon,
+    activeIcon: proposalActiveIcon,
     text: 'Proposals',
     path: '/proposals',
     roles: [UserRole.PROPONENT],
   },
 
   {
-    icon: notificationIcon,
-    activeIcon: notificationActiveIcon,
+    icon: EndorseIcon,
+    activeIcon: EndorseActiveIcon,
     text: 'Evaluation Criteria',
     path: '/evalCriteria',
     roles: [UserRole.PROPONENT],
