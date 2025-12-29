@@ -87,8 +87,6 @@ export default {
           sentToOVCRIGE: '2024-12-03',
           ovcrigeStatus: 'Pending OVCRIGE Review',
         },
-
-      
       ],
     }
   },

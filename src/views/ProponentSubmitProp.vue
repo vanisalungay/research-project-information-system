@@ -661,8 +661,8 @@ textarea {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px; 
-  color: #000; 
+  gap: 8px;
+  color: #000;
   font-size: 14px;
 }
 
@@ -676,7 +676,7 @@ textarea {
 }
 
 .sub-input {
-  margin-left: 24px; 
+  margin-left: 24px;
   margin-top: 4px;
   font-size: 14px;
 }
@@ -691,8 +691,8 @@ textarea {
 .radio-label {
   display: flex;
   align-items: center;
-  gap: 6px; 
-  color: #000; 
+  gap: 6px;
+  color: #000;
   font-size: 14px;
 }
 

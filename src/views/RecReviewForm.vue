@@ -47,11 +47,26 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td>5</td><td>Excellent</td></tr>
-        <tr><td>4</td><td>Very Good</td></tr>
-        <tr><td>3</td><td>Good</td></tr>
-        <tr><td>2</td><td>Fair</td></tr>
-        <tr><td>1</td><td>Poor</td></tr>
+        <tr>
+          <td>5</td>
+          <td>Excellent</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Very Good</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Good</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Fair</td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>Poor</td>
+        </tr>
       </tbody>
     </table>
 
@@ -67,192 +82,223 @@
       </thead>
       <tbody>
         <tr>
-          <td>Relevance or Significance </td>
-          <td>Aligned with the priorities of the OVCRIGE, the approach ensures strategic relevance to the university's objectives while being mindful of the political, cultural, and traditional context, as well as gender and development considerations.....</td>
+          <td>Relevance or Significance</td>
+          <td>
+            Aligned with the priorities of the OVCRIGE, the approach ensures strategic relevance to
+            the university's objectives while being mindful of the political, cultural, and
+            traditional context, as well as gender and development considerations.....
+          </td>
         </tr>
         <tr>
-          <td>Technical / Scientific Merit </td>
-          <td>Sound scientific basis to generate new knowledge or apply existing knowledge in an innovative manner </td>
+          <td>Technical / Scientific Merit</td>
+          <td>
+            Sound scientific basis to generate new knowledge or apply existing knowledge in an
+            innovative manner
+          </td>
         </tr>
         <tr>
-          <td>Budget Appropriateness </td>
+          <td>Budget Appropriateness</td>
           <td>The proposed budget is commensurate to the proposed work plan and deliverables. …</td>
         </tr>
-         <tr>
-          <td>Competence of Proponent </td>
-          <td>Proponent’s expertise is relevant to the proposal and with proven 
-            competence to implement, manage and complete R&D 
-            programs/projects within the approved duration and budget.  …</td>
+        <tr>
+          <td>Competence of Proponent</td>
+          <td>
+            Proponent’s expertise is relevant to the proposal and with proven competence to
+            implement, manage and complete R&D programs/projects within the approved duration and
+            budget. …
+          </td>
         </tr>
       </tbody>
     </table>
 
-   <!-- PART II -->
-<h3 class="section-title">II. Evaluation Criteria</h3>
+    <!-- PART II -->
+    <h3 class="section-title">II. Evaluation Criteria</h3>
 
-<table class="evaluation-table">
-  <thead>
-    <tr>
-      <th>Criteria</th>
-      <th>Indicators</th>
-      <th>Raw Score (1–5)</th>
-    </tr>
-  </thead>
+    <table class="evaluation-table">
+      <thead>
+        <tr>
+          <th>Criteria</th>
+          <th>Indicators</th>
+          <th>Raw Score (1–5)</th>
+        </tr>
+      </thead>
 
-  <tbody>
-    <!-- A. Soundness of Proposal -->
-    <tr class="criteria-row">
-      <td colspan="3"><strong>A. Soundness of Proposal (20%)</strong></td>
-    </tr>
+      <tbody>
+        <!-- A. Soundness of Proposal -->
+        <tr class="criteria-row">
+          <td colspan="3"><strong>A. Soundness of Proposal (20%)</strong></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>R&D addresses relevant sectoral need (applicable to pressing concern)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>R&D addresses relevant sectoral need (applicable to pressing concern)</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Solution provided is most effective compared to other proposed solutions</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>Solution provided is most effective compared to other proposed solutions</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Proposed budget is reasonable (not expensive vis-a-vis output)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>Proposed budget is reasonable (not expensive vis-a-vis output)</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Work plan is doable within the given timeframe</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>Work plan is doable within the given timeframe</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <!-- B. Suitability of Output -->
-    <tr class="criteria-row">
-      <td colspan="3"><strong>B. Suitability of Output (30%)</strong></td>
-    </tr>
+        <!-- B. Suitability of Output -->
+        <tr class="criteria-row">
+          <td colspan="3"><strong>B. Suitability of Output (30%)</strong></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>R&D output is cost-effective (cost is competitive in relation to new or existing products or processes)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            R&D output is cost-effective (cost is competitive in relation to new or existing
+            products or processes)
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Has identified partners to adopt the technology (with letter of support from the head of the company)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Has identified partners to adopt the technology (with letter of support from the head of
+            the company)
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Output can be commercialized (through an existing manufacturer, spin-off, or start-up company)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Output can be commercialized (through an existing manufacturer, spin-off, or start-up
+            company)
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-     <tr>
-      <td></td>
-      <td>R&D utilization is timely (output should not be overtaken by other solutions)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>R&D utilization is timely (output should not be overtaken by other solutions)</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <!-- C. Significance of Outcome -->
-    <tr class="criteria-row">
-      <td colspan="3"><strong>C. Significance of Outcome (30%)</strong></td>
-    </tr>
+        <!-- C. Significance of Outcome -->
+        <tr class="criteria-row">
+          <td colspan="3"><strong>C. Significance of Outcome (30%)</strong></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Economic impact: increase in productivity , increase in income, new jobs generated, high return of investment (ROI)</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Economic impact: increase in productivity , increase in income, new jobs generated, high
+            return of investment (ROI)
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Social: working partnerships established, training opportunities provided, policies adopted, increased access to basic services (i.e., food, health, education); 
-        political, cultural, gender sensitivity and inclusivity</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Social: working partnerships established, training opportunities provided, policies
+            adopted, increased access to basic services (i.e., food, health, education); political,
+            cultural, gender sensitivity and inclusivity
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Environment: enhanced environmental health standards, no adverse effect to the environment </td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Environment: enhanced environmental health standards, no adverse effect to the
+            environment
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Sustainability: sustainability mechanisms established in terms of institutional, financial and human resources capability (submission of a new proposal to sustain a completed or ongoing proposal does not constitute 
-        sustainability of the project)  </td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>
+            Sustainability: sustainability mechanisms established in terms of institutional,
+            financial and human resources capability (submission of a new proposal to sustain a
+            completed or ongoing proposal does not constitute sustainability of the project)
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <!-- D. Competence of Proponent -->
-    <tr class="criteria-row">
-      <td colspan="3"><strong>D. Competence of Proponent (20%)</strong></td>
-    </tr>
+        <!-- D. Competence of Proponent -->
+        <tr class="criteria-row">
+          <td colspan="3"><strong>D. Competence of Proponent (20%)</strong></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Proponent's expertise aligned with the proposal</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>Proponent's expertise aligned with the proposal</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-    <tr>
-      <td></td>
-      <td>Collaboration with relevant agencies and/or industry partners </td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
+        <tr>
+          <td></td>
+          <td>Collaboration with relevant agencies and/or industry partners</td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
 
-      <tr>
-      <td></td>
-      <td>Thorough understanding of the proposal's deliverables 5 MSUN OVCRIGE has good experience with the proponent</td>
-      <td><input type="number" min="1" max="5" class="rate-input" /></td>
-    </tr>
-  </tbody>
-</table>
+        <tr>
+          <td></td>
+          <td>
+            Thorough understanding of the proposal's deliverables 5 MSUN OVCRIGE has good experience
+            with the proponent
+          </td>
+          <td><input type="number" min="1" max="5" class="rate-input" /></td>
+        </tr>
+      </tbody>
+    </table>
 
+    <!-- COMMENTS -->
+    <label class="comment-label">Overall Comments</label>
+    <textarea class="comment-box" rows="5"></textarea>
 
-   <!-- COMMENTS -->
-<label class="comment-label">Overall Comments</label>
-<textarea class="comment-box" rows="5"></textarea>
+    <!-- DECISION SUBMISSION -->
+    <h3 class="decision-title">Decision Submission</h3>
 
-<!-- DECISION SUBMISSION -->
-<h3 class="decision-title">Decision Submission</h3>
-
-<div class="decision-buttons">
-<button class="btn-approve" @click="openApproveModal">Approve Proposal</button>
-  <button class="btn-revision"@click="goToReturn">Return for Revision</button>
-  <button class="btn-reject"@click="goToReject">Reject Proposal</button>
-</div>
-
-<!-- APPROVAL CONFIRMATION MODAL -->
-<div v-if="showApproveModal" class="modal-overlay">
-  <div class="modal-box">
-    <h3>Approve Proposal</h3>
-    <p>Are you sure you want to approve this?</p>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" @click="closeApproveModal">Cancel</button>
-      <button class="btn-confirm" @click="confirmApproval">Confirm</button>
+    <div class="decision-buttons">
+      <button class="btn-approve" @click="openApproveModal">Approve Proposal</button>
+      <button class="btn-revision" @click="goToReturn">Return for Revision</button>
+      <button class="btn-reject" @click="goToReject">Reject Proposal</button>
     </div>
-  </div>
-</div>
 
-<!-- SUCCESS MESSAGE -->
-<div v-if="showSuccessMessage" class="modal-overlay">
-  <div class="modal-box">
-    <h3>Success</h3>
-    <p>The proposal has been approved successfully.</p>
+    <!-- APPROVAL CONFIRMATION MODAL -->
+    <div v-if="showApproveModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Approve Proposal</h3>
+        <p>Are you sure you want to approve this?</p>
 
-    <div class="modal-actions">
-      <button class="btn-confirm" @click="closeSuccessMessage">Okay</button>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeApproveModal">Cancel</button>
+          <button class="btn-confirm" @click="confirmApproval">Confirm</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
+    <!-- SUCCESS MESSAGE -->
+    <div v-if="showSuccessMessage" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Success</h3>
+        <p>The proposal has been approved successfully.</p>
+
+        <div class="modal-actions">
+          <button class="btn-confirm" @click="closeSuccessMessage">Okay</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -296,14 +342,13 @@ const goToReturn = () => {
 
 // proposal data
 const proposal = {
-  title: "Community Outreach Program 2024",
-  program: "Kalikasan Program",
-  proponent: "Dr. Allen Snippy",
-  date: "2024-12-10",
-  type: "Mixed Funding Proposal"
+  title: 'Community Outreach Program 2024',
+  program: 'Kalikasan Program',
+  proponent: 'Dr. Allen Snippy',
+  date: '2024-12-10',
+  type: 'Mixed Funding Proposal',
 }
 </script>
-
 
 <style>
 .review-wrapper {
@@ -392,7 +437,6 @@ const proposal = {
   font-weight: 600;
 }
 
-
 /* Rating input */
 .rate-input {
   width: 60px;
@@ -472,7 +516,7 @@ const proposal = {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -509,6 +553,4 @@ const proposal = {
   border: none;
   cursor: pointer;
 }
-
-
 </style>

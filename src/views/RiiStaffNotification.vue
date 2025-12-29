@@ -95,7 +95,6 @@ export default {
     return {
       activeTab: 'all',
       notifications: [
-       
         {
           id: 2,
           type: 'endorse',
@@ -107,7 +106,6 @@ export default {
           icon: '🟡',
           read: false,
         },
-       
       ],
     }
   },

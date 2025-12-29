@@ -13,32 +13,27 @@
         <tr>
           <td>Relevance or Significance</td>
           <td>
-            Aligned with the priorities of the OVCROG
-            the approach ensures strategic relevance to the university objectives
-            while being mindful of the political cultural and traditional context
-            as well as gender and development considerations
+            Aligned with the priorities of the OVCROG the approach ensures strategic relevance to
+            the university objectives while being mindful of the political cultural and traditional
+            context as well as gender and development considerations
           </td>
         </tr>
         <tr>
           <td>Technical or Scientific Merit</td>
           <td>
-            Sound scientific basis to generate new knowledge
-            or apply existing knowledge in innovative manner
+            Sound scientific basis to generate new knowledge or apply existing knowledge in
+            innovative manner
           </td>
         </tr>
         <tr>
           <td>Budget Appropriateness</td>
-          <td>
-            The proposed budget is commensurate to the proposed work plan
-            and deliverables
-          </td>
+          <td>The proposed budget is commensurate to the proposed work plan and deliverables</td>
         </tr>
         <tr>
           <td>Competence of Proponent</td>
           <td>
-            Proponents expertise is relevant to the proposal
-            and with proven competence in implementing managed and completed
-            RnD projects within the approved duration and budget
+            Proponents expertise is relevant to the proposal and with proven competence in
+            implementing managed and completed RnD projects within the approved duration and budget
           </td>
         </tr>
       </tbody>
@@ -130,7 +125,7 @@
 
 <script>
 export default {
-  name: "EvaluationCriteriaContent"
+  name: 'EvaluationCriteriaContent',
 }
 </script>
 

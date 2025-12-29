@@ -2,27 +2,22 @@
   <div class="proposals-content">
     <div class="top-bar">
       <h2>Proposals</h2>
-      <button class="btn-new" @click="showModal = true">+ New Proposal</button>    
+      <button class="btn-new" @click="showModal = true">+ New Proposal</button>
     </div>
 
     <!-- Modal -->
-    <ProponentSubmitProp
-        v-model="showModal"
-        @save="handleSave"
-        @next="goToStep2"  
-    />
+    <ProponentSubmitProp v-model="showModal" @save="handleSave" @next="goToStep2" />
 
     <ProponentSubmitProp2
-        v-if="showModal2"
-        :open="showModal2"
-        @close="showModal2 = false"
-        @openCriteria="openCriteriaModal"
+      v-if="showModal2"
+      :open="showModal2"
+      @close="showModal2 = false"
+      @openCriteria="openCriteriaModal"
     />
 
-
     <ProponentSubmitProp3
-        v-model="showCriteria"
-        @update:modelValue="val => showCriteria = val"
+      v-model="showCriteria"
+      @update:modelValue="(val) => (showCriteria = val)"
     />
 
     <p class="subtitle">Manage and track all your proposal submissions</p>
@@ -36,16 +31,16 @@
     </div>
 
     <table class="proposals-table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th>Reviewer</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Reviewer</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
 
       <tbody>
         <tr>
@@ -126,61 +121,58 @@
 
 <script>
 export default {
-  name: "ProposalsContent"
+  name: 'ProposalsContent',
 }
 </script>
 
 <script setup>
-import { ref } from "vue";
-import ProponentSubmitProp from "./ProponentSubmitProp.vue";
-import ProponentSubmitProp2 from "./ProponentSubmitProp2.vue";
-import ProponentSubmitProp3 from './ProponentSubmitProp3.vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import ProponentSubmitProp from './ProponentSubmitProp.vue'
+import ProponentSubmitProp2 from './ProponentSubmitProp2.vue'
+import ProponentSubmitProp3 from './ProponentSubmitProp3.vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
+const router = useRouter()
 
 const viewProposal = (index) => {
   // Navigate to the detailed proposal view
-  router.push({ 
-    name: 'ProponentDetiailedProp', 
-    query: { id: index } // pass the proposal index or ID
-  });
-};
+  router.push({
+    name: 'ProponentDetiailedProp',
+    query: { id: index }, // pass the proposal index or ID
+  })
+}
 
-
-
-const showModal = ref(false);
-const showModal2 = ref(false);
-const currentModal = ref(null); 
-const showCriteria = ref(false);
+const showModal = ref(false)
+const showModal2 = ref(false)
+const currentModal = ref(null)
+const showCriteria = ref(false)
 
 const handleSave = (formData) => {
-  console.log("Saved Proposal:", formData);
-  showModal.value = false;
-};
+  console.log('Saved Proposal:', formData)
+  showModal.value = false
+}
 
 const goToStep2 = (formData) => {
-  showModal.value = false;
-  showModal2.value = true;
-};
+  showModal.value = false
+  showModal2.value = true
+}
 
 const openCriteriaModal = () => {
-  showModal2.value = false; // close Step 2 modal
-  showCriteria.value = true; // open Step 3 modal
-};
+  showModal2.value = false // close Step 2 modal
+  showCriteria.value = true // open Step 3 modal
+}
 
 const openPreviousModal = () => {
-  showCriteria.value = false; // close Step 3 modal
-  showModal2.value = true;    // go back to Step 2
-};
+  showCriteria.value = false // close Step 3 modal
+  showModal2.value = true // go back to Step 2
+}
 
 const closeModal = () => {
-  showModal.value = false;
-  showModal2.value = false;
-  currentModal.value = null;
-};
+  showModal.value = false
+  showModal2.value = false
+  currentModal.value = null
+}
 </script>
-
 
 <style scoped>
 .proposals-content {

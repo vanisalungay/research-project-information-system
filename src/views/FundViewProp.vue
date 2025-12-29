@@ -368,7 +368,7 @@ export default {
       link.href = `/files/${fileName}`
       link.download = fileName
       link.href = '/files/proposal-form.pdf'
-    link.download = 'proposal-form.pdf'
+      link.download = 'proposal-form.pdf'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -382,7 +382,6 @@ export default {
       })
     },
 
-    
     downloadForm() {
       this.downloadFile('proposal-form.pdf')
     },
@@ -570,8 +569,7 @@ label {
   background: white;
   padding: 8px 12px;
   border-radius: 8px;
-  color: #2c274c; 
-
+  color: #2c274c;
 }
 
 /* MODAL */

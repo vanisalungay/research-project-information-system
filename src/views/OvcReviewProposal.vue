@@ -9,7 +9,7 @@
 
       <div class="actions">
         <button class="btn primary">See Detailed Proposal</button>
-         <button class="btn outline" @click="downloadAll">Download All Documents</button>
+        <button class="btn outline" @click="downloadAll">Download All Documents</button>
       </div>
     </div>
 
@@ -60,7 +60,6 @@
         <section class="card actions-card">
           <h3>OVCRIGE Actions</h3>
 
-
           <button class="btn primary" @click="goToAssignReviewer">Assign / Change Reviewer</button>
 
           <button class="btn warning" @click="goToReturnForRevision">Return for Revision</button>
@@ -77,37 +76,35 @@
           <button class="btn outline" @click="goToAssignReviewer">Change Reviewer</button>
         </section>
 
-       <section class="card">
-  <h3>Attachments</h3>
+        <section class="card">
+          <h3>Attachments</h3>
 
-  <ul class="files">
-    <li v-for="file in proposal.attachments" :key="file.name">
-      📄 {{ file.name }}
-      <button class="download" @click="downloadFile(file)">⬇️</button>
-    </li>
-  </ul>
-</section>
-
+          <ul class="files">
+            <li v-for="file in proposal.attachments" :key="file.name">
+              📄 {{ file.name }}
+              <button class="download" @click="downloadFile(file)">⬇️</button>
+            </li>
+          </ul>
+        </section>
       </div>
     </div>
     <div v-if="showApproveConfirm" class="modal-overlay">
-  <div class="modal-box">
-    <p>Are you sure you want to approve this?</p>
+      <div class="modal-box">
+        <p>Are you sure you want to approve this?</p>
 
-    <div class="modal-actions">
-      <button class="btn warning" @click="showApproveConfirm = false">Cancel</button>
-      <button class="btn primary" @click="confirmApprove">Confirm</button>
+        <div class="modal-actions">
+          <button class="btn warning" @click="showApproveConfirm = false">Cancel</button>
+          <button class="btn primary" @click="confirmApprove">Confirm</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<div v-if="showSuccess" class="modal-overlay">
-  <div class="modal-box">
-    <p>Proposal approved successfully!</p>
-    <button class="btn primary" @click="showSuccess = false">OK</button>
-  </div>
-</div>
-
+    <div v-if="showSuccess" class="modal-overlay">
+      <div class="modal-box">
+        <p>Proposal approved successfully!</p>
+        <button class="btn primary" @click="showSuccess = false">OK</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -168,13 +165,11 @@ onMounted(() => {
     },
 
     attachments: [
-  {
-    name: 'Project_Proposal.pdf',
-    url: '/files/Project_Proposal.pdf'
-  },
-  
-],
-
+      {
+        name: 'Project_Proposal.pdf',
+        url: '/files/Project_Proposal.pdf',
+      },
+    ],
   }
 })
 
@@ -333,13 +328,13 @@ const confirmApprove = () => {
   color: white;
 }
 
-  .modal-overlay {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,5 +354,4 @@ const confirmApprove = () => {
   justify-content: space-between;
   margin-top: 15px;
 }
-
 </style>

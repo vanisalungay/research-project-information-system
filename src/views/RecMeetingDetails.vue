@@ -10,7 +10,7 @@
 
       <div class="header-actions">
         <button class="btn yellow">See Detailed Proposal</button>
-      <button class="btn outline" @click="downloadAll">Download All Documents</button>
+        <button class="btn outline" @click="downloadAll">Download All Documents</button>
       </div>
     </div>
 
@@ -101,14 +101,12 @@
         <!-- Attachments -->
         <div class="card">
           <h3>Attachments</h3>
-      <ul class="attachments">
-  <li v-for="file in attachments" :key="file.name">
-    <span>📄 {{ file.name }}</span>
-    <button class="download" @click="downloadFile(file)">⬇️</button>
-  </li>
-</ul>
-
-
+          <ul class="attachments">
+            <li v-for="file in attachments" :key="file.name">
+              <span>📄 {{ file.name }}</span>
+              <button class="download" @click="downloadFile(file)">⬇️</button>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -118,9 +116,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const attachments = ref([
-  { name: 'project-proposal.pdf', url: '/files/project-proposal.pdf' },
-])
+const attachments = ref([{ name: 'project-proposal.pdf', url: '/files/project-proposal.pdf' }])
 
 // Download a single file
 const downloadFile = (file) => {
@@ -134,11 +130,9 @@ const downloadFile = (file) => {
 
 // Download all files
 const downloadAll = () => {
-  attachments.value.forEach(file => downloadFile(file))
+  attachments.value.forEach((file) => downloadFile(file))
 }
 </script>
-
-
 
 <style>
 .meeting-container {

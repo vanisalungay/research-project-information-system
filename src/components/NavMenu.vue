@@ -40,38 +40,36 @@ const allNavItems = [
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Dashboard',
-  path: '/proponent-dashboard',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Dashboard',
+    path: '/proponent-dashboard',
+    roles: [UserRole.PROPONENT],
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Notifications',
-  path: '/proponent-notification',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Notifications',
+    path: '/proponent-notification',
+    roles: [UserRole.PROPONENT],
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Dashboard',
-  path: '/oc-dashboard',
-  roles: [UserRole.OC],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Dashboard',
+    path: '/oc-dashboard',
+    roles: [UserRole.OC],
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Notifications',
-  path: '/oc-notification',
-  roles: [UserRole.OC],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Notifications',
+    path: '/oc-notification',
+    roles: [UserRole.OC],
   },
-
-
 
   {
     icon: submittedIcon,
@@ -80,7 +78,7 @@ const allNavItems = [
     path: '/submit-proposals',
     roles: [UserRole.OVCRIGE],
   },
-{
+  {
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
@@ -198,42 +196,37 @@ const allNavItems = [
     ],
   },
 
-
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Revisions',
-  path: '/revisions',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Revisions',
+    path: '/revisions',
+    roles: [UserRole.PROPONENT],
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Proposals',
-  path: '/proposals',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Proposals',
+    path: '/proposals',
+    roles: [UserRole.PROPONENT],
   },
 
   {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Evaluation Criteria',
-  path: '/evalCriteria',
-  roles: [UserRole.PROPONENT],
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Evaluation Criteria',
+    path: '/evalCriteria',
+    roles: [UserRole.PROPONENT],
   },
 ]
 
 const navItems = computed(() => {
   if (!userStore.user) return []
-  return allNavItems.filter(item =>
-    item.roles.includes(userStore.user.role)
-  )
+  return allNavItems.filter((item) => item.roles.includes(userStore.user.role))
 })
 
-
 const isSelected = (path) => route.path === path
-
 </script>
 
 <style scoped>
@@ -267,7 +260,6 @@ li a {
   /* font-size: 20px; */
   color: #ffd803;
 }
-
 
 li.active {
   background-color: white;

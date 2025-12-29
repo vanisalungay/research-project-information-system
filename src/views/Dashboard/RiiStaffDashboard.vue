@@ -65,23 +65,20 @@ krisha, [29/12/2025 2:12 pm]
           </div>
 
           <div class="table-row">
-  <span>Community Development Program 2024</span>
-  <span>Dr. Alien Shippy</span>
-  <span>₱150,000</span>
-  <span class="status pending">Pending</span>
-  <button class="review" @click="$router.push('rii-endorse')">Review</button>
-</div>
+            <span>Community Development Program 2024</span>
+            <span>Dr. Alien Shippy</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rii-endorse')">Review</button>
+          </div>
 
-<div class="table-row">
-  <span>Healthcare Facility Upgrade</span>
-  <span>Dr. Meow Chan</span>
-  <span>₱150,000</span>
-  <span class="status pending">Pending</span>
-  <button class="review" @click="$router.push('rii-endorse')">Review</button>
-</div>
-
-
-
+          <div class="table-row">
+            <span>Healthcare Facility Upgrade</span>
+            <span>Dr. Meow Chan</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rii-endorse')">Review</button>
+          </div>
         </div>
       </div>
 
@@ -95,7 +92,6 @@ krisha, [29/12/2025 2:12 pm]
               <strong>New proposal submitted:</strong> “Community Development Program 2024”
               <span>2 hours ago</span>
             </li>
-           
           </ul>
           <button class="view-activity" @click="$router.push('riistaff-notification')">
             View All Activity

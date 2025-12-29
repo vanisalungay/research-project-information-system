@@ -52,12 +52,7 @@
             </span>
           </td>
           <td>
-           <button
-              class="review-btn"
-              @click="$router.push('fundviewprop')"
-            >
-              Review
-            </button>
+            <button class="review-btn" @click="$router.push('fundviewprop')">Review</button>
           </td>
         </tr>
 
@@ -96,7 +91,7 @@ export default {
           budget: 150000,
           status: 'Endorsed',
         },
-      
+
         {
           id: 3,
           title: 'Healthcare Facility Upgrade',
@@ -126,8 +121,7 @@ export default {
           p.title.toLowerCase().includes(this.search.toLowerCase()) ||
           p.program.toLowerCase().includes(this.search.toLowerCase())
 
-        const matchesStatus =
-          this.selectedStatus === '' || p.status === this.selectedStatus
+        const matchesStatus = this.selectedStatus === '' || p.status === this.selectedStatus
 
         return matchesSearch && matchesStatus
       })

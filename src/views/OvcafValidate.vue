@@ -135,7 +135,6 @@
       <button class="download-btn" @click="downloadProject">DOWNLOAD PROJECT</button>
     </div>
 
-
     <!-- APPROVE CONFIRMATION MODAL -->
     <div class="overlay" v-if="showApproveConfirm">
       <div class="confirm-box">

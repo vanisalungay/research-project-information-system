@@ -30,7 +30,6 @@ import RiiFundedPro from '@/views/RiiFundedPro.vue'
 import RiiEndorsedPro from '@/views/RiiEndorsedPro.vue'
 import RiiAdminNotification from '@/views/RiiAdminNotification.vue'
 
-
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/OvcafValidate.vue'
 import OvcafNotification from '../views/OvcafNotification.vue'
@@ -44,8 +43,6 @@ import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
 
 import OvcNotifications from '../views/OvcNotifications.vue'
 import OvcReturn4Revision from '../views/OvcReturn4Revision.vue'
-
-
 
 import RecDashboard from '../views/Dashboard/RecDashboard.vue'
 import RecAssignedProposal from '../views/RecAssignedProposal.vue'
@@ -77,7 +74,7 @@ const routes = [
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
-      
+
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riistaff-dash', component: RiiStaffDashboard },
@@ -126,15 +123,16 @@ const routes = [
       { path: 'submit-revision', component: ProponentSubmitRev },
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-prop-details', component: ProponentPropDetails },
-      { path: 'detailed-proposal', name: 'ProponentDetiailedProp', component: ProponentDetiailedProp },
+      {
+        path: 'detailed-proposal',
+        name: 'ProponentDetiailedProp',
+        component: ProponentDetiailedProp,
+      },
 
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
-
-
-
     ],
   },
   {

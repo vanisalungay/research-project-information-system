@@ -1,6 +1,5 @@
 <template>
   <div class="notifications-wrapper">
-
     <!-- Search -->
     <div class="search-box">
       <input
@@ -13,88 +12,81 @@
     <h3 class="section-title">Notifications</h3>
 
     <!-- Notification Item -->
-    <div
-      class="notification-card"
-      @click="toggleNotification(1)"
-      >
+    <div class="notification-card" @click="toggleNotification(1)">
       <div class="notification-header">
         <div class="icon success"></div>
-        
+
         <div class="notification-text">
           <strong>REC Committee</strong>
           <span class="status"> • requested revision</span>
           <p>
-            Please update the informed consent forms to include detailed risk
-            disclosures for community participants.
+            Please update the informed consent forms to include detailed risk disclosures for
+            community participants.
           </p>
           <small>P-2024-003 · 3 hours ago · 4 messages</small>
         </div>
 
         <div class="arrow">
-          {{ activeNotification === 1 ? "▲" : "▼" }}
+          {{ activeNotification === 1 ? '▲' : '▼' }}
         </div>
       </div>
     </div>
 
     <!-- TOGGLE CONTENT -->
     <transition name="fade">
-        <div
-        v-if="activeNotification === 1"
-        class="notification-thread"
-        >
-        
-        <p class="thread-title"> Thread: Community-Based Marine Resource Management </p>
-        
+      <div v-if="activeNotification === 1" class="notification-thread">
+        <p class="thread-title">Thread: Community-Based Marine Resource Management</p>
+
         <div class="thread-item">
-            <div class="thread-header"> REC Committee • requested revision </div>
-            <p class="thread-message"> Please update the informed consent forms to include detailed risk disclosures for community participants. </p>
-            <small class="thread-time">3 hours ago</small>
-        </div>
-        
-        <div class="thread-item">
-            <div class="thread-header"> OVCRIGE Office • forwarded to REC </div>
-            <p class="thread-message"> Proposal has been forwarded to the Research Ethics Committee for ethics review. </p>
-            <small class="thread-time">2 days ago</small>
-        </div>
-        
-        <div class="thread-item">
-            <div class="thread-header">
-                RII Staff • recommended approval
-            </div>
-            <p class="thread-message"> Good potential but requires methodology clarification. Recommended for OVCRIGE review. </p>
-            <small class="thread-time">1 week ago</small>
+          <div class="thread-header">REC Committee • requested revision</div>
+          <p class="thread-message">
+            Please update the informed consent forms to include detailed risk disclosures for
+            community participants.
+          </p>
+          <small class="thread-time">3 hours ago</small>
         </div>
 
         <div class="thread-item">
-        <div class="thread-header">
-            You • submitted proposal
+          <div class="thread-header">OVCRIGE Office • forwarded to REC</div>
+          <p class="thread-message">
+            Proposal has been forwarded to the Research Ethics Committee for ethics review.
+          </p>
+          <small class="thread-time">2 days ago</small>
         </div>
-        <p class="thread-message">
-            Successfully submitted proposal for review.
-        </p>
-        <small class="thread-time">2 weeks ago</small>
+
+        <div class="thread-item">
+          <div class="thread-header">RII Staff • recommended approval</div>
+          <p class="thread-message">
+            Good potential but requires methodology clarification. Recommended for OVCRIGE review.
+          </p>
+          <small class="thread-time">1 week ago</small>
         </div>
-    </div>
-</transition>
-</div>
+
+        <div class="thread-item">
+          <div class="thread-header">You • submitted proposal</div>
+          <p class="thread-message">Successfully submitted proposal for review.</p>
+          <small class="thread-time">2 weeks ago</small>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>
 export default {
-  name: "ProponentNotifications",
+  name: 'ProponentNotifications',
   data() {
     return {
       activeNotification: null,
-      search: "",
-    };
+      search: '',
+    }
   },
   methods: {
     toggleNotification(id) {
-      this.activeNotification =
-        this.activeNotification === id ? null : id;
+      this.activeNotification = this.activeNotification === id ? null : id
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -171,7 +163,6 @@ export default {
   margin-bottom: 14px;
   color: #0f172a;
 }
-
 
 .thread-item {
   background: #f8fafc;

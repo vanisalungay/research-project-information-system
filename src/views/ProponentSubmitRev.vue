@@ -1,6 +1,7 @@
 <template>
   <div class="edit-proposal-container">
-     <div class="back" @click="$router.go(-1)">← Back to Dashboard</div> <br>
+    <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
+    <br />
     <!-- Top info bar -->
     <div class="top-bar">
       <h3>
