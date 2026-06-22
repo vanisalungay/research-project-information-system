@@ -27,7 +27,7 @@
           </div>
         </div>
       </div>
-      <button class="view-btn">View Details</button>
+      <button class="view-btn" @click="goToDetailed">View Details</button>
     </div>
 
     <!-- STATUS FLOW -->
@@ -191,6 +191,9 @@ export default {
     }
   },
   methods: {
+    goToDetailed() {
+      this.$router.push('/oc-detailed')
+    },
     issueSpecialOrder() {
       this.showUploadModal = false
       this.showSuccessModal = true
@@ -256,7 +259,7 @@ export default {
 
 /* VIEW BUTTON */
 .view-btn {
-  background: #f1f3f8;
+  background: gray;
   border: none;
   border-radius: 10px;
   padding: 8px 14px;

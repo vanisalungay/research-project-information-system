@@ -396,14 +396,13 @@ const cancelNotif = () => window.history.back()
 
 .checkbox-grid label {
   display: flex;
-  align-items: center; /* vertically centers checkbox and text */
-  gap: 8px; /* spacing between checkbox and text */
+  align-items: center;
+  gap: 8px;
   font-weight: normal;
   color: white;
   cursor: pointer;
 }
 
-/* NOTIFICATIONS PAGE CHECKBOXES */
 .section label {
   display: flex;
   align-items: center;
@@ -413,7 +412,6 @@ const cancelNotif = () => window.history.back()
   cursor: pointer;
 }
 
-/* Standardize all checkboxes */
 input[type='checkbox'] {
   width: 16px;
   height: 16px;

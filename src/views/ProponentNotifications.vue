@@ -34,13 +34,9 @@
 
     <!-- TOGGLE CONTENT -->
     <transition name="fade">
-        <div
-        v-if="activeNotification === 1"
-        class="notification-thread"
-        >
-        
-        <p class="thread-title"> Thread: Community Development Program 2024 </p>
-        
+      <div v-if="activeNotification === 1" class="notification-thread">
+        <p class="thread-title">Thread: Community Development Program 2024</p>
+
         <div class="thread-item">
           <div class="thread-header">REC Committee • requested revision</div>
           <p class="thread-message">

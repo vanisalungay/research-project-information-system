@@ -262,7 +262,7 @@ textarea {
 .check input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  accent-color: #facc15; /* yellow highlight */
+  accent-color: #facc15;
   cursor: pointer;
 }
 
@@ -280,6 +280,7 @@ textarea {
   color: #1f2937;
   font-weight: bold;
 }
+
 .endorse:disabled {
   background: #fef3c7;
   cursor: not-allowed;
@@ -318,16 +319,20 @@ textarea {
   background: #16a34a;
   color: white;
 }
+
 .confirm.danger {
   background: #b91c1c;
 }
+
 .cancel {
   background: #e5e7eb;
 }
+
 .tag {
   color: #16a34a;
   font-weight: bold;
 }
+
 .hint {
   font-size: 12px;
   color: #6b7280;

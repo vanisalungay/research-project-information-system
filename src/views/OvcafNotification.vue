@@ -28,7 +28,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-// 🔔 mock proposal data — replace later with backend fetch
 const proposalQueue = ref([
   {
     id: 24,
@@ -40,7 +39,6 @@ const proposalQueue = ref([
 const notifications = ref([])
 const router = useRouter()
 
-// fetch notifications (currently mocked)
 onMounted(() => {
   // only show proposals that aren't approved yet
   notifications.value = proposalQueue.value

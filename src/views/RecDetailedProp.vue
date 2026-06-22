@@ -2,7 +2,7 @@
   <div class="proposal-view">
     <div class="back" @click="$router.go(-1)">← Back</div>
     <br />
-    <h1>Community Development Program 2024</h1>
+    <h1>Community Water and Filtration Enhancement Program 2024</h1>
     <p class="subtitle">Proposal ID #1</p>
 
     <!-- 1. Project Profile -->
@@ -230,7 +230,9 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+// This component is read-only, no props or reactive data needed.
+</script>
 
 <style scoped>
 .proposal-view {

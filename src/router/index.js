@@ -8,6 +8,7 @@ import About from '../views/About.vue'
 import ProfileSettings from '../views/ProfileSettings.vue'
 import ProfileInformation from '../views/ProfileInformation.vue'
 import Notification from '../views/Notification.vue'
+import ForgotPassword from '../views/ForgotPassword.vue'
 
 import CreateAccount from '../views/CreateAccount.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
@@ -16,8 +17,6 @@ import OvcReviewProposal from '../views/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
 import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
-
-
 
 import RiiAdminDashboard from '@/views/Dashboard/RiiAdminDashboard.vue'
 import RiiStaffNotification from '@/views/RiiStaffNotification.vue'
@@ -51,6 +50,7 @@ import RecMeetingDetails from '../views/RecMeetingDetails.vue'
 import RecRejectProposal from '../views/RecRejectProposal.vue'
 import RecReturn4Revision from '../views/RecReturn4Revision.vue'
 import RecNotification from '../views/RecNotification.vue'
+import RecDetailedProp from '../views/RecDetailedProp.vue'
 
 import ProponentNotifications from '@/views/ProponentNotifications.vue'
 import ProponentRevision from '@/views/ProponentRevision.vue'
@@ -63,6 +63,7 @@ import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCNotifications from '../views/OCNotifications.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
+import OcDetailedProposal from '../views/OcDetailedProposal.vue'
 
 const routes = [
   {
@@ -88,7 +89,7 @@ const routes = [
       { path: 'fundrelease', component: FundRelease },
       { path: 'riifunded', component: RiiFundedPro },
       { path: 'manage-notifications', component: Notification },
-      
+
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riiadmin-notif', component: RiiAdminNotification },
@@ -97,9 +98,6 @@ const routes = [
       { path: 'ovcaf-notification', component: OvcafNotification },
       { path: 'ovcaf-dash', component: OvcafDashboard },
 
-      
-
-      { path: 'create-account', component: CreateAccount },
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
@@ -114,6 +112,7 @@ const routes = [
       { path: 'reject-proposal', component: RecRejectProposal },
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
+      { path: 'rec-prop', component: RecDetailedProp },
 
       { path: 'proponent-notification', component: ProponentNotifications },
       { path: 'revisions', component: ProponentRevision },
@@ -133,6 +132,7 @@ const routes = [
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
+      { path: 'oc-detailed', component: OcDetailedProposal },
     ],
   },
   {
@@ -143,6 +143,7 @@ const routes = [
       { path: 'login', component: Login },
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
+      { path: 'register', component: ForgotPassword },
     ],
   },
 ]
@@ -156,12 +157,10 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserDataStore()
   userStore.hydrate()
 
-  
   if (to.matched.some((record) => record.meta.public)) {
     return next()
   }
 
-  
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!userStore.isLoggedIn) {
       return next({ path: 'login' })

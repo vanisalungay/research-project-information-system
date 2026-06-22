@@ -16,12 +16,10 @@
       </p>
     </div>
 
-    <!-- RIGHT PANEL -->
     <div class="right-panel">
       <h2 class="welcome">CREATE ACCOUNT</h2>
       <p class="subtitle">Register to access the Research Project Information System</p>
 
-      <!-- REGISTER AS -->
       <p class="register-as-label">Register as</p>
 
       <div class="role-container">

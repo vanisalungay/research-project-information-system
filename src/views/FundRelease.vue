@@ -249,7 +249,6 @@ const closeSuccess = () => {
   gap: 16px;
 }
 
-/* Highlighted yellow labels */
 .highlight-label {
   font-weight: bold;
   color: black;
@@ -266,7 +265,7 @@ const closeSuccess = () => {
   padding: 14px;
   border-radius: 10px;
   background: #f9fafb;
-  color: #000; /* budget numbers black */
+  color: #000;
 }
 
 input,

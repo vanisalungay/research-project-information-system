@@ -58,9 +58,8 @@
           <td><span class="status approved">Approved</span></td>
           <td>2024-12-08</td>
           <td>Mike Johnson</td>
-          <td><button class="btn-view">View</button></td>
+          <td><button class="btn-view" @click="viewProposal(index)">View</button></td>
         </tr>
-
       </tbody>
     </table>
   </div>

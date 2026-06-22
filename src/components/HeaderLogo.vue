@@ -11,7 +11,6 @@
       </div>
     </div>
 
-    
     <div class="user-info" @click="toggleDropdown">
       <img src="@/assets/images/avatar.png" alt="User Avatar" class="user-avatar" />
 
@@ -24,7 +23,6 @@
         </p>
       </div>
 
-      
       <div v-if="showDropdown" class="dropdown-menu">
         <button
           v-for="menuItem in menuItems"
@@ -159,7 +157,6 @@ menuItems.push('LOGOUT')
   text-align: left;
 }
 
-
 .user-info {
   display: flex;
   gap: 12px;
@@ -240,7 +237,7 @@ menuItems.push('LOGOUT')
 
 .login-dialog {
   position: fixed;
-  inset: 0; 
+  inset: 0;
   width: 100vw;
   height: 100vh;
 

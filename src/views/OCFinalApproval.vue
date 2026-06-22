@@ -25,7 +25,7 @@
           </div>
         </div>
       </div>
-      <button class="view-btn">View Details</button>
+      <button class="view-btn" @click="goToDetailed">View Details</button>
     </div>
 
     <div class="status-row">
@@ -144,7 +144,7 @@
         <h4>Approve This Proposal?</h4>
 
         <p>
-          This proposal will be approved for implementation. You can upload the Special Order
+          This is proposal will be approved for implementation. You can upload the Special Order
           separately.
         </p>
       </div>
@@ -160,6 +160,7 @@
 <script>
 export default {
   name: 'FinalApproval',
+
   data() {
     return {
       showConfirm: false,
@@ -173,10 +174,14 @@ export default {
       ],
     }
   },
+
   methods: {
+    goToDetailed() {
+      this.$router.push('/oc-detailed')
+    },
+
     confirmApproval() {
       this.showConfirm = false
-
       const proposalId = this.$route.params.id
 
       this.$router.push({
@@ -239,16 +244,14 @@ export default {
   margin-top: 4px;
 }
 
-/* VIEW BUTTON */
 .view-btn {
-  background: #f1f3f8;
+  background: gray;
   border: none;
   border-radius: 10px;
   padding: 8px 14px;
   cursor: pointer;
 }
 
-/* STATUS */
 .status-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -315,7 +318,6 @@ export default {
   width: 89%;
 }
 
-/* RECOMMENDATION */
 .recommendation {
   background: #ecfdf3;
   border-radius: 12px;
@@ -324,7 +326,6 @@ export default {
   color: #065f46;
 }
 
-/* SUMMARY */
 .summary-text {
   font-size: 14px;
   color: #374151;
@@ -369,7 +370,6 @@ textarea {
   cursor: pointer;
 }
 
-/* MODAL OVERLAY */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -380,7 +380,6 @@ textarea {
   z-index: 999;
 }
 
-/* MODAL */
 .modal {
   width: 460px;
   background: #ffffff;
@@ -389,7 +388,6 @@ textarea {
   padding: 20px;
 }
 
-/* HEADER */
 .modal-header {
   display: flex;
   justify-content: space-between;

@@ -141,16 +141,13 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// Modal states
 const showRejectModal = ref(false)
 const showRejectSuccess = ref(false)
 
-// Open reject confirmation modal
 const rejectProposal = () => {
   showRejectModal.value = true
 }
 
-// Close reject confirmation modal
 const cancelReject = () => {
   showRejectModal.value = false
 }
@@ -164,11 +161,8 @@ const confirmReject = () => {
 // Close success modal
 const closeSuccess = () => {
   showRejectSuccess.value = false
-  // Optionally, redirect if needed:
-  // router.push('/assigned-proposals')
 }
 
-// Back button
 const goToSubmission = () => {
   router.push('/assigned-proposals')
 }
@@ -180,7 +174,6 @@ const goToSubmission = () => {
   background: #f4f5fa;
 }
 
-/* Back Button */
 .back-btn {
   background: transparent;
   border: none;
@@ -190,7 +183,6 @@ const goToSubmission = () => {
   margin-bottom: 10px;
 }
 
-/* Header */
 .page-header {
   display: flex;
   align-items: center;
@@ -217,7 +209,6 @@ const goToSubmission = () => {
   color: #777;
 }
 
-/* Layout Grid */
 .layout-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -225,7 +216,6 @@ const goToSubmission = () => {
   margin-top: 20px;
 }
 
-/* Cards */
 .card {
   background: white;
   padding: 22px;
@@ -237,7 +227,6 @@ const goToSubmission = () => {
   margin-bottom: 18px;
 }
 
-/* Info Grid */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -254,7 +243,6 @@ const goToSubmission = () => {
   margin-top: 4px;
 }
 
-/* Form Inputs */
 .form-group {
   margin-bottom: 18px;
 }
@@ -279,7 +267,6 @@ textarea {
   color: #a62828;
 }
 
-/* Reviewer Summary */
 .summary-header {
   margin-bottom: 4px;
 }
@@ -290,7 +277,6 @@ textarea {
   margin-bottom: 12px;
 }
 
-/* RIGHT SIDE */
 .side-card {
   background: white;
   padding: 22px;
@@ -308,7 +294,6 @@ textarea {
   font-size: 14px;
 }
 
-/* Buttons */
 .reject-btn {
   background: #e53935;
   color: white;

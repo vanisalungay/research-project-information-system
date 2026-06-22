@@ -48,7 +48,6 @@
           <small>{{ notification.date }}</small>
         </div>
 
-        <!-- ACTION BUTTONS (ADDED) -->
         <div class="actions">
           <button
             v-if="notification.type === 'review'"
@@ -146,8 +145,6 @@ export default {
     dismiss(notification) {
       this.notifications = this.notifications.filter((n) => n.id !== notification.id)
     },
-
-    // BUTTON HANDLERS (ADDED)
     reviewProposal(notification) {
       notification.read = true
       console.log('Review Proposal:', notification.proposal)
@@ -169,8 +166,8 @@ export default {
 <style scoped>
 .page {
   width: 500%;
-  max-width: 135%; /* prevents it from becoming too wide on big screens */
-  padding: 24px 40px; /* reduce side whitespace */
+  max-width: 135%;
+  padding: 24px 40px;
   font-family: Arial, sans-serif;
 }
 

@@ -9,7 +9,7 @@
       </div>
 
       <div class="header-actions">
-        <button class="btn yellow">See Detailed Proposal</button>
+        <button class="btn yellow" @click="goToDetailed">See Detailed Proposal</button>
         <button class="btn outline" @click="downloadAll">Download All Documents</button>
       </div>
     </div>
@@ -115,10 +115,12 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const attachments = ref([{ name: 'project-proposal.pdf', url: '/files/project-proposal.pdf' }])
 
-// Download a single file
 const downloadFile = (file) => {
   const link = document.createElement('a')
   link.href = file.url
@@ -128,7 +130,10 @@ const downloadFile = (file) => {
   document.body.removeChild(link)
 }
 
-// Download all files
+const goToDetailed = () => {
+  router.push('/rec-prop')
+}
+
 const downloadAll = () => {
   attachments.value.forEach((file) => downloadFile(file))
 }

@@ -9,7 +9,7 @@
     <!-- TITLE + DOWNLOAD BUTTON -->
     <div class="top-row">
       <h2 class="review-title">Proposal Info</h2>
-      <button class="btn-download">View detailed Proposal</button>
+      <button class="btn-download" @click="goToDetailed">View detailed Proposal</button>
     </div>
 
     <!-- PROPOSAL INFO -->
@@ -332,6 +332,9 @@ const closeSuccessMessage = () => {
 }
 
 // navigation buttons
+const goToDetailed = () => {
+  router.push('/rec-prop')
+}
 const goToReject = () => {
   router.push('/reject-proposal')
 }
@@ -361,6 +364,7 @@ const proposal = {
   opacity: 0.7;
   margin-bottom: 10px;
 }
+
 .breadcrumb .active {
   font-weight: 600;
   color: #2f2a66;
@@ -372,10 +376,12 @@ const proposal = {
   justify-content: space-between;
   align-items: center;
 }
+
 .review-title {
   font-size: 24px;
   margin: 0;
 }
+
 .btn-download {
   background: #ffcc00;
   border: none;
@@ -396,10 +402,12 @@ const proposal = {
   border-radius: 10px;
   margin: 20px 0;
 }
+
 .info-grid label {
   font-weight: 600;
   font-size: 13px;
 }
+
 .info-grid p {
   margin: 0;
 }
@@ -432,6 +440,7 @@ const proposal = {
   padding: 10px;
   font-size: 14px;
 }
+
 .criteria-row td {
   background: #f2f2f2;
   font-weight: 600;
@@ -449,6 +458,7 @@ const proposal = {
 .comment-label {
   font-weight: 600;
 }
+
 .comment-box {
   width: 100%;
   border: 1px solid #aaa;
@@ -464,6 +474,7 @@ const proposal = {
   display: flex;
   gap: 10px;
 }
+
 /* Decision Submission */
 .decision-title {
   margin-top: 25px;
@@ -510,6 +521,7 @@ const proposal = {
   font-weight: 600;
   cursor: pointer;
 }
+
 .modal-overlay {
   position: fixed;
   top: 0;

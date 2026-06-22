@@ -8,7 +8,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn primary">See Detailed Proposal</button>
+        <button class="btn primary" @click="goToDetailed">See Detailed Proposal</button>
         <button class="btn outline" @click="downloadAll">Download All Documents</button>
       </div>
     </div>
@@ -136,7 +136,7 @@ onMounted(() => {
   proposal.value = {
     title: 'Community Development Program 2024',
     status: 'Pending Review',
-    program: 'Community Extension',
+    program: 'Kalikasan Program',
     proponent: 'Dr. Allen Shippy',
     email: 'allenshippy@msunaawan.edu.ph',
     phone: '+63 912 345 6789',
@@ -173,6 +173,9 @@ onMounted(() => {
   }
 })
 
+const goToDetailed = () => {
+  router.push('/rec-prop')
+}
 const downloadFile = (file) => {
   const link = document.createElement('a')
   link.href = file.url

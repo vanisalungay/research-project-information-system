@@ -8,7 +8,6 @@
       </div>
     </div>
 
-    <!-- SEARCH BAR (BELOW HEADER) -->
     <div class="search-container">
       <div class="search-box">
         <div class="search-icon">≡</div>
@@ -17,7 +16,6 @@
       </div>
     </div>
 
-    <!-- STATS -->
     <div class="stats-container">
       <div class="stat-card">
         <div class="stat-title">ENDORSED PROPOSALS</div>
@@ -35,10 +33,8 @@
       </div>
     </div>
 
-    <!-- TABLE TITLE -->
     <div class="table-title">APPROVED PROPOSALS REQUESTING FUNDS</div>
 
-    <!-- TABLE -->
     <div class="table-wrapper">
       <div class="table-header">
         <div class="th">Proposal Title</div>
@@ -47,7 +43,6 @@
         <div class="th">Action</div>
       </div>
 
-      <!-- 👉 ROWS NOW SHOW DATA -->
       <div class="table-row" v-for="(proposal, index) in proposals" :key="index">
         <div class="td">{{ proposal.title }}</div>
         <div class="td">{{ proposal.proponent }}</div>
@@ -66,7 +61,6 @@ export default {
 
   data() {
     return {
-      /* 🔔 These values align with notification & validate pages */
       proposals: [
         {
           title: 'Community Development Program 2024',
@@ -107,7 +101,6 @@ export default {
   width: 135%;
 }
 
-/* HEADER */
 .header {
   background: #2c2b4f;
   padding: 30px 30px;
@@ -125,7 +118,6 @@ export default {
   margin-top: 5px;
 }
 
-/* SEARCH */
 .search-container {
   display: flex;
   justify-content: flex-end;
@@ -153,7 +145,6 @@ export default {
   font-size: 14px;
 }
 
-/* STATS */
 .stats-container {
   display: flex;
   gap: 20px;
@@ -178,7 +169,6 @@ export default {
   margin-top: 10px;
 }
 
-/* TABLE */
 .table-title {
   font-weight: bold;
   text-align: center;
@@ -209,7 +199,6 @@ export default {
 .table-row {
   height: 50px;
 }
-/* BUTTON */
 .validate-btn {
   background: #2c2b4f;
   color: #ffc800;
