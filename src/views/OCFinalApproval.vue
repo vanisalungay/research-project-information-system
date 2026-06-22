@@ -1,12 +1,10 @@
 <template>
   <div class="page">
-    <!-- BACK -->
     <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
 
-    <!-- PROPOSAL HEADER CARD -->
     <div class="card proposal-card">
       <div class="proposal-left">
-        <h1>Sustainable Aquaculture Systems in Coastal Communities</h1>
+        <h1>Community Development Program 2024</h1>
 
         <div class="proposal-meta">
           <div>
@@ -30,7 +28,6 @@
       <button class="view-btn">View Details</button>
     </div>
 
-    <!-- STATUS ROW -->
     <div class="status-row">
       <div class="card status-card">
         <div class="status-dot"></div>

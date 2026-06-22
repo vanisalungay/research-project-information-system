@@ -30,10 +30,6 @@ import SettingsActiveIcon from '@/assets/images/Settings_active.png'
 const route = useRoute()
 const userStore = useUserDataStore()
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const allNavItems = [
   {
     icon: dashboardIcon,
@@ -52,65 +48,6 @@ const allNavItems = [
   },
 
   {
-<<<<<<< HEAD
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Proposals',
-  path: '/proposals',
-  roles: [UserRole.PROPONENT],
-  },
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Evaluation Criteria',
-  path: '/evalCriteria',
-  roles: [UserRole.PROPONENT],
-  },
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Revisions',
-  path: '/revisions',
-  roles: [UserRole.PROPONENT],
-  },
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Notifications',
-  path: '/proponent-notification',
-  roles: [UserRole.PROPONENT],
-  },
-
-  
-
-  
-
-  
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Dashboard',
-  path: '/oc-dashboard',
-  roles: [UserRole.OC],
-  },
-
-  {
-  icon: notificationIcon,
-  activeIcon: notificationActiveIcon,
-  text: 'Notifications',
-  path: '/oc-notification',
-  roles: [UserRole.OC],
-  },
-
-
-
-  {
-=======
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
@@ -259,13 +196,6 @@ const allNavItems = [
     ],
   },
 
-<<<<<<< HEAD
-
-
-]
-
-
-=======
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -291,16 +221,11 @@ const allNavItems = [
   },
 ]
 
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const navItems = computed(() => {
   if (!userStore.user) return []
   return allNavItems.filter((item) => item.roles.includes(userStore.user.role))
 })
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 const isSelected = (path) => route.path === path
 </script>
 
@@ -336,10 +261,6 @@ li a {
   color: #ffd803;
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 69ab9f537ecf515b8d6e214af5edf697a581942d
 li.active {
   background-color: white;
   border-top-left-radius: 12px;

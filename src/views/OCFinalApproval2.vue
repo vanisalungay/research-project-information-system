@@ -6,7 +6,7 @@
     <!-- PROPOSAL HEADER CARD -->
     <div class="card proposal-card">
       <div class="proposal-left">
-        <h1>Sustainable Aquaculture Systems in Coastal Communities</h1>
+        <h1>Community Development Program 2024</h1>
 
         <div class="proposal-meta">
           <div>
