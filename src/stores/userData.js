@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 //
 export const UserRole = {
@@ -107,15 +108,21 @@ export const useUserDataStore = defineStore('userData', () => {
     try {
       isLoading.value = true
 
-      const targetUser = TEMPORARY_ACCOUNTS[role]
+      const response = await axios.post('http://localhost:8081/api/users/login', {
+        email,
+        password,
+        role
+      })
 
-      if (targetUser && targetUser.email === email && targetUser.password === password) {
-        const { password, ...safeUser } = targetUser
-        setUser(safeUser)
+      if (response.data) {
+        setUser(response.data)
         return true
       }
 
       return false
+    } catch (error) {
+      console.error(error)
+      throw new Error(error.response?.data || 'Invalid email, password, or role.')
     } finally {
       isLoading.value = false
     }

@@ -57,48 +57,25 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
 const search = ref('')
-const defaultUsers = ref([
-  {
-    id: 1,
-    name: 'Dr. Maria Santos',
-    email: 'maria.santos@msunawan.edu.ph',
-    role: 'Faculty',
-    date: 'Dec 15, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 2,
-    name: 'John Doe',
-    email: 'john.doe@university.edu',
-    role: 'REC Member',
-    date: 'Dec 14, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 3,
-    name: 'Dr. Lisa Garcia',
-    email: 'lisa.garcia@university.edu',
-    role: 'OVCRIGE',
-    date: 'Dec 13, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 4,
-    name: 'Robert Chen',
-    email: 'robert.chen@university.edu',
-    role: 'Faculty',
-    date: 'Dec 12, 2024',
-    status: 'Pending',
-  },
-])
+const users = ref([])
 
-const users = ref(JSON.parse(localStorage.getItem('riiAdminUsers') || 'null') || defaultUsers)
+const fetchPendingUsers = async () => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/users/pending')
+    users.value = response.data
+  } catch (error) {
+    console.error('Error fetching pending users:', error)
+  }
+}
 
-localStorage.setItem('riiAdminUsers', JSON.stringify(users.value))
+onMounted(() => {
+  fetchPendingUsers()
+})
 
 const filteredUsers = computed(() => {
   return users.value.filter(

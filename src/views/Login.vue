@@ -86,11 +86,16 @@ const roles = [
 const selectedRole = ref('PROPONENT')
 
 const handleLogin = async () => {
-  const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
-  if (isLoggedIn) {
-    router.push('/home')
-  } else {
-    errorMessage.value = 'Invalid email or password.'
+  try {
+    errorMessage.value = ''
+    const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
+    if (isLoggedIn) {
+      router.push('/home')
+    } else {
+      errorMessage.value = 'Invalid email, password, or role.'
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Invalid email, password, or role.'
   }
 }
 </script>

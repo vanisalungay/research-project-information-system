@@ -12,6 +12,7 @@ import ForgotPassword from '../views/ForgotPassword.vue'
 
 import CreateAccount from '../views/CreateAccount.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
+import BackendTest from '../views/BackendTest.vue'
 
 import OvcReviewProposal from '../views/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
@@ -144,6 +145,7 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
+      { path: 'test-backend', component: BackendTest },
     ],
   },
 ]

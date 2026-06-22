@@ -80,6 +80,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
@@ -104,14 +105,35 @@ const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
   if (password.value !== confirmPassword.value) {
     alert('Passwords do not match')
     return
   }
 
-  alert('Account Created Successfully!')
-  router.push('/login')
+  const roleMap = {
+    'Proponent': 'PROPONENT',
+    'RII': 'RII_STAFF',
+    'OVCRIGE': 'OVCRIGE',
+    'REC': 'REC',
+    'OVCAF': 'OVCAF',
+    'OC': 'OC'
+  }
+
+  try {
+    const payload = {
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      role: roleMap[selectedRole.value] || 'PROPONENT'
+    }
+    await axios.post('http://localhost:8081/api/users', payload)
+    alert('Account registration submitted! Please wait for RII ADMIN approval before logging in.')
+    router.push('/login')
+  } catch (error) {
+    console.error(error)
+    alert(error.response?.data?.message || 'Registration failed. Check if email already exists.')
+  }
 }
 </script>
 

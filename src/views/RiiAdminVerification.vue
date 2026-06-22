@@ -22,19 +22,19 @@
       <div class="info-grid">
         <div>
           <label>University Email</label>
-          <p>maria.santos@university.edu</p>
+          <p>{{ targetUser?.email || 'N/A' }}</p>
         </div>
         <div>
           <label>Date Registered</label>
-          <p>Dec 15, 2024</p>
+          <p>N/A</p>
         </div>
         <div>
           <label>Requested Role</label>
-          <p>Faculty</p>
+          <p>{{ targetUser?.role || 'N/A' }}</p>
         </div>
         <div>
           <label>Department/Office</label>
-          <p>College of Engineering</p>
+          <p>N/A</p>
         </div>
       </div>
     </section>
@@ -112,18 +112,33 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-
-const allUsers = JSON.parse(localStorage.getItem('riiAdminUsers'))
-console.log('allUsers', allUsers)
+import axios from 'axios'
 
 const route = useRoute()
 
-const targetUser = allUsers.find((user) => user.id == route.query.id)
-console.log('targetUser', targetUser)
+const targetUser = ref(null)
+const targetUserFullName = ref('')
+const status = ref('PENDING')
 
-const targetUserFullName = ref(targetUser.name)
+const fetchUser = async () => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/users')
+    const found = response.data.find((user) => user.id == route.query.id)
+    if (found) {
+      targetUser.value = found
+      targetUserFullName.value = found.name
+      status.value = found.status
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error)
+  }
+}
+
+onMounted(() => {
+  fetchUser()
+})
 
 const showSuccess = ref(false)
 const successMessage = ref('')
@@ -133,8 +148,6 @@ const documents = [
   { name: 'Employment Certificate.pdf', type: 'Employment Proof', size: '856 KB' },
   { name: 'Research Portfolio.pdf', type: 'Supporting Document', size: '3.4 MB' },
 ]
-
-const status = ref('Pending')
 
 const showModal = ref(false)
 const modalType = ref(null)
@@ -161,28 +174,25 @@ const modalMessage = computed(() =>
     : 'Please provide a reason for rejecting this account.',
 )
 
-const confirmAction = () => {
-  console.log('cofnirm', modalType.value)
-  for (const user of allUsers) {
-    if (user.id == targetUser.id) {
-      if (modalType.value === 'approve') {
-        successMessage.value = 'Account have been successfully approved.'
-        console.log('Account Approved')
-        user.status = 'Approved'
-      } else {
-        successMessage.value = 'Account has been successfully rejected.'
-        console.log('Account Rejected')
-        user.status = 'Rejected'
-      }
-      break
-    }
-  }
-  // update local storage
-  localStorage.setItem('riiAdminUsers', JSON.stringify(allUsers))
+const confirmAction = async () => {
+  if (!targetUser.value) return
 
-  status.value = modalType.value === 'approve' ? 'Approved' : 'Rejected'
-  closeModal()
-  showSuccess.value = true
+  try {
+    if (modalType.value === 'approve') {
+      const response = await axios.put(`http://localhost:8081/api/users/${targetUser.value.id}/approve`)
+      status.value = response.data.status
+      successMessage.value = 'Account has been successfully approved.'
+    } else {
+      const response = await axios.put(`http://localhost:8081/api/users/${targetUser.value.id}/reject`)
+      status.value = response.data.status
+      successMessage.value = 'Account has been successfully rejected.'
+    }
+    closeModal()
+    showSuccess.value = true
+  } catch (error) {
+    console.error('Error updating user status:', error)
+    alert('Failed to update account status.')
+  }
 }
 
 const closeSuccess = () => {
