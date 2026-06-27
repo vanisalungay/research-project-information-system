@@ -286,34 +286,24 @@
           <button class="btn-add" @click="addTableRow('personnel')">+ Add Row</button>
         </section>
 
-        <!-- 25. Line-item Budget Requirement -->
         <section>
           <h3>(25) LINE-ITEM BUDGET REQUIREMENT</h3>
-          <table class="sites-table">
-            <thead>
-              <tr>
-                <th>Implementing Agency</th>
-                <th>PS</th>
-                <th>MOOE</th>
-                <th>EO</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, index) in form.budget" :key="index">
-                <td><input v-model="row.agency" /></td>
-                <td><input v-model="row.ps" /></td>
-                <td><input v-model="row.mooe" /></td>
-                <td><input v-model="row.eo" /></td>
-                <td><input v-model="row.total" /></td>
-                <td>
-                  <button class="btn-remove" @click="removeTableRow('budget', index)">✕</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <button class="btn-add" @click="addTableRow('budget')">+ Add Row</button>
+
+          <!-- Download Template Button -->
+          <button class="btn-download" @click="downloadBudgetFormat">
+            ⬇ Download Project Line-Item Budget File Format
+          </button>
+
+          <!-- Upload Filled File -->
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx"
+            @change="handleFileUpload('budget')"
+          />
+
+          <p v-if="form.budgetFileName">
+            Uploaded file: {{ form.budgetFileName }}
+          </p>
         </section>
 
         <!-- 26. Other Ongoing Projects -->

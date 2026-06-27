@@ -227,6 +227,33 @@ const allNavItems = [
       UserRole.PROPONENT,
     ],
   },
+<<<<<<< HEAD
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Revisions',
+    path: '/revisions',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Proposals',
+    path: '/proposals',
+    roles: [UserRole.PROPONENT],
+  },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Evaluation Criteria',
+    path: '/evalCriteria',
+    roles: [UserRole.PROPONENT],
+  },
+=======
+>>>>>>> 06ddf9f6460ec947be6412fa30bd84b75a440a50
 ]
 
 const navItems = computed(() => {
