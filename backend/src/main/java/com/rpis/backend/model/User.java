@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -31,4 +33,13 @@ public class User {
     private String role;
 
     private String status = "PENDING";
+
+    // NEW FIELD
+    private String departmentOffice;
+
+    // NEW FIELD
+    private LocalDate dateRegistered;
+
+    // NEW FIELD
+    private Boolean emailVerified = false;
 }

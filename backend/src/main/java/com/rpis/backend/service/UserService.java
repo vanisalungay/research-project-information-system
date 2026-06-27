@@ -27,7 +27,15 @@ public class UserService {
     }
 
     public User createUser(User user) {
+
         user.setStatus("PENDING");
+
+        // Save registration date automatically
+        user.setDateRegistered(java.time.LocalDate.now());
+
+        // Default email verification
+        user.setEmailVerified(false);
+
         return userRepository.save(user);
     }
 
@@ -50,21 +58,45 @@ public class UserService {
     }
 
     public User login(String email, String password, String role) {
-        return userRepository.findByEmail(email)
-                .filter(u -> u.getPassword().equals(password) && 
-                             u.getRole().equalsIgnoreCase(role) && 
-                             u.getStatus() != null && 
-                             u.getStatus().equalsIgnoreCase("APPROVED"))
-                .orElse(null);
+
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        System.out.println("========== LOGIN DEBUG ==========");
+        System.out.println("INPUT EMAIL = " + email);
+        System.out.println("INPUT PASSWORD = " + password);
+        System.out.println("INPUT ROLE = " + role);
+
+        if (user == null) {
+            System.out.println("USER NOT FOUND");
+            return null;
+        }
+
+        System.out.println("DB EMAIL = " + user.getEmail());
+        System.out.println("DB PASSWORD = " + user.getPassword());
+        System.out.println("DB ROLE = " + user.getRole());
+        System.out.println("DB STATUS = " + user.getStatus());
+
+        boolean passwordMatch = user.getPassword().equals(password);
+        boolean roleMatch = user.getRole().equalsIgnoreCase(role);
+        boolean statusMatch = user.getStatus() != null &&
+                user.getStatus().equalsIgnoreCase("APPROVED");
+
+        System.out.println("PASSWORD MATCH = " + passwordMatch);
+        System.out.println("ROLE MATCH = " + roleMatch);
+        System.out.println("STATUS MATCH = " + statusMatch);
+
+        return passwordMatch && roleMatch && statusMatch
+                ? user
+                : null;
     }
 
     public void seedUsers() {
         createIfNotExist("Proponent User", "proponent@gmail.com", "proponentpassword1234", "PROPONENT");
-        createIfNotExist("RII Staff", "rii_staff@gmail.com", "riistaffpassword1234", "RII_STAFF");
+        createIfNotExist("RPS Staff", "rps_staff@gmail.com", "rpsstaffpassword1234", "RPS_STAFF");
         createIfNotExist("OVCAF User", "ovcaf@gmail.com", "ovcafpassword1234", "OVCAF");
         createIfNotExist("OVCRIGE User", "ovcrige@gmail.com", "ovcrigepassword1234", "OVCRIGE");
         createIfNotExist("REC User", "rec@gmail.com", "recpassword1234", "REC");
-        createIfNotExist("RII Admin User", "rii_admin@gmail.com", "riiadminpassword1234", "RII_ADMIN");
+        createIfNotExist("RPS Admin User", "rps_admin@gmail.com", "rpsadminpassword1234", "RPS_ADMIN");
         createIfNotExist("OC User", "oc@gmail.com", "ocpassword1234", "OC");
 
         // Migrate any existing users with null status to APPROVED
