@@ -86,23 +86,23 @@ const allNavItems = [
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/riistaff-dash',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsstaff-dash',
+    roles: [UserRole.RPS_STAFF],
   },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/riistaff-notification',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsstaff-notification',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
     icon: EndorseIcon,
     activeIcon: EndorseActiveIcon,
     text: 'Endorsed Proposals',
-    path: '/riiendorsed-prop',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsendorsed-prop',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -110,7 +110,7 @@ const allNavItems = [
     activeIcon: notificationActiveIcon,
     text: 'Funded Proposal',
     path: '/funded-prop',
-    roles: [UserRole.RII_STAFF],
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -124,23 +124,23 @@ const allNavItems = [
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/riiadmin-dash',
-    roles: [UserRole.RII_ADMIN],
+    path: '/rpsadmin-dash',
+    roles: [UserRole.RPS_ADMIN],
   },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/riiadmin-notif',
-    roles: [UserRole.RII_ADMIN],
+    path: '/rpsadmin-notif',
+    roles: [UserRole.RPS_ADMIN],
   },
 
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
     text: 'Submitted Proposals',
-    path: '/rii-subproposal',
-    roles: [UserRole.RII_STAFF],
+    path: '/rps-subproposal',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -222,8 +222,8 @@ const allNavItems = [
       UserRole.REC,
       UserRole.OVCRIGE,
       UserRole.OC,
-      UserRole.RII_ADMIN,
-      UserRole.RII_STAFF,
+      UserRole.RPS_ADMIN,
+      UserRole.RPS_STAFF,
       UserRole.PROPONENT,
     ],
   },

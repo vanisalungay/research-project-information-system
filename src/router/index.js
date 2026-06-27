@@ -19,16 +19,16 @@ import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
 import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
 
-import RiiAdminDashboard from '@/views/Dashboard/RiiAdminDashboard.vue'
-import RiiStaffNotification from '@/views/RiiStaffNotification.vue'
-import RiiAdminVerification from '@/views/RiiAdminVerification.vue'
-import RiiStaffDashboard from '@/views/Dashboard/RiiStaffDashboard.vue'
-import RiiEndPro from '@/views/RiiEndPro.vue'
-import RiiReturn4Rev from '@/views/RiiReturn4Rev.vue'
-import RiiSubmittedProposals from '@/views/RiiSubmittedProposals.vue'
-import RiiFundedPro from '@/views/RiiFundedPro.vue'
-import RiiEndorsedPro from '@/views/RiiEndorsedPro.vue'
-import RiiAdminNotification from '@/views/RiiAdminNotification.vue'
+import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
+import RpsStaffNotification from '@/views/RpsStaffNotification.vue'
+import RpsAdminVerification from '@/views/RpsAdminVerification.vue'
+import RpsStaffDashboard from '@/views/Dashboard/RpsStaffDashboard.vue'
+import RpsEndPro from '@/views/RpsEndPro.vue'
+import RpsReturn4Rev from '@/views/RpsReturn4Rev.vue'
+import RpsSubmittedProposals from '@/views/RpsSubmittedProposals.vue'
+import RpsFundedPro from '@/views/RpsFundedPro.vue'
+import RpsEndorsedPro from '@/views/RpsEndorsedPro.vue'
+import RpsAdminNotification from '@/views/RpsAdminNotification.vue'
 
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/OvcafValidate.vue'
@@ -77,23 +77,23 @@ const routes = [
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
 
-      { path: 'riiadmin-ver', component: RiiAdminVerification },
-      { path: 'riiadmin-dash', component: RiiAdminDashboard },
-      { path: 'riistaff-dash', component: RiiStaffDashboard },
-      { path: 'riistaff-notification', component: RiiStaffNotification },
-      { path: 'rii-endorse', component: RiiEndPro },
-      { path: 'rii-return4rev', component: RiiReturn4Rev },
-      { path: 'rii-subproposal', component: RiiSubmittedProposals },
+      { path: 'rpsadmin-ver', component: RpsAdminVerification },
+      { path: 'rpsadmin-dash', component: RpsAdminDashboard },
+      { path: 'rpsstaff-dash', component: RpsStaffDashboard },
+      { path: 'rpsstaff-notification', component: RpsStaffNotification },
+      { path: 'rps-endorse', component: RpsEndPro },
+      { path: 'rps-return4rev', component: RpsReturn4Rev },
+      { path: 'rps-subproposal', component: RpsSubmittedProposals },
       { path: 'funded-prop', component: FundedProposals },
-      { path: 'riiendorsed-prop', component: RiiEndorsedPro },
+      { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
       { path: 'fundviewprop', component: FundViewProp },
       { path: 'fundrelease', component: FundRelease },
-      { path: 'riifunded', component: RiiFundedPro },
+      { path: 'rpsfunded', component: RpsFundedPro },
       { path: 'manage-notifications', component: Notification },
 
-      { path: 'riiadmin-ver', component: RiiAdminVerification },
-      { path: 'riiadmin-dash', component: RiiAdminDashboard },
-      { path: 'riiadmin-notif', component: RiiAdminNotification },
+      { path: 'rpsadmin-ver', component: RpsAdminVerification },
+      { path: 'rpsadmin-dash', component: RpsAdminDashboard },
+      { path: 'rpsadmin-notif', component: RpsAdminNotification },
 
       { path: 'ovcaf-validate', component: OvcafValidate },
       { path: 'ovcaf-notification', component: OvcafNotification },

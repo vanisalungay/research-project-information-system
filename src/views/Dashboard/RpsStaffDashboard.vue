@@ -3,7 +3,7 @@ krisha, [29/12/2025 2:12 pm]
   <div class="dashboard">
     <!-- Header -->
     <div class="header">
-      <h2>RII Dashboard</h2>
+      <h2>RPS Dashboard</h2>
       <p>Overview of research proposals and funding management</p>
     </div>
 
@@ -51,8 +51,8 @@ krisha, [29/12/2025 2:12 pm]
       <!-- Proposals Table -->
       <div class="panel">
         <div class="panel-header">
-          <h3>Proposals Awaiting RII Action</h3>
-          <button class="view-all" @click="$router.push('riiendorsed-prop')">View All</button>
+          <h3>Proposals Awaiting RPS Action</h3>
+          <button class="view-all" @click="$router.push('rpsendorsed-prop')">View All</button>
         </div>
 
         <div class="table">
@@ -69,7 +69,7 @@ krisha, [29/12/2025 2:12 pm]
             <span>Dr. Alien Shippy</span>
             <span>₱150,000</span>
             <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rii-endorse')">Review</button>
+            <button class="review" @click="$router.push('rps-endorse')">Review</button>
           </div>
 
           <div class="table-row">
@@ -77,7 +77,7 @@ krisha, [29/12/2025 2:12 pm]
             <span>Dr. Meow Chan</span>
             <span>₱150,000</span>
             <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rii-endorse')">Review</button>
+            <button class="review" @click="$router.push('rps-endorse')">Review</button>
           </div>
         </div>
       </div>
@@ -93,7 +93,7 @@ krisha, [29/12/2025 2:12 pm]
               <span>2 hours ago</span>
             </li>
           </ul>
-          <button class="view-activity" @click="$router.push('riistaff-notification')">
+          <button class="view-activity" @click="$router.push('rpsstaff-notification')">
             View All Activity
           </button>
         </div>
@@ -101,7 +101,7 @@ krisha, [29/12/2025 2:12 pm]
         <!-- Quick Actions -->
         <div class="panel">
           <h3>Quick Actions</h3>
-          <button class="primary" @click="$router.push('rii-subproposal')">Review Proposals</button>
+          <button class="primary" @click="$router.push('rps-subproposal')">Review Proposals</button>
           <button class="secondary" @click="$router.push('funded-prop')">Manage Funding</button>
         </div>
       </div>
@@ -111,7 +111,7 @@ krisha, [29/12/2025 2:12 pm]
 
 <script>
 export default {
-  name: 'RiiDashboard',
+  name: 'RpsStaffDashboard',
 }
 </script>
 

@@ -63,7 +63,7 @@
       <p class="actions-title">Account Actions</p>
 
       <div class="actions">
-        <button class="btn back" @click="$router.push('/riiadmin-dash')">← Back</button>
+        <button class="btn back" @click="$router.push('/rpsadmin-dash')">← Back</button>
         <button class="btn reject" @click="openModal('reject')">Reject</button>
         <button class="btn approve" @click="openModal('approve')">Approve</button>
       </div>
@@ -132,7 +132,14 @@ const fetchUser = async () => {
       status.value = found.status
     }
   } catch (error) {
-    console.error('Error fetching user:', error)
+    console.warn('Backend is offline. Searching user in localStorage offline_users...')
+    const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
+    const found = offlineUsers.find((user) => user.id == route.query.id)
+    if (found) {
+      targetUser.value = found
+      targetUserFullName.value = found.name
+      status.value = found.status
+    }
   }
 }
 
@@ -190,8 +197,22 @@ const confirmAction = async () => {
     closeModal()
     showSuccess.value = true
   } catch (error) {
-    console.error('Error updating user status:', error)
-    alert('Failed to update account status.')
+    console.warn('Backend is offline. Updating status locally in localStorage...')
+    const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
+    const foundIndex = offlineUsers.findIndex((user) => user.id == targetUser.value.id)
+    if (foundIndex !== -1) {
+      const newStatus = modalType.value === 'approve' ? 'Approved' : 'Rejected'
+      offlineUsers[foundIndex].status = newStatus
+      localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
+      
+      status.value = newStatus
+      targetUser.value.status = newStatus
+      successMessage.value = `Account has been successfully ${newStatus.toLowerCase()}.`
+      closeModal()
+      showSuccess.value = true
+    } else {
+      alert('Failed to update account status. User not found in offline database.')
+    }
   }
 }
 

@@ -82,7 +82,7 @@
             ✔ Endorse Proposal
           </button>
 
-          <button class="btn return" @click="$router.push('rii-return4rev')">
+          <button class="btn return" @click="$router.push('rps-return4rev')">
             ⟳ Return for Revision
           </button>
 
@@ -150,7 +150,7 @@ const checklistLabels = {
   docs: 'All proposal documents reviewed',
   budget: 'Budget is reasonable and justified',
   feasible: 'Implementation plan is feasible',
-  criteria: 'Meets RII funding criteria',
+  criteria: 'Meets RPS funding criteria',
   ready: 'Ready for funding approval',
 }
 

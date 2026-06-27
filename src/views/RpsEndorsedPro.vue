@@ -2,7 +2,7 @@
   <div class="page">
     <!-- Header -->
     <h2>RII Endorsed Proposals</h2>
-    <p class="subtitle">Proposals endorsed by RII and forwarded to OVCRIGE</p>
+    <p class="subtitle">Proposals endorsed by RPS and forwarded to OVCRIGE</p>
 
     <!-- Search -->
     <input type="text" v-model="search" placeholder="Search endorsed proposals..." class="search" />
@@ -14,7 +14,7 @@
           <th>Title</th>
           <th>Proponent</th>
           <th>Category</th>
-          <th>RII Endorsed</th>
+          <th>RPS Endorsed</th>
           <th>Sent to OVCRIGE</th>
           <th>OVCRIGE Status</th>
           <th>Actions</th>
@@ -29,7 +29,7 @@
 
           <td>
             <span class="check">✔</span>
-            {{ proposal.riiEndorsed }}
+            {{ proposal.rpsEndorsed }}
           </td>
 
           <td>
@@ -63,7 +63,7 @@
 
 <script>
 export default {
-  name: 'RIIEndorsedProposals',
+  name: 'RPSEndorsedProposals',
 
   data() {
     return {
@@ -74,7 +74,7 @@ export default {
           title: 'Educational Infrastructure Project',
           proponent: 'Dr. Cat Moon',
           category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-09',
+          rpsEndorsed: '2024-12-09',
           sentToOVCRIGE: '2024-12-09',
           ovcrigeStatus: 'Pending OVCRIGE Review',
         },
@@ -83,7 +83,7 @@ export default {
           title: 'Technology Innovation Initiative',
           proponent: 'Dr. Blair Gwen',
           category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-03',
+          rpsEndorsed: '2024-12-03',
           sentToOVCRIGE: '2024-12-03',
           ovcrigeStatus: 'Pending OVCRIGE Review',
         },

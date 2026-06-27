@@ -10,7 +10,7 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND INNOVATION INSTITUTE<br />
+        RESEARCH AND PUBLICATION SERVICES<br />
         Mindanao State University at Naawan
       </p>
     </div>
@@ -68,7 +68,7 @@ const errorMessage = ref('')
 
 const roles = [
   { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
-  { name: 'RII', desc: 'Research and Innovation Institute', value: UserRole.RII_STAFF },
+  { name: 'RPS', desc: 'Research and Publication Services', value: UserRole.RPS_STAFF },
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
@@ -86,9 +86,17 @@ const roles = [
 const selectedRole = ref('PROPONENT')
 
 const handleLogin = async () => {
+  console.log('SELECTED ROLE:', selectedRole.value)
+
   try {
     errorMessage.value = ''
-    const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
+
+    const isLoggedIn = await userStore.login(
+      email.value,
+      password.value,
+      selectedRole.value
+    )
+
     if (isLoggedIn) {
       router.push('/home')
     } else {

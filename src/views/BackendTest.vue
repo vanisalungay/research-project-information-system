@@ -49,19 +49,19 @@ const userMessage = ref('Click the button to load users.');
 const testHealth = async () => {
   healthMessage.value = 'Testing...';
   try {
-    const response = await axios.get('http://localhost:8080/api/health');
+    const response = await axios.get('http://localhost:8081/api/health');
     healthStatus.value = 'Connected!';
     healthMessage.value = response.data; // Should say "RPIS backend is running"
   } catch (error) {
     healthStatus.value = 'Error';
-    healthMessage.value = 'Failed to connect. Make sure your Spring Boot application is running on port 8080.';
+    healthMessage.value = 'Failed to connect. Make sure your Spring Boot application is running on port 8081.';
   }
 };
 
 const fetchUsers = async () => {
   userMessage.value = 'Loading...';
   try {
-    const response = await axios.get('http://localhost:8080/api/users');
+    const response = await axios.get('http://localhost:8081/api/users');
     users.value = response.data;
     if (users.value.length === 0) {
       userMessage.value = 'Connected successfully, but there are no users in the database yet.';
