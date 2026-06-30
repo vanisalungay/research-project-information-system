@@ -10,27 +10,17 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND PUBLICATION SERVICES<br />
+        RESEARCH AND INNOVATION INSTITUTE<br />
         Mindanao State University at Naawan
       </p>
     </div>
 
     <div class="right-panel">
-      <h2 class="welcome">Welcome!</h2>
-      <p class="subtitle">Sign in to continue to your dashboard.</p>
+      <h2 class="welcome">Proponent Portal</h2>
 
-      <div class="role-container">
-        <div
-          v-for="role in roles"
-          :key="role.name"
-          class="role-box"
-          :class="{ active: selectedRole === role.value }"
-          @click="selectedRole = role.value"
-        >
-          <h3>{{ role.name }}</h3>
-          <p>{{ role.desc }}</p>
-        </div>
-      </div>
+        <p class="subtitle">
+        Sign in to submit, monitor, and manage your research proposals.
+        </p>
 
       <form class="login-form" @submit.prevent="handleLogin">
         <label>Email Address</label>
@@ -38,22 +28,19 @@
 
         <label>Password</label>
         <input type="password" v-model="password" placeholder="Enter your password" />
-        <p class="forgot"><a href="/register">Forgot password?</a></p>
-        <div class="remember">
+        <router-link to="/proponent-forgot-password"> Forgot password? </router-link>        <div class="remember">
           <input type="checkbox" id="remember" />
           <label for="remember">Remember me</label>
         </div>
 
         <button class="login-btn">Sign In</button>
 
-        <div class="google-login-container">
-          <p class="or-divider"><span>OR</span></p>
-          <GoogleLogin :callback="handleGoogleLogin" prompt />
-        </div>
-
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
-        <p class="signup">Don't have an account? <a href="/create-account">Sign up</a></p>
+        <p class="signup"> Don't have an account?
+            <router-link to="/proponent-register">Sign up</router-link>
+        </p>
+
       </form>
     </div>
   </div>
@@ -71,74 +58,17 @@ const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
 
-const roles = [
-  { 
-    name: 'RII', 
-    desc: 'Research and Innovation Institute', 
-    value: UserRole.RPS_STAFF 
-  },
-  {
-    name: 'OVCRIGE',
-    desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
-    value: UserRole.OVCRIGE,
-  },
-  { 
-    name: 'REC', 
-    desc: 'Research Evaluation Committee', 
-    value: UserRole.REC },
-  {
-    name: 'OVCAF',
-    desc: 'Office of the Vice Chancellor for Admin and Finance',
-    value: UserRole.OVCAF,
-  },
-  { 
-    name: 'OC', 
-    desc: 'Office of the Chancellor', 
-    value: UserRole.OC 
-  },
-]
-
-const selectedRole = ref(UserRole.RPS_STAFF)
-
 const handleLogin = async () => {
-  console.log('SELECTED ROLE:', selectedRole.value)
+  const isLoggedIn = await userStore.login(
+    email.value,
+    password.value,
+    UserRole.PROPONENT
+  )
 
-  try {
-    errorMessage.value = ''
-
-    const isLoggedIn = await userStore.login(
-      email.value,
-      password.value,
-      selectedRole.value
-    )
-
-    if (isLoggedIn) {
-      router.push('/home')
-    } else {
-      errorMessage.value = 'Invalid email, password, or role.'
-    }
-  } catch (err) {
-    errorMessage.value = err.message || 'Invalid email, password, or role.'
-  }
-}
-
-const handleGoogleLogin = async (response) => {
-  try {
-    errorMessage.value = ''
-    
-    // response.credential contains the Google ID token
-    const isLoggedIn = await userStore.googleLogin(
-      response.credential,
-      selectedRole.value
-    )
-
-    if (isLoggedIn) {
-      router.push('/home')
-    } else {
-      errorMessage.value = 'Google Login failed.'
-    }
-  } catch (err) {
-    errorMessage.value = err.message || 'Google Login failed.'
+  if (isLoggedIn) {
+    router.push('/home')
+  } else {
+    errorMessage.value = 'Invalid email or password.'
   }
 }
 </script>
@@ -167,6 +97,7 @@ const handleGoogleLogin = async (response) => {
   font-weight: 700;
   line-height: 1.2;
 }
+
 
 .title span {
   color: #ffdf00;
@@ -282,27 +213,5 @@ const handleGoogleLogin = async (response) => {
 
 .signup {
   margin-top: 10px;
-}
-
-.google-login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.or-divider {
-  width: 100%;
-  text-align: center;
-  border-bottom: 1px solid #ccc;
-  line-height: 0.1em;
-  margin: 10px 0 20px;
-}
-
-.or-divider span {
-  background: #fff;
-  padding: 0 10px;
-  color: #888;
-  font-size: 14px;
 }
 </style>

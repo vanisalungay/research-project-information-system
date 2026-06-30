@@ -3,13 +3,13 @@
     <div class="top-grid">
       <!-- Proposal Information -->
       <div class="card">
-        <h2 class="title">Community Water and Filtration Enhancement Program 2024</h2>
-        <p class="subtitle">Proposal ID #1</p>
+        <h2 class="title"> {{ proposal.project_title }}</h2>
+        <p class="subtitle"> Proposal ID: {{ proposal.proposal_id }} </p>
 
         <div class="info-grid">
           <div>
             <span class="label">Category</span>
-            <span class="value">Kalikasan Program</span>
+            <span class="value">{{ proposal.program_title }}</span>
           </div>
           <div>
             <span class="label">Total Budget</span>
@@ -30,20 +30,7 @@
         </div>
       </div>
 
-      <!-- Assigned Reviewer -->
-      <div class="card reviewer-card">
-        <span class="label">Assigned Reviewer</span>
-
-        <div class="reviewer">
-          <div class="avatar">SR</div>
-          <div>
-            <strong>Dr. Sarah Johnson</strong>
-            <p>Senior Evaluator</p>
-          </div>
-        </div>
-
-        <button class="btn btn-contact full">Contact Reviewer</button>
-      </div>
+      
     </div>
 
     <!-- WORKFLOW + ATTACHMENTS -->
@@ -178,24 +165,70 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const editProposal = () => {
+const loading = ref(false)
+
+const proposal = ref({
+  id: null,
+  proposal_id: '',
+  project_title: '',
+  category: '',
+  total_budget: '',
+  duration: '',
+
+  reviewer: {
+    initials: '',
+    name: '',
+    position: ''
+  },
+
+  workflow: [],
+
+  attachments: [],
+
+  activity_logs: []
+})
+
+async function fetchProposal() {
+  loading.value = true
+
+  try {
+    // API goes here later
+
+    // Example:
+    // const response = await axios.get(...)
+    // proposal.value = response.data
+
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+function editProposal() {
   router.push('/submit-revision')
 }
 
-const viewDetails = () => {
+function viewDetails() {
   router.push('/detailed-proposal')
 }
 
-const downloadPdf = () => {
-  const link = document.createElement('a')
-  link.href = '/files/proposal.pdf'
-  link.download = 'proposal.pdf'
-  link.click()
+function downloadPdf() {
+  // API download later
 }
+
+function contactReviewer() {
+  // API or chat later
+}
+
+onMounted(() => {
+  fetchProposal()
+})
 </script>
 
 <style scoped>
@@ -207,7 +240,7 @@ const downloadPdf = () => {
 /* GRID */
 .top-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 
@@ -303,38 +336,6 @@ const downloadPdf = () => {
 
 .btn-download:hover {
   background: #f5f5f5;
-}
-
-/* CONTACT REVIEWER BUTTON */
-.btn-contact {
-  background: #1e88e5;
-  color: #fff;
-  border: 1px solid #1e88e5;
-  font-weight: 500;
-}
-
-.btn-contact:hover {
-  background: #1565c0;
-  border-color: #1565c0;
-}
-
-/* REVIEWER */
-.reviewer {
-  display: flex;
-  gap: 12px;
-  margin: 12px 0 20px;
-  align-items: center;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  background: #673ab7;
-  color: #fff;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-weight: bold;
 }
 
 /* WORKFLOW */

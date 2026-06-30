@@ -65,6 +65,10 @@ import OCNotifications from '../views/OCNotifications.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
 import OcDetailedProposal from '../views/OcDetailedProposal.vue'
+import ProponentLogin from '../views/ProponentLogin.vue'
+import ProponentRegister from '../views/ProponentRegister.vue'
+import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
+
 
 const routes = [
   {
@@ -123,11 +127,7 @@ const routes = [
       { path: 'submit-revision', component: ProponentSubmitRev },
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-prop-details', component: ProponentPropDetails },
-      {
-        path: 'detailed-proposal',
-        name: 'ProponentDetiailedProp',
-        component: ProponentDetiailedProp,
-      },
+      { path: 'detailed-proposal', component: ProponentDetiailedProp, name: 'ProponentDetiailedProp'},
 
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
@@ -145,6 +145,9 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
+      { path: 'proponent-login', component: ProponentLogin},
+      { path: 'proponent-register', component: ProponentRegister },
+      { path: 'proponent-forgot-password', component: ProponentForgotPassword },
       { path: 'test-backend', component: BackendTest },
     ],
   },

@@ -57,7 +57,7 @@ const revisions = ref<Revision[]>([
   {
     id: 1,
     title: 'Community Development Program 2024',
-    code: 'P-2024-003',
+    code: '2024-PUNLADAGAT-COMDEV-001',
     comment:
       'Please clarify the methodology section and provide more details on the community engagement strategy.',
     deadline: '5 days left',
@@ -65,7 +65,7 @@ const revisions = ref<Revision[]>([
   {
     id: 2,
     title: 'Healthcare Facility Upgrade',
-    code: 'P-2024-004',
+    code: '2024-TANGLAW-HEALTH-002',
     comment: 'Additional literature review required. Please expand on the sampling methodology.',
     deadline: '5 days left',
   },

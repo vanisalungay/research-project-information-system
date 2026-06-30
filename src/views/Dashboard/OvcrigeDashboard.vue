@@ -41,8 +41,8 @@
         <div class="card">
           <p>For Revision</p>
           <h3>{{ stats.revision }}</h3>
-  </div>
-</div>
+        </div>
+      </div>
 
       <div class="content">
         <section class="table-section">
@@ -63,60 +63,47 @@
             </thead>
 
             <tbody>
+              <tr v-if="loading">
+                <td colspan="5" style="text-align:center">
+                  Loading...
+                </td>
+              </tr>
 
-<tr v-if="loading">
-    <td colspan="5" style="text-align:center">
-        Loading...
-    </td>
-</tr>
+              <tr v-else-if="proposals.length === 0">
+                <td colspan="5" style="text-align:center">
+                  No proposals found.
+                </td>
+              </tr>
 
-<tr
-    v-else-if="proposals.length === 0">
-    <td colspan="5" style="text-align:center">
-        No proposals found.
-    </td>
-</tr>
-
-<tr
-    v-for="proposal in proposals.slice(0,5)"
-    :key="proposal.id"
->
-
-    <td>{{ proposal.projectTitle }}</td>
-
-    <td>
-        {{ proposal.proponent?.name || '-' }}
-    </td>
-
-    <td>
-        {{ proposal.createdAt?.substring(0,10) }}
-    </td>
-
-    <td>
-
-        <span
-            class="badge"
-            :class="proposal.status.toLowerCase()"
-        >
-            {{ proposal.status }}
-        </span>
-
-    </td>
-
-    <td>
-
-        <button
-            class="review"
-            @click="goToReview(proposal.id)"
-        >
-            Review
-        </button>
-
-    </td>
-
-</tr>
-
-</tbody>
+              <tr
+                v-for="proposal in proposals.slice(0,5)"
+                :key="proposal.id"
+              >
+                <td>{{ proposal.projectTitle }}</td>
+                <td>
+                  {{ proposal.proponent?.name || '-' }}
+                </td>
+                <td>
+                  {{ proposal.createdAt?.substring(0,10) }}
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="proposal.status.toLowerCase()"
+                  >
+                    {{ proposal.status }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    class="review"
+                    @click="goToReview(proposal.id)"
+                  >
+                    Review
+                  </button>
+                </td>
+              </tr>
+            </tbody>
           </table>
         </section>
 

@@ -2,23 +2,34 @@
   <div class="content-wrapper">
     <section class="welcome-section">
       <div class="welcome-left">
-        <h1>Welcome, Xarzha Bagares!</h1>
+        <h1>
+          Welcome,
+          {{ user.first_name && user.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : 'Proponent' }}!
+        </h1>
         <p>Track your research proposals and manage submissions</p>
 
         <div class="stats-row">
           <div class="stat-box">
             <span class="stat-label">Active Proposals</span>
-            <span class="stat-value">2</span>
+            <span class="stat-value">
+              {{ statistics.activeProposals }}
+            </span>
           </div>
 
           <div class="stat-box pending">
             <span class="stat-label">Pending Revisions</span>
-            <span class="stat-value">2</span>
+            <span class="stat-value">
+              {{ statistics.pendingRevisions }}
+            </span>
           </div>
 
           <div class="stat-box approved">
             <span class="stat-label">Approved</span>
-            <span class="stat-value">0</span>
+            <span class="stat-value">
+              {{ statistics.approvedProposals }}
+            </span>
           </div>
         </div>
       </div>
@@ -26,11 +37,18 @@
 
     <!-- SEARCH -->
     <div class="search-container">
-      <input type="text" placeholder="Search your proposals by title, ID, or status..." />
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search your proposals by title, ID, or status..."
+      />
     </div>
 
     <!-- REVISION DEADLINE -->
-    <section class="deadline-card">
+    <section
+      v-if="revisionDeadline"
+      class="deadline-card"
+    >
       <div class="deadline-left">
         <div class="deadline-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -42,83 +60,167 @@
         <div>
           <div class="deadline-title">
             Revision Deadlines
-            <span class="pill">2 Pending</span>
+            <span class="pill">
+              {{ revisionDeadline.pendingCount }} Pending
+            </span>
           </div>
-          <div class="proposal-name">Community Development Program 2024</div>
-          <div class="proposal-id">P-2024-003</div>
+
+          <div class="proposal-name">
+            {{ revisionDeadline.title }}
+          </div>
+
+          <div class="proposal-id">
+            {{ revisionDeadline.proposalId }}
+          </div>
         </div>
       </div>
 
       <div class="deadline-right">
         <div class="deadline-info">
           <span>Deadline</span>
-          <strong>5 days left</strong>
+          <strong>{{ revisionDeadline.daysLeft }} days left</strong>
         </div>
-        <button class="submit-btn" @click="goToRevision">Submit Revision</button>
+
+        <button
+          class="submit-btn"
+          @click="goToRevision"
+        >
+          Submit Revision
+        </button>
       </div>
     </section>
 
+    <!-- EMPTY STATE -->
+    <section
+      v-else
+      class="deadline-card"
+    >
+      <div class="deadline-left">
+        <div class="deadline-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2" />
+            <path d="M12 6v6l4 2" stroke="#000" stroke-width="2" />
+          </svg>
+        </div>
+
+        <div>
+          <div class="deadline-title">
+            Revision Deadlines
+          </div>
+
+          <div class="proposal-name">
+            No pending revisions.
+          </div>
+
+          <div class="proposal-id">
+            You're all caught up!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECENTLY SUBMITTED -->
     <section class="grid">
-      <!-- RECENTLY SUBMITTED -->
       <div class="panel">
         <div class="panel-header">
           <div>
             Recently Submitted Proposals
-            <span class="count-badge">6</span>
+            <span class="count-badge">
+              {{ recentProposals.length }}
+            </span>
           </div>
-          <a @click="goToProposals" style="cursor: pointer">View All</a>
+
+          <a
+            @click="goToProposals"
+            style="cursor: pointer"
+          >
+            View All
+          </a>
         </div>
 
-        <div class="panel-item">
+        <!-- No Proposals -->
+        <div
+          v-if="recentProposals.length === 0"
+          class="panel-item"
+        >
           <div>
-            <div class="item-title">Community Development Program 2024</div>
-            <div class="item-meta">P-2024-001 • 2024-11-20</div>
+            <div class="item-title">No submitted proposals yet.</div>
+            <div class="item-meta">
+              Your submitted proposals will appear here.
+            </div>
           </div>
-          <span class="status under-review">Under Review</span>
         </div>
 
-        <div class="panel-item">
+        <!-- Proposal List -->
+        <div
+          v-for="proposal in recentProposals"
+          :key="proposal.id"
+          class="panel-item"
+        >
           <div>
-            <div class="item-title">Healthcare Facility Upgrade</div>
-            <div class="item-meta">P-2024-002 • 2024-11-18</div>
-          </div>
-          <span class="status approved">Approved</span>
-        </div>
+            <div class="item-title">
+              {{ proposal.title }}
+            </div>
 
-        
+            <div class="item-meta">
+              {{ proposal.proposalId }} • {{ proposal.dateSubmitted }}
+            </div>
+          </div>
+
+          <span
+            class="status"
+            :class="proposal.statusClass"
+          >
+            {{ proposal.status }}
+          </span>
+        </div>
       </div>
+    </section>
 
-      <!-- REVIEWER FEEDBACK -->
+    <!-- REVIEWER FEEDBACK -->
+    <section class="grid">
       <div class="panel">
         <div class="panel-header">
           <div>
             Reviewer Feedback
-            <span class="count-badge yellow">3</span>
+            <span class="count-badge yellow">
+              {{ feedbacks.length }}
+            </span>
           </div>
-          <a @click="goToFeedback">View All</a>
+
+          <a
+            @click="goToFeedback"
+            style="cursor: pointer"
+          >
+            View All
+          </a>
         </div>
 
-        <div class="feedback-item">
-          <span class="dot yellow"></span>
+        <!-- Empty State -->
+        <div
+          v-if="feedbacks.length === 0"
+          class="feedback-item"
+        >
           <div>
-            <div>Your proposal P-2024-003 requires revision</div>
-            <small>3 hours ago</small>
+            <div>No reviewer feedback yet.</div>
+            <small>Feedback from reviewers will appear here.</small>
           </div>
         </div>
 
-        <div class="feedback-item">
-          <span class="dot green"></span>
-          <div>
-            <div>Proposal P-2024-002 has been approved!</div>
-            <small>1 day ago</small>
-          </div>
-        </div>
+        <!-- Feedback List -->
+        <div
+          v-for="feedback in feedbacks"
+          :key="feedback.id"
+          class="feedback-item"
+        >
+          <span
+            class="dot"
+            :class="getFeedbackColor(feedback.type)"
+          ></span>
 
-        <div class="feedback-item">
-          <span class="dot yellow"></span>
           <div>
-            <div>Revision deadline for P-2024-004 is approaching (5 days left)</div>
-            <small>2 days ago</small>
+            <div>{{ feedback.message }}</div>
+            <small>{{ feedback.time }}</small>
           </div>
         </div>
       </div>
@@ -127,8 +229,55 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+
 const router = useRouter()
+
+// Logged-in user
+const user = ref({
+  first_name: '',
+  last_name: ''
+})
+
+// Dashboard statistics
+const statistics = ref({
+  activeProposals: 0,
+  pendingRevisions: 0,
+  approvedProposals: 0
+})
+
+// Search
+const search = ref('')
+
+// Revision deadline
+const revisionDeadline = ref(null)
+
+// Recently submitted proposals
+const recentProposals = ref([])
+
+// Reviewer feedback
+const feedbacks = ref([])
+
+// Loading
+const loading = ref(false)
+
+// Fetch dashboard data
+async function fetchDashboard() {
+  loading.value = true
+
+  try {
+    // API will be connected here later
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDashboard()
+})
 
 function goToRevision() {
   router.push('/revisions')
@@ -141,15 +290,76 @@ function goToProposals() {
 function goToFeedback() {
   router.push('/proponent-feedback')
 }
+
+function getFeedbackColor(type) {
+  switch (type) {
+    case 'revision':
+      return 'yellow'
+
+    case 'approved':
+      return 'green'
+
+    default:
+      return 'yellow'
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'Under Review':
+      return 'under-review'
+
+    case 'Approved':
+      return 'approved'
+
+    case 'Revision Required':
+      return 'revision'
+
+    default:
+      return ''
+  }
+}
 </script>
 
 <style scoped>
+:root {
+  --bg-color: #f8f8f8;
+  --card-bg: #ffffff;
+  --text-color: #1f1a3d;
+  --muted-text: #6b7280;
+  --primary: #2452ff;
+  --border: #ddd;
+}
+
+/* DARK MODE OVERRIDE */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-color: #f1f5f9;
+    --muted-text: #94a3b8;
+    --primary: #3b82f6;
+    --border: #334155;
+  }
+}
+
 /* BASE */
 .content-wrapper {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
   padding: 2rem;
   background: #f3f4f6;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+}
+
+.welcome-section,
+.search-container,
+.deadline-card,
+.grid {
+  width: 100%;
 }
 
 /* WELCOME */

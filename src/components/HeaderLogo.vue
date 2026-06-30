@@ -71,8 +71,15 @@ const toggleDropdown = () => {
 }
 
 const logout = () => {
+  const role = userStore.user?.role
+
   userStore.logout()
-  router.push('/login')
+
+  if (role === UserRole.PROPONENT) {
+    router.push('/proponent-login')
+  } else {
+    router.push('/login')
+  }
 }
 
 const handleLogin = async () => {
@@ -89,7 +96,7 @@ const closeDialog = () => {
   loginDialog.value?.close()
 }
 
-let selectedRole = null
+const selectedRole = ref(null)
 const handleMenuItemClick = (menuItemData) => {
   showDropdown.value = false
   console.log('handleMenuItemClick', menuItemData)
@@ -241,7 +248,7 @@ menuItems.push('LOGOUT')
   width: 100vw;
   height: 100vh;
 
-  max-width: none;
+  max-width: 900px;
   max-height: none;
   margin: 0;
   padding: 0;

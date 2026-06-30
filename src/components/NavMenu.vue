@@ -191,28 +191,7 @@ const allNavItems = [
     roles: [UserRole.OVCRIGE],
   },
 
-  {
-    icon: proposalIcon,
-    activeIcon: proposalActiveIcon,
-    text: 'Proposals',
-    path: '/proposals',
-    roles: [UserRole.PROPONENT],
-  },
-  {
-    icon: revisionIcon,
-    activeIcon: revisionActiveIcon,
-    text: 'Revisions',
-    path: '/revisions',
-    roles: [UserRole.PROPONENT],
-  },
-
-  {
-    icon: EndorseIcon,
-    activeIcon: EndorseActiveIcon,
-    text: 'Evaluation Criteria',
-    path: '/evalCriteria',
-    roles: [UserRole.PROPONENT],
-  },
+  
   {
     icon: SettingsIcon,
     activeIcon: SettingsActiveIcon,

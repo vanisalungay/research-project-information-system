@@ -8,12 +8,11 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-
-  <input
-    v-model="search"
-    type="text"
-    placeholder="Search proposal..."
-  />
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search proposal..."
+      />
 
   <select v-model="statusFilter">
     <option value="ALL">All Status</option>
@@ -31,79 +30,61 @@
             <th>Proponent</th>
             <th>Date Submitted</th>
             <th>Status</th>
-            <th>Assigned Reviewer</th>
+            <th>REC Status</th>
             <th>Actions</th>
           </tr>
         </thead>
 
         <tbody>
+          <tr
+            v-for="proposal in filteredProposals"
+            :key="proposal.id"
+          >
+            <td>
+              <strong>{{ proposal.projectTitle }}</strong>
+              <br>
+              <small>{{ proposal.programTitle }}</small>
+            </td>
 
-<tr
-v-for="proposal in filteredProposals"
-:key="proposal.id"
->
+            <td>
+              {{ proposal.projectLeader }}
+            </td>
 
-<td>
-<strong>{{ proposal.projectTitle }}</strong>
-<br>
-<small>{{ proposal.programTitle }}</small>
-</td>
+            <td>
+              {{ proposal.createdAt?.substring(0,10) || '-' }}
+            </td>
 
-<td>
-{{ proposal.projectLeader }}
-</td>
+            <td>
+              <span class="status pending">
+                {{ proposal.status }}
+              </span>
+            </td>
 
-<td>
-{{ proposal.createdAt?.substring(0,10) || '-' }}
-</td>
+            <td>
+              <button
+                class="assign-btn"
+                @click="goToAssignReviewer(proposal.id)"
+              >
+                Assign
+              </button>
+            </td>
 
-<td>
+            <td>
+              <button
+                class="review-btn"
+                @click="goToReview(proposal.id)"
+              >
+                Review
+              </button>
+            </td>
+          </tr>
 
-<span class="status pending">
-{{ proposal.status }}
-</span>
-
-</td>
-
-<td>
-
-<button
-class="assign-btn"
-@click="goToAssignReviewer(proposal.id)"
->
-
-Assign
-
-</button>
-
-</td>
-
-<td>
-
-<button
-class="review-btn"
-@click="goToReview(proposal.id)"
->
-
-Review
-
-</button>
-
-</td>
-
-</tr>
-
-<tr v-if="filteredProposals.length===0">
-
-<td colspan="6" style="text-align:center">
-
-No endorsed proposals found.
-
-</td>
-
-</tr>
-
-</tbody>
+          <tr v-if="filteredProposals.length===0">
+            <td colspan="6" style="text-align:center">
+              No endorsed proposals found.
+            </td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -132,7 +113,6 @@ const loadProposals = async () => {
     console.error(err)
   }
 }
-
 onMounted(loadProposals)
 
 const filteredProposals = computed(() => {
@@ -161,7 +141,7 @@ const goToAssignReviewer = (proposalId) => {
 }
 </script>
 
-<style>
+<style scoped>
 .submitted-page {
   padding: 25px;
 }
@@ -176,6 +156,7 @@ const goToAssignReviewer = (proposalId) => {
 }
 
 /* FILTER BAR */
+
 .filter-bar {
   display: flex;
   gap: 12px;
@@ -204,6 +185,7 @@ const goToAssignReviewer = (proposalId) => {
 }
 
 /* TABLE */
+
 .table-card {
   background: white;
   border-radius: 12px;
@@ -218,8 +200,8 @@ table {
 th {
   background: #2f2b57;
   color: white;
-  text-align: left;
   padding: 12px;
+  text-align: left;
 }
 
 td {
@@ -232,35 +214,58 @@ small {
 }
 
 /* STATUS */
+
 .status {
-  padding: 5px 12px;
+  display: inline-block;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
 }
 
 .pending {
-  background: #ffe082;
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.waiting {
+  background: #F3F4F6;
+  color: #4B5563;
+}
+
+.endorsed {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+.endorsed-rec {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.reviewing {
+  background: #E0E7FF;
+  color: #4338CA;
 }
 
 .revision {
-  background: #90caf9;
-}
-/* BUTTONS */
-.assign-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  cursor: pointer;
+  background: #FEE2E2;
+  color: #B91C1C;
 }
 
+/* BUTTON */
+
 .review-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  background: #6cb4ff;
+  padding: 7px 16px;
   border: none;
+  border-radius: 6px;
+  background: #3B82F6;
   color: white;
   cursor: pointer;
+  transition: .2s;
+}
+
+.review-btn:hover {
+  background: #2563EB;
 }
 </style>

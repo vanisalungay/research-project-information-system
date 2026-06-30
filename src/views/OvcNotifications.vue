@@ -140,6 +140,7 @@ const toggleGroup = (index) => {
 
 .sender {
   font-weight: 600;
+  color: #2f2b57;
 }
 
 .arrow {
@@ -160,12 +161,13 @@ const toggleGroup = (index) => {
 .notif-item {
   display: flex;
   justify-content: space-between;
+  gap: 20px;
   margin-bottom: 18px;
 }
 
 .notif-left {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -179,16 +181,18 @@ const toggleGroup = (index) => {
 
 .notif-label {
   font-size: 14px;
+  margin: 0;
 }
 
 .notif-msg {
   color: #555;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: 13px;
 }
 
 .notif-time {
   font-size: 12px;
   color: #777;
+  white-space: nowrap;
 }
 </style>
