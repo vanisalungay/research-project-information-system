@@ -6,7 +6,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.rpis.backend.dto.GoogleLoginRequest;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -96,6 +102,53 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid email, password, or role.");
+        }
+    }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            NetHttpTransport transport = new NetHttpTransport();
+            GsonFactory jsonFactory = new GsonFactory();
+            
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                    .setAudience(Collections.singletonList("YOUR_GOOGLE_CLIENT_ID"))
+                    .build();
+            
+            GoogleIdToken idToken = verifier.verify(request.getToken());
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                
+                if (!email.endsWith("@msunaawan.edu.ph")) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("Only @msunaawan.edu.ph accounts are allowed.");
+                }
+                
+                java.util.Optional<User> existingUserOpt = userService.findByEmail(email);
+                if (existingUserOpt.isPresent()) {
+                    User existingUser = existingUserOpt.get();
+                    if (!existingUser.getRole().equalsIgnoreCase(request.getRole())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body("Role mismatch for this user.");
+                    }
+                    if (existingUser.getStatus().equalsIgnoreCase("PENDING")) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body("Your account is pending admin approval.");
+                    } else if (existingUser.getStatus().equalsIgnoreCase("REJECTED")) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Your account registration was rejected.");
+                    }
+                    
+                    existingUser.setPassword(null);
+                    return ResponseEntity.ok(existingUser);
+                } else {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found.");
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Google token.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Google Authentication Failed: " + e.getMessage());
         }
     }
 

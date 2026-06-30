@@ -28,12 +28,13 @@ public class UserService {
 
     public User createUser(User user) {
 
+        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+            throw new IllegalArgumentException(
+                    "Only MSU Naawan email addresses are allowed.");
+        }
+
         user.setStatus("PENDING");
-
-        // Save registration date automatically
         user.setDateRegistered(java.time.LocalDate.now());
-
-        // Default email verification
         user.setEmailVerified(false);
 
         return userRepository.save(user);
@@ -70,6 +71,9 @@ public class UserService {
             System.out.println("USER NOT FOUND");
             return null;
         }
+        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+            return null;
+        }
 
         System.out.println("DB EMAIL = " + user.getEmail());
         System.out.println("DB PASSWORD = " + user.getPassword());
@@ -91,21 +95,66 @@ public class UserService {
     }
 
     public void seedUsers() {
-        createIfNotExist("Proponent User", "proponent@gmail.com", "proponentpassword1234", "PROPONENT");
-        createIfNotExist("RPS Staff", "rps_staff@gmail.com", "rpsstaffpassword1234", "RPS_STAFF");
-        createIfNotExist("OVCAF User", "ovcaf@gmail.com", "ovcafpassword1234", "OVCAF");
-        createIfNotExist("OVCRIGE User", "ovcrige@gmail.com", "ovcrigepassword1234", "OVCRIGE");
-        createIfNotExist("REC User", "rec@gmail.com", "recpassword1234", "REC");
-        createIfNotExist("RPS Admin User", "rps_admin@gmail.com", "rpsadminpassword1234", "RPS_ADMIN");
-        createIfNotExist("OC User", "oc@gmail.com", "ocpassword1234", "OC");
 
-        // Migrate any existing users with null status to APPROVED
+        createIfNotExist(
+                "Proponent User",
+                "proponent@msunaawan.edu.ph",
+                "proponentpassword1234",
+                "PROPONENT");
+
+        createIfNotExist(
+                "RPS Staff",
+                "rpsstaff@msunaawan.edu.ph",
+                "rpsstaffpassword1234",
+                "RPS_STAFF");
+
+        createIfNotExist(
+                "RPS Admin",
+                "rpsadmin@msunaawan.edu.ph",
+                "rpsadminpassword1234",
+                "RPS_ADMIN");
+
+        createIfNotExist(
+                "OVCRIGE User",
+                "ovcrige@msunaawan.edu.ph",
+                "ovcrigepassword1234",
+                "OVCRIGE");
+
+        createIfNotExist(
+                "REC User",
+                "rec@msunaawan.edu.ph",
+                "recpassword1234",
+                "REC");
+
+        createIfNotExist(
+                "OVCAF User",
+                "ovcaf@msunaawan.edu.ph",
+                "ovcafpassword1234",
+                "OVCAF");
+
+        createIfNotExist(
+                "OC User",
+                "oc@msunaawan.edu.ph",
+                "ocpassword1234",
+                "OC");
+
         List<User> allUsers = userRepository.findAll();
-        for (User u : allUsers) {
-            if (u.getStatus() == null) {
-                u.setStatus("APPROVED");
-                userRepository.save(u);
+
+        for (User user : allUsers) {
+
+            if (user.getStatus() == null) {
+                user.setStatus("APPROVED");
             }
+
+            if (user.getEmailVerified() == null) {
+                user.setEmailVerified(true);
+            }
+
+            if (user.getDateRegistered() == null) {
+                user.setDateRegistered(java.time.LocalDate.now());
+            }
+
+            userRepository.save(user);
         }
     }
 

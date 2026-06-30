@@ -6,7 +6,7 @@
       <!-- GROUP HEADER -->
       <div class="group-header" @click="toggleGroup(index)">
         <div class="group-left">
-          <img src="https://via.placeholder.com/25" class="sender-icon" />
+          <div class="sender-icon">🔔</div>          
           <span class="sender">{{ group.sender }}</span>
         </div>
 
@@ -21,8 +21,18 @@
 
             <div>
               <p class="notif-label">
-                <strong>{{ item.label }}</strong>
+                <strong>
+                    {{ item.isRead ? 'Read' : 'New Notification' }}
+                </strong>
               </p>
+
+              <p class="notif-msg">
+                {{ item.message }}
+              </p>
+
+<p class="notif-time">
+    {{ new Date(item.createdAt).toLocaleString() }}
+</p>
 
               <p class="notif-msg">{{ item.message }}</p>
             </div>
@@ -36,48 +46,39 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { useUserDataStore } from '@/stores/userData'
 
-const notifications = ref([
-  {
-    sender: 'System',
-    label: 'new proposal submitted',
-    message: 'Community Development Program 2024 has been submitted for OVCRIGE review.',
-    time: '2 hours ago',
-  },
-  {
-    sender: 'REC Committee',
-    label: 'evaluation submitted',
-    message: 'REC has completed evaluation for Healthcare Facility Upgrade.',
-    time: '5 hours ago',
-  },
-  {
-    sender: 'System',
-    label: 'proposal pending action',
-    message: 'Youth Empowerment Program is awaiting OVCRIGE decision.',
-    time: '1 day ago',
-  },
-  {
-    sender: 'System',
-    label: 'proposal forwarded',
-    message: 'Educational Infrastructure Project has been forwarded to REC for review.',
-    time: '2 days ago',
-  },
+const userStore = useUserDataStore()
 
-  {
-    sender: 'System',
-    label: 'proposal endorsed',
-    message: 'Environmental Conservation Project has been endorsed by OVCRIGE.',
-    time: '1 week ago',
-  },
-])
+const notifications = ref([])
+
+const loadNotifications = async () => {
+  try {
+    const res = await axios.get(
+      `http://localhost:8081/api/notifications/user/${userStore.user.id}`
+    )
+
+    notifications.value = res.data
+  } catch (err) {
+    console.error('Failed to load notifications', err)
+  }
+}
+
+onMounted(loadNotifications)
 
 const grouped = computed(() => {
   const map = {}
 
-  notifications.value.forEach((noti) => {
-    if (!map[noti.sender]) map[noti.sender] = []
-    map[noti.sender].push(noti)
+  notifications.value.forEach((notification) => {
+    const sender = notification.sender || 'System'
+
+    if (!map[sender]) {
+      map[sender] = []
+    }
+
+    map[sender].push(notification)
   })
 
   return Object.keys(map).map((sender) => ({
@@ -88,7 +89,7 @@ const grouped = computed(() => {
 
 const openGroup = ref(null)
 
-function toggleGroup(index) {
+const toggleGroup = (index) => {
   openGroup.value = openGroup.value === index ? null : index
 }
 </script>
@@ -125,10 +126,16 @@ function toggleGroup(index) {
   gap: 10px;
 }
 
-.sender-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+.sender-icon{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:#2452ff;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:15px;
 }
 
 .sender {

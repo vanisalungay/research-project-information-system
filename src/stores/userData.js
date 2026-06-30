@@ -171,6 +171,32 @@ export const useUserDataStore = defineStore('userData', () => {
     }
   }
 
+  async function googleLogin(token, role) {
+    try {
+      isLoading.value = true
+
+      const response = await axios.post(
+        'http://localhost:8081/api/users/google-login',
+        {
+          token,
+          role,
+        }
+      )
+
+      if (response.data) {
+        setUser(response.data)
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error(error)
+      throw new Error(error.response?.data || 'Google login failed.')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function logout() {
     clearUser()
   }
@@ -184,6 +210,7 @@ export const useUserDataStore = defineStore('userData', () => {
     setUser,
     clearUser,
     login,
+    googleLogin,
     logout,
   }
 })

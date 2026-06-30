@@ -8,17 +8,19 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <input type="text" placeholder="Search by title, proponent, or category..." />
 
-      <select>
-        <option>All Status</option>
-        <option>Pending</option>
-        <option>Revision</option>
-        <option>Approved</option>
-      </select>
+  <input
+    v-model="search"
+    type="text"
+    placeholder="Search proposal..."
+  />
 
-      <button class="filter-btn">More Filters</button>
-    </div>
+  <select v-model="statusFilter">
+    <option value="ALL">All Status</option>
+    <option value="ENDORSED">Endorsed</option>
+  </select>
+
+</div>
 
     <!-- TABLE -->
     <div class="table-card">
@@ -35,86 +37,127 @@
         </thead>
 
         <tbody>
-          <tr>
-            <td>
-              <strong>Community Development Program 2024</strong>
-              <br />
-              <small>Kalikasan Program</small>
-            </td>
-            <td>Dr. Allen Shippy</td>
-            <td>2024-12-10</td>
-            <td><span class="status pending">Pending</span></td>
-            <td>
-              <button class="assign-btn" @click="goToAssignReviewer">Assign</button>
-            </td>
-            <td>
-              <button class="review-btn" @click="goToReview">Review</button>
-            </td>
-          </tr>
 
-          <tr>
-            <td>
-              <strong>Educational Infrastructure Project</strong>
-              <br />
-              <small>Tanglaw Program</small>
-            </td>
-            <td>Dr. Cat Moon</td>
-            <td>2024-12-08</td>
-            <td><span class="status pending">Endorsed</span></td>
-            <td>Dr. Jane Smith</td>
-            <td>
-              <button class="review-btn" @click="goToReview">Review</button>
-            </td>
-          </tr>
+<tr
+v-for="proposal in filteredProposals"
+:key="proposal.id"
+>
 
-          <tr>
-            <td>
-              <strong>Healthcare Facility Upgrade</strong>
-              <br />
-              <small>Kalikasan Program</small>
-            </td>
-            <td>Dr. Meow Chan</td>
-            <td>2024-12-05</td>
-            <td><span class="status revision">Pending</span></td>
-            <td>Dr. Sarah Lee</td>
-            <td>
-              <button class="review-btn" @click="goToReview">Review</button>
-            </td>
-          </tr>
+<td>
+<strong>{{ proposal.projectTitle }}</strong>
+<br>
+<small>{{ proposal.programTitle }}</small>
+</td>
 
-          <tr>
-            <td>
-              <strong>Technology Innovation Initiative</strong>
-              <br />
-              <small>Tanglaw Program</small>
-            </td>
-            <td>Dr. Blair Gwen</td>
-            <td>2024-12-03</td>
-            <td><span class="status pending">Endorsed</span></td>
-            <td>
-              <button class="assign-btn" @click="goToAssignReviewer">Assign</button>
-            </td>
-            <td>
-              <button class="review-btn" @click="goToReview">Review</button>
-            </td>
-          </tr>
-        </tbody>
+<td>
+{{ proposal.projectLeader }}
+</td>
+
+<td>
+{{ proposal.createdAt?.substring(0,10) || '-' }}
+</td>
+
+<td>
+
+<span class="status pending">
+{{ proposal.status }}
+</span>
+
+</td>
+
+<td>
+
+<button
+class="assign-btn"
+@click="goToAssignReviewer(proposal.id)"
+>
+
+Assign
+
+</button>
+
+</td>
+
+<td>
+
+<button
+class="review-btn"
+@click="goToReview(proposal.id)"
+>
+
+Review
+
+</button>
+
+</td>
+
+</tr>
+
+<tr v-if="filteredProposals.length===0">
+
+<td colspan="6" style="text-align:center">
+
+No endorsed proposals found.
+
+</td>
+
+</tr>
+
+</tbody>
       </table>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-const goToReview = () => {
-  router.push('/review-prop')
+const proposals = ref([])
+const search = ref('')
+const statusFilter = ref('ALL')
+
+const loadProposals = async () => {
+  try {
+    const res = await axios.get('http://localhost:8081/api/proposals')
+
+    // OVCRIGE only sees proposals endorsed by RPS
+    proposals.value = res.data.filter(
+      p => p.status === 'ENDORSED'
+    )
+  } catch (err) {
+    console.error(err)
+  }
 }
 
-const goToAssignReviewer = () => {
-  router.push('/assign-reviewer')
+onMounted(loadProposals)
+
+const filteredProposals = computed(() => {
+  return proposals.value.filter(p => {
+
+    const keyword =
+      search.value === '' ||
+      p.projectTitle?.toLowerCase().includes(search.value.toLowerCase()) ||
+      p.programTitle?.toLowerCase().includes(search.value.toLowerCase()) ||
+      p.projectLeader?.toLowerCase().includes(search.value.toLowerCase())
+
+    const status =
+      statusFilter.value === 'ALL' ||
+      p.status === statusFilter.value
+
+    return keyword && status
+  })
+})
+
+const goToReview = (proposalId) => {
+  router.push(`/review-prop/${proposalId}`)
+}
+
+const goToAssignReviewer = (proposalId) => {
+  router.push(`/assign-reviewer/${proposalId}`)
 }
 </script>
 

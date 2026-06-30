@@ -25,28 +25,24 @@
       <div class="stats">
         <div class="card">
           <p>Total Submissions</p>
-          <h3>4</h3>
-          <small>his week</small>
+          <h3>{{ stats.totalSubmissions }}</h3>
         </div>
 
         <div class="card">
           <p>Endorsed Proposals</p>
-          <h3>2</h3>
-          <small>0% approval rate</small>
+          <h3>{{ stats.endorsed }}</h3>
         </div>
 
         <div class="card">
           <p>Pending Review</p>
-          <h3>2</h3>
-          <small>Awaiting action</small>
+          <h3>{{ stats.pending }}</h3>
         </div>
 
         <div class="card">
           <p>For Revision</p>
-          <h3>0</h3>
-          <small>No deadline today</small>
-        </div>
-      </div>
+          <h3>{{ stats.revision }}</h3>
+  </div>
+</div>
 
       <div class="content">
         <section class="table-section">
@@ -67,55 +63,175 @@
             </thead>
 
             <tbody>
-              <tr>
-                <td>Community Development Program 2024</td>
-                <td>Dr. Aljon Shipay</td>
-                <td>2024-12-10</td>
-                <td><span class="badge pending">Pending</span></td>
-                <td><button class="review" @click="goToReview">Review</button></td>
-              </tr>
 
-              <tr>
-                <td>Healthcare Facility Upgrade</td>
-                <td>Dr. Meow Chan</td>
-                <td>2024-12-05</td>
-                <td><span class="badge pending">Pending</span></td>
-                <td>
-                  <button class="review" @click="goToReview">Review</button>
-                </td>
-              </tr>
-            </tbody>
+<tr v-if="loading">
+    <td colspan="5" style="text-align:center">
+        Loading...
+    </td>
+</tr>
+
+<tr
+    v-else-if="proposals.length === 0">
+    <td colspan="5" style="text-align:center">
+        No proposals found.
+    </td>
+</tr>
+
+<tr
+    v-for="proposal in proposals.slice(0,5)"
+    :key="proposal.id"
+>
+
+    <td>{{ proposal.projectTitle }}</td>
+
+    <td>
+        {{ proposal.proponent?.name || '-' }}
+    </td>
+
+    <td>
+        {{ proposal.createdAt?.substring(0,10) }}
+    </td>
+
+    <td>
+
+        <span
+            class="badge"
+            :class="proposal.status.toLowerCase()"
+        >
+            {{ proposal.status }}
+        </span>
+
+    </td>
+
+    <td>
+
+        <button
+            class="review"
+            @click="goToReview(proposal.id)"
+        >
+            Review
+        </button>
+
+    </td>
+
+</tr>
+
+</tbody>
           </table>
         </section>
 
-        <aside class="notifications">
-          <h3>Notifications</h3>
+       <aside class="notifications">
 
-          <ul>
-            <li>
-              <strong>New proposal submitted</strong><br />
-              Community Development Program 2024
-              <small>2 hours ago</small>
-            </li>
+<h3>Notifications</h3>
 
-            <li>
-              <strong>Revision deadline approaching</strong><br />
-              Healthcare Facility Upgrade
-              <small>1 day ago</small>
-            </li>
-          </ul>
+<ul>
 
-          <button class="view-all" @click="goToNotifications">View All</button>
-        </aside>
+<li
+    v-if="loading"
+>
+Loading...
+</li>
+
+<li
+    v-else-if="notifications.length===0"
+>
+No notifications.
+</li>
+
+<li
+    v-for="notification in notifications.slice(0,5)"
+    :key="notification.id"
+>
+
+<strong>
+
+{{ notification.message }}
+
+</strong>
+
+<small>
+
+{{ notification.createdAt?.substring(0,16) }}
+
+</small>
+
+</li>
+
+</ul>
+
+<button
+class="view-all"
+@click="goToNotifications"
+>
+
+View All
+
+</button>
+
+</aside>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
+
+// Dashboard data (will come from backend)
+const stats = ref({
+  totalSubmissions: 0,
+  endorsed: 0,
+  pending: 0,
+  revision: 0
+})
+
+const proposals = ref([])
+const notifications = ref([])
+
+const loading = ref(true)
+
+const loadDashboard = async () => {
+  try {
+    // Fetch proposals
+    const proposalResponse = await axios.get('http://localhost:8081/api/proposals')
+
+    proposals.value = proposalResponse.data
+
+    stats.value.totalSubmissions = proposals.value.length
+    stats.value.endorsed = proposals.value.filter(
+      p => p.status === 'ENDORSED'
+    ).length
+
+    stats.value.pending = proposals.value.filter(
+      p => p.status === 'SUBMITTED'
+    ).length
+
+    stats.value.revision = proposals.value.filter(
+      p => p.status === 'REVISION'
+    ).length
+
+    // Notification endpoint
+    // Replace userId later using logged in user
+    const notifResponse = await axios.get(
+      'http://localhost:8081/api/notifications?userId=4'
+    )
+
+    notifications.value = notifResponse.data
+
+  } catch (error) {
+    console.log(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadDashboard()
+})
 
 const goToNotifications = () => {
   router.push('/notifications')
@@ -125,8 +241,8 @@ const goToSubmitted = () => {
   router.push('/submit-proposals')
 }
 
-const goToReview = () => {
-  router.push('/review-prop')
+const goToReview = id => {
+  router.push(`/review-prop/${id}`)
 }
 </script>
 
@@ -275,5 +391,29 @@ td {
   padding: 8px;
   border: 1px solid #ddd;
   background: none;
+}
+
+.approved {
+  background: #c8e6c9;
+}
+
+.endorsed {
+  background: #bbdefb;
+}
+
+.submitted {
+  background: #fff3cd;
+}
+
+.revision {
+  background: #ffccbc;
+}
+
+.rejected {
+  background: #ffcdd2;
+}
+
+.loading {
+  text-align: center;
 }
 </style>
