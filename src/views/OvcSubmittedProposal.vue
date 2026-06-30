@@ -8,13 +8,17 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <input type="text" placeholder="Search by title, proponent, or category..." />
+      <input
+        type="text"
+        placeholder="Search by title, proponent, or category..."
+      />
 
       <select>
         <option>All Status</option>
         <option>Pending</option>
-        <option>Revision</option>
-        <option>Approved</option>
+        <option>Endorsed</option>
+        <option>Under REC Evaluation</option>
+        <option>Returned for Revision</option>
       </select>
 
       <button class="filter-btn">More Filters</button>
@@ -29,71 +33,99 @@
             <th>Proponent</th>
             <th>Date Submitted</th>
             <th>Status</th>
-            <th>Assigned Reviewer</th>
+            <th>REC Status</th>
             <th>Actions</th>
           </tr>
         </thead>
 
         <tbody>
+          <!-- Proposal 1 -->
           <tr>
             <td>
-              <strong>Community Development Program 2024</strong>
-              <br />
+              <strong>Community Development Program 2024</strong><br />
               <small>Kalikasan Program</small>
             </td>
+
             <td>Dr. Allen Shippy</td>
             <td>2024-12-10</td>
-            <td><span class="status pending">Pending</span></td>
+
             <td>
-              <button class="assign-btn" @click="goToAssignReviewer">Assign</button>
+              <span class="status pending">Pending</span>
             </td>
+
+            <td>
+              <span class="status waiting">Pending Endorsement</span>
+            </td>
+
             <td>
               <button class="review-btn" @click="goToReview">Review</button>
             </td>
           </tr>
 
+          <!-- Proposal 2 -->
           <tr>
             <td>
-              <strong>Educational Infrastructure Project</strong>
-              <br />
+              <strong>Educational Infrastructure Project</strong><br />
               <small>Tanglaw Program</small>
             </td>
+
             <td>Dr. Cat Moon</td>
             <td>2024-12-08</td>
-            <td><span class="status pending">Endorsed</span></td>
-            <td>Dr. Jane Smith</td>
+
+            <td>
+              <span class="status endorsed">Endorsed</span>
+            </td>
+
+            <td>
+              <span class="status endorsed-rec">Endorsed to REC</span>
+            </td>
+
             <td>
               <button class="review-btn" @click="goToReview">Review</button>
             </td>
           </tr>
 
+          <!-- Proposal 3 -->
           <tr>
             <td>
-              <strong>Healthcare Facility Upgrade</strong>
-              <br />
+              <strong>Healthcare Facility Upgrade</strong><br />
               <small>Kalikasan Program</small>
             </td>
+
             <td>Dr. Meow Chan</td>
             <td>2024-12-05</td>
-            <td><span class="status revision">Pending</span></td>
-            <td>Dr. Sarah Lee</td>
+
+            <td>
+              <span class="status revision">For Revision</span>
+            </td>
+
+            <td>
+              <span class="status revision">Returned for Revision</span>
+            </td>
+
             <td>
               <button class="review-btn" @click="goToReview">Review</button>
             </td>
           </tr>
 
+          <!-- Proposal 4 -->
           <tr>
             <td>
-              <strong>Technology Innovation Initiative</strong>
-              <br />
+              <strong>Technology Innovation Initiative</strong><br />
               <small>Tanglaw Program</small>
             </td>
+
             <td>Dr. Blair Gwen</td>
             <td>2024-12-03</td>
-            <td><span class="status pending">Endorsed</span></td>
+
             <td>
-              <button class="assign-btn" @click="goToAssignReviewer">Assign</button>
+              <span class="status reviewing">Under REC Evaluation</span>
             </td>
+
+            <td>
+              <span class="status reviewing">Under REC Evaluation</span>
+            </td>
+
             <td>
               <button class="review-btn" @click="goToReview">Review</button>
             </td>
@@ -112,13 +144,9 @@ const router = useRouter()
 const goToReview = () => {
   router.push('/review-prop')
 }
-
-const goToAssignReviewer = () => {
-  router.push('/assign-reviewer')
-}
 </script>
 
-<style>
+<style scoped>
 .submitted-page {
   padding: 25px;
 }
@@ -133,6 +161,7 @@ const goToAssignReviewer = () => {
 }
 
 /* FILTER BAR */
+
 .filter-bar {
   display: flex;
   gap: 12px;
@@ -161,6 +190,7 @@ const goToAssignReviewer = () => {
 }
 
 /* TABLE */
+
 .table-card {
   background: white;
   border-radius: 12px;
@@ -175,8 +205,8 @@ table {
 th {
   background: #2f2b57;
   color: white;
-  text-align: left;
   padding: 12px;
+  text-align: left;
 }
 
 td {
@@ -189,35 +219,58 @@ small {
 }
 
 /* STATUS */
+
 .status {
-  padding: 5px 12px;
+  display: inline-block;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
 }
 
 .pending {
-  background: #ffe082;
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.waiting {
+  background: #F3F4F6;
+  color: #4B5563;
+}
+
+.endorsed {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+.endorsed-rec {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.reviewing {
+  background: #E0E7FF;
+  color: #4338CA;
 }
 
 .revision {
-  background: #90caf9;
-}
-/* BUTTONS */
-.assign-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  cursor: pointer;
+  background: #FEE2E2;
+  color: #B91C1C;
 }
 
+/* BUTTON */
+
 .review-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  background: #6cb4ff;
+  padding: 7px 16px;
   border: none;
+  border-radius: 6px;
+  background: #3B82F6;
   color: white;
   cursor: pointer;
+  transition: .2s;
+}
+
+.review-btn:hover {
+  background: #2563EB;
 }
 </style>

@@ -36,13 +36,13 @@
         </div>
 
         <div class="card">
-          <p>Pending Review</p>
+          <p>Pending Endorsement</p>
           <h3>2</h3>
-          <small>Awaiting action</small>
+          <small>Awaiting OVCRIGE action</small>
         </div>
 
         <div class="card">
-          <p>For Revision</p>
+          <p>Returned for Revision</p>
           <h3>0</h3>
           <small>No deadline today</small>
         </div>
@@ -72,7 +72,7 @@
                 <td>Dr. Aljon Shipay</td>
                 <td>2024-12-10</td>
                 <td><span class="badge pending">Pending</span></td>
-                <td><button class="review" @click="goToReview">Review</button></td>
+                <td><button class="review" @click="goToReview">View Proposal</button></td>
               </tr>
 
               <tr>
@@ -81,7 +81,7 @@
                 <td>2024-12-05</td>
                 <td><span class="badge pending">Pending</span></td>
                 <td>
-                  <button class="review" @click="goToReview">Review</button>
+                  <button class="review" @click="goToReview">View Proposal</button>
                 </td>
               </tr>
             </tbody>
@@ -99,7 +99,7 @@
             </li>
 
             <li>
-              <strong>Revision deadline approaching</strong><br />
+              <strong>Proposal endorsed to REC</strong><br />
               Healthcare Facility Upgrade
               <small>1 day ago</small>
             </li>

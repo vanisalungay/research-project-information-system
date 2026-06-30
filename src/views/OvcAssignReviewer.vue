@@ -1,105 +1,67 @@
 <template>
-  <div class="assign-container">
+  <div class="endorse-container">
     <!-- PAGE TITLE -->
-    <h2 class="page-title">Assign Reviewer</h2>
-    <p class="page-sub">Select a recommended reviewer for this proposal</p>
+    <h2 class="page-title">Endorse Proposal to REC</h2>
+    <p class="page-sub">
+      Forward this proposal to the Research Evaluation Committee (REC) for evaluation.
+    </p>
 
     <div class="content-row">
-      <!-- LEFT SIDE – REVIEWER LIST -->
-      <div class="reviewer-list">
-        <div
-          class="reviewer-card"
-          v-for="(rev, index) in reviewers"
-          :key="index"
-          @click="selectReviewer(rev)"
-          :class="{ selected: selectedReviewer?.id === rev.id }"
-        >
-          <div class="profile-row">
-            <img class="profile-pic" src="https://via.placeholder.com/60" />
-
-            <div>
-              <h3>{{ rev.name }}</h3>
-              <p class="rating">⭐️ {{ rev.rating }} • {{ rev.reviews }} reviews</p>
-            </div>
-
-            <span class="status">Available</span>
-          </div>
-
-          <div class="expertise-section">
-            <p class="expertise-label">Expertise</p>
-            <div class="chip-row">
-              <span class="chip" v-for="(tag, i) in rev.expertise" :key="i">
-                {{ tag }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT SIDE – SUMMARY -->
       <div class="summary-card">
-        <h3>Assignment Summary</h3>
+        <h3>Proposal Endorsement</h3>
 
-        <div v-if="!selectedReviewer" class="placeholder">
-          <img class="placeholder-icon" src="https://via.placeholder.com/80?text=User" />
-          <p>Select a reviewer from the list<br />to continue</p>
-        </div>
-
-        <div v-else class="summary-info">
-          <h4>{{ selectedReviewer.name }}</h4>
-          <p class="rating">
-            ⭐️ {{ selectedReviewer.rating }} • {{ selectedReviewer.reviews }} reviews
+        <div class="proposal-info">
+          <p>
+            This proposal has passed the initial OVCRIGE review and is ready to be
+            endorsed to the Research Evaluation Committee (REC).
           </p>
 
-          <div class="chip-row">
-            <span class="chip" v-for="tag in selectedReviewer.expertise" :key="tag">
-              {{ tag }}
-            </span>
+          <div class="info-box">
+            <strong>What happens next?</strong>
+            <ul>
+              <li>REC members will receive the proposal.</li>
+              <li>The committee will evaluate the proposal collectively.</li>
+            </ul>
           </div>
 
-          <button class="assign-btn" @click="openConfirmation">Assign Reviewer</button>
+          <button class="endorse-btn" @click="openConfirmation">
+            Endorse to REC
+          </button>
         </div>
       </div>
     </div>
+
     <!-- CONFIRMATION MODAL -->
     <div v-if="showConfirmModal" class="modal-backdrop">
       <div class="modal-box">
-        <h3>Assign this reviewer?</h3>
+        <h3>Endorse this proposal to REC?</h3>
+
         <p>
-          This will assign <strong>{{ selectedReviewer.name }}</strong> to this proposal.
+          This proposal will be forwarded to the Research Evaluation Committee
+          for evaluation.
         </p>
 
         <div class="modal-actions">
-          <button class="cancel-btn" @click="showConfirmModal = false">Cancel</button>
-          <button class="confirm-btn" @click="confirmAssignment">Confirm</button>
+          <button class="cancel-btn" @click="showConfirmModal = false">
+            Cancel
+          </button>
+
+          <button class="confirm-btn" @click="confirmEndorsement">
+            Confirm
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- SUCCESS MESSAGE -->
-    <div v-if="showSuccessMessage" class="success-toast">Reviewer successfully assigned!</div>
+    <!-- SUCCESS TOAST -->
+    <div v-if="showSuccessMessage" class="success-toast">
+      Proposal successfully endorsed to REC!
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-
-const reviewers = ref([
-  {
-    id: 1,
-    name: 'Dr. Jane Smith',
-    rating: 4.8,
-    reviews: 45,
-    expertise: ['Community Development', 'Social Impact', 'Project Management'],
-  },
-  {
-    id: 2,
-    name: 'Dr. Michael Chen',
-    rating: 4.9,
-    reviews: 52,
-    expertise: ['Technology Innovation', 'Digital Transformation', 'Community Development'],
-  },
-])
 
 const showConfirmModal = ref(false)
 const showSuccessMessage = ref(false)
@@ -108,7 +70,7 @@ function openConfirmation() {
   showConfirmModal.value = true
 }
 
-function confirmAssignment() {
+function confirmEndorsement() {
   showConfirmModal.value = false
   showSuccessMessage.value = true
 
@@ -116,16 +78,10 @@ function confirmAssignment() {
     showSuccessMessage.value = false
   }, 2000)
 }
-
-const selectedReviewer = ref(null)
-
-function selectReviewer(reviewer) {
-  selectedReviewer.value = reviewer
-}
 </script>
 
 <style scoped>
-.assign-container {
+.endorse-container {
   padding: 30px;
 }
 
@@ -133,176 +89,115 @@ function selectReviewer(reviewer) {
   font-size: 28px;
   font-weight: bold;
   margin-bottom: 5px;
-  color: #262342;
-  color: #e6f0ff;
 }
 
 .page-sub {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   color: #666;
 }
 
 .content-row {
   display: flex;
-  gap: 25px;
+  justify-content: center;
 }
 
-/* LEFT SIDE LIST */
-.reviewer-list {
-  width: 65%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.reviewer-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 0 5px #ddd;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.reviewer-card:hover {
-  transform: translateY(-2px);
-}
-.reviewer-card.selected {
-  border: 2px solid #ffd803;
-}
-
-.profile-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.profile-pic {
-  width: 55px;
-  height: 55px;
-  border-radius: 50%;
-}
-
-.status {
-  margin-left: auto;
-  color: #22c55e;
-  font-weight: bold;
-}
-
-.rating {
-  font-size: 14px;
-  color: #777;
-}
-
-/* Chips */
-.chip-row {
-  margin-top: 5px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chip {
-  background: #e6f0ff;
-  color: #1a3998;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-}
-
-.expertise-section {
-  margin-top: 15px;
-}
-
-.expertise-label {
-  font-size: 13px;
-  color: #555;
-}
-
-/* RIGHT SIDE SUMMARY */
 .summary-card {
-  width: 30%;
+  width: 100%;
+  max-width: 750px;
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  height: fit-content;
-  box-shadow: 0 0 5px #ddd;
-  text-align: center;
+  padding: 30px;
+  box-shadow: 0 0 8px #ddd;
 }
 
-.placeholder {
-  margin-top: 30px;
-  color: #888;
+.summary-card h3 {
+  margin-bottom: 20px;
 }
 
-.placeholder-icon {
-  width: 60px;
-  margin-bottom: 15px;
+.proposal-info p {
+  line-height: 1.6;
+  color: #444;
 }
 
-.summary-info {
+.info-box {
   margin-top: 20px;
+  background: #f8f9fc;
+  border-left: 4px solid #ffd803;
+  padding: 15px;
+  border-radius: 8px;
 }
 
-.assign-btn {
-  margin-top: 20px;
-  padding: 10px 20px;
+.info-box ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.info-box li {
+  margin-bottom: 8px;
+}
+
+.endorse-btn {
+  margin-top: 25px;
   width: 100%;
+  padding: 12px;
   border: none;
   background: #ffd803;
   font-weight: bold;
   border-radius: 10px;
   cursor: pointer;
+  font-size: 15px;
 }
-/* --- MODAL BACKDROP --- */
+
+.endorse-btn:hover {
+  opacity: 0.95;
+}
+
+/* MODAL */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 999;
 }
 
-/* --- MODAL BOX --- */
 .modal-box {
   background: white;
-  width: 360px;
+  width: 380px;
   padding: 25px;
   border-radius: 12px;
   text-align: center;
-  box-shadow: 0 0 10px #ccc;
 }
 
-/* --- BUTTONS --- */
 .modal-actions {
-  margin-top: 20px;
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
 }
 
 .cancel-btn {
   background: #ddd;
-  padding: 8px 20px;
-  border-radius: 8px;
   border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
 .confirm-btn {
   background: #ffd803;
-  padding: 8px 20px;
-  border-radius: 8px;
   border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
 }
 
-/* --- SUCCESS TOAST --- */
+/* SUCCESS TOAST */
 .success-toast {
   position: fixed;
   bottom: 25px;

@@ -33,6 +33,7 @@
     <table class="proposals-table">
       <thead>
         <tr>
+          <th>Proposal ID</th>
           <th>Title</th>
           <th>Category</th>
           <th>Status</th>
@@ -43,22 +44,28 @@
       </thead>
 
       <tbody>
-        <tr>
+         <tr>
+          <td>2024-PUNLADAGAT-COMDEV-001</td>
           <td>Community Development Program 2024</td>
           <td>Punla/Dagat</td>
           <td><span class="status pending">Pending</span></td>
           <td>2024-12-10</td>
           <td>Jane Smith</td>
-          <td><button class="btn-view" @click="viewProposal(index)">View</button></td>
+          <td>
+            <button class="btn-view" @click="viewProposal(0)">View</button>
+          </td>
         </tr>
 
         <tr>
+          <td>2024-TANGLAW-HEALTH-002</td>
           <td>Healthcare Facility Upgrade</td>
           <td>Tanglaw</td>
           <td><span class="status approved">Approved</span></td>
           <td>2024-12-08</td>
           <td>Mike Johnson</td>
-          <td><button class="btn-view" @click="viewProposal(index)">View</button></td>
+          <td>
+            <button class="btn-view" @click="viewProposal(1)">View</button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -165,9 +172,10 @@ const closeModal = () => {
   border-radius: 6px;
 }
 
-.proposals-table {
-  width: 100%;
-  border-collapse: collapse;
+.proposals-table td:first-child {
+  font-family: monospace;
+  font-weight: 600;
+  color: #4b3f72;
 }
 
 .proposals-table th {

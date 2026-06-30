@@ -9,96 +9,151 @@
     <!-- Stats Cards -->
     <div class="stats-grid">
       <div class="stat-card dark">
-        <h3>5</h3>
+        <h3>{{ stats.total_reviews }}</h3>
         <p>Total Reviews</p>
       </div>
 
       <div class="stat-card green">
-        <h3>2</h3>
+        <h3>{{ stats.approved_reviews }}</h3>
         <p>Approved</p>
       </div>
 
       <div class="stat-card yellow">
-        <h3>1</h3>
+        <h3>{{ stats.revision_reviews }}</h3>
         <p>Revisions Requested</p>
       </div>
 
       <div class="stat-card blue">
-        <h3>5</h3>
+        <h3>{{ stats.reviewed_proposals }}</h3>
         <p>Proposals Reviewed</p>
       </div>
     </div>
 
-    <!-- Proposal Card -->
-    <div class="proposal-card">
-      <div class="proposal-header">
-        <div>
-          <h3>Sustainable Aquaculture Practices in Mindanao Coastal Areas</h3>
-          <span class="proposal-id">ID: P-2024-001</span>
-          <span class="badge under-review">UNDER REVIEW</span>
-        </div>
-        <button class="btn-view">View Proposal</button>
-      </div>
-
-      <div class="reviewer-section">
-        <div class="reviewer-header">
+    <!-- Proposal Cards -->
+    <div v-if="feedbacks.length">
+      <div
+        class="proposal-card"
+        v-for="proposal in feedbacks"
+        :key="proposal.id"
+      >
+        <div class="proposal-header">
           <div>
-            <strong>Dr. Juan Reyes</strong>
-            <p class="role">Technical Reviewer</p>
+            <h3>{{ proposal.project_title }}</h3>
+
+            <span class="proposal-id">
+              ID: {{ proposal.proposal_id }}
+            </span>
+
+            <span
+              class="badge"
+              :class="proposal.proposal_status_class"
+            >
+              {{ proposal.proposal_status }}
+            </span>
           </div>
-          <div class="review-status approved">Approved with minor revisions</div>
+
+          <button class="btn-view">
+            View Proposal
+          </button>
         </div>
 
-        <div class="feedback-box">
-          <strong>Feedback Summary</strong>
-          <p>
-            Strong research design with clear objectives. Methodology is sound and feasible within
-            the proposed timeline.
-          </p>
-        </div>
+        <div
+          class="reviewer-section"
+          v-for="review in proposal.reviews"
+          :key="review.id"
+        >
+          <div class="reviewer-header">
+            <div>
+              <strong>{{ review.reviewer_name }}</strong>
+              <p class="role">
+                {{ review.reviewer_role }}
+              </p>
+            </div>
 
-        <button class="btn-download">Download Full Evaluation Report</button>
+            <div
+              class="review-status"
+              :class="review.status_class"
+            >
+              {{ review.review_status }}
+            </div>
+          </div>
+
+          <div class="feedback-box">
+            <strong>Feedback Summary</strong>
+
+            <p>
+              {{ review.feedback_summary }}
+            </p>
+          </div>
+
+          <button class="btn-download">
+            Download Full Evaluation Report
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Second Proposal -->
-    <div class="proposal-card">
+    <!-- Empty State -->
+    <div
+      v-else
+      class="proposal-card empty-card"
+    >
       <div class="proposal-header">
         <div>
-          <h3>AI-Driven Crop Disease Detection System</h3>
-          <span class="proposal-id">ID: P-2024-002</span>
-          <span class="badge approved">APPROVED</span>
+          <h3>No Reviewer Feedback</h3>
+          <span class="proposal-id">
+            There are currently no reviewed proposals.
+          </span>
         </div>
-        <button class="btn-view">View Proposal</button>
       </div>
 
-      <div class="reviewer-section">
-        <div class="reviewer-header">
-          <div>
-            <strong>Dr. Elena Torres</strong>
-            <p class="role">Technical Reviewer</p>
-          </div>
-          <div class="review-status recommended">Highly Recommended for Approval</div>
-        </div>
+      <div class="reviewer-section empty-state">
+        <h4>No reviewer feedback available</h4>
 
-        <div class="feedback-box">
-          <strong>Feedback Summary</strong>
-          <p>
-            Excellent proposal with innovative approach. Strong technical foundation and clear
-            implementation plan.
-          </p>
-        </div>
-
-        <button class="btn-download">Download Full Evaluation Report</button>
+        <p>
+          You don't have any reviewed proposals yet. Once reviewers evaluate your submitted proposals,
+          their feedback and evaluation reports will appear here.
+        </p>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProponentFeedback',
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const loading = ref(false)
+
+const stats = ref({
+  total_reviews: 0,
+  approved_reviews: 0,
+  revision_reviews: 0,
+  reviewed_proposals: 0,
+})
+
+const feedbacks = ref([])
+
+async function fetchFeedbacks() {
+  loading.value = true
+
+  try {
+    // API call goes here later
+    // Example:
+    // const response = await axios.get(...)
+    //
+    // stats.value = response.data.stats
+    // feedbacks.value = response.data.feedbacks
+
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(() => {
+  fetchFeedbacks()
+})
 </script>
 
 <style scoped>
@@ -264,5 +319,24 @@ export default {
   margin: 6px 0 0;
   font-size: 14px;
   color: #374151;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state h4 {
+  margin: 0 0 10px;
+  color: #374151;
+  font-size: 18px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.6;
+  max-width: 500px;
+  margin-inline: auto;
 }
 </style>

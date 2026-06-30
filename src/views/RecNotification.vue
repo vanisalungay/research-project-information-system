@@ -5,13 +5,13 @@
     <div class="form-box">
       <!-- ASSIGNED PROPOSAL -->
       <div class="notification-card">
-        <h3>Assigned Proposals</h3>
+        <h3>Proposals</h3>
         <p>
-          You have been assigned to review the proposal
+          There's a new proposal to review.
           <strong>{{ assignedProposal.title }}</strong
           >.
         </p>
-        <small>Assigned on {{ assignedProposal.date }}</small>
+        <small>Review Date: {{ assignedProposal.date }}</small>
       </div>
 
       <!-- REVISION SUBMITTED -->

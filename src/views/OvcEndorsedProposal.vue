@@ -1,7 +1,7 @@
 <template>
   <div class="endorsed-page">
     <h2>Endorsed Proposals</h2>
-    <p class="subtitle">View all proposals approved by OVCRIGE</p>
+    <p class="subtitle"> View all proposals endorsed to the Research Evaluation Committee (REC)</p>    
     <input class="search" placeholder="Search endorsed proposals..." />
 
     <div class="table-card">
@@ -13,7 +13,7 @@
             <th>Category</th>
             <th>Endorsed Date</th>
             <th>Budget</th>
-            <th>Score</th>
+            <th>REC Status</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -24,12 +24,8 @@
             <td>{{ item.category }}</td>
             <td>{{ item.date }}</td>
             <td>{{ item.budget }}</td>
-            <td>
-              <div class="score">
-                <div class="bar" :style="{ width: item.score + '%' }"></div>
-                <span>{{ item.score }}</span>
-              </div>
-            </td>
+            <td>{{ item.status }}</td>
+            
             <td>
               <button class="view" @click="goToReview">View</button>
             </td>
@@ -56,7 +52,7 @@ const proposals = ref([
     category: 'Tanglaw Program',
     date: '2024-12-09',
     budget: '₱180,000',
-    score: 85,
+    status: 'Endorsed to REC',
   },
   {
     title: 'Technology Innovation Initiative',
@@ -64,7 +60,7 @@ const proposals = ref([
     category: 'Tanglaw Program',
     date: '2024-12-03',
     budget: '₱95,000',
-    score: 92,
+    status: 'Under REC Evaluation',
   },
 ])
 </script>

@@ -11,7 +11,7 @@
 
       <section class="stats">
         <div class="stat-card">
-          <p>Assigned Proposal</p>
+          <p>Submitted Proposal</p>
           <h3>2</h3>
           <small>2 this week</small>
         </div>
@@ -32,7 +32,7 @@
       <section class="content">
         <div class="table-card">
           <div class="table-header">
-            <h3>Latest Assigned Proposals</h3>
+            <h3>Latest Proposals</h3>
             <button class="view-all" @click="goToAssigned">View All</button>
           </div>
 
@@ -72,7 +72,7 @@
 
           <ul>
             <li>
-              New assigned proposal:
+              New proposal:
               <strong>Community Development Program 2024</strong>
               <small>2 hours ago</small>
             </li>

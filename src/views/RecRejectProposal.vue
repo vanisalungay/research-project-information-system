@@ -70,25 +70,6 @@
           </div>
         </div>
 
-        <!-- REVIEWER SUMMARY -->
-        <div class="card">
-          <h3 class="card-title">Reviewer's Evaluation Summary</h3>
-
-          <p class="summary-header"><strong>Assigned Reviewer:</strong> Jane Smith</p>
-          <p class="summary-note">Reviewer’s comments are shown below, including key concerns.</p>
-
-          <div class="summary-box">
-            <strong>Assigned Reviewers:</strong> Jane Smith
-            <p class="summary-note">
-              Reviewers’ comments below indicate issues leading to rejection.
-            </p>
-          </div>
-
-          <div class="form-group">
-            <label>Reviewer Comments (Optional)</label>
-            <textarea rows="4" placeholder="Enter reviewer notes..."></textarea>
-          </div>
-        </div>
       </div>
 
       <!-- RIGHT SECTION -->

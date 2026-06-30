@@ -41,43 +41,56 @@ import { ref, computed } from 'vue'
 const notifications = ref([
   {
     sender: 'System',
-    label: 'new proposal submitted',
+    label: 'New Proposal Submitted',
     message: 'Community Development Program 2024 has been submitted for OVCRIGE review.',
     time: '2 hours ago',
   },
   {
-    sender: 'REC Committee',
-    label: 'evaluation submitted',
-    message: 'REC has completed evaluation for Healthcare Facility Upgrade.',
-    time: '5 hours ago',
+    sender: 'OVCRIGE',
+    label: 'Proposal Returned for Revision',
+    message:
+      'Healthcare Facility Upgrade has been returned to the proponent for revision.',
+    time: '6 hours ago',
   },
   {
-    sender: 'System',
-    label: 'proposal pending action',
-    message: 'Youth Empowerment Program is awaiting OVCRIGE decision.',
+    sender: 'OVCRIGE',
+    label: 'Proposal Endorsed to REC',
+    message:
+      'Educational Infrastructure Project has been endorsed to the Research Evaluation Committee (REC).',
     time: '1 day ago',
   },
   {
-    sender: 'System',
-    label: 'proposal forwarded',
-    message: 'Educational Infrastructure Project has been forwarded to REC for review.',
+    sender: 'REC',
+    label: 'Evaluation Started',
+    message:
+      'REC has started evaluating Technology Innovation Initiative.',
     time: '2 days ago',
   },
-
   {
-    sender: 'System',
-    label: 'proposal endorsed',
-    message: 'Environmental Conservation Project has been endorsed by OVCRIGE.',
-    time: '1 week ago',
+    sender: 'REC',
+    label: 'Evaluation Completed',
+    message:
+      'REC has completed the evaluation of Educational Infrastructure Project.',
+    time: '3 days ago',
+  },
+  {
+    sender: 'REC',
+    label: 'Recommendation Submitted',
+    message:
+      'REC has submitted its recommendation for Community Development Program 2024.',
+    time: '5 days ago',
   },
 ])
 
 const grouped = computed(() => {
   const map = {}
 
-  notifications.value.forEach((noti) => {
-    if (!map[noti.sender]) map[noti.sender] = []
-    map[noti.sender].push(noti)
+  notifications.value.forEach((notification) => {
+    if (!map[notification.sender]) {
+      map[notification.sender] = []
+    }
+
+    map[notification.sender].push(notification)
   })
 
   return Object.keys(map).map((sender) => ({
@@ -133,6 +146,7 @@ function toggleGroup(index) {
 
 .sender {
   font-weight: 600;
+  color: #2f2b57;
 }
 
 .arrow {
@@ -153,12 +167,13 @@ function toggleGroup(index) {
 .notif-item {
   display: flex;
   justify-content: space-between;
+  gap: 20px;
   margin-bottom: 18px;
 }
 
 .notif-left {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -172,16 +187,18 @@ function toggleGroup(index) {
 
 .notif-label {
   font-size: 14px;
+  margin: 0;
 }
 
 .notif-msg {
   color: #555;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: 13px;
 }
 
 .notif-time {
   font-size: 12px;
   color: #777;
+  white-space: nowrap;
 }
 </style>
