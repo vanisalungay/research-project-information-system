@@ -101,12 +101,12 @@ const handleMenuItemClick = (menuItemData) => {
   showDropdown.value = false
   console.log('handleMenuItemClick', menuItemData)
   switch (menuItemData) {
-    case 'SWITCH TO RII STAFF':
-      selectedRole = UserRole.RII_STAFF
+    case 'SWITCH TO RPS STAFF':
+      selectedRole = UserRole.RPS_STAFF
       loginDialog.value?.showModal()
       break
-    case 'SWITCH TO RII ADMIN':
-      selectedRole = UserRole.RII_ADMIN
+    case 'SWITCH TO RPS ADMIN':
+      selectedRole = UserRole.RPS_ADMIN
       loginDialog.value?.showModal()
       break
     case 'LOGOUT':
@@ -119,9 +119,9 @@ const handleMenuItemClick = (menuItemData) => {
 
 const menuItems = []
 
-if (userStore.user?.role === UserRole.RII_ADMIN) menuItems.push('SWITCH TO RII STAFF')
+if (userStore.user?.role === UserRole.RPS_ADMIN) menuItems.push('SWITCH TO RPS STAFF')
 
-if (userStore.user?.role === UserRole.RII_STAFF) menuItems.push('SWITCH TO RII ADMIN')
+if (userStore.user?.role === UserRole.RPS_STAFF) menuItems.push('SWITCH TO RPS ADMIN')
 
 menuItems.push('LOGOUT')
 </script>

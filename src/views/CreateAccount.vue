@@ -11,7 +11,7 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND INNOVATION INSTITUTE<br />
+        RESEARCH AND PUBLICATION SERVICES<br />
         Mindanao State University at Naawan
       </p>
     </div>
@@ -42,6 +42,13 @@
 
         <label>ID Number</label>
         <input type="text" v-model="idNumber" placeholder="Enter your ID number" required />
+        <label>Department / Office</label>
+        <input
+          type="text"
+          v-model="departmentOffice"
+          placeholder="Enter your department or office"
+          required
+        />
 
         <label>University Email Address</label>
         <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
@@ -80,12 +87,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
 const roles = [
-  { name: 'Proponent', desc: 'Research Proposal Submitter' },
-  { name: 'RII', desc: 'Research and Innovation Institute' },
+  { name: 'RPS', desc: 'Research and Publication Services' },
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
@@ -99,19 +106,70 @@ const selectedRole = ref('Proponent')
 
 const name = ref('')
 const idNumber = ref('')
+const departmentOffice = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
   if (password.value !== confirmPassword.value) {
     alert('Passwords do not match')
     return
   }
 
-  alert('Account Created Successfully!')
-  router.push('/login')
+  const roleMap = {
+    'RPS': 'RPS_STAFF',
+    'OVCRIGE': 'OVCRIGE',
+    'REC': 'REC',
+    'OVCAF': 'OVCAF',
+    'OC': 'OC'
+  }
+
+  try {
+    const payload = {
+  name: name.value,
+  email: email.value,
+  password: password.value,
+  role: roleMap[selectedRole.value] || 'PROPONENT',
+  departmentOffice: departmentOffice.value
+}
+
+    await axios.post('http://localhost:8081/api/users', payload)
+    alert('Account registration submitted! Please wait for RII ADMIN approval before logging in.')
+    router.push('/login')
+  } catch (error) {
+    if (error.response) {
+      console.error(error)
+      alert(error.response.data?.message || 'Registration failed. Check if email already exists.')
+    } else {
+      console.warn('Backend is offline. Simulating registration locally via localStorage...')
+      
+      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
+      const emailExists = offlineUsers.some(u => u.email.toLowerCase() === email.value.toLowerCase())
+      
+      if (emailExists) {
+        alert('Registration failed. Check if email already exists.')
+        return
+      }
+
+      const newUser = {
+        id: Date.now(),
+        name: name.value,
+        email: email.value,
+        password: password.value,
+        role: roleMap[selectedRole.value] || 'PROPONENT',
+        status: 'Pending',
+        date: new Date().toLocaleDateString()
+      }
+      
+      offlineUsers.push(newUser)
+      localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
+      
+      alert('Account registration submitted! Please wait for RPS ADMIN approval before logging in.')
+      router.push('/login')
+    }
+  }
 }
 </script>
 

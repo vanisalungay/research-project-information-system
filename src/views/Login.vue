@@ -10,7 +10,7 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND INNOVATION INSTITUTE<br />
+        RESEARCH AND PUBLICATION SERVICES<br />
         Mindanao State University at Naawan
       </p>
     </div>
@@ -67,11 +67,16 @@ const password = ref('')
 const errorMessage = ref('')
 
 const roles = [
+<<<<<<< HEAD
   { 
     name: 'RII', 
     desc: 'Research and Innovation Institute', 
     value: UserRole.RII_STAFF 
   },
+=======
+  { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
+  { name: 'RPS', desc: 'Research and Publication Services', value: UserRole.RPS_STAFF },
+>>>>>>> 79da2225c7714d72dcd919e5ebd9ece9e5bee5a6
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
@@ -96,11 +101,24 @@ const roles = [
 const selectedRole = ref('PROPONENT')
 
 const handleLogin = async () => {
-  const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
-  if (isLoggedIn) {
-    router.push('/home')
-  } else {
-    errorMessage.value = 'Invalid email or password.'
+  console.log('SELECTED ROLE:', selectedRole.value)
+
+  try {
+    errorMessage.value = ''
+
+    const isLoggedIn = await userStore.login(
+      email.value,
+      password.value,
+      selectedRole.value
+    )
+
+    if (isLoggedIn) {
+      router.push('/home')
+    } else {
+      errorMessage.value = 'Invalid email, password, or role.'
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Invalid email, password, or role.'
   }
 }
 </script>

@@ -2,7 +2,7 @@
   <div class="page">
     <!-- Header -->
     <h2>Submitted Proposals</h2>
-    <p class="subtitle">Review and manage all proposals forwarded to RII</p>
+    <p class="subtitle">Review and manage all proposals forwarded to RPS</p>
 
     <!-- Controls -->
     <div class="controls">

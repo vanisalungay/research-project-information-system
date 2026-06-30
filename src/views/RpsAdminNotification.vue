@@ -2,7 +2,9 @@
   <div class="page">
     <!-- Header -->
     <h2>Notifications</h2>
-    <p class="subtitle">You have {{ unreadCount }} unread notifications</p>
+    <p class="subtitle">
+      You have {{ unreadCount }} unread notification{{ unreadCount !== 1 ? 's' : '' }}
+    </p>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -36,42 +38,9 @@
         <p>{{ notification.message }}</p>
 
         <div class="meta">
-          <div class="box">
-            <strong>Proposal:</strong> {{ notification.proposal }}
-            <span v-if="notification.amount">
-              <br />
-              <strong>Amount:</strong>
-              ₱{{ notification.amount.toLocaleString() }}
-            </span>
-          </div>
+          <div class="box"><strong>Category:</strong> {{ notification.category }}</div>
 
           <small>{{ notification.date }}</small>
-        </div>
-
-        <div class="actions">
-          <button
-            v-if="notification.type === 'review'"
-            class="action-btn"
-            @click="$router.push('fundviewprop')"
-          >
-            Review Proposal
-          </button>
-
-          <button
-            v-if="notification.type === 'endorse'"
-            class="action-btn"
-            @click="$router.push('rii-endorse')"
-          >
-            Review & Endorse
-          </button>
-
-          <button
-            v-if="notification.type === 'release'"
-            class="action-btn"
-            @click="$router.push('fundrelease')"
-          >
-            Release Funds
-          </button>
         </div>
       </div>
 
@@ -95,15 +64,37 @@ export default {
       activeTab: 'all',
       notifications: [
         {
-          id: 2,
-          type: 'endorse',
-          title: 'Endorsement Required',
+          id: 1,
+          type: 'account',
+          title: 'Pending Account Approvals',
           message:
-            'Community Development Program 2024 has been reviewed by REC and is awaiting your endorsement decision.',
-          proposal: 'Community Development Program 2024',
-          date: '2024-12-14 08:15 AM',
-          icon: '🟡',
+            'You have new user registrations awaiting approval. Review pending accounts to approve or reject access.',
+          category: 'User Account Requests',
+          date: '2024-12-15 10:30 AM',
+          icon: '👤',
           read: false,
+        },
+        {
+          id: 2,
+          type: 'account',
+          title: 'New User Registration',
+          message:
+            'Dr. Maria Santos has submitted a request for a Faculty account and is pending your approval.',
+          category: 'Faculty Account',
+          date: '2024-12-15 09:10 AM',
+          icon: '📝',
+          read: false,
+        },
+        {
+          id: 3,
+          type: 'account',
+          title: 'Account Approval Required',
+          message:
+            'Multiple user accounts are still pending review. Please take action to avoid delays.',
+          category: 'Pending Accounts',
+          date: '2024-12-14 04:45 PM',
+          icon: '⚠️',
+          read: true,
         },
       ],
     }
@@ -145,19 +136,10 @@ export default {
     dismiss(notification) {
       this.notifications = this.notifications.filter((n) => n.id !== notification.id)
     },
-    reviewProposal(notification) {
-      notification.read = true
-      console.log('Review Proposal:', notification.proposal)
-    },
 
-    reviewAndEndorse(notification) {
+    goToPendingAccounts(notification) {
       notification.read = true
-      console.log('Review & Endorse:', notification.proposal)
-    },
-
-    releaseFunds(notification) {
-      notification.read = true
-      console.log('Release Funds:', notification.proposal)
+      this.$router.push('/rps-admin/pending-accounts')
     },
   },
 }
@@ -165,10 +147,10 @@ export default {
 
 <style scoped>
 .page {
+  padding: 24px;
+  font-family: Arial, sans-serif;
   width: 500%;
   max-width: 135%;
-  padding: 24px 40px;
-  font-family: Arial, sans-serif;
 }
 
 .subtitle {
@@ -238,7 +220,7 @@ export default {
 }
 
 .action-btn {
-  background: #60a5fa;
+  background: #4f46e5;
   color: white;
   border: none;
   padding: 6px 12px;

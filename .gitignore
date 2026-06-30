@@ -34,3 +34,9 @@ coverage
 
 # Vitest
 __screenshots__/
+
+# Backend build, JDK and Maven folders
+backend/target/
+backend/jdk-*/
+backend/apache-maven-*/
+backend/apache-maven-*

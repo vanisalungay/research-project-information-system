@@ -3,8 +3,8 @@
     <OvcrigeDashboard v-if="loggedInUser.role === UserRole.OVCRIGE"></OvcrigeDashboard>
     <ProponentDashboard v-if="loggedInUser.role === UserRole.PROPONENT"></ProponentDashboard>
     <RecDashboard v-if="loggedInUser.role === UserRole.REC"></RecDashboard>
-    <RiiStaffDashboard v-if="loggedInUser.role === UserRole.RII_STAFF"></RiiStaffDashboard>
-    <RiiAdminDashboard v-if="loggedInUser.role === UserRole.RII_ADMIN"></RiiAdminDashboard>
+    <RpsStaffDashboard v-if="loggedInUser.role === UserRole.RPS_STAFF"></RpsStaffDashboard>
+    <RpsAdminDashboard v-if="loggedInUser.role === UserRole.RPS_ADMIN"></RpsAdminDashboard>
     <OvcafDashboard v-if="loggedInUser.role === UserRole.OVCAF"></OvcafDashboard>
     <OCDashboard v-if="loggedInUser.role === UserRole.OC"></OCDashboard>
   </div>
@@ -16,8 +16,8 @@ import { useUserDataStore, UserRole } from '@/stores/userData'
 import OvcrigeDashboard from './OvcrigeDashboard.vue'
 import ProponentDashboard from './ProponentDashboard.vue'
 import RecDashboard from './RecDashboard.vue'
-import RiiStaffDashboard from './RiiStaffDashboard.vue'
-import RiiAdminDashboard from './RiiAdminDashboard.vue'
+import RpsStaffDashboard from './RpsStaffDashboard.vue'
+import RpsAdminDashboard from './RpsAdminDashboard.vue'
 import OvcafDashboard from './OvcafDashboard.vue'
 import OCDashboard from './OCDashboard.vue'
 
