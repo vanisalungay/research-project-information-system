@@ -16,32 +16,37 @@
       </p>
     </div>
 
+    <!-- RIGHT PANEL -->
     <div class="right-panel">
-      <h2 class="welcome">CREATE ACCOUNT</h2>
-      <p class="subtitle">Register to access the Research Project Information System</p>
 
-      <p class="register-as-label">Register as</p>
+     <button class="back-btn" @click="router.push('/login')">
+      ← Back to Login
+         </button>
+         
+      <h2 class="welcome">CREATE PROPONENT ACCOUNT</h2>
 
-      <div class="role-container">
-        <div
-          v-for="role in roles"
-          :key="role.name"
-          class="role-box"
-          :class="{ active: selectedRole === role.name }"
-          @click="selectedRole = role.name"
-        >
-          <h3>{{ role.name }}</h3>
-          <p>{{ role.desc }}</p>
-        </div>
-      </div>
+      <p class="subtitle">
+        Register as a Proponent to submit and manage research project proposals.
+      </p>
 
       <!-- FORM -->
       <form class="register-form" @submit.prevent="handleRegister">
         <label>Name</label>
-        <input type="text" v-model="name" placeholder="Enter your full name" required />
+        <input
+          type="text"
+          v-model="name"
+          placeholder="Enter your full name"
+          required
+        />
 
         <label>ID Number</label>
-        <input type="text" v-model="idNumber" placeholder="Enter your ID number" required />
+        <input
+          type="text"
+          v-model="idNumber"
+          placeholder="Enter your ID number"
+          required
+        />
+
         <label>Department / Office</label>
         <input
           type="text"
@@ -52,7 +57,7 @@
 
         <label>University Email Address</label>
         <input
-  type="email"
+          type="email"
           v-model="email"
           placeholder="juan.delacruz@msunaawan.edu.ph"
           pattern="^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$"
@@ -63,7 +68,12 @@
         <div class="half-inputs">
           <div>
             <label>Password</label>
-            <input type="password" v-model="password" placeholder="Create a password" required />
+            <input
+              type="password"
+              v-model="password"
+              placeholder="Create a password"
+              required
+            />
           </div>
 
           <div>
@@ -77,17 +87,93 @@
           </div>
         </div>
 
-        <!-- TERMS BOX -->
+        <!-- TERMS -->
         <div class="terms">
-          <input type="checkbox" v-model="agree" required />
-          <label
-            >I agree to the terms and conditions of the Research Project Information System.</label
-          >
+          <input type="checkbox" v-model="agree" />
+
+          <label>
+            I have read and agree to the
+            <span class="terms-link" @click.prevent="showTermsModal = true">
+              Terms and Conditions
+            </span>
+            and
+            <span class="terms-link" @click.prevent="showTermsModal = true">
+              Privacy Policy
+            </span>.
+          </label>
         </div>
 
-        <button class="register-btn">Create Account</button>
+        <button class="register-btn" type="submit">
+          Create Proponent Account
+        </button>
       </form>
     </div>
+
+    <!-- TERMS & CONDITIONS MODAL -->
+    <div v-if="showTermsModal" class="modal-overlay">
+      <div class="modal-box">
+
+        <h2>TERMS AND CONDITIONS</h2>
+
+        <div class="modal-content">
+
+          <p>
+            Welcome to the Research Project Information System of
+            Mindanao State University at Naawan.
+          </p>
+
+          <h3>TERMS AND CONDITIONS</h3>
+
+          <ol>
+            <li>
+              Only official <strong>@msunaawan.edu.ph</strong> email addresses
+              may be used to register.
+            </li>
+
+            <li>
+              You are responsible for keeping your account credentials secure.
+            </li>
+
+            <li>
+              All information you provide must be accurate and truthful.
+            </li>
+
+            <li>
+              You are responsible for all research proposals submitted through
+              your account.
+            </li>
+
+            <li>
+              Any misuse of the system may result in suspension or termination
+              of your account.
+            </li>
+          </ol>
+
+          <h3>PRIVACY POLICY</h3>
+
+          <p>
+            The system collects your name, university email, department, and
+            other information solely for research proposal management.
+          </p>
+
+          <p>
+            Your personal information will only be accessed by authorized
+            university personnel and handled in accordance with the
+            <strong>Data Privacy Act of 2012 (Republic Act No. 10173).</strong>
+          </p>
+
+        </div>
+
+        <button
+          class="close-btn"
+          @click="showTermsModal = false"
+        >
+          Close
+        </button>
+
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -98,19 +184,6 @@ import axios from 'axios'
 
 const router = useRouter()
 
-const roles = [
-  { name: 'RPS', desc: 'Research and Publication Services' },
-  {
-    name: 'OVCRIGE',
-    desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
-  },
-  { name: 'REC', desc: 'Research Evaluation Committee' },
-  { name: 'OVCAF', desc: 'Office of the Vice Chancellor for Admin and Finance' },
-  { name: 'OC', desc: 'Office of the Chancellor' },
-]
-
-const selectedRole = ref('Proponent')
-
 const name = ref('')
 const idNumber = ref('')
 const departmentOffice = ref('')
@@ -119,7 +192,16 @@ const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
+// NEW
+const showTermsModal = ref(false)
+
 const handleRegister = async () => {
+  // Must agree first
+  if (!agree.value) {
+    alert('Please read and agree to the Terms and Conditions and Privacy Policy.')
+    return
+  }
+
   // Password check
   if (password.value !== confirmPassword.value) {
     alert('Passwords do not match.')
@@ -134,22 +216,11 @@ const handleRegister = async () => {
     return
   }
 
-  const roleMap = {
-    RPS: 'RPS_STAFF',
-    OVCRIGE: 'OVCRIGE',
-    REC: 'REC',
-    OVCAF: 'OVCAF',
-    OC: 'OC'
-  }
-  if (!email.value.toLowerCase().endsWith('@msunaawan.edu.ph')) {
-  alert('Please use your official MSU Naawan email address.')
-  return
-}
   const payload = {
     name: name.value.trim(),
     email: email.value.trim().toLowerCase(),
     password: password.value,
-    role: roleMap[selectedRole.value] || 'PROPONENT',
+    role: 'PROPONENT',
     departmentOffice: departmentOffice.value.trim()
   }
 
@@ -159,11 +230,10 @@ const handleRegister = async () => {
       payload
     )
 
-    alert(
-      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
-    )
+    alert('Account created successfully! You can now log in.')
 
     router.push('/login')
+
   } catch (error) {
 
     console.log(error)
@@ -198,9 +268,9 @@ const handleRegister = async () => {
       name: name.value.trim(),
       email: email.value.trim().toLowerCase(),
       password: password.value,
-      role: roleMap[selectedRole.value] || 'PROPONENT',
+      role: 'PROPONENT',
       departmentOffice: departmentOffice.value.trim(),
-      status: 'PENDING',
+      status: 'ACTIVE',
       dateRegistered: new Date().toISOString()
     }
 
@@ -211,9 +281,7 @@ const handleRegister = async () => {
       JSON.stringify(offlineUsers)
     )
 
-    alert(
-      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
-    )
+    alert('Account created successfully! You can now log in.')
 
     router.push('/login')
   }
@@ -221,6 +289,23 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #2452ff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 18px;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: #163dbd;
+  text-decoration: underline;
+}
 .register-wrapper {
   display: flex;
   height: 100vh;
@@ -341,5 +426,102 @@ const handleRegister = async () => {
 }
 label {
   color: #1f1a3d;
+}
+
+/* TERMS SECTION */
+.terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 15px 0;
+  font-size: 14px;
+}
+
+.terms input {
+  margin-top: 4px;
+}
+
+.terms-link {
+  color: #2452ff;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.terms-link:hover {
+  color: #163dbd;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: white;
+  width: 650px;
+  max-width: 90%;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+.modal-box h2 {
+  margin-bottom: 15px;
+  color: #1f1a3d;
+}
+
+.modal-content {
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.8;
+  color: #444;
+  text-align: justify;   /* Justify all paragraphs */
+  padding-right: 12px;
+}
+
+.modal-content h3 {
+  margin-top: 22px;
+  margin-bottom: 12px;
+  color: #1f1a3d;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.modal-content p {
+  margin-bottom: 14px;
+  text-align: justify;
+}
+
+.modal-content li {
+  margin-bottom: 10px;
+  text-align: justify;
+} 
+
+.modal-content ol {
+  padding-left: 20px;
+}
+
+.close-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: #2452ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.close-btn:hover {
+  background: #1d43d8;
 }
 </style>

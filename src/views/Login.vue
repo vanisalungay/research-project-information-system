@@ -73,8 +73,8 @@ const errorMessage = ref('')
 
 const roles = [
   { 
-    name: 'RII', 
-    desc: 'Research and Innovation Institute', 
+    name: 'RPS', 
+    desc: 'Research and Publication Services', 
     value: UserRole.RPS_STAFF 
   },
   {

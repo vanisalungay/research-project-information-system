@@ -44,7 +44,7 @@
       <tbody v-else-if="proposals.length === 0">
         <tr>
           <td colspan="5" style="text-align:center">
-            No assigned proposals found.
+            No proposals found.
           </td>
         </tr>
       </tbody>

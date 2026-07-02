@@ -14,37 +14,37 @@
     <div class="layout-grid">
       <!-- LEFT SECTION -->
       <div class="left-col">
-        <!-- PROPOSAL INFORMATION -->
-        <div class="card">
-          <h3 class="card-title">Proposal Information</h3>
+       <!-- PROPOSAL INFORMATION -->
+<div class="card">
+  <h3 class="card-title">Proposal Information</h3>
 
-          <div class="info-grid">
-            <div class="info-box">
-              <label>Title</label>
-              <p>Community Development Program</p>
-            </div>
+  <div class="info-grid">
+    <div class="info-box">
+      <label>Title</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Proponent</label>
-              <p>Dr. Allen Shiopy</p>
-            </div>
+    <div class="info-box">
+      <label>Proponent</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Type</label>
-              <p>Research</p>
-            </div>
+    <div class="info-box">
+      <label>Type</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Program ID</label>
-              <p>43</p>
-            </div>
+    <div class="info-box">
+      <label>Program ID</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Category</label>
-              <p>Extension Program</p>
-            </div>
-          </div>
-        </div>
+    <div class="info-box">
+      <label>Category</label>
+      <p></p>
+    </div>
+  </div>
+</div>
 
         <!-- REJECTION DETAILS -->
         <div class="card">

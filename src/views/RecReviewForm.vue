@@ -364,11 +364,11 @@ const goToReturn = () => {
 
 // proposal data
 const proposal = {
-  title: 'Community Outreach Program 2024',
-  program: 'Kalikasan Program',
-  proponent: 'Dr. Allen Snippy',
-  date: '2024-12-10',
-  type: 'Mixed Funding Proposal',
+  title: '',
+  program: '',
+  proponent: '',
+  date: '',
+  type: '',
 }
 </script>
 
