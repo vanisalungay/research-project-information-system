@@ -67,16 +67,8 @@ const password = ref('')
 const errorMessage = ref('')
 
 const roles = [
-<<<<<<< HEAD
-  { 
-    name: 'RII', 
-    desc: 'Research and Innovation Institute', 
-    value: UserRole.RII_STAFF 
-  },
-=======
   { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
   { name: 'RPS', desc: 'Research and Publication Services', value: UserRole.RPS_STAFF },
->>>>>>> 79da2225c7714d72dcd919e5ebd9ece9e5bee5a6
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',

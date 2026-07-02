@@ -50,12 +50,17 @@
         <strong>Address:</strong> 
         {{ proposal.address }}
       </p>
+
+      <p>
+        <strong>Number of Other Ongoing Projects:</strong>
+        {{ proposal.other_projects_number }}
+      </p>
     </section>
 
     <!-- 2. Cooperating Agencies -->
     <section>
       <h2>(2) COOPERATING AGENCY / IES</h2>
-      <p>{{ proposal.agency }}</p>
+      <p>{{ proposal.cooperating_agencies }}</p>
     </section>
 
     <!-- 3. Sites of Implementation -->
@@ -120,14 +125,30 @@
     <section>
       <h2>(5) PRIORITY AGENDA</h2>
 
-      <ul v-if="proposal.priority_agendas.length > 0">
-        <li
-          v-for="agenda in proposal.priority_agendas"
-          :key="agenda.id"
-        >
-          {{ agenda.name }}
-        </li>
-      </ul>
+      <div v-if="proposal.priority_agendas.dagat.selected">
+        <strong>DAGAT:</strong>
+        {{ proposal.priority_agendas.dagat.value }}
+      </div>
+
+      <div v-if="proposal.priority_agendas.punla.selected">
+        <strong>PUNLA:</strong>
+        {{ proposal.priority_agendas.punla.value }}
+      </div>
+
+      <div v-if="proposal.priority_agendas.kalikasan.selected">
+        <strong>KALIKASAN:</strong>
+        {{ proposal.priority_agendas.kalikasan.value }}
+      </div>
+
+      <div v-if="proposal.priority_agendas.negosyo.selected">
+        <strong>NEGOSYO:</strong>
+        {{ proposal.priority_agendas.negosyo.value }}
+      </div>
+
+      <div v-if="proposal.priority_agendas.tanglaw.selected">
+        <strong>TANGLAW:</strong>
+        {{ proposal.priority_agendas.tanglaw.value }}
+      </div>
 
       <p
         v-else
@@ -240,14 +261,9 @@
 
       <strong>Specific Objectives</strong>
 
-      <ul v-if="proposal.specific_objectives.length">
-        <li
-          v-for="objective in proposal.specific_objectives"
-          :key="objective.id"
-        >
-          {{ objective.objective }}
-        </li>
-      </ul>
+      <p v-if="proposal.specific_objectives">
+        {{ proposal.specific_objectives }}
+      </p>
 
       <p v-else class="empty-text">
         No specific objectives provided.
@@ -258,15 +274,16 @@
     <section>
       <h2>(11) REVIEW OF LITERATURE</h2>
 
-      <p v-if="proposal.review_of_literature">
-        {{ proposal.review_of_literature }}
-      </p>
-
-      <p
-        v-else
-        class="empty-text"
+      <a
+        v-if="proposal.review_of_literature_file"
+        :href="proposal.review_of_literature_file"
+        target="_blank"
       >
-        No review of literature provided.
+        View Review of Literature
+      </a>
+
+      <p v-else class="empty-text">
+        No file uploaded.
       </p>
     </section>
 
@@ -290,26 +307,23 @@
     <section>
       <h2>(13) TECHNOLOGY ROADMAP</h2>
 
-      <p v-if="proposal.technology_roadmap">
-        {{ proposal.technology_roadmap }}
-      </p>
+      <a
+        v-if="proposal.technology_roadmap_file"
+        :href="proposal.technology_roadmap_file"
+        target="_blank"
+      >
+        View Technology Roadmap
+      </a>
 
-      <p v-else class="empty-text">
-        No technology roadmap provided.
-      </p>
+      <p v-else>No file uploaded.</p>
     </section>
 
     <section>
       <h2>(14) EXPECTED OUTPUTS</h2>
 
-      <ul v-if="proposal.expected_outputs.length">
-        <li
-          v-for="output in proposal.expected_outputs"
-          :key="output.id"
-        >
-          {{ output.output }}
-        </li>
-      </ul>
+      <p v-if="proposal.expected_outputs">
+        {{ proposal.expected_outputs }}
+      </p>
 
       <p v-else class="empty-text">
         No expected outputs provided.
@@ -319,14 +333,9 @@
     <section>
       <h2>(15) POTENTIAL OUTCOMES</h2>
 
-      <ul v-if="proposal.potential_outcomes.length">
-        <li
-          v-for="outcome in proposal.potential_outcomes"
-          :key="outcome.id"
-        >
-          {{ outcome.outcome }}
-        </li>
-      </ul>
+      <p v-if="proposal.potential_outcomes">
+        {{ proposal.potential_outcomes }}
+      </p>
 
       <p v-else class="empty-text">
         No potential outcomes provided.
@@ -374,12 +383,16 @@
     <section>
       <h2>(19) GENDER AND DEVELOPMENT (GAD) SCORE</h2>
 
-      <p v-if="proposal.gad_score">
-        {{ proposal.gad_score }}
-      </p>
+      <a
+        v-if="proposal.gad_score_file"
+        :href="proposal.gad_score_file"
+        target="_blank"
+      >
+        View GAD Score
+      </a>
 
       <p v-else class="empty-text">
-        No GAD information provided.
+        No GAD file uploaded.
       </p>
     </section>
 
@@ -441,14 +454,9 @@
     <section>
       <h2>(23) LITERATURE CITED</h2>
 
-      <ul v-if="proposal.literature_cited.length">
-        <li
-          v-for="reference in proposal.literature_cited"
-          :key="reference.id"
-        >
-          {{ reference.reference }}
-        </li>
-      </ul>
+      <p v-if="proposal.literature_cited">
+        {{ proposal.literature_cited }}
+      </p>
 
       <p v-else class="empty-text">
         No references provided.
@@ -495,28 +503,15 @@
     <section>
       <h2>(25) LINE-ITEM BUDGET</h2>
 
-      <table>
+      <a
+        v-if="proposal.line_item_budget_file"
+        :href="proposal.line_item_budget_file"
+        target="_blank"
+      >
+        View Line Item Budget
+      </a>
 
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          <tr
-            v-for="budget in proposal.line_item_budget"
-            :key="budget.id"
-          >
-            <td>{{ budget.category }}</td>
-            <td>{{ budget.amount }}</td>
-          </tr>
-
-        </tbody>
-
-      </table>
+      <p v-else>No file uploaded.</p>
     </section>
 
     <section>
@@ -535,14 +530,32 @@
         No ongoing projects.
       </p>
     </section>
+
+    <section>
+      <h2>(27) SUPPORTING DOCUMENTS</h2>
+
+      <ul v-if="proposal.supporting_documents.length">
+        <li
+          v-for="file in proposal.supporting_documents"
+          :key="file.id"
+        >
+          <a
+            :href="file.file_path"
+            target="_blank"
+          >
+            {{ file.file_name }}
+          </a>
+        </li>
+      </ul>
+
+      <p v-else>No supporting documents uploaded.</p>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-
-const route = useRoute()
 
 const proposal = ref({
   // Basic Information
@@ -559,16 +572,38 @@ const proposal = ref({
   end_date: '',
   department: '',
   address: '',
+  other_projects_number: '',
 
   // Cooperating Agencies
-  agency: '',
+  cooperating_agencies: '',
 
   // Sites of Implementation
   sites: [],
 
   // Research Information
   research_type: '',
-  priority_agendas: [],
+  priority_agendas: {
+    dagat: {
+      selected: false,
+      value: ''
+    },
+    punla: {
+      selected: false,
+      value: ''
+    },
+    kalikasan: {
+      selected: false,
+      value: ''
+    },
+    negosyo: {
+      selected: false,
+      value: ''
+    },
+    tanglaw: {
+      selected: false,
+      value: ''
+    }
+  },
 
   // Innovation
   innovation_goals: '',
@@ -586,25 +621,26 @@ const proposal = ref({
   rationale: '',
   theoretical_framework: '',
   general_objective: '',
-  specific_objectives: [],
+  specific_objectives: '',
 
-  review_of_literature: '',
+  review_of_literature_file: null,
   methodology: '',
-  technology_roadmap: '',
-  expected_outputs: [],
-  potential_outcomes: [],
+  technology_roadmap_file: null,
+  expected_outputs: '',
+  potential_outcomes: '',
   economic_impact: '',
   social_ethical_impact: '',
   target_beneficiaries: '',
   sustainability_plan: '',
-  gad_score: '',
+  gad_score_file: null,
   limitations: '',
   risks_assumptions: '',
   logical_framework: [],
-  literature_cited: [],
+  literature_cited: '',
   personnel_requirements: [],
-  line_item_budget: [],
+  line_item_budget_file: null,
   other_projects: [],
+  supporting_documents: [],
 })
 
 const loading = ref(false)

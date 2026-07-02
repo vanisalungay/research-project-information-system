@@ -145,14 +145,11 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
-<<<<<<< HEAD
 
       { path: 'proponent-login', component: ProponentLogin},
       { path: 'proponent-register', component: ProponentRegister },
       { path: 'proponent-forgot-password', component: ProponentForgotPassword },
-=======
       { path: 'test-backend', component: BackendTest },
->>>>>>> 79da2225c7714d72dcd919e5ebd9ece9e5bee5a6
     ],
   },
 ]
