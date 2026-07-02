@@ -16,19 +16,19 @@
           <div class="info-grid">
             <div>
               <span class="label">Title</span>
-              <p>Community Development Program 2024</p>
+              <p>{{ proposalObj.title || 'Community Development Program 2024' }}</p>
             </div>
             <div>
               <span class="label">Proponent</span>
-              <p>Dr. Aileen Shippy</p>
+              <p>{{ proposalObj.proponent || 'Dr. Aileen Shippy' }}</p>
             </div>
             <div>
               <span class="label">Category</span>
-              <p>Kalikasan Program</p>
+              <p>{{ proposalObj.program || 'Kalikasan Program' }}</p>
             </div>
             <div>
               <span class="label">Proposal ID</span>
-              <p>#41</p>
+              <p>#{{ proposalObj.id || '41' }}</p>
             </div>
           </div>
         </div>
@@ -143,6 +143,12 @@ export default {
       checklist: { c1: false, c2: false, c3: false, c4: false },
       showConfirm: false,
       showSuccess: false,
+      proposalObj: {
+        id: '',
+        title: '',
+        proponent: '',
+        program: ''
+      }
     }
   },
   computed: {
@@ -154,9 +160,40 @@ export default {
     confirm() {
       this.showConfirm = false
       this.showSuccess = true
-      setTimeout(() => (this.showSuccess = false), 3000)
+      
+      // Update proposal status in proposals database in localStorage
+      const stored = localStorage.getItem('proposals_workflow_db');
+      if (stored && this.proposalObj.id) {
+        try {
+          const proposals = JSON.parse(stored);
+          const match = proposals.find(p => p.id === this.proposalObj.id);
+          if (match) {
+            match.stages.rii.status = "Returned for Revision";
+            match.stages.rii.remarks = this.comments;
+            match.stages.rii.date = new Date().toLocaleDateString();
+            localStorage.setItem('proposals_workflow_db', JSON.stringify(proposals));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      
+      setTimeout(() => {
+        this.showSuccess = false;
+        this.$router.push('/rii-subproposal');
+      }, 3000)
     },
   },
+  mounted() {
+    const saved = localStorage.getItem("reviewProposal");
+    if (saved) {
+      try {
+        this.proposalObj = JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
 }
 </script>
 

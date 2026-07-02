@@ -1,184 +1,318 @@
 <template>
   <div class="page">
-    <!-- Header -->
-    <h2>RII Endorsed Proposals</h2>
-    <p class="subtitle">Proposals endorsed by RII and forwarded to OVCRIGE</p>
 
-    <!-- Search -->
-    <input type="text" v-model="search" placeholder="Search endorsed proposals..." class="search" />
+    <div class="page-header">
+      <div>
+        <h2>Approved Proposals</h2>
+        <p>Review and monitor approved proposals for OVCRIGE endorsement.</p>
+      </div>
+    </div>
 
-    <!-- Table -->
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Proponent</th>
-          <th>Category</th>
-          <th>RII Endorsed</th>
-          <th>Sent to OVCRIGE</th>
-          <th>OVCRIGE Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+    <div class="toolbar">
+      <input
+        v-model="search"
+        type="text"
+        class="search"
+        placeholder="Search Proposal Code, Title or Project Leader..."
+      />
+    </div>
 
-      <tbody>
-        <tr v-for="proposal in filteredProposals" :key="proposal.id">
-          <td>{{ proposal.title }}</td>
-          <td>{{ proposal.proponent }}</td>
-          <td>{{ proposal.category }}</td>
+    <div class="table-container">
+      <table class="table">
 
-          <td>
-            <span class="check">✔</span>
-            {{ proposal.riiEndorsed }}
-          </td>
+        <thead>
+          <tr>
+            <th>Proposal Code</th>
+            <th>Proposal Title</th>
+            <th>Project Leader</th>
+            <th>Reviewer Score</th>
+            <th width="280"> Status</th>
+            <th width="180">Actions</th>
+          </tr>
+        </thead>
 
-          <td>
-            <span class="plane">✈</span>
-            {{ proposal.sentToOVCRIGE }}
-          </td>
+        <tbody>
 
-          <td>
-            <span
-              :class="[
-                'status',
-                proposal.ovcrigeStatus === 'Approved by OVCRIGE' ? 'approved' : 'pending',
-              ]"
-            >
-              {{ proposal.ovcrigeStatus }}
-            </span>
-          </td>
+          <tr v-for="proposal in filteredProposals" :key="proposal.id">
+            <td>{{ proposal.code }}</td>
+            <td>{{ proposal.title }}</td>
+            <td>{{ proposal.leader }}</td>
+            <td>{{ proposal.reviewerScore }}%</td>
+            <td class="status-cell">
+              <span
+                class="status"
+                :class="{
+                  pending: proposal.status === 'Waiting for OVCRIGE Endorsement',
+                  approved: proposal.status === 'Approved by OVCRIGE',
+                  returned: proposal.status === 'Returned by OVCRIGE',
+                  rejected: proposal.status === 'Rejected by OVCRIGE',
+                  endorsed: proposal.status === 'Sent to OVCRIGE'
+                }"
+              >
+                {{ proposal.status }}
+              </span>
+            </td>
+              <td class="actions">
+                <button class="view-btn" @click="viewProposal(proposal)">
+                  View
+                </button>
 
-          <td>
-            <button class="view-btn" @click="$router.push('fundviewprop')">View</button>
-          </td>
-        </tr>
+                <button
+                  class="endorse-btn"
+                  @click="endorseProposal(proposal)"
+                  :disabled="proposal.status !== 'Waiting for OVCRIGE Endorsement'"
+                >
+                  Endorse
+                </button>
+              </td>
+          </tr>
 
-        <tr v-if="filteredProposals.length === 0">
-          <td colspan="7" class="empty">No endorsed proposals found.</td>
-        </tr>
-      </tbody>
-    </table>
+          <tr v-if="filteredProposals.length === 0">
+            <td colspan="6" class="empty">
+              No approved proposals found.
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+    </div>
+
   </div>
 </template>
 
 <script>
 export default {
-  name: 'RIIEndorsedProposals',
+  name: "RIIEndorsedProposals",
 
   data() {
     return {
-      search: '',
-      proposals: [
-        {
-          id: 1,
-          title: 'Educational Infrastructure Project',
-          proponent: 'Dr. Cat Moon',
-          category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-09',
-          sentToOVCRIGE: '2024-12-09',
-          ovcrigeStatus: 'Pending OVCRIGE Review',
-        },
-        {
-          id: 2,
-          title: 'Technology Innovation Initiative',
-          proponent: 'Dr. Blair Gwen',
-          category: 'Tanglaw Program',
-          riiEndorsed: '2024-12-03',
-          sentToOVCRIGE: '2024-12-03',
-          ovcrigeStatus: 'Pending OVCRIGE Review',
-        },
-      ],
+      search: "",
+      proposals: []
     }
   },
 
   computed: {
     filteredProposals() {
-      return this.proposals.filter((p) => p.title.toLowerCase().includes(this.search.toLowerCase()))
-    },
+      const keyword = this.search.toLowerCase().trim();
+
+      return this.proposals.filter(p =>
+        p.code.toLowerCase().includes(keyword) ||
+        p.title.toLowerCase().includes(keyword) ||
+        p.leader.toLowerCase().includes(keyword)
+      );
+    }
   },
 
   methods: {
     viewProposal(proposal) {
-      alert(`Viewing Proposal:\n\n${proposal.title}\nStatus: ${proposal.ovcrigeStatus}`)
+      this.$router.push("/rii-endorse")
+     
     },
-  },
+
+    endorseProposal(proposal){
+      proposal.status="Sent to OVCRIGE";
+      alert("Proposal successfully endorsed to OVCRIGE.");
+    }
+  }
 }
 </script>
 
 <style scoped>
-.page {
-  padding: 24px;
-  font-family: Arial, sans-serif;
+.page{
+  padding:25px;
+  font-family:Segoe UI,sans-serif;
+  background:#f5f7fb;
+  min-height:100vh;
+  width: 136%;
 }
 
-.subtitle {
-  color: #666;
-  margin-bottom: 16px;
+.page-header{
+  margin-bottom:20px;
 }
 
-.search {
-  width: 130%;
-  padding: 8px;
-  margin-bottom: 16px;
+.page-header h2{
+  margin:0;
+  color:#1e293b;
+  font-size:28px;
+  font-weight:700;
 }
 
-.table {
-  width: 135%;
-  border-collapse: collapse;
-  table-layout: fixed;
+.page-header p{
+  margin-top:5px;
+  color:#64748b;
+  font-size:14px;
 }
 
-thead {
-  background: #3f3b74;
-  color: white;
+.toolbar{
+  margin-bottom:20px;
 }
 
-th,
-td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  max-width: 260px;
+.search{
+  width:100%;
+  padding:12px 15px;
+  border:1px solid #d1d5db;
+  border-radius:8px;
+  font-size:14px;
+  outline:none;
+  transition:.2s;
+  box-sizing:border-box;
 }
 
-.check {
-  color: green;
-  margin-right: 4px;
+.search:focus{
+  border-color:#2563eb;
 }
 
-.plane {
-  color: #3b82f6;
-  margin-right: 4px;
+.table-container{
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-.status {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  margin-bottom: 4px;
-  display: inline-block;
+.table{
+  width:100%;
+  border-collapse:collapse;
 }
 
-.pending {
-  background: #fde68a;
-  color: #92400e;
+.table thead tr{
+  background:#1e40af !important;
 }
 
-.approved {
-  background: #dcfce7;
-  color: #166534;
+.table thead th{
+  background: #1e293b !important;
+  color:#fff !important;
+ 
 }
 
-.view-btn {
-  background: #60a5fa;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+.table th{
+  padding:15px;
+  text-align:left;
+  font-size:14px;
 }
 
-.empty {
-  text-align: center;
-  color: #777;
+.table td{
+  padding:15px;
+  border-bottom:1px solid #e5e7eb;
+  font-size:14px;
+  color:#374151;
+  vertical-align:middle;
+}
+
+.table tbody tr:hover{
+  background:#f8fafc;
+}
+
+.view-btn{
+  background:#3b82f6;
+  color:#fff;
+  border:none;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  margin-right:8px;
+}
+
+.view-btn:hover{
+  background:#2563eb;
+}
+
+.endorse-btn{
+  background:#16a34a;
+  color:#fff;
+  border:none;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.endorse-btn:hover{
+  background:#15803d;
+}
+
+.empty{
+  text-align:center;
+  padding:30px;
+  color:#94a3b8;
+}
+
+.status{
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:600;
+}
+
+.status-cell{
+  vertical-align:middle;
+}
+
+.status{
+  display:inline-block;
+}
+
+.pending{
+  background:#FEF3C7;
+  color:#92400E;
+}
+
+.endorsed{
+  background:#DBEAFE;
+  color:#1D4ED8;
+}
+
+.approved{
+  background:#DCFCE7;
+  color:#166534;
+}
+
+.returned{
+  background:#FDE68A;
+  color:#B45309;
+}
+
+.rejected{
+  background:#FEE2E2;
+  color:#B91C1C;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.view-btn,
+.endorse-btn{
+  border:none;
+  border-radius:6px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.view-btn{
+  background:#3b82f6;
+  color:white;
+}
+
+.view-btn:hover{
+  background:#2563eb;
+}
+
+.endorse-btn{
+  background:#16a34a;
+  color:white;
+}
+
+.endorse-btn:hover{
+  background:#15803d;
+}
+
+.endorse-btn:disabled{
+  background:#cbd5e1;
+  cursor:not-allowed;
 }
 </style>

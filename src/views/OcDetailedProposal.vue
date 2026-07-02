@@ -1,4 +1,3 @@
-xarxhaa, [29/12/2025 11:01 pm]
 <template>
   <div class="proposal-view">
     <div class="back" @click="$router.go(-1)">← Back</div>
@@ -87,7 +86,7 @@ xarxhaa, [29/12/2025 11:01 pm]
       <p>Public Health, Environment</p>
     </section>
     <section>
-      <h2>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
+      <h2>(😎 APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
       <p>Clean Water and Sanitation; Good Health and Well-Being</p>
     </section>
     <section>

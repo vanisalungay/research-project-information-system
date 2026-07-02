@@ -24,19 +24,17 @@ import RiiAdminVerification from '@/views/RiiAdminVerification.vue'
 import RiiStaffDashboard from '@/views/Dashboard/RiiStaffDashboard.vue'
 import RiiEndPro from '@/views/RiiEndPro.vue'
 import RiiReturn4Rev from '@/views/RiiReturn4Rev.vue'
-import RiiSubmittedProposals from '@/views/RiiSubmittedProposals.vue'
 import RiiFundedPro from '@/views/RiiFundedPro.vue'
 import RiiEndorsedPro from '@/views/RiiEndorsedPro.vue'
 import RiiAdminNotification from '@/views/RiiAdminNotification.vue'
+import RpsInbox from '@/views/RpsInbox.vue'
 
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/OvcafValidate.vue'
 import OvcafNotification from '../views/OvcafNotification.vue'
 
-import FundedProposals from '../views/FundedProposals.vue'
-import FundViewProp from '../views/FundViewProp.vue'
-import FundRelease from '../views/FundRelease.vue'
 
+import FundViewProp from '../views/FundViewProp.vue'
 import OCFinalApproval from '../views/OCFinalApproval.vue'
 import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
 
@@ -65,6 +63,18 @@ import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
 import OcDetailedProposal from '../views/OcDetailedProposal.vue'
 
+
+import RpsProposalDetails from '../views/RpsProposalDetails.vue'
+import RpsNotificationDetails from '../views/RpsNotificationDetails.vue'
+import RpsProposalReview from '../views/RpsProposalReview.vue'
+import RpsRevResultViewer from '../views/RpsRevResultViewer.vue'
+import RpsBudgetProcessing from '../views/RpsBudgetProcessing.vue'
+import RpsBudgetRelease from '../views/RpsBudgetRelease.vue'
+import RpsProposalMonitoringDetails from '../views/RpsProposalMonitoringDetails.vue'
+import RpsProposalMonitoring from '@/views/RpsProposalMonitoring.vue'
+
+
+
 const routes = [
   {
     path: '/',
@@ -82,13 +92,23 @@ const routes = [
       { path: 'riistaff-notification', component: RiiStaffNotification },
       { path: 'rii-endorse', component: RiiEndPro },
       { path: 'rii-return4rev', component: RiiReturn4Rev },
-      { path: 'rii-subproposal', component: RiiSubmittedProposals },
-      { path: 'funded-prop', component: FundedProposals },
       { path: 'riiendorsed-prop', component: RiiEndorsedPro },
       { path: 'fundviewprop', component: FundViewProp },
-      { path: 'fundrelease', component: FundRelease },
       { path: 'riifunded', component: RiiFundedPro },
       { path: 'manage-notifications', component: Notification },
+
+
+      { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
+      { path: 'notification/:id', name: 'NotificationDetails', component: RpsNotificationDetails },
+      { path: 'proposal/:id/review', name: 'ProposalReview', component: RpsProposalReview },
+      { path: 'inbox', component: RpsInbox },
+      { path: "/review-viewer/:id", name: "ReviewResultViewer", component: RpsRevResultViewer },
+      { path: '/budget-processing', name: 'BudgetProcessing', component: RpsBudgetProcessing },
+      { path: '/budgetrelease', name: 'BudgetRelease', component: RpsBudgetRelease },
+      { path: 'proposal-monitoring-details/:id', name: 'RpsProposalMonitoringDetails', component: RpsProposalMonitoringDetails },
+      { path: 'rii-subproposal', component: RpsProposalMonitoring },
+
+
 
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
@@ -122,12 +142,7 @@ const routes = [
       { path: 'submit-revision', component: ProponentSubmitRev },
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-prop-details', component: ProponentPropDetails },
-      {
-        path: 'detailed-proposal',
-        name: 'ProponentDetiailedProp',
-        component: ProponentDetiailedProp,
-      },
-
+      { path: 'detailed-proposal', component: ProponentDetiailedProp },
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'oc-dashboard', component: OCDashboard },

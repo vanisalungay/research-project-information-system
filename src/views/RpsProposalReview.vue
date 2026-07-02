@@ -2,14 +2,22 @@
   <div class="proposal-page">
 
     <header class="proposal-header">
-      <div class="header">
-        <div>
-          <h2>Review Summary</h2>
-        </div>
+      <button @click="goBack" class="back-btn"> ← Back </button>
 
-        <button class="back-btn" @click="goBack">
-          ← Back
+      <div class="header-title">
+        <h2>Research Proposal</h2>
+        <span>Pending RII Review</span>
+      </div>
+
+      <div class="header-actions">
+        <button
+        class="download-btn"
+        @click="downloadProposal">
+
+        ⬇ Download Proposal PDF
+
         </button>
+
       </div>
 
     </header>
@@ -511,98 +519,101 @@
             <div class="criteria-card">
               <label>Relevance or Significance</label>
 
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.relevance.rating) }}
-            </div>
+              <select v-model="evaluation.relevance.rating">
+                <option disabled value="">Select Rating</option>
+                <option value="25">Excellent (25)</option>
+                <option value="20">Very Good (20)</option>
+                <option value="15">Good (15)</option>
+                <option value="10">Fair (10)</option>
+                <option value="5">Poor (5)</option>
+                <option value="0">Not Acceptable (0)</option>
+              </select>
 
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.relevance.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.relevance.comment || "No reviewer comments provided." }}
-                </div>
+              <div class="criteria-score">
+                Score:
+                <strong>{{ evaluation.relevance.rating || 0 }}</strong> /25
               </div>
+
+              <textarea
+                rows="3"
+                v-model="evaluation.relevance.comment"
+                placeholder="Enter reviewer comments..."
+              ></textarea>
             </div>
 
             <div class="criteria-card">
               <label>Technical or Scientific Merit</label>
 
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.technical.rating) }}
-            </div>
+              <select v-model="evaluation.technical.rating">
+                <option disabled value="">Select Rating</option>
+                <option value="25">Excellent (25)</option>
+                <option value="20">Very Good (20)</option>
+                <option value="15">Good (15)</option>
+                <option value="10">Fair (10)</option>
+                <option value="5">Poor (5)</option>
+                <option value="0">Not Acceptable (0)</option>
+              </select>
 
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.technical.rating || 0 }}</strong> /25
-            </div>
-
-            <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.technical.comment || "No reviewer comments provided." }}
-                </div>
+              <div class="criteria-score">
+                Score:
+                <strong>{{ evaluation.technical.rating || 0 }}</strong> /25
               </div>
+
+              <textarea
+                rows="3"
+                v-model="evaluation.technical.comment"
+                placeholder="Enter reviewer comments..."
+              ></textarea>
             </div>
 
             <div class="criteria-card">
               <label>Budget Appropriateness</label>
 
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.budget.rating) }}
-            </div>
+              <select v-model="evaluation.budget.rating">
+                <option disabled value="">Select Rating</option>
+                <option value="25">Excellent (25)</option>
+                <option value="20">Very Good (20)</option>
+                <option value="15">Good (15)</option>
+                <option value="10">Fair (10)</option>
+                <option value="5">Poor (5)</option>
+                <option value="0">Not Acceptable (0)</option>
+              </select>
 
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.budget.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.budget.comment || "No reviewer comments provided." }}
-                </div>
+              <div class="criteria-score">
+                Score:
+                <strong>{{ evaluation.budget.rating || 0 }}</strong> /25
               </div>
+
+              <textarea
+                rows="3"
+                v-model="evaluation.budget.comment"
+                placeholder="Enter reviewer comments..."
+              ></textarea>
             </div>
                         
             <div class="criteria-card">
               <label>Competence of Proponent</label>
 
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.competence.rating) }}
-            </div>
+              <select v-model="evaluation.competence.rating">
+                <option disabled value="">Select Rating</option>
+                <option value="25">Excellent (25)</option>
+                <option value="20">Very Good (20)</option>
+                <option value="15">Good (15)</option>
+                <option value="10">Fair (10)</option>
+                <option value="5">Poor (5)</option>
+                <option value="0">Not Acceptable (0)</option>
+              </select>
 
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.competence.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.competence.comment || "No reviewer comments provided." }}
-                </div>
+              <div class="criteria-score">
+                Score:
+                <strong>{{ evaluation.competence.rating || 0 }}</strong> /25
               </div>
-            </div>
-          </div>
 
-          <div class="review-section">
-            <h4>Overall Recommendation</h4>
-
-            <div
-              class="readonly-value"
-              :class="evaluation.recommendation === 'Approve' ? 'approve-card' : 'return-card'"
-            >
-              {{ evaluation.recommendation === "Approve"
-                  ? "Approved Proposal"
-                  : "Returned for Revision" }}
+              <textarea
+                rows="3"
+                v-model="evaluation.competence.comment"
+                placeholder="Enter reviewer comments..."
+              ></textarea>
             </div>
           </div>
 
@@ -625,23 +636,43 @@
 
           <div class="review-section">
             <h4>Final Remarks</h4>
-            <div class="review-section">
-              <h4>Final Remarks</h4>
-
-              <div class="readonly-box">
-                {{ evaluation.finalRemarks || "No final remarks provided." }}
-              </div>
-            </div>
+            <textarea
+              v-model="evaluation.finalRemarks"
+              class="final-remarks"
+              rows="6"
+              placeholder="Provide your overall assessment, justification, recommendations, or additional observations regarding this proposal..."
+            ></textarea>
           </div>
-          <hr class="review-divider">
-          <div class="review-actions">
-            <button class="edit-review-btn" @click="editReview">
-              Edit Review
+
+        <div class="review-actions">
+
+          <button class="draft-btn" @click="saveDraft">
+          Save Draft
+          </button>
+
+          <button class="return-btn" @click="showReturnOptions = !showReturnOptions">
+          Return
+          </button>
+
+          <button
+            class="approve-btn"
+            :disabled="reviewerPercentage < 80"
+            @click="approveProposal"
+          >
+          Approve
+          </button>
+
+        </div>
+          <div v-if="showReturnOptions" class="return-options">
+
+            <button class="revision-btn" @click="returnProposal">
+              Return for Revision
             </button>
 
-            <button class="done-btn" @click="backToEndorsed">
-              Done
+            <button class="reject-btn" @click="rejectProposal">
+              Reject Proposal
             </button>
+
           </div>
         </div>
       </aside>
@@ -682,104 +713,86 @@ export default {
       college: "",
       projectTitle: "",
       programTitle: "",
-
       attachments: []
-      }
+      },
+      showReturnOptions:false,
     };
   },
 
-  methods: {
-    goToReview() {
-      this.$router.push({
-        name: "ProposalReview",
-        params: {
-          id: this.$route.params.id
-        }
-      });
-    },
+ methods: {
 
-    getRatingLabel(score){
-      const ratings={
-        25:"Excellent",
-        20:"Very Good",
-        15:"Good",
-        10:"Fair",
-        5:"Poor",
-        0:"Not Acceptable"
+  goToReview() {
+    this.$router.push({
+      name: "ProposalReview",
+      params: {
+        id: this.$route.params.id
       }
-
-      return `${ratings[score] || "Not Rated"} (${score || 0})`
-    },
-
-    goBack(){
-      this.$router.push("riiendorsed-prop")
-    },
-
-    downloadProposal() {
-      alert("Download Proposal PDF");
-    },
-    viewAttachment(filePath){
-
-      window.open("http://localhost:8080/uploads/"+filePath,
-      "_blank"
-      )
-    },
-
-    downloadAttachment(filePath){
-    const link=document.createElement("a");
-    link.href="http://localhost:8080/uploads/"+filePath;
-    link.download="";
-    link.click();
-    },
-
-    saveDraft() {
-    alert("Draft successfully saved.");
-    },
-
-    submitReview() {
-    if (!this.evaluation.recommendation) {
-    alert("Please select an Overall Recommendation.");
-    return;
-    }
-
-    if (
-     this.evaluation.recommendation == "Return" &&
-     !this.evaluation.finalRemarks.trim()
-    ) {
-    alert("Final Remarks are required.");
-    return;
-    }
-
-    if (
-    this.reviewerPercentage < 80 &&
-    this.evaluation.recommendation == "Approve"
-     ) {
-    alert("Proposal cannot be approved because the score is below 80%.");
-    return;
-    }
-
-    const confirmSubmit = confirm(
-    "Are you sure you want to submit this review?"
-    );
-
-    if (!confirmSubmit) {
-    return;
-    }
-
-    alert("Review submitted successfully.");
-    },
-
-
-  editReview(){
-    localStorage.setItem(
-      "reviewProposal",
-      JSON.stringify(this.proposal)
-    )
-    this.$router.push("proposal/:id/review")
+    });
   },
 
-  backToEndorsed(){
-    this.$router.push("/riiendorsed-prop")
+  goBack() {
+    this.$router.push("/proposal/:id");
+  },
+
+  downloadProposal() {
+    alert("Download Proposal PDF");
+  },
+
+  viewAttachment(filePath) {
+    window.open("http://localhost:8080/uploads/" + filePath, "_blank");
+  },
+
+  downloadAttachment(filePath) {
+    const link = document.createElement("a");
+    link.href = "http://localhost:8080/uploads/" + filePath;
+    link.download = "";
+    link.click();
+  },
+
+  saveDraft() {
+    alert("Draft successfully saved.");
+  },
+
+  approveProposal() {
+
+    if (this.reviewerPercentage < 80) {
+      alert("Proposal must obtain at least 80% before approval.");
+      return;
+    }
+
+    if (confirm("Approve this proposal?")) {
+      alert("Proposal approved successfully.");
+      // TODO: Move proposal to Endorsed Proposals
+    }
+
+  },
+
+  returnProposal() {
+
+    if (!this.evaluation.finalRemarks.trim()) {
+      alert("Final Remarks are required.");
+      return;
+    }
+
+    if (confirm("Return this proposal for revision?")) {
+      alert("Proposal returned for revision.");
+      // TODO: Change status to Returned
+    }
+
+  },
+
+  rejectProposal() {
+
+    if (!this.evaluation.finalRemarks.trim()) {
+      alert("Final Remarks are required.");
+      return;
+    }
+
+    if (confirm("Reject this proposal?")) {
+      alert("Proposal rejected.");
+      // TODO: Change status to Rejected
+    }
+
   }
 
 },
@@ -826,17 +839,13 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  
 }
-
-
 
 .proposal-page {
   width: 135%;
   min-height: 100vh;
   padding: 16px;
   background: #f5f6fa;
-  
 }
 
 .proposal-header {
@@ -848,19 +857,16 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 16px;
-  
-  
 }
 
-.back-btn{
-  background:#3b82f6;
-  color:#fff;
-  border:none;
-  padding:10px 18px;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
+.back-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
 }
 
 .header-title {
@@ -1035,7 +1041,6 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 width:100%;
 border-collapse:collapse;
 margin-top:10px;
-
 }
 
 .proposal-table th{
@@ -1471,40 +1476,79 @@ font-size:14px;
 BUTTONS
 =========================== */
 
-.review-buttons{
-display:flex;
-flex-direction:column;
-gap:10px;
-margin-top:18px;
+.review-actions{
+  display:flex;
+  gap:10px;
+  margin-top:25px;
 }
 
-.save-btn{
-background:#2563eb;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
+.review-actions button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
 }
 
-.save-btn:hover{
-background:#1d4ed8;
+.draft-btn{
+  background:#3b82f6;
+  color:#fff;
 }
 
-.submit-btn{
-background:#16a34a;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
+.draft-btn:hover{
+  background:#2563eb;
 }
 
-.submit-btn:hover{
-background:#15803d;
+.return-options{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
 }
+
+.revision-btn,
+.reject-btn{
+  flex:1;
+  padding:11px;
+  border:none;
+  border-radius:8px;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.revision-btn{
+  background:#f59e0b;
+}
+
+.revision-btn:hover{
+  background:#d97706;
+}
+
+.reject-btn{
+  background:#ef4444;
+}
+
+.reject-btn:hover{
+  background:#dc2626;
+}
+
+.approve-btn{
+  background:#16a34a;
+  color:#fff;
+}
+
+.approve-btn:hover{
+  background:#15803d;
+}
+
+.approve-btn:disabled{
+  background:#9ca3af;
+  cursor:not-allowed;
+}
+
 
 .recommendation-box {
   display: flex;
@@ -1600,86 +1644,5 @@ background:#15803d;
 .final-remarks::placeholder {
   color: #9ca3af;
   font-style: italic;
-}
-
-.readonly-rating{
-  background:#f8fafc;
-  border:1px solid #dbe3ee;
-  border-radius:8px;
-  padding:10px 14px;
-  font-weight:600;
-  color:#334155;
-  margin-bottom:10px;
-}
-
-.readonly-box{
-  background:#f8fafc;
-  border:1px solid #dbe3ee;
-  border-radius:8px;
-  padding:12px;
-  min-height:90px;
-  color:#334155;
-  line-height:1.6;
-  white-space:pre-wrap;
-}
-
-.review-actions{
-  margin-top:25px;
-  display:flex;
-  justify-content:flex-end;
-}
-
-.edit-review-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  width:100%;
-  padding:12px 18px;
-  border:none;
-  border-radius:10px;
-  background:#2563eb;
-  color:#fff;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.25s ease;
-  box-shadow:0 3px 10px rgba(37,99,235,.25);
-}
-
-.review-actions{
-  display:flex;
-  gap:10px;
-  margin-top:25px;
-}
-
-.edit-review-btn,
-.done-btn{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.edit-review-btn{
-  background:#f59e0b;
-  color:#fff;
-}
-
-.edit-review-btn:hover{
-  background:#d97706;
-}
-
-.done-btn{
-  background:#16a34a;
-  color:#fff;
-}
-
-.done-btn:hover{
-  background:#15803d;
 }
 </style>

@@ -2,14 +2,22 @@
   <div class="proposal-page">
 
     <header class="proposal-header">
-      <div class="header">
-        <div>
-          <h2>Review Summary</h2>
-        </div>
+      <button @click="goBack" class="back-btn"> ← Back </button>
 
-        <button class="back-btn" @click="goBack">
-          ← Back
+      <div class="header-title">
+        <h2>Research Proposal</h2>
+        <span>Pending RII Review</span>
+      </div>
+
+      <div class="header-actions">
+        <button
+        class="download-btn"
+        @click="downloadProposal">
+
+        ⬇ Download Proposal PDF
+
         </button>
+
       </div>
 
     </header>
@@ -482,167 +490,95 @@
 
       <aside class="proposal-sidebar">
         <div class="review-card">
-          <h2>Proposal Evaluation</h2>
 
-          <div class="review-section">
-            <h4>Reviewer Information</h4>
+          <h3>Reviewer Accountability</h3>
 
-            <div class="form-group">
-              <label>Reviewer Name</label>
-              <input
-                type="text"
-                v-model="reviewer.name"
-                placeholder="Enter your full name"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>Position</label>
-              <select v-model="reviewer.position">
-                <option>RII Staff</option>
-                <option>RII Director</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label>Reviewer Name <span class="required">*</span></label>
+            <input v-model="reviewer.name" type="text" placeholder="Enter your full name">
           </div>
 
-          <div class="review-section">
-            <h4>Evaluation Criteria</h4>
-
-            <div class="criteria-card">
-              <label>Relevance or Significance</label>
-
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.relevance.rating) }}
-            </div>
-
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.relevance.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.relevance.comment || "No reviewer comments provided." }}
-                </div>
-              </div>
-            </div>
-
-            <div class="criteria-card">
-              <label>Technical or Scientific Merit</label>
-
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.technical.rating) }}
-            </div>
-
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.technical.rating || 0 }}</strong> /25
-            </div>
-
-            <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.technical.comment || "No reviewer comments provided." }}
-                </div>
-              </div>
-            </div>
-
-            <div class="criteria-card">
-              <label>Budget Appropriateness</label>
-
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.budget.rating) }}
-            </div>
-
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.budget.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.budget.comment || "No reviewer comments provided." }}
-                </div>
-              </div>
-            </div>
-                        
-            <div class="criteria-card">
-              <label>Competence of Proponent</label>
-
-            <div class="readonly-rating">
-              {{ getRatingLabel(evaluation.competence.rating) }}
-            </div>
-
-            <div class="criteria-score">
-              Score:
-              <strong>{{ evaluation.competence.rating || 0 }}</strong> /25
-            </div>
-
-              <div class="review-section">
-                <h4>Reviewer Comments</h4>
-
-                <div class="readonly-box">
-                  {{ evaluation.competence.comment || "No reviewer comments provided." }}
-                </div>
-              </div>
-            </div>
+          <div class="form-group">
+            <label>Position</label>
+            <select v-model="reviewer.position">
+              <option>RII Staff</option>
+              <option>RII Director</option>
+            </select>
           </div>
 
-          <div class="review-section">
-            <h4>Overall Recommendation</h4>
-
-            <div
-              class="readonly-value"
-              :class="evaluation.recommendation === 'Approve' ? 'approve-card' : 'return-card'"
-            >
-              {{ evaluation.recommendation === "Approve"
-                  ? "Approved Proposal"
-                  : "Returned for Revision" }}
-            </div>
+          <div class="form-group checkbox-group">
+            <input id="certify" type="checkbox" v-model="reviewer.certified">
+            <label for="certify">
+              I certify that I am the assigned reviewer.
+            </label>
           </div>
 
-          <div class="review-section">
-            <h4>Reviewer Score</h4>
+          <button 
+          class="begin-btn" 
+          @click="goToReview">
+            Begin Review
+          </button>
 
-            <div class="score-card">
-              <div class="score-circle">
-                {{ reviewerPercentage }}%
-              </div>
+          <div
+            class="review-note"
+            v-if="!reviewStarted">
 
-              <div class="score-info">
-                <h3>{{ totalScore }}/100</h3>
-                <p :class="isPassing ? 'pass-text' : 'fail-text'">
-                  {{ isPassing ? 'Eligible for Approval' : 'Below Passing Score' }}
-                </p>
-              </div>
-            </div>
+            Proposal is currently in
+            <strong>Read Only Mode</strong>.
+
+            <br><br>
+
+            Start the review to unlock evaluation tools.
           </div>
 
-          <div class="review-section">
-            <h4>Final Remarks</h4>
-            <div class="review-section">
-              <h4>Final Remarks</h4>
+          <div
+            v-if="reviewStarted"
+            class="review-started">
 
-              <div class="readonly-box">
-                {{ evaluation.finalRemarks || "No final remarks provided." }}
-              </div>
+            <h4>Review Started</h4>
+
+            <div class="progress-card">
+
+            <p><strong>Status</strong></p>
+            <span>{{ review.status }}</span>
+
             </div>
-          </div>
-          <hr class="review-divider">
-          <div class="review-actions">
-            <button class="edit-review-btn" @click="editReview">
-              Edit Review
+
+            <div class="progress-card">
+
+            <p><strong>Reviewer</strong></p>
+            <span>{{ reviewer.name }}</span>
+
+            </div>
+
+            <div class="progress-card">
+
+            <p><strong>Position</strong></p>
+            <span>{{ reviewer.position }}</span>
+
+            </div>
+
+            <hr>
+
+            <button class="save-btn">
+
+            💾 Save Review
+
             </button>
 
-            <button class="done-btn" @click="backToEndorsed">
-              Done
+            <button class="forward-btn">
+
+            ➡ Forward to REC
+
             </button>
-          </div>
+
+            <button class="return-btn">
+
+            ↩ Return for Revision
+
+            </button>
+
+            </div>
         </div>
       </aside>
 
@@ -665,15 +601,6 @@ export default {
       reviewStarted: false,
       review: {
         status: "Pending Review"
-      },
-      evaluation: {
-        relevance:{rating:"",comment:""},
-        technical:{rating:"",comment:""},
-        budget:{rating:"",comment:""},
-        competence:{rating:"",comment:""},
-        recommendation: "",
-        overallComment:"",
-        finalRemarks: ""
       },
 
       proposal: {
@@ -698,21 +625,8 @@ export default {
       });
     },
 
-    getRatingLabel(score){
-      const ratings={
-        25:"Excellent",
-        20:"Very Good",
-        15:"Good",
-        10:"Fair",
-        5:"Poor",
-        0:"Not Acceptable"
-      }
-
-      return `${ratings[score] || "Not Rated"} (${score || 0})`
-    },
-
     goBack(){
-      this.$router.push("riiendorsed-prop")
+      this.$router.push("/inbox")
     },
 
     downloadProposal() {
@@ -730,59 +644,8 @@ export default {
     link.href="http://localhost:8080/uploads/"+filePath;
     link.download="";
     link.click();
-    },
-
-    saveDraft() {
-    alert("Draft successfully saved.");
-    },
-
-    submitReview() {
-    if (!this.evaluation.recommendation) {
-    alert("Please select an Overall Recommendation.");
-    return;
     }
-
-    if (
-     this.evaluation.recommendation == "Return" &&
-     !this.evaluation.finalRemarks.trim()
-    ) {
-    alert("Final Remarks are required.");
-    return;
-    }
-
-    if (
-    this.reviewerPercentage < 80 &&
-    this.evaluation.recommendation == "Approve"
-     ) {
-    alert("Proposal cannot be approved because the score is below 80%.");
-    return;
-    }
-
-    const confirmSubmit = confirm(
-    "Are you sure you want to submit this review?"
-    );
-
-    if (!confirmSubmit) {
-    return;
-    }
-
-    alert("Review submitted successfully.");
-    },
-
-
-  editReview(){
-    localStorage.setItem(
-      "reviewProposal",
-      JSON.stringify(this.proposal)
-    )
-    this.$router.push("proposal/:id/review")
   },
-
-  backToEndorsed(){
-    this.$router.push("/riiendorsed-prop")
-  }
-
-},
   mounted(){
   this.proposal.attachments=[
     {
@@ -802,22 +665,7 @@ export default {
     }
   ];
 
-  },
-
-  computed: {
-  totalScore() {
-    return Number(this.evaluation.relevance.rating || 0) +
-           Number(this.evaluation.technical.rating || 0) +
-           Number(this.evaluation.budget.rating || 0) +
-           Number(this.evaluation.competence.rating || 0);
-  },
-    reviewerPercentage() {
-      return this.totalScore;
-    },
-    isPassing() {
-      return this.reviewerPercentage >= 80;
-    }
-  },
+  }
 }
 </script>
 
@@ -826,17 +674,13 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  
 }
-
-
 
 .proposal-page {
   width: 135%;
   min-height: 100vh;
   padding: 16px;
   background: #f5f6fa;
-  
 }
 
 .proposal-header {
@@ -848,19 +692,16 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 16px;
-  
-  
 }
 
-.back-btn{
-  background:#3b82f6;
-  color:#fff;
-  border:none;
-  padding:10px 18px;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
+.back-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
 }
 
 .header-title {
@@ -892,12 +733,25 @@ export default {
   padding: 16px;
 }
 
-.proposal-sidebar{
-background:#fff;
-border:1px solid #dbe3ef;
-border-radius:12px;
-padding:20px;
-box-shadow:0 8px 24px rgba(0,0,0,.06);
+.proposal-sidebar {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 500px;
+  padding: 16px;
+  position: sticky;
+  top: 16px;
+}
+
+@media (max-width: 1100px) {
+  .proposal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .proposal-sidebar {
+    position: relative;
+    top: 0;
+  }
 }
 
 /* Reviewer Panel Styles */
@@ -1035,7 +889,6 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 width:100%;
 border-collapse:collapse;
 margin-top:10px;
-
 }
 
 .proposal-table th{
@@ -1316,370 +1169,5 @@ ATTACHMENT CARDS
   .attachment-buttons button {
     flex: 1;
   }
-}
-
-/* ===========================
-REVIEW PANEL
-=========================== */
-
-.review-card{
-display:flex;
-flex-direction:column;
-gap:18px;
-}
-
-.review-section{
-margin-bottom:22px;
-}
-
-.review-section{
-background:#ffffff;
-border:1px solid #e5e7eb;
-border-radius:10px;
-padding:16px;
-}
-
-.review-section h4{
-font-size:15px;
-font-weight:700;
-color:#1e3a8a;
-margin-bottom:12px;
-padding-bottom:6px;
-border-bottom:2px solid #e5e7eb;
-}
-
-.form-group{
-display:flex;
-flex-direction:column;
-margin-bottom:14px;
-}
-
-.form-group label{
-font-size:13px;
-font-weight:600;
-margin-bottom:6px;
-color:#374151;
-}
-
-.form-group input,
-.form-group select{
-width:100%;
-padding:10px;
-border:1px solid #d1d5db;
-border-radius:6px;
-font-size:14px;
-outline:none;
-transition:.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus{
-border-color:#2563eb;
-}
-
-/* ===========================
-CRITERIA
-=========================== */
-
-.criteria-card{
-background:#f8fafc;
-border:1px solid #dbeafe;
-border-radius:10px;
-padding:14px;
-margin-bottom:14px;
-transition:.2s;
-}
-
-.criteria-card:hover{
-border-color:#3b82f6;
-box-shadow:0 0 8px rgba(59,130,246,.15);
-}
-
-.criteria-card:first-child{
-margin-top:0;
-}
-
-.criteria-card label{
-font-weight:700;
-font-size:14px;
-color:#111827;
-display:block;
-margin-bottom:8px;
-}
-
-
-.criteria-card select{
-width:100%;
-padding:10px;
-border-radius:8px;
-border:1px solid #cbd5e1;
-margin-bottom:10px;
-background:white;
-}
-
-.criteria-card textarea{
-width:100%;
-min-height:90px;
-padding:12px 14px;
-border:1px solid #cbd5e1;
-border-radius:8px;
-background:#fff;
-resize:vertical;
-
-font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-font-size:14px;
-line-height:1.6;
-color:#1f2937;
-
-transition:.2s;
-}
-
-.criteria-card textarea::placeholder{
-color:#9ca3af;
-font-size:13px;
-font-style:italic;
-}
-
-.criteria-card textarea:focus{
-outline:none;
-border-color:#2563eb;
-box-shadow:0 0 0 3px rgba(37,99,235,.15);
-}
-/* ===========================
-OVERALL
-=========================== */
-
-.review-section textarea{
-width:100%;
-padding:10px;
-margin-top:10px;
-border:1px solid #d1d5db;
-border-radius:6px;
-resize:vertical;
-font-size:13px;
-}
-
-.review-section select{
-width:100%;
-padding:10px;
-border:1px solid #d1d5db;
-border-radius:6px;
-font-size:14px;
-}
-
-/* ===========================
-BUTTONS
-=========================== */
-
-.review-buttons{
-display:flex;
-flex-direction:column;
-gap:10px;
-margin-top:18px;
-}
-
-.save-btn{
-background:#2563eb;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.save-btn:hover{
-background:#1d4ed8;
-}
-
-.submit-btn{
-background:#16a34a;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.submit-btn:hover{
-background:#15803d;
-}
-
-.recommendation-box {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid #dbeafe;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f8fafc;
-  transition: 0.2s;
-}
-
-.radio-option:hover {
-  background: #eff6ff;
-}
-
-.radio-option input {
-  transform: scale(1.2);
-}
-
-.radio-option span {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.score-card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #dbeafe;
-  border-radius: 10px;
-}
-
-.score-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #2563eb;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.score-info h3 {
-  font-size: 24px;
-  margin-bottom: 6px;
-}
-
-.pass-text {
-  color: #16a34a;
-  font-weight: 600;
-}
-
-.fail-text {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.final-remarks {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 140px;
-  transition: 0.2s;
-}
-
-.final-remarks:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-.final-remarks::placeholder {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.readonly-rating{
-  background:#f8fafc;
-  border:1px solid #dbe3ee;
-  border-radius:8px;
-  padding:10px 14px;
-  font-weight:600;
-  color:#334155;
-  margin-bottom:10px;
-}
-
-.readonly-box{
-  background:#f8fafc;
-  border:1px solid #dbe3ee;
-  border-radius:8px;
-  padding:12px;
-  min-height:90px;
-  color:#334155;
-  line-height:1.6;
-  white-space:pre-wrap;
-}
-
-.review-actions{
-  margin-top:25px;
-  display:flex;
-  justify-content:flex-end;
-}
-
-.edit-review-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  width:100%;
-  padding:12px 18px;
-  border:none;
-  border-radius:10px;
-  background:#2563eb;
-  color:#fff;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.25s ease;
-  box-shadow:0 3px 10px rgba(37,99,235,.25);
-}
-
-.review-actions{
-  display:flex;
-  gap:10px;
-  margin-top:25px;
-}
-
-.edit-review-btn,
-.done-btn{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.edit-review-btn{
-  background:#f59e0b;
-  color:#fff;
-}
-
-.edit-review-btn:hover{
-  background:#d97706;
-}
-
-.done-btn{
-  background:#16a34a;
-  color:#fff;
-}
-
-.done-btn:hover{
-  background:#15803d;
 }
 </style>

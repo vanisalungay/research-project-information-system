@@ -89,6 +89,15 @@ const allNavItems = [
     path: '/riistaff-dash',
     roles: [UserRole.RII_STAFF],
   },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Inbox',
+    path: '/inbox',
+    roles: [UserRole.RII_STAFF],
+  },
+  
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -108,8 +117,8 @@ const allNavItems = [
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
-    text: 'Funded Proposal',
-    path: '/funded-prop',
+    text: 'Budget Processing',
+    path: '/budget-processing',
     roles: [UserRole.RII_STAFF],
   },
 
@@ -134,13 +143,22 @@ const allNavItems = [
     path: '/riiadmin-notif',
     roles: [UserRole.RII_ADMIN],
   },
-
+  
+  
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
-    text: 'Submitted Proposals',
+    text: 'Proposal Monitoring',
     path: '/rii-subproposal',
-    roles: [UserRole.RII_STAFF],
+    roles: [
+      UserRole.PROPONENT,
+      UserRole.RII_STAFF,
+      UserRole.RII_ADMIN,
+      UserRole.OVCRIGE,
+      UserRole.REC,
+      UserRole.OC,
+      UserRole.OVCAF
+    ],
   },
 
   {
@@ -227,7 +245,6 @@ const allNavItems = [
       UserRole.PROPONENT,
     ],
   },
-<<<<<<< HEAD
 
   {
     icon: notificationIcon,
@@ -252,8 +269,6 @@ const allNavItems = [
     path: '/evalCriteria',
     roles: [UserRole.PROPONENT],
   },
-=======
->>>>>>> 06ddf9f6460ec947be6412fa30bd84b75a440a50
 ]
 
 const navItems = computed(() => {
