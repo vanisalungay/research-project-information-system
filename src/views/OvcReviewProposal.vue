@@ -60,7 +60,7 @@
         <section class="card actions-card">
           <h3>OVCRIGE Actions</h3>
 
-          <button class="btn primary" @click="goToAssignReviewer">Assign / Change Reviewer</button>
+          <button class="btn primary" @click="goToAssignReviewer">Endorse to REC</button>
 
           <button class="btn warning" @click="goToReturnForRevision">Return for Revision</button>
         </section>
@@ -69,11 +69,14 @@
       <!-- RIGHT -->
       <div class="right">
         <section class="card center">
-          <h3>Assigned Reviewer</h3>
-          <p class="name">{{ proposal.reviewer.name }}</p>
-          <p>{{ proposal.reviewer.role }}</p>
-          <span class="status-good">Evaluation Complete</span>
-          <button class="btn outline" @click="goToAssignReviewer">Change Reviewer</button>
+          <h3>REC Status</h3>
+          <p class="name">Research Evaluation Committee (REC)</p>
+
+          <p>The proposal has been forwarded to the REC for evaluation.</p>
+
+          <span class="status-good">
+            Endorsed to REC
+          </span>
         </section>
 
         <section class="card">
@@ -144,10 +147,10 @@ onMounted(() => {
     date: 'December 10, 2024',
 
     timeline: [
-      { label: 'Submitted', date: 'Dec 10, 2024' },
-      { label: 'Reviewer Assigned', date: 'Dec 12, 2024' },
-      { label: 'Under Review', date: 'Dec 14, 2024' },
-      { label: 'OVCRIGE Decision', date: 'Pending' },
+      { label: 'Proposal Submitted ', date: 'Dec 10, 2024' },
+      { label: 'Received by OVCRIGE ', date: 'Dec 10, 2024' },
+      { label: 'Endorsed to REC ', date: 'Dec 12, 2024' },
+      { label: 'REC Evaluation ', date: 'In Progress' },
     ],
 
     scores: [

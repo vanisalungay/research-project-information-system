@@ -11,7 +11,7 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND INNOVATION INSTITUTE<br />
+        RESEARCH AND PUBLICATION SERVICES<br />
         Mindanao State University at Naawan
       </p>
     </div>
@@ -42,9 +42,23 @@
 
         <label>ID Number</label>
         <input type="text" v-model="idNumber" placeholder="Enter your ID number" required />
+        <label>Department / Office</label>
+        <input
+          type="text"
+          v-model="departmentOffice"
+          placeholder="Enter your department or office"
+          required
+        />
 
         <label>University Email Address</label>
-        <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
+        <input
+  type="email"
+          v-model="email"
+          placeholder="juan.delacruz@msunaawan.edu.ph"
+          pattern="^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$"
+          title="Please use your MSU Naawan email."
+          required
+        />
 
         <div class="half-inputs">
           <div>
@@ -80,12 +94,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
 const roles = [
-  { name: 'Proponent', desc: 'Research Proposal Submitter' },
-  { name: 'RII', desc: 'Research and Innovation Institute' },
+  { name: 'RPS', desc: 'Research and Publication Services' },
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
@@ -99,19 +113,110 @@ const selectedRole = ref('Proponent')
 
 const name = ref('')
 const idNumber = ref('')
+const departmentOffice = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
+  // Password check
   if (password.value !== confirmPassword.value) {
-    alert('Passwords do not match')
+    alert('Passwords do not match.')
     return
   }
 
-  alert('Account Created Successfully!')
-  router.push('/login')
+  // University email validation
+  const emailRegex = /^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$/i
+
+  if (!emailRegex.test(email.value.trim())) {
+    alert('Only MSU Naawan email addresses (@msunaawan.edu.ph) are allowed.')
+    return
+  }
+
+  const roleMap = {
+    RPS: 'RPS_STAFF',
+    OVCRIGE: 'OVCRIGE',
+    REC: 'REC',
+    OVCAF: 'OVCAF',
+    OC: 'OC'
+  }
+  if (!email.value.toLowerCase().endsWith('@msunaawan.edu.ph')) {
+  alert('Please use your official MSU Naawan email address.')
+  return
+}
+  const payload = {
+    name: name.value.trim(),
+    email: email.value.trim().toLowerCase(),
+    password: password.value,
+    role: roleMap[selectedRole.value] || 'PROPONENT',
+    departmentOffice: departmentOffice.value.trim()
+  }
+
+  try {
+    await axios.post(
+      'http://localhost:8081/api/users',
+      payload
+    )
+
+    alert(
+      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
+    )
+
+    router.push('/login')
+  } catch (error) {
+
+    console.log(error)
+
+    if (error.response?.status === 400) {
+      alert(
+        error.response.data?.message ||
+        'Registration failed. Email already exists.'
+      )
+      return
+    }
+
+    console.warn('Backend unavailable. Saving locally...')
+
+    const offlineUsers = JSON.parse(
+      localStorage.getItem('offline_users') || '[]'
+    )
+
+    const exists = offlineUsers.some(
+      user =>
+        user.email.toLowerCase() ===
+        email.value.toLowerCase()
+    )
+
+    if (exists) {
+      alert('Registration failed. Email already exists.')
+      return
+    }
+
+    const newUser = {
+      id: Date.now(),
+      name: name.value.trim(),
+      email: email.value.trim().toLowerCase(),
+      password: password.value,
+      role: roleMap[selectedRole.value] || 'PROPONENT',
+      departmentOffice: departmentOffice.value.trim(),
+      status: 'PENDING',
+      dateRegistered: new Date().toISOString()
+    }
+
+    offlineUsers.push(newUser)
+
+    localStorage.setItem(
+      'offline_users',
+      JSON.stringify(offlineUsers)
+    )
+
+    alert(
+      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
+    )
+
+    router.push('/login')
+  }
 }
 </script>
 

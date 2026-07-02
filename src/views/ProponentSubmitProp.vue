@@ -15,17 +15,17 @@
         <!-- 1. Project Profile -->
         <section>
           <h3>(1) PROJECT PROFILE</h3>
-          <input v-model="form.programTitle" placeholder="Program Title" />
-          <input v-model="form.projectTitle" placeholder="Project Title" />
-          <input v-model="form.projectLeader" placeholder="Project Leader / Sex" />
+          <input v-model="proposal.program_title" placeholder="Program Title" />
+          <input v-model="proposal.project_title" placeholder="Project Title" />
+          <input v-model="proposal.project_leader" placeholder="Project Leader / Sex" />
           <div class="grid-3">
-            <input v-model="form.duration" placeholder="Project Duration (months)" />
-            <input type="date" v-model="form.startDate" placeholder="Project Start Date" />
-            <input type="date" v-model="form.endDate" placeholder="Project End Date" />
+            <input v-model="proposal.duration" placeholder="Project Duration (months)" />
+            <input type="date" v-model="proposal.start_date" placeholder="Project Start Date" />
+            <input type="date" v-model="proposal.end_date" placeholder="Project End Date" />
           </div>
-          <input v-model="form.college" placeholder="Implementing College / Department" />
+          <input v-model="proposal.department" placeholder="Implementing College / Department" />
           <textarea
-            v-model="form.address"
+            v-model="proposal.address"
             placeholder="Address / Telephone / Fax / Email (Barangay, Municipality, District, Province, Region)"
           ></textarea>
         </section>
@@ -34,7 +34,7 @@
         <section>
           <h3>(2) COOPERATING AGENCY / IES</h3>
           <textarea
-            v-model="form.cooperatingAgencies"
+            v-model="proposal.cooperating_agencies"
             placeholder="Name/s and Address/es"
           ></textarea>
         </section>
@@ -56,7 +56,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(site, index) in form.sites" :key="index">
+              <tr v-for="(site, index) in proposal.sites" :key="index">
                 <td>{{ index + 1 }}</td>
                 <td><input v-model="site.country" /></td>
                 <td><input v-model="site.region" /></td>
@@ -76,11 +76,11 @@
           <h3>(4) TYPE OF RESEARCH</h3>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" value="Basic" v-model="form.researchType" />
+              <input type="radio" value="Basic" v-model="proposal.research_type" />
               <span class="radio-text">Basic</span>
             </label>
             <label class="radio-label">
-              <input type="radio" value="Applied" v-model="form.researchType" />
+              <input type="radio" value="Applied" v-model="proposal.research_type" />
               <span class="radio-text">Applied</span>
             </label>
           </div>
@@ -91,12 +91,12 @@
           <h3>(5) PRIORITY AGENDA (based on MSUN RIIDE 2025–2028)</h3>
           <div v-for="program in programList" :key="program.key" class="priority-item">
             <label class="checkbox-label">
-              <input type="checkbox" v-model="form.priorityAgenda[program.key].selected" />
+              <input type="checkbox" v-model="proposal.priorityAgenda[program.key].selected" />
               <span class="checkbox-text">{{ program.label }}</span>
             </label>
-            <div class="sub-input" v-if="form.priorityAgenda[program.key].selected">
+            <div class="sub-input" v-if="proposal.priorityAgenda[program.key].selected">
               {{ program.subLabel }}:
-              <input v-model="form.priorityAgenda[program.key].value" />
+              <input v-model="proposal.priorityAgenda[program.key].value" />
             </div>
           </div>
         </section>
@@ -104,23 +104,23 @@
         <!-- 6–9: Text Sections -->
         <section>
           <h3>(6) INNOVATION GOALS</h3>
-          <textarea v-model="form.innovationGoals"></textarea>
+          <textarea v-model="proposal.innovation_goals"></textarea>
         </section>
         <section>
           <h3>(7) SECTOR RELEVANCE</h3>
           <textarea
-            v-model="form.sectorRelevance"
+            v-model="proposal.sector_relevance"
             placeholder="Public Health, Environment, Agriculture, etc."
           ></textarea>
         </section>
         <section>
           <h3>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG) ADDRESSED</h3>
-          <textarea v-model="form.sdg"></textarea>
+          <textarea v-model="proposal.sdg"></textarea>
         </section>
         <section>
           <h3>(9) EXECUTIVE SUMMARY</h3>
           <textarea
-            v-model="form.executiveSummary"
+            v-model="proposal.executive_summary"
             placeholder="Not to exceed 200 words"
           ></textarea>
         </section>
@@ -131,18 +131,18 @@
           <div class="sub-section">
             <h4>10.1 RATIONALE / SIGNIFICANCE</h4>
             <p class="note">(Not to exceed 300 words)</p>
-            <textarea v-model="form.rationale"></textarea>
+            <textarea v-model="proposal.rationale"></textarea>
           </div>
           <div class="sub-section">
             <h4>10.2 SCIENTIFIC BASIS / THEORETICAL FRAMEWORK</h4>
-            <textarea v-model="form.framework"></textarea>
+            <textarea v-model="proposal.theoretical_framework"></textarea>
           </div>
           <div class="sub-section">
             <h4>10.3 OBJECTIVES</h4>
             <label class="black-text">General Objective:</label>
-            <textarea v-model="form.objectivesGeneral" class="black-text"></textarea>
+            <textarea v-model="proposal.objectives_general" class="black-text"></textarea>
             <label class="black-text">Specific Objectives:</label>
-            <textarea v-model="form.objectivesSpecific" class="black-text"></textarea>
+            <textarea v-model="proposal.objectives_specific" class="black-text"></textarea>
           </div>
         </section>
 
@@ -150,7 +150,7 @@
         <section>
           <h3>(11) REVIEW OF LITERATURE</h3>
           <textarea
-            v-model="form.review"
+            v-model="proposal.review_of_literature"
             placeholder="Write your literature review here..."
           ></textarea>
         </section>
@@ -158,40 +158,40 @@
         <!-- 12. Methodology -->
         <section>
           <h3>(12) METHODOLOGY</h3>
-          <textarea v-model="form.methodology"></textarea>
+          <textarea v-model="proposal.methodology"></textarea>
         </section>
 
         <!-- 13. Technology Roadmap (if applicable, file upload) -->
         <section>
           <h3>(13) TECHNOLOGY ROADMAP (if applicable)</h3>
           <input type="file" @change="handleFileUpload('technology')" />
-          <p v-if="form.technologyFileName">Uploaded file: {{ form.technologyFileName }}</p>
+          <p v-if="proposal.technologyFileName">Uploaded file: {{ proposal.technologyFileName }}</p>
         </section>
 
         <!-- 14–16: Outputs, Outcomes, Impacts -->
         <section>
           <h3>(14) EXPECTED OUTPUTS (6Ps)</h3>
-          <textarea v-model="form.outputs"></textarea>
+          <textarea v-model="proposal.expected_outputs"></textarea>
         </section>
 
         <section>
           <h3>(15) POTENTIAL OUTCOMES</h3>
-          <textarea v-model="form.outcomes"></textarea>
+          <textarea v-model="proposal.potential_outcomes"></textarea>
         </section>
 
         <section>
           <h3>(16) POTENTIAL IMPACTS (2Is)</h3>
           <label class="black-text">a. Economic:</label>
-          <textarea v-model="form.impactEconomic" class="black-text"></textarea>
+          <textarea v-model="proposal.impact_economic" class="black-text"></textarea>
           <label class="black-text">b. Social / Ethical:</label>
-          <textarea v-model="form.impactSocial" class="black-text"></textarea>
+          <textarea v-model="proposal.impact_social" class="black-text"></textarea>
         </section>
 
         <!-- 17. Target Beneficiaries -->
         <section>
           <h3>(17) TARGET BENEFICIARIES</h3>
           <textarea
-            v-model="form.beneficiaries"
+            v-model="proposal.beneficiaries"
             placeholder="Write the target beneficiaries here..."
           ></textarea>
         </section>
@@ -200,7 +200,7 @@
         <section>
           <h3>(18) SUSTAINABILITY PLAN</h3>
           <textarea
-            v-model="form.sustainability"
+            v-model="proposal.sustainability"
             placeholder="Write the sustainability plan here..."
           ></textarea>
         </section>
@@ -209,14 +209,14 @@
         <section>
           <h3>(19) GENDER AND DEVELOPMENT (GAD) SCORE</h3>
           <input type="file" @change="handleFileUpload('gad')" />
-          <p v-if="form.gadFileName">Uploaded file: {{ form.gadFileName }}</p>
+          <p v-if="proposal.gadFileName">Uploaded file: {{ proposal.gadFileName }}</p>
         </section>
 
         <!-- 20. Limitations of the Project -->
         <section>
           <h3>(20) LIMITATIONS OF THE PROJECT</h3>
           <textarea
-            v-model="form.limitations"
+            v-model="proposal.limitations"
             placeholder="Write the project limitations here..."
           ></textarea>
         </section>
@@ -224,7 +224,7 @@
         <!-- 21. Risks & Assumptions -->
         <section>
           <h3>(21) LIST OF RISKS AND ASSUMPTIONS / RISK MANAGEMENT PLAN</h3>
-          <textarea v-model="form.risks"></textarea>
+          <textarea v-model="proposal.risks"></textarea>
         </section>
 
         <!-- 22. Logical Framework Table -->
@@ -239,7 +239,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in form.logFrame" :key="index">
+              <tr v-for="(row, index) in proposal.logFrame" :key="index">
                 <td><input v-model="row.outcome" /></td>
                 <td><input v-model="row.output" /></td>
                 <td>
@@ -255,7 +255,7 @@
         <section>
           <h3>(23) LITERATURE CITED</h3>
           <textarea
-            v-model="form.references"
+            v-model="proposal.references"
             placeholder="Write your literature references here..."
           ></textarea>
         </section>
@@ -273,7 +273,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in form.personnel" :key="index">
+              <tr v-for="(row, index) in proposal.personnel" :key="index">
                 <td><input v-model="row.position" /></td>
                 <td><input v-model="row.time" /></td>
                 <td><input v-model="row.responsibilities" /></td>
@@ -301,15 +301,15 @@
             @change="handleFileUpload('budget')"
           />
 
-          <p v-if="form.budgetFileName">
-            Uploaded file: {{ form.budgetFileName }}
+          <p v-if="proposal.budgetFileName">
+            Uploaded file: {{ proposal.budgetFileName }}
           </p>
         </section>
 
         <!-- 26. Other Ongoing Projects -->
         <section>
           <h3>(26) OTHER ONGOING PROJECTS BEING HANDLED BY THE PROJECT LEADER</h3>
-          <label class="black-text">Number: <input v-model="form.otherProjectsNumber" /></label>
+          <label class="black-text">Number: <input v-model="proposal.other_projects_number" /></label>
           <table class="sites-table">
             <thead>
               <tr>
@@ -320,7 +320,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in form.otherProjects" :key="index">
+              <tr v-for="(row, index) in proposal.otherProjects" :key="index">
                 <td><input v-model="row.title" /></td>
                 <td><input v-model="row.agency" /></td>
                 <td><input v-model="row.involvement" /></td>
@@ -357,18 +357,18 @@ import { reactive } from 'vue'
 defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
 
-const form = reactive({
-  programTitle: '',
-  projectTitle: '',
-  projectLeader: '',
+const proposal = reactive({
+  program_title: '',
+  project_title: '',
+  project_leader: '',
   duration: '',
-  startDate: '',
-  endDate: '',
-  college: '',
+  start_date: '',
+  end_date: '',
+  department: '',
   address: '',
-  cooperatingAgencies: '',
+  cooperating_agencies: '',
   sites: [{ country: '', region: '', province: '', district: '', municipality: '', barangay: '' }],
-  researchType: '',
+  research_type: '',
   priorityAgenda: {
     dagat: { selected: false, value: '' },
     punla: { selected: false, value: '' },
@@ -376,23 +376,23 @@ const form = reactive({
     negosyo: { selected: false, value: '' },
     tanglaw: { selected: false, value: '' },
   },
-  innovationGoals: '',
-  sectorRelevance: '',
+  innovation_goals: '',
+  sector_relevance: '',
   sdg: '',
-  executiveSummary: '',
+  executive_summary: '',
   rationale: '',
-  framework: '',
-  objectivesGeneral: '',
-  objectivesSpecific: '',
+  theoretical_framework: '',
+  objectives_general: '',
+  objectives_specific: '',
   reviewFile: null,
   reviewFileName: '',
   methodology: '',
   roadmap: '',
   technologyTRL: '',
-  outputs: '',
-  outcomes: '',
-  impactEconomic: '',
-  impactSocial: '',
+  expected_outputs: '',
+  potential_outcomes: '',
+  impact_economic: '',
+  impact_social: '',
   beneficiariesFile: null,
   beneficiariesFileName: '',
   sustainability: '',
@@ -403,7 +403,7 @@ const form = reactive({
   references: [{ author: '', title: '', year: '' }],
   personnel: [{ position: '', time: '', responsibilities: '' }],
   budget: [{ agency: '', ps: '', mooe: '', eo: '', total: '' }],
-  otherProjectsNumber: '',
+  other_projects_number: '',
   otherProjects: [{ title: '', agency: '', involvement: '' }],
   supportingFiles: [],
 })
@@ -419,7 +419,7 @@ const programList = [
 const close = () => emit('update:modelValue', false)
 const save = () => emit('save', { ...form })
 const addSite = () =>
-  form.sites.push({
+  proposal.sites.push({
     country: '',
     region: '',
     province: '',
@@ -427,9 +427,9 @@ const addSite = () =>
     municipality: '',
     barangay: '',
   })
-const removeSite = (index) => form.sites.splice(index, 1)
-const addLimitation = () => form.limitationsTable.push({ limitation: '', remarks: '' })
-const removeLimitation = (index) => form.limitationsTable.splice(index, 1)
+const removeSite = (index) => proposal.sites.splice(index, 1)
+const addLimitation = () => proposal.limitationsTable.push({ limitation: '', remarks: '' })
+const removeLimitation = (index) => proposal.limitationsTable.splice(index, 1)
 
 const addTableRow = (key) => {
   let newRow
@@ -447,10 +447,10 @@ const handleFileUpload = (type, e) => {
   if (!e) return
   const files = e.target.files
   if (type === 'review')
-    ((form.reviewFile = files[0]), (form.reviewFileName = files[0]?.name || ''))
+    ((proposal.reviewFile = files[0]), (proposal.reviewFileName = files[0]?.name || ''))
   else if (type === 'beneficiaries')
-    ((form.beneficiariesFile = files[0]), (form.beneficiariesFileName = files[0]?.name || ''))
-  else if (type === 'supporting') form.supportingFiles = Array.from(files)
+    ((proposal.beneficiariesFile = files[0]), (proposal.beneficiariesFileName = files[0]?.name || ''))
+  else if (type === 'supporting') proposal.supportingFiles = Array.from(files)
 }
 
 const downloadForm = () => {

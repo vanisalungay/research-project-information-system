@@ -12,6 +12,7 @@ import ForgotPassword from '../views/ForgotPassword.vue'
 
 import CreateAccount from '../views/CreateAccount.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
+import BackendTest from '../views/BackendTest.vue'
 
 import OvcReviewProposal from '../views/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
@@ -28,6 +29,16 @@ import RiiFundedPro from '@/views/RiiFundedPro.vue'
 import RiiEndorsedPro from '@/views/RiiEndorsedPro.vue'
 import RiiAdminNotification from '@/views/RiiAdminNotification.vue'
 import RpsInbox from '@/views/RpsInbox.vue'
+import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
+import RpsStaffNotification from '@/views/RpsStaffNotification.vue'
+import RpsAdminVerification from '@/views/RpsAdminVerification.vue'
+import RpsStaffDashboard from '@/views/Dashboard/RpsStaffDashboard.vue'
+import RpsEndPro from '@/views/RpsEndPro.vue'
+import RpsReturn4Rev from '@/views/RpsReturn4Rev.vue'
+import RpsSubmittedProposals from '@/views/RpsSubmittedProposals.vue'
+import RpsFundedPro from '@/views/RpsFundedPro.vue'
+import RpsEndorsedPro from '@/views/RpsEndorsedPro.vue'
+import RpsAdminNotification from '@/views/RpsAdminNotification.vue'
 
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/OvcafValidate.vue'
@@ -62,6 +73,10 @@ import OCNotifications from '../views/OCNotifications.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
 import OcDetailedProposal from '../views/OcDetailedProposal.vue'
+import ProponentLogin from '../views/ProponentLogin.vue'
+import ProponentRegister from '../views/ProponentRegister.vue'
+import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
+
 
 
 import RpsProposalDetails from '../views/RpsProposalDetails.vue'
@@ -113,6 +128,23 @@ const routes = [
       { path: 'riiadmin-ver', component: RiiAdminVerification },
       { path: 'riiadmin-dash', component: RiiAdminDashboard },
       { path: 'riiadmin-notif', component: RiiAdminNotification },
+      { path: 'rpsadmin-ver', component: RpsAdminVerification },
+      { path: 'rpsadmin-dash', component: RpsAdminDashboard },
+      { path: 'rpsstaff-dash', component: RpsStaffDashboard },
+      { path: 'rpsstaff-notification', component: RpsStaffNotification },
+      { path: 'rps-endorse', component: RpsEndPro },
+      { path: 'rps-return4rev', component: RpsReturn4Rev },
+      { path: 'rps-subproposal', component: RpsSubmittedProposals },
+      { path: 'funded-prop', component: FundedProposals },
+      { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
+      { path: 'fundviewprop', component: FundViewProp },
+      { path: 'fundrelease', component: FundRelease },
+      { path: 'rpsfunded', component: RpsFundedPro },
+      { path: 'manage-notifications', component: Notification },
+
+      { path: 'rpsadmin-ver', component: RpsAdminVerification },
+      { path: 'rpsadmin-dash', component: RpsAdminDashboard },
+      { path: 'rpsadmin-notif', component: RpsAdminNotification },
 
       { path: 'ovcaf-validate', component: OvcafValidate },
       { path: 'ovcaf-notification', component: OvcafNotification },
@@ -143,6 +175,8 @@ const routes = [
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-prop-details', component: ProponentPropDetails },
       { path: 'detailed-proposal', component: ProponentDetiailedProp },
+      { path: 'detailed-proposal', component: ProponentDetiailedProp, name: 'ProponentDetiailedProp' },
+
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
       { path: 'oc-dashboard', component: OCDashboard },
@@ -159,6 +193,10 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
+      { path: 'proponent-login', component: ProponentLogin },
+      { path: 'proponent-register', component: ProponentRegister },
+      { path: 'proponent-forgot-password', component: ProponentForgotPassword },
+      { path: 'test-backend', component: BackendTest },
     ],
   },
 ]

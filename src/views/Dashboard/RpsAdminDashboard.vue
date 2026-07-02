@@ -2,13 +2,17 @@
   <div class="pending-accounts">
     <!-- Header -->
     <header class="page-header">
-      <h2>Pending Accounts</h2>
-      <p>Review and approve new user registrations</p>
+      <h2>User Accounts</h2>
+      <p>Manage all registered accounts</p>
     </header>
 
     <!-- Search -->
     <div class="search-box">
-      <input type="text" placeholder="Search by name, email, or role..." v-model="search" />
+      <input
+        type="text"
+        placeholder="Search by name, email, or role..."
+        v-model="search"
+      />
     </div>
 
     <!-- Table -->
@@ -19,7 +23,6 @@
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Date Registered</th>
             <th>Status</th>
             <th class="actions-col">Actions</th>
           </tr>
@@ -28,24 +31,45 @@
         <tbody>
           <tr v-for="user in filteredUsers" :key="user.id">
             <td>{{ user.name }}</td>
+
             <td>{{ user.email }}</td>
+
             <td>
-              <span class="role-badge">{{ user.role }}</span>
+              <span class="role-badge">
+                {{ user.role }}
+              </span>
             </td>
-            <td>{{ user.date }}</td>
+
             <td>
               <span
                 :class="{
-                  'status-badge pending': user.status === 'Pending',
-                  'status-badge rejected': user.status === 'Rejected',
-                  'status-badge approved': user.status === 'Approved',
+                  'status-badge pending':
+                    user.status === 'PENDING',
+
+                  'status-badge approved':
+                    user.status === 'APPROVED',
+
+                  'status-badge rejected':
+                    user.status === 'REJECTED'
                 }"
-                >{{ user.status }}</span
               >
+                {{ user.status }}
+              </span>
             </td>
 
             <td class="actions">
-              <button class="btn view" @click="viewUser(user)">View</button>
+              <button
+                class="btn view"
+                @click="viewUser(user)"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <tr v-if="filteredUsers.length === 0">
+            <td colspan="5" class="empty">
+              No accounts found.
             </td>
           </tr>
         </tbody>
@@ -57,64 +81,64 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
 const search = ref('')
-const defaultUsers = ref([
-  {
-    id: 1,
-    name: 'Dr. Maria Santos',
-    email: 'maria.santos@msunawan.edu.ph',
-    role: 'Faculty',
-    date: 'Dec 15, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 2,
-    name: 'John Doe',
-    email: 'john.doe@university.edu',
-    role: 'REC Member',
-    date: 'Dec 14, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 3,
-    name: 'Dr. Lisa Garcia',
-    email: 'lisa.garcia@university.edu',
-    role: 'OVCRIGE',
-    date: 'Dec 13, 2024',
-    status: 'Pending',
-  },
-  {
-    id: 4,
-    name: 'Robert Chen',
-    email: 'robert.chen@university.edu',
-    role: 'Faculty',
-    date: 'Dec 12, 2024',
-    status: 'Pending',
-  },
-])
+const users = ref([])
 
-const users = ref(JSON.parse(localStorage.getItem('riiAdminUsers') || 'null') || defaultUsers)
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get(
+      'http://localhost:8081/api/users'
+    )
 
-localStorage.setItem('riiAdminUsers', JSON.stringify(users.value))
+    users.value = response.data.map(user => ({
+      ...user,
+      status: (user.status || '').toUpperCase()
+    }))
+
+    console.log('Loaded users:', users.value)
+  } catch (error) {
+    console.error(error)
+
+    console.warn(
+      'Backend offline. Loading offline users.'
+    )
+
+    const offlineUsers = JSON.parse(
+      localStorage.getItem('offline_users') || '[]'
+    )
+
+    users.value = offlineUsers
+  }
+}
+
+onMounted(() => {
+  fetchUsers()
+})
 
 const filteredUsers = computed(() => {
-  return users.value.filter(
-    (user) =>
-      user.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.value.toLowerCase()) ||
-      user.role.toLowerCase().includes(search.value.toLowerCase()),
+  return users.value.filter(user =>
+    user.name.toLowerCase().includes(
+      search.value.toLowerCase()
+    ) ||
+    user.email.toLowerCase().includes(
+      search.value.toLowerCase()
+    ) ||
+    user.role.toLowerCase().includes(
+      search.value.toLowerCase()
+    )
   )
 })
 
-const viewUser = (user) => {
+const viewUser = user => {
   router.push({
-    path: 'riiadmin-ver',
+    path: '/rpsadmin-ver',
     query: {
-      id: user.id,
-    },
+      id: user.id
+    }
   })
 }
 </script>
@@ -130,6 +154,7 @@ const viewUser = (user) => {
 .page-header h2 {
   margin: 0;
 }
+
 .page-header p {
   color: #6b7280;
   margin-bottom: 20px;
@@ -139,6 +164,7 @@ const viewUser = (user) => {
 .search-box {
   margin-bottom: 16px;
 }
+
 .search-box input {
   width: 100%;
   padding: 10px 14px;
@@ -160,8 +186,12 @@ table {
 }
 
 thead {
-  background: linear-gradient(to right, #2563eb, #16a34a);
-  color: #fff;
+  background: linear-gradient(
+    to right,
+    #2563eb,
+    #16a34a
+  );
+  color: white;
 }
 
 th,
@@ -174,7 +204,7 @@ tbody tr {
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* Badges */
+/* Role Badge */
 .role-badge {
   background: #e0ecff;
   color: #2563eb;
@@ -183,10 +213,12 @@ tbody tr {
   font-size: 12px;
 }
 
+/* Status Badge */
 .status-badge {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .pending {
@@ -194,14 +226,14 @@ tbody tr {
   color: #92400e;
 }
 
-.rejected {
-  background: #fef3c7;
-  color: #92400e;
+.approved {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.approved {
-  background: #069214;
-  color: #ffffff;
+.rejected {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* Actions */
@@ -223,13 +255,9 @@ tbody tr {
   color: white;
 }
 
-.btn.approve {
-  background: #16a34a;
-  color: white;
-}
-
-.btn.reject {
-  background: #dc2626;
-  color: white;
+.empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 20px;
 }
 </style>

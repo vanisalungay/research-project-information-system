@@ -10,7 +10,7 @@
       </h1>
 
       <p class="school-name">
-        RESEARCH AND INNOVATION INSTITUTE<br />
+        RESEARCH AND PUBLICATION SERVICES<br />
         Mindanao State University at Naawan
       </p>
     </div>
@@ -46,6 +46,11 @@
 
         <button class="login-btn">Sign In</button>
 
+        <div class="google-login-container">
+          <p class="or-divider"><span>OR</span></p>
+          <GoogleLogin :callback="handleGoogleLogin" prompt />
+        </div>
+
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
         <p class="signup">Don't have an account? <a href="/create-account">Sign up</a></p>
@@ -67,30 +72,73 @@ const password = ref('')
 const errorMessage = ref('')
 
 const roles = [
-  { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
-  { name: 'RII', desc: 'Research and Innovation Institute', value: UserRole.RII_STAFF },
+  { 
+    name: 'RII', 
+    desc: 'Research and Innovation Institute', 
+    value: UserRole.RPS_STAFF 
+  },
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
     value: UserRole.OVCRIGE,
   },
-  { name: 'REC', desc: 'Research Evaluation Committee', value: UserRole.REC },
+  { 
+    name: 'REC', 
+    desc: 'Research Evaluation Committee', 
+    value: UserRole.REC },
   {
     name: 'OVCAF',
     desc: 'Office of the Vice Chancellor for Admin and Finance',
     value: UserRole.OVCAF,
   },
-  { name: 'OC', desc: 'Office of the Chancellor', value: UserRole.OC },
+  { 
+    name: 'OC', 
+    desc: 'Office of the Chancellor', 
+    value: UserRole.OC 
+  },
 ]
 
-const selectedRole = ref('PROPONENT')
+const selectedRole = ref(UserRole.RPS_STAFF)
 
 const handleLogin = async () => {
-  const isLoggedIn = await userStore.login(email.value, password.value, selectedRole.value)
-  if (isLoggedIn) {
-    router.push('/home')
-  } else {
-    errorMessage.value = 'Invalid email or password.'
+  console.log('SELECTED ROLE:', selectedRole.value)
+
+  try {
+    errorMessage.value = ''
+
+    const isLoggedIn = await userStore.login(
+      email.value,
+      password.value,
+      selectedRole.value
+    )
+
+    if (isLoggedIn) {
+      router.push('/home')
+    } else {
+      errorMessage.value = 'Invalid email, password, or role.'
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Invalid email, password, or role.'
+  }
+}
+
+const handleGoogleLogin = async (response) => {
+  try {
+    errorMessage.value = ''
+    
+    // response.credential contains the Google ID token
+    const isLoggedIn = await userStore.googleLogin(
+      response.credential,
+      selectedRole.value
+    )
+
+    if (isLoggedIn) {
+      router.push('/home')
+    } else {
+      errorMessage.value = 'Google Login failed.'
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Google Login failed.'
   }
 }
 </script>
@@ -234,5 +282,27 @@ const handleLogin = async () => {
 
 .signup {
   margin-top: 10px;
+}
+
+.google-login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.or-divider {
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  line-height: 0.1em;
+  margin: 10px 0 20px;
+}
+
+.or-divider span {
+  background: #fff;
+  padding: 0 10px;
+  color: #888;
+  font-size: 14px;
 }
 </style>
