@@ -86,7 +86,11 @@
       <p>Public Health, Environment</p>
     </section>
     <section>
+<<<<<<< HEAD
       <h2>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
+=======
+      <h2>(😎 APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
+>>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
       <p>Clean Water and Sanitation; Good Health and Well-Being</p>
     </section>
     <section>
@@ -125,6 +129,10 @@
     </section>
 
     <!-- 11.
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
 xarxhaa, [29/12/2025 11:01 pm]
 Review of Literature -->
     <section>

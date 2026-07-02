@@ -89,6 +89,15 @@ const allNavItems = [
     path: '/rpsstaff-dash',
     roles: [UserRole.RPS_STAFF],
   },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Inbox',
+    path: '/inbox',
+    roles: [UserRole.RII_STAFF],
+  },
+  
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -108,6 +117,9 @@ const allNavItems = [
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
+    text: 'Budget Processing',
+    path: '/budget-processing',
+    roles: [UserRole.RII_STAFF],
     text: 'Funded Proposal',
     path: '/funded-prop',
     roles: [UserRole.RPS_STAFF],
@@ -134,10 +146,22 @@ const allNavItems = [
     path: '/rpsadmin-notif',
     roles: [UserRole.RPS_ADMIN],
   },
-
+  
+  
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
+    text: 'Proposal Monitoring',
+    path: '/rii-subproposal',
+    roles: [
+      UserRole.PROPONENT,
+      UserRole.RII_STAFF,
+      UserRole.RII_ADMIN,
+      UserRole.OVCRIGE,
+      UserRole.REC,
+      UserRole.OC,
+      UserRole.OVCAF
+    ],
     text: 'Submitted Proposals',
     path: '/rps-subproposal',
     roles: [UserRole.RPS_STAFF],
@@ -170,7 +194,7 @@ const allNavItems = [
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
-    text: 'Assigned Proposals',
+    text: 'Submitted Proposals',
     path: '/assigned-proposals',
     roles: [UserRole.REC],
   },

@@ -46,6 +46,11 @@
 
         <button class="login-btn">Sign In</button>
 
+        <div class="google-login-container">
+          <p class="or-divider"><span>OR</span></p>
+          <GoogleLogin :callback="handleGoogleLogin" prompt />
+        </div>
+
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
         <p class="signup">Don't have an account? <a href="/create-account">Sign up</a></p>
@@ -67,8 +72,16 @@ const password = ref('')
 const errorMessage = ref('')
 
 const roles = [
+<<<<<<< HEAD
   { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
   { name: 'RPS', desc: 'Research and Publication Services', value: UserRole.RPS_STAFF },
+=======
+  { 
+    name: 'RII', 
+    desc: 'Research and Innovation Institute', 
+    value: UserRole.RPS_STAFF 
+  },
+>>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
   {
     name: 'OVCRIGE',
     desc: 'Office of the Vice Chancellor for Research, Innovation, and Global Engagement',
@@ -90,7 +103,7 @@ const roles = [
   },
 ]
 
-const selectedRole = ref('PROPONENT')
+const selectedRole = ref(UserRole.RPS_STAFF)
 
 const handleLogin = async () => {
   console.log('SELECTED ROLE:', selectedRole.value)
@@ -111,6 +124,26 @@ const handleLogin = async () => {
     }
   } catch (err) {
     errorMessage.value = err.message || 'Invalid email, password, or role.'
+  }
+}
+
+const handleGoogleLogin = async (response) => {
+  try {
+    errorMessage.value = ''
+    
+    // response.credential contains the Google ID token
+    const isLoggedIn = await userStore.googleLogin(
+      response.credential,
+      selectedRole.value
+    )
+
+    if (isLoggedIn) {
+      router.push('/home')
+    } else {
+      errorMessage.value = 'Google Login failed.'
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Google Login failed.'
   }
 }
 </script>
@@ -254,5 +287,27 @@ const handleLogin = async () => {
 
 .signup {
   margin-top: 10px;
+}
+
+.google-login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.or-divider {
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  line-height: 0.1em;
+  margin: 10px 0 20px;
+}
+
+.or-divider span {
+  background: #fff;
+  padding: 0 10px;
+  color: #888;
+  font-size: 14px;
 }
 </style>

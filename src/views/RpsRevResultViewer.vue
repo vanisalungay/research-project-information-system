@@ -2,16 +2,23 @@
   <div class="proposal-page">
 
     <header class="proposal-header">
-      <div class="header">
-        <div>
-          <h2>Review Summary</h2>
+        <div class="header-title">
+            <div>
+                <h2>Proposal Review Result</h2>
+                <p>{{ proposal.code }}</p>
+            </div>
+
+            <span
+                :class="[
+                'result-status',
+                proposal.status === 'Returned'
+                    ? 'returned'
+                    : 'rejected'
+                ]"
+            >
+                {{ proposal.status }}
+            </span>
         </div>
-
-        <button class="back-btn" @click="goBack">
-          ← Back
-        </button>
-      </div>
-
     </header>
 
     <div class="proposal-layout">
@@ -33,9 +40,6 @@
         </div>
 
         <div class="section-block">
-          <button class="btn return" @click="$router.push('rps-return4rev')">
-            ⟳ Return for Revision
-          </button>
 
           <h3>Project Profile</h3>
 
@@ -487,26 +491,39 @@
         <div class="review-card">
           <h2>Proposal Evaluation</h2>
 
-          <div class="review-section">
-            <h4>Reviewer Information</h4>
+            <div class="review-section">
 
-            <div class="form-group">
-              <label>Reviewer Name</label>
-              <input
-                type="text"
-                v-model="reviewer.name"
-                placeholder="Enter your full name"
-              >
+            <h4>Reviewer Accountability</h4>
+
+            <div class="readonly-box">
+                <label>Reviewer Name</label>
+                <div class="readonly-value">
+                {{ reviewer.name }}
+                </div>
             </div>
 
-            <div class="form-group">
-              <label>Position</label>
-              <select v-model="reviewer.position">
-                <option>RII Staff</option>
-                <option>RII Director</option>
-              </select>
+            <div class="readonly-box">
+                <label>Position</label>
+                <div class="readonly-value">
+                {{ reviewer.position }}
+                </div>
             </div>
-          </div>
+
+            <div class="readonly-box">
+                <label>Date Reviewed</label>
+                <div class="readonly-value">
+                {{ review.reviewDate }}
+                </div>
+            </div>
+
+            <div class="readonly-box">
+                <label>Certification</label>
+                <div class="readonly-value">
+                ✔ I certify that I personally reviewed this proposal.
+                </div>
+            </div>
+
+            </div>
 
           <div class="review-section">
             <h4>Evaluation Criteria</h4>
@@ -636,16 +653,9 @@
               </div>
             </div>
           </div>
-          <hr class="review-divider">
-          <div class="review-actions">
-            <button class="edit-review-btn" @click="editReview">
-              Edit Review
-            </button>
+        
 
-            <button class="done-btn" @click="backToEndorsed">
-              Done
-            </button>
-          </div>
+
         </div>
       </aside>
 
@@ -829,7 +839,6 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  
 }
 
 
@@ -839,7 +848,6 @@ export default {
   min-height: 100vh;
   padding: 16px;
   background: #f5f6fa;
-  
 }
 
 .proposal-header {
@@ -851,8 +859,6 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 16px;
-  
-  
 }
 
 .back-btn{
@@ -866,18 +872,28 @@ export default {
   cursor:pointer;
 }
 
-.header-title {
-  text-align: center;
+.header-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
 }
 
-.header-title h2 {
-  font-size: 20px;
-  color: #1f2937;
+.result-status{
+  padding:8px 18px;
+  border-radius:30px;
+  font-size:13px;
+  font-weight:600;
 }
 
-.header-title span {
-  font-size: 13px;
-  color: #6b7280;
+.result-status.returned{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+.result-status.rejected{
+  background:#fee2e2;
+  color:#b91c1c;
 }
 
 .proposal-layout {
@@ -956,42 +972,6 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
   color: #dc2626;
 }
 
-.checkbox-group {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.checkbox-group input {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-
-.checkbox-group label {
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.4;
-  flex: 1;
-}
-
-.begin-btn {
-  padding: 11px;
-  border: none;
-  border-radius: 6px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.begin-btn:hover {
-  background: #1d4ed8;
-}
-
 .review-note {
   padding: 12px;
   background: #eff6ff;
@@ -1038,7 +1018,6 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 width:100%;
 border-collapse:collapse;
 margin-top:10px;
-
 }
 
 .proposal-table th{
@@ -1112,51 +1091,12 @@ font-size:14px;
 color:#374151;
 }
 
-.save-btn,
-.forward-btn,
-.return-btn{
-padding:11px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-weight:600;
-}
-
-.save-btn{
-background:#2563eb;
-color:white;
-}
-
-.forward-btn{
-background:#16a34a;
-color:white;
-}
-
-.return-btn{
-background:#dc2626;
-color:white;
-}
-
 .header-actions{
 display:flex;
 align-items:center;
 gap:10px;
 }
 
-.download-btn{
-background:#16a34a;
-color:white;
-border:none;
-padding:10px 18px;
-border-radius:6px;
-cursor:pointer;
-font-weight:600;
-transition:.2s;
-}
-
-.download-btn:hover{
-background:#15803d;
-}
 
 /* ===========================
 ATTACHMENTS
@@ -1626,63 +1566,4 @@ background:#15803d;
   white-space:pre-wrap;
 }
 
-.review-actions{
-  margin-top:25px;
-  display:flex;
-  justify-content:flex-end;
-}
-
-.edit-review-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  width:100%;
-  padding:12px 18px;
-  border:none;
-  border-radius:10px;
-  background:#2563eb;
-  color:#fff;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.25s ease;
-  box-shadow:0 3px 10px rgba(37,99,235,.25);
-}
-
-.review-actions{
-  display:flex;
-  gap:10px;
-  margin-top:25px;
-}
-
-.edit-review-btn,
-.done-btn{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.edit-review-btn{
-  background:#f59e0b;
-  color:#fff;
-}
-
-.edit-review-btn:hover{
-  background:#d97706;
-}
-
-.done-btn{
-  background:#16a34a;
-  color:#fff;
-}
-
-.done-btn:hover{
-  background:#15803d;
-}
 </style>

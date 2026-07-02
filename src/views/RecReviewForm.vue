@@ -12,29 +12,48 @@
       <button class="btn-download" @click="goToDetailed">View detailed Proposal</button>
     </div>
 
-    <!-- PROPOSAL INFO -->
-    <div class="info-grid">
-      <div>
-        <label>Title</label>
-        <p>{{ proposal.title }}</p>
-      </div>
-      <div>
-        <label>Program</label>
-        <p>{{ proposal.program }}</p>
-      </div>
-      <div>
-        <label>Proponent</label>
-        <p>{{ proposal.proponent }}</p>
-      </div>
-      <div>
-        <label>Date Submitted</label>
-        <p>{{ proposal.date }}</p>
-      </div>
-      <div>
-        <label>Project Type</label>
-        <p>{{ proposal.type }}</p>
-      </div>
-    </div>
+  <!-- PROPOSAL INFO -->
+<div class="info-grid">
+  <div>
+    <label>Title</label>
+    <p>{{ proposal.title || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Proponent</label>
+    <p>{{ proposal.proponent?.name || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Department / Office</label>
+    <p>{{ proposal.proponent?.departmentOffice || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Date Submitted</label>
+    <p>{{ proposal.dateSubmitted || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Status</label>
+    <p>{{ proposal.status || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Research Category</label>
+    <p>{{ proposal.researchCategory || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Funding Source</label>
+    <p>{{ proposal.fundingSource || '-' }}</p>
+  </div>
+
+  <div>
+    <label>Requested Budget</label>
+    <p>₱{{ proposal.requestedBudget?.toLocaleString() || '0' }}</p>
+  </div>
+</div>
 
     <!-- SCORING GUIDE -->
     <h3 class="section-title">Scoring Guide</h3>

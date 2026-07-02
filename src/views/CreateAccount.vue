@@ -51,7 +51,14 @@
         />
 
         <label>University Email Address</label>
-        <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
+        <input
+  type="email"
+          v-model="email"
+          placeholder="juan.delacruz@msunaawan.edu.ph"
+          pattern="^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$"
+          title="Please use your MSU Naawan email."
+          required
+        />
 
         <div class="half-inputs">
           <div>
@@ -113,62 +120,102 @@ const confirmPassword = ref('')
 const agree = ref(false)
 
 const handleRegister = async () => {
+  // Password check
   if (password.value !== confirmPassword.value) {
-    alert('Passwords do not match')
+    alert('Passwords do not match.')
+    return
+  }
+
+  // University email validation
+  const emailRegex = /^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$/i
+
+  if (!emailRegex.test(email.value.trim())) {
+    alert('Only MSU Naawan email addresses (@msunaawan.edu.ph) are allowed.')
     return
   }
 
   const roleMap = {
-    'RPS': 'RPS_STAFF',
-    'OVCRIGE': 'OVCRIGE',
-    'REC': 'REC',
-    'OVCAF': 'OVCAF',
-    'OC': 'OC'
+    RPS: 'RPS_STAFF',
+    OVCRIGE: 'OVCRIGE',
+    REC: 'REC',
+    OVCAF: 'OVCAF',
+    OC: 'OC'
+  }
+  if (!email.value.toLowerCase().endsWith('@msunaawan.edu.ph')) {
+  alert('Please use your official MSU Naawan email address.')
+  return
+}
+  const payload = {
+    name: name.value.trim(),
+    email: email.value.trim().toLowerCase(),
+    password: password.value,
+    role: roleMap[selectedRole.value] || 'PROPONENT',
+    departmentOffice: departmentOffice.value.trim()
   }
 
   try {
-    const payload = {
-  name: name.value,
-  email: email.value,
-  password: password.value,
-  role: roleMap[selectedRole.value] || 'PROPONENT',
-  departmentOffice: departmentOffice.value
-}
+    await axios.post(
+      'http://localhost:8081/api/users',
+      payload
+    )
 
-    await axios.post('http://localhost:8081/api/users', payload)
-    alert('Account registration submitted! Please wait for RII ADMIN approval before logging in.')
+    alert(
+      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
+    )
+
     router.push('/login')
   } catch (error) {
-    if (error.response) {
-      console.error(error)
-      alert(error.response.data?.message || 'Registration failed. Check if email already exists.')
-    } else {
-      console.warn('Backend is offline. Simulating registration locally via localStorage...')
-      
-      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
-      const emailExists = offlineUsers.some(u => u.email.toLowerCase() === email.value.toLowerCase())
-      
-      if (emailExists) {
-        alert('Registration failed. Check if email already exists.')
-        return
-      }
 
-      const newUser = {
-        id: Date.now(),
-        name: name.value,
-        email: email.value,
-        password: password.value,
-        role: roleMap[selectedRole.value] || 'PROPONENT',
-        status: 'Pending',
-        date: new Date().toLocaleDateString()
-      }
-      
-      offlineUsers.push(newUser)
-      localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
-      
-      alert('Account registration submitted! Please wait for RPS ADMIN approval before logging in.')
-      router.push('/login')
+    console.log(error)
+
+    if (error.response?.status === 400) {
+      alert(
+        error.response.data?.message ||
+        'Registration failed. Email already exists.'
+      )
+      return
     }
+
+    console.warn('Backend unavailable. Saving locally...')
+
+    const offlineUsers = JSON.parse(
+      localStorage.getItem('offline_users') || '[]'
+    )
+
+    const exists = offlineUsers.some(
+      user =>
+        user.email.toLowerCase() ===
+        email.value.toLowerCase()
+    )
+
+    if (exists) {
+      alert('Registration failed. Email already exists.')
+      return
+    }
+
+    const newUser = {
+      id: Date.now(),
+      name: name.value.trim(),
+      email: email.value.trim().toLowerCase(),
+      password: password.value,
+      role: roleMap[selectedRole.value] || 'PROPONENT',
+      departmentOffice: departmentOffice.value.trim(),
+      status: 'PENDING',
+      dateRegistered: new Date().toISOString()
+    }
+
+    offlineUsers.push(newUser)
+
+    localStorage.setItem(
+      'offline_users',
+      JSON.stringify(offlineUsers)
+    )
+
+    alert(
+      'Account registration submitted successfully.\n\nPlease wait for RPS Admin approval before logging in.'
+    )
+
+    router.push('/login')
   }
 }
 </script>

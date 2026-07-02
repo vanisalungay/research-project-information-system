@@ -52,7 +52,8 @@ public class ProposalService {
         // Proponent
         if (request.getProponentId() != null) {
             User proponent = userRepository.findById(request.getProponentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Proponent not found: " + request.getProponentId()));
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("Proponent not found: " + request.getProponentId()));
             proposal.setProponent(proponent);
         }
 
@@ -119,14 +120,15 @@ public class ProposalService {
             for (ProposalRequest.ReferenceDTO ref : request.getReferences()) {
                 if (ref.getAuthor() != null || ref.getTitle() != null || ref.getYear() != null) {
                     sb.append(ref.getAuthor()).append(". (")
-                      .append(ref.getYear()).append("). ")
-                      .append(ref.getTitle()).append(".\n");
+                            .append(ref.getYear()).append("). ")
+                            .append(ref.getTitle()).append(".\n");
                 }
             }
             proposal.setReferencesText(sb.toString().trim());
         }
 
-        // Clear existing child lists to overwrite (cascade all + orphan removal takes care of orphans)
+        // Clear existing child lists to overwrite (cascade all + orphan removal takes
+        // care of orphans)
         proposal.getSites().clear();
         proposal.getLogFrames().clear();
         proposal.getPersonnel().clear();
@@ -141,7 +143,8 @@ public class ProposalService {
         // Sites
         if (request.getSites() != null) {
             for (ProposalRequest.SiteDTO s : request.getSites()) {
-                ProposalSite site = new ProposalSite(null, proposal, s.getCountry(), s.getRegion(), s.getProvince(), s.getDistrict(), s.getMunicipality(), s.getBarangay());
+                ProposalSite site = new ProposalSite(null, proposal, s.getCountry(), s.getRegion(), s.getProvince(),
+                        s.getDistrict(), s.getMunicipality(), s.getBarangay());
                 proposal.getSites().add(site);
             }
         }
@@ -157,7 +160,8 @@ public class ProposalService {
         // Personnel
         if (request.getPersonnel() != null) {
             for (ProposalRequest.PersonnelDTO p : request.getPersonnel()) {
-                ProposalPersonnel personnel = new ProposalPersonnel(null, proposal, p.getPosition(), p.getTime(), p.getResponsibilities());
+                ProposalPersonnel personnel = new ProposalPersonnel(null, proposal, p.getPosition(), p.getTime(),
+                        p.getResponsibilities());
                 proposal.getPersonnel().add(personnel);
             }
         }
@@ -165,7 +169,8 @@ public class ProposalService {
         // Budget
         if (request.getBudget() != null) {
             for (ProposalRequest.BudgetDTO b : request.getBudget()) {
-                ProposalBudget budget = new ProposalBudget(null, proposal, b.getAgency(), b.getPs(), b.getMooe(), b.getEo(), b.getTotal());
+                ProposalBudget budget = new ProposalBudget(null, proposal, b.getAgency(), b.getPs(), b.getMooe(),
+                        b.getEo(), b.getTotal());
                 proposal.getBudget().add(budget);
             }
         }
@@ -173,7 +178,8 @@ public class ProposalService {
         // Other Projects
         if (request.getOtherProjects() != null) {
             for (ProposalRequest.OtherProjectDTO op : request.getOtherProjects()) {
-                ProposalOtherProject otherProject = new ProposalOtherProject(null, proposal, op.getTitle(), op.getAgency(), op.getInvolvement());
+                ProposalOtherProject otherProject = new ProposalOtherProject(null, proposal, op.getTitle(),
+                        op.getAgency(), op.getInvolvement());
                 proposal.getOtherProjects().add(otherProject);
             }
         }
@@ -181,7 +187,8 @@ public class ProposalService {
         // Limitations
         if (request.getLimitationsTable() != null) {
             for (ProposalRequest.LimitationDTO l : request.getLimitationsTable()) {
-                ProposalLimitation limitation = new ProposalLimitation(null, proposal, l.getLimitation(), l.getRemarks());
+                ProposalLimitation limitation = new ProposalLimitation(null, proposal, l.getLimitation(),
+                        l.getRemarks());
                 proposal.getLimitations().add(limitation);
             }
         }
@@ -190,7 +197,8 @@ public class ProposalService {
         if (request.getPriorityAgenda() != null) {
             for (Map.Entry<String, ProposalRequest.PriorityAgendaDTO> entry : request.getPriorityAgenda().entrySet()) {
                 ProposalRequest.PriorityAgendaDTO val = entry.getValue();
-                ProposalPriorityAgenda agenda = new ProposalPriorityAgenda(null, proposal, entry.getKey(), val.getSelected(), val.getValue());
+                ProposalPriorityAgenda agenda = new ProposalPriorityAgenda(null, proposal, entry.getKey(),
+                        val.getSelected(), val.getValue());
                 proposal.getPriorityAgendas().add(agenda);
             }
         }
@@ -199,9 +207,9 @@ public class ProposalService {
         proposal = proposalRepository.save(proposal);
 
         // Send system notification for submissions
-        if ("SUBMITTED".equals(proposal.getStatus())) {
-            notifySubscribedRoles(proposal, "A new proposal has been submitted: " + proposal.getProjectTitle());
-        }
+        notifySubscribedRoles(
+                proposal,
+                "Proposal Update: " + proposal.getProjectTitle());
 
         return proposal;
     }
@@ -216,18 +224,80 @@ public class ProposalService {
         if (proposal.getProponent() != null) {
             notificationService.createNotification(
                     proposal.getProponent().getId(),
-                    "Your proposal \"" + proposal.getProjectTitle() + "\" status is now: " + status
-            );
+                    "Your proposal \"" + proposal.getProjectTitle() + "\" status is now: " + status);
         }
         return proposal;
     }
 
     private void notifySubscribedRoles(Proposal proposal, String message) {
-        // Send notifications to RII Admin and Staff
+
         List<User> allUsers = userRepository.findAll();
+
         for (User user : allUsers) {
-            if ("RII_ADMIN".equals(user.getRole()) || "RII_STAFF".equals(user.getRole())) {
-                notificationService.createNotification(user.getId(), message);
+
+            String role = user.getRole();
+
+            switch (proposal.getStatus()) {
+
+                // Newly submitted proposal
+                case "SUBMITTED":
+                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
+                        notificationService.createNotification(user.getId(), message);
+                    }
+                    break;
+
+                // RPS endorsed it to OVCRIGE
+                case "ENDORSED":
+                    if ("OVCRIGE".equals(role)) {
+                        notificationService.createNotification(
+                                user.getId(),
+                                "A proposal has been endorsed to OVCRIGE: "
+                                        + proposal.getProjectTitle());
+                    }
+                    break;
+
+                // OVCRIGE forwarded to REC
+                case "UNDER_REVIEW":
+                    if ("REC".equals(role)) {
+                        notificationService.createNotification(
+                                user.getId(),
+                                "Proposal awaiting REC review: "
+                                        + proposal.getProjectTitle());
+                    }
+                    break;
+
+                // REC approved
+                case "APPROVED":
+                    if (proposal.getProponent() != null) {
+                        notificationService.createNotification(
+                                proposal.getProponent().getId(),
+                                "Your proposal \"" +
+                                        proposal.getProjectTitle() +
+                                        "\" has been approved.");
+                    }
+                    break;
+
+                // REC returned for revision
+                case "REVISION":
+                    if (proposal.getProponent() != null) {
+                        notificationService.createNotification(
+                                proposal.getProponent().getId(),
+                                "Your proposal \"" +
+                                        proposal.getProjectTitle() +
+                                        "\" requires revision.");
+                    }
+                    break;
+
+                // REC rejected
+                case "REJECTED":
+                    if (proposal.getProponent() != null) {
+                        notificationService.createNotification(
+                                proposal.getProponent().getId(),
+                                "Your proposal \"" +
+                                        proposal.getProjectTitle() +
+                                        "\" has been rejected.");
+                    }
+                    break;
             }
         }
     }

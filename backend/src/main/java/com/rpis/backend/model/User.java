@@ -33,7 +33,6 @@ public class User {
     private String role;
 
     private String status = "PENDING";
-
     // NEW FIELD
     private String departmentOffice;
 

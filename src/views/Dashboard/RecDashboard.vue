@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard-layout">
-    <!-- MAIN -->
     <div class="main">
       <header class="topbar">
         <div>
@@ -9,31 +8,33 @@
         </div>
       </header>
 
+      <!-- Statistics -->
       <section class="stats">
         <div class="stat-card">
-          <p>Submitted Proposal</p>
-          <h3>2</h3>
-          <small>2 this week</small>
+          <p>Submitted Proposals</p>
+          <h3>{{ totalAssigned }}</h3>
         </div>
 
         <div class="stat-card">
           <p>Completed Reviews</p>
-          <h3>1</h3>
-          <small>67% approval rate</small>
+          <h3>{{ completedReviews }}</h3>
         </div>
 
         <div class="stat-card">
           <p>Pending Evaluation</p>
-          <h3>1</h3>
-          <small>Awaiting action</small>
+          <h3>{{ pendingEvaluation }}</h3>
         </div>
       </section>
 
       <section class="content">
+        <!-- Latest Proposals -->
         <div class="table-card">
           <div class="table-header">
-            <h3>Latest Proposals</h3>
-            <button class="view-all" @click="goToAssigned">View All</button>
+            <h3>Latest Assigned Proposals</h3>
+
+            <button class="view-all" @click="goToAssigned">
+              View All
+            </button>
           </div>
 
           <table>
@@ -41,49 +42,88 @@
               <tr>
                 <th>Title</th>
                 <th>Proponent</th>
-                <th>Submitted</th>
+                <th>Date Submitted</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
-            <tbody>
-              <tr>
-                <td>Community Development Program 2024</td>
-                <td>Dr. Alien Shippy</td>
-                <td>2024-12-10</td>
-                <td><span class="badge pending">Pending</span></td>
-                <td><button class="review" @click="goToReview">Review</button></td>
-              </tr>
+            <tbody v-if="latestProposals.length">
+              <tr
+                v-for="proposal in latestProposals"
+                :key="proposal.id"
+              >
+                <td>{{ proposal.projectTitle }}</td>
 
+                <td>{{ proposal.proponent?.name }}</td>
+
+                <td>{{ proposal.createdAt?.substring(0, 10) }}</td>
+
+                <td>
+                  <span
+                    class="badge"
+                    :class="
+                      proposal.status === 'UNDER_REVIEW'
+                        ? 'pending'
+                        : 'complete'
+                    "
+                  >
+                    {{ proposal.status }}
+                  </span>
+                </td>
+
+                <td>
+                  <button
+                    v-if="proposal.status === 'UNDER_REVIEW'"
+                    class="btn"
+                    @click="goToReview(proposal.id)"
+                  >
+                    Review
+                  </button>
+
+                  <button
+                    v-else
+                    class="btn view"
+                    @click="goToMeeting(proposal.id)"
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody v-else>
               <tr>
-                <td>Healthcare Facility Upgrade</td>
-                <td>Dr. Meow Chan</td>
-                <td>2024-12-05</td>
-                <td><span class="badge complete">Complete</span></td>
-                <td><button class="btn view" @click="goToMeeting">View</button></td>
+                <td colspan="5" style="text-align:center">
+                  No submitted proposals.
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
+        <!-- Notifications -->
         <aside class="notif-card">
           <h3>Notifications</h3>
 
-          <ul>
-            <li>
-              New proposal:
-              <strong>Community Development Program 2024</strong>
-              <small>2 hours ago</small>
-            </li>
+          <ul v-if="notifications.length">
+            <li
+              v-for="notification in notifications.slice(0,5)"
+              :key="notification.id"
+            >
+              {{ notification.message }}
 
-            <li>
-              Rec decision posted
-              <small>5 hours ago</small>
+              <small>
+                {{ formatDate(notification.createdAt) }}
+              </small>
             </li>
           </ul>
 
-          <button class="view-all" @click="goToNotifications">View All</button>
+          <small v-else>No notifications.</small>
+
+          <button class="view-all" @click="goToNotifications">
+            View All
+          </button>
         </aside>
       </section>
     </div>
@@ -91,9 +131,67 @@
 </template>
 
 <script setup>
+import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+const proposals = ref([])
+const notifications = ref([])
+
+const latestProposals = computed(() =>
+  [...proposals.value]
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 5)
+)
+
+const totalAssigned = computed(() =>
+  proposals.value.length
+)
+
+const completedReviews = computed(() =>
+  proposals.value.filter(
+    p =>
+      p.status === 'REC_APPROVED' ||
+      p.status === 'ENDORSED'
+  ).length
+)
+
+const pendingEvaluation = computed(() =>
+  proposals.value.filter(
+    p =>
+      p.status === 'UNDER_REVIEW'
+  ).length
+)
+
+const loadDashboard = async () => {
+  try {
+    const proposalRes = await axios.get(
+      'http://localhost:8081/api/proposals'
+    )
+
+    proposals.value = proposalRes.data
+
+    const user = JSON.parse(
+      atob(localStorage.getItem('user_data'))
+    )
+
+    const notifRes = await axios.get(
+      `http://localhost:8081/api/notifications/user/${user.id}`
+    )
+
+    notifications.value = notifRes.data
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleString()
+}
+
+onMounted(loadDashboard)
 
 const goToNotifications = () => {
   router.push('/rec-notif')
@@ -103,12 +201,12 @@ const goToAssigned = () => {
   router.push('/assigned-proposals')
 }
 
-const goToReview = () => {
-  router.push('/review-form')
+const goToReview = (id) => {
+  router.push(`/review-form/${id}`)
 }
 
-const goToMeeting = () => {
-  router.push('/meeting-details')
+const goToMeeting = (id) => {
+  router.push(`/meeting-details/${id}`)
 }
 </script>
 
@@ -119,18 +217,13 @@ const goToMeeting = () => {
   font-family: Poppins, sans-serif;
 }
 
-/* MAIN */
 .main {
   flex: 1;
   background: #f5f6fa;
   padding: 20px;
 }
 
-/* TOP BAR */
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
 }
 
@@ -138,12 +231,6 @@ const goToMeeting = () => {
   color: #666;
 }
 
-.user {
-  text-align: right;
-  font-size: 13px;
-}
-
-/* STATS */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -158,18 +245,16 @@ const goToMeeting = () => {
 }
 
 .stat-card p {
-  font-size: 13px;
   color: #666;
+  font-size: 13px;
 }
 
-/* CONTENT */
 .content {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 20px;
 }
 
-/* TABLE */
 .table-card {
   background: white;
   padding: 16px;
@@ -219,8 +304,8 @@ td {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -228,7 +313,6 @@ td {
   background: #6b7280;
 }
 
-/* NOTIFICATIONS */
 .notif-card {
   background: white;
   padding: 16px;
@@ -241,20 +325,11 @@ td {
 }
 
 .notif-card li {
-  font-size: 13px;
   margin-bottom: 12px;
 }
 
 .notif-card small {
   display: block;
   color: #777;
-}
-
-.view-all-notif {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  background: none;
-  cursor: pointer;
 }
 </style>
