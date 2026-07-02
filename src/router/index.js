@@ -19,6 +19,16 @@ import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
 import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
 
+import RiiAdminDashboard from '@/views/Dashboard/RiiAdminDashboard.vue'
+import RiiStaffNotification from '@/views/RiiStaffNotification.vue'
+import RiiAdminVerification from '@/views/RiiAdminVerification.vue'
+import RiiStaffDashboard from '@/views/Dashboard/RiiStaffDashboard.vue'
+import RiiEndPro from '@/views/RiiEndPro.vue'
+import RiiReturn4Rev from '@/views/RiiReturn4Rev.vue'
+import RiiFundedPro from '@/views/RiiFundedPro.vue'
+import RiiEndorsedPro from '@/views/RiiEndorsedPro.vue'
+import RiiAdminNotification from '@/views/RiiAdminNotification.vue'
+import RpsInbox from '@/views/RpsInbox.vue'
 import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
 import RpsStaffNotification from '@/views/RpsStaffNotification.vue'
 import RpsAdminVerification from '@/views/RpsAdminVerification.vue'
@@ -34,10 +44,8 @@ import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/OvcafValidate.vue'
 import OvcafNotification from '../views/OvcafNotification.vue'
 
-import FundedProposals from '../views/FundedProposals.vue'
-import FundViewProp from '../views/FundViewProp.vue'
-import FundRelease from '../views/FundRelease.vue'
 
+import FundViewProp from '../views/FundViewProp.vue'
 import OCFinalApproval from '../views/OCFinalApproval.vue'
 import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
 
@@ -70,6 +78,18 @@ import ProponentRegister from '../views/ProponentRegister.vue'
 import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
 
 
+
+import RpsProposalDetails from '../views/RpsProposalDetails.vue'
+import RpsNotificationDetails from '../views/RpsNotificationDetails.vue'
+import RpsProposalReview from '../views/RpsProposalReview.vue'
+import RpsRevResultViewer from '../views/RpsRevResultViewer.vue'
+import RpsBudgetProcessing from '../views/RpsBudgetProcessing.vue'
+import RpsBudgetRelease from '../views/RpsBudgetRelease.vue'
+import RpsProposalMonitoringDetails from '../views/RpsProposalMonitoringDetails.vue'
+import RpsProposalMonitoring from '@/views/RpsProposalMonitoring.vue'
+
+
+
 const routes = [
   {
     path: '/',
@@ -81,6 +101,33 @@ const routes = [
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
 
+      { path: 'riiadmin-ver', component: RiiAdminVerification },
+      { path: 'riiadmin-dash', component: RiiAdminDashboard },
+      { path: 'riistaff-dash', component: RiiStaffDashboard },
+      { path: 'riistaff-notification', component: RiiStaffNotification },
+      { path: 'rii-endorse', component: RiiEndPro },
+      { path: 'rii-return4rev', component: RiiReturn4Rev },
+      { path: 'riiendorsed-prop', component: RiiEndorsedPro },
+      { path: 'fundviewprop', component: FundViewProp },
+      { path: 'riifunded', component: RiiFundedPro },
+      { path: 'manage-notifications', component: Notification },
+
+
+      { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
+      { path: 'notification/:id', name: 'NotificationDetails', component: RpsNotificationDetails },
+      { path: 'proposal/:id/review', name: 'ProposalReview', component: RpsProposalReview },
+      { path: 'inbox', component: RpsInbox },
+      { path: "/review-viewer/:id", name: "ReviewResultViewer", component: RpsRevResultViewer },
+      { path: '/budget-processing', name: 'BudgetProcessing', component: RpsBudgetProcessing },
+      { path: '/budgetrelease', name: 'BudgetRelease', component: RpsBudgetRelease },
+      { path: 'proposal-monitoring-details/:id', name: 'RpsProposalMonitoringDetails', component: RpsProposalMonitoringDetails },
+      { path: 'rii-subproposal', component: RpsProposalMonitoring },
+
+
+
+      { path: 'riiadmin-ver', component: RiiAdminVerification },
+      { path: 'riiadmin-dash', component: RiiAdminDashboard },
+      { path: 'riiadmin-notif', component: RiiAdminNotification },
       { path: 'rpsadmin-ver', component: RpsAdminVerification },
       { path: 'rpsadmin-dash', component: RpsAdminDashboard },
       { path: 'rpsstaff-dash', component: RpsStaffDashboard },
@@ -127,7 +174,8 @@ const routes = [
       { path: 'submit-revision', component: ProponentSubmitRev },
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-prop-details', component: ProponentPropDetails },
-      { path: 'detailed-proposal', component: ProponentDetiailedProp, name: 'ProponentDetiailedProp'},
+      { path: 'detailed-proposal', component: ProponentDetiailedProp },
+      { path: 'detailed-proposal', component: ProponentDetiailedProp, name: 'ProponentDetiailedProp' },
 
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
@@ -145,7 +193,12 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
+<<<<<<< HEAD
+
       { path: 'proponent-login', component: ProponentLogin},
+=======
+      { path: 'proponent-login', component: ProponentLogin },
+>>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
       { path: 'proponent-register', component: ProponentRegister },
       { path: 'proponent-forgot-password', component: ProponentForgotPassword },
       { path: 'test-backend', component: BackendTest },

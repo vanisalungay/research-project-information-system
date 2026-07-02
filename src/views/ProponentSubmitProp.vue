@@ -5,7 +5,7 @@
       <header class="modal-header">
         <h2>SUBMIT NEW PROPOSAL</h2>
         <div class="header-actions">
-          <button class="btn-download" @click="downloadForm">⬇ Download Form</button>
+          <button class="btn-download" @click="downloadForm">⬇ Download Form Format</button>
           <button class="close-btn" @click="close">×</button>
         </div>
       </header>
@@ -17,7 +17,17 @@
           <h3>(1) PROJECT PROFILE</h3>
           <input v-model="proposal.program_title" placeholder="Program Title" />
           <input v-model="proposal.project_title" placeholder="Project Title" />
-          <input v-model="proposal.project_leader" placeholder="Project Leader / Sex" />
+          <input
+            v-model="proposal.project_leader"
+            placeholder="Project Leader"
+          />
+
+          <select v-model="proposal.project_leader_sex">
+            <option value="">Select Sex</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+
           <div class="grid-3">
             <input v-model="proposal.duration" placeholder="Project Duration (months)" />
             <input type="date" v-model="proposal.start_date" placeholder="Project Start Date" />
@@ -91,12 +101,12 @@
           <h3>(5) PRIORITY AGENDA (based on MSUN RIIDE 2025–2028)</h3>
           <div v-for="program in programList" :key="program.key" class="priority-item">
             <label class="checkbox-label">
-              <input type="checkbox" v-model="proposal.priorityAgenda[program.key].selected" />
+              <input type="checkbox" v-model="proposal.priority_agendas[program.key].selected" />
               <span class="checkbox-text">{{ program.label }}</span>
             </label>
-            <div class="sub-input" v-if="proposal.priorityAgenda[program.key].selected">
+            <div class="sub-input" v-if="proposal.priority_agendas[program.key].selected">
               {{ program.subLabel }}:
-              <input v-model="proposal.priorityAgenda[program.key].value" />
+              <input v-model="proposal.priority_agendas[program.key].value" />
             </div>
           </div>
         </section>
@@ -115,7 +125,7 @@
         </section>
         <section>
           <h3>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG) ADDRESSED</h3>
-          <textarea v-model="proposal.sdg"></textarea>
+          <textarea v-model="proposal.sustainable_development_goals"></textarea>
         </section>
         <section>
           <h3>(9) EXECUTIVE SUMMARY</h3>
@@ -140,19 +150,23 @@
           <div class="sub-section">
             <h4>10.3 OBJECTIVES</h4>
             <label class="black-text">General Objective:</label>
-            <textarea v-model="proposal.objectives_general" class="black-text"></textarea>
+            <textarea v-model="proposal.general_objective" class="black-text"></textarea>
             <label class="black-text">Specific Objectives:</label>
-            <textarea v-model="proposal.objectives_specific" class="black-text"></textarea>
+            <textarea v-model="proposal.specific_objectives" class="black-text"></textarea>
           </div>
         </section>
 
         <!-- 11. Review of Literature (File Upload) -->
         <section>
           <h3>(11) REVIEW OF LITERATURE</h3>
-          <textarea
-            v-model="proposal.review_of_literature"
-            placeholder="Write your literature review here..."
-          ></textarea>
+          <input
+            type="file"
+            @change="handleFileUpload('review_of_literature', $event)"
+          />
+
+          <p v-if="proposal.review_of_literature_file">
+            {{ proposal.review_of_literature_file.name }}
+          </p>
         </section>
 
         <!-- 12. Methodology -->
@@ -164,8 +178,11 @@
         <!-- 13. Technology Roadmap (if applicable, file upload) -->
         <section>
           <h3>(13) TECHNOLOGY ROADMAP (if applicable)</h3>
-          <input type="file" @change="handleFileUpload('technology')" />
-          <p v-if="proposal.technologyFileName">Uploaded file: {{ proposal.technologyFileName }}</p>
+          <input
+            type="file"
+            @change="handleFileUpload('technology', $event)"
+          />
+          <p v-if="proposal.technology_roadmap_file">Uploaded file: {{ proposal.technology_roadmap_file.name }}</p>
         </section>
 
         <!-- 14–16: Outputs, Outcomes, Impacts -->
@@ -182,16 +199,16 @@
         <section>
           <h3>(16) POTENTIAL IMPACTS (2Is)</h3>
           <label class="black-text">a. Economic:</label>
-          <textarea v-model="proposal.impact_economic" class="black-text"></textarea>
+          <textarea v-model="proposal.economic_impact" class="black-text"></textarea>
           <label class="black-text">b. Social / Ethical:</label>
-          <textarea v-model="proposal.impact_social" class="black-text"></textarea>
+          <textarea v-model="proposal.social_ethical_impact" class="black-text"></textarea>
         </section>
 
         <!-- 17. Target Beneficiaries -->
         <section>
           <h3>(17) TARGET BENEFICIARIES</h3>
           <textarea
-            v-model="proposal.beneficiaries"
+            v-model="proposal.target_beneficiaries"
             placeholder="Write the target beneficiaries here..."
           ></textarea>
         </section>
@@ -200,7 +217,7 @@
         <section>
           <h3>(18) SUSTAINABILITY PLAN</h3>
           <textarea
-            v-model="proposal.sustainability"
+            v-model="proposal.sustainability_plan"
             placeholder="Write the sustainability plan here..."
           ></textarea>
         </section>
@@ -208,8 +225,11 @@
         <!-- 19. Gender and Development (GAD) Score -->
         <section>
           <h3>(19) GENDER AND DEVELOPMENT (GAD) SCORE</h3>
-          <input type="file" @change="handleFileUpload('gad')" />
-          <p v-if="proposal.gadFileName">Uploaded file: {{ proposal.gadFileName }}</p>
+          <input
+            type="file"
+            @change="handleFileUpload('gad', $event)"
+          />
+          <p v-if="proposal.gad_score_file">Uploaded file: {{ proposal.gad_score_file.name }}</p>
         </section>
 
         <!-- 20. Limitations of the Project -->
@@ -224,7 +244,7 @@
         <!-- 21. Risks & Assumptions -->
         <section>
           <h3>(21) LIST OF RISKS AND ASSUMPTIONS / RISK MANAGEMENT PLAN</h3>
-          <textarea v-model="proposal.risks"></textarea>
+          <textarea v-model="proposal.risks_assumptions"></textarea>
         </section>
 
         <!-- 22. Logical Framework Table -->
@@ -239,23 +259,23 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in proposal.logFrame" :key="index">
-                <td><input v-model="row.outcome" /></td>
-                <td><input v-model="row.output" /></td>
+              <tr v-for="(row, index) in proposal.logical_framework" :key="index">
+                <td><input v-model="row.outcome_indicator" /></td>
+                <td><input v-model="row.output_indicator" /></td>
                 <td>
-                  <button class="btn-remove" @click="removeTableRow('logFrame', index)">✕</button>
+                  <button class="btn-remove" @click="removeTableRow('logical_framework', index)">✕</button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <button class="btn-add" @click="addTableRow('logFrame')">+ Add Row</button>
+          <button class="btn-add" @click="addTableRow('logical_framework')">+ Add Row</button>
         </section>
 
         <!-- 23. Literature Cited -->
         <section>
           <h3>(23) LITERATURE CITED</h3>
           <textarea
-            v-model="proposal.references"
+            v-model="proposal.literature_cited"
             placeholder="Write your literature references here..."
           ></textarea>
         </section>
@@ -273,17 +293,17 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in proposal.personnel" :key="index">
+              <tr v-for="(row, index) in proposal.personnel_requirements" :key="index">
                 <td><input v-model="row.position" /></td>
-                <td><input v-model="row.time" /></td>
+                <td><input v-model="row.effort" /></td>
                 <td><input v-model="row.responsibilities" /></td>
                 <td>
-                  <button class="btn-remove" @click="removeTableRow('personnel', index)">✕</button>
+                  <button class="btn-remove" @click="removeTableRow('personnel_requirements', index)">✕</button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <button class="btn-add" @click="addTableRow('personnel')">+ Add Row</button>
+          <button class="btn-add" @click="addTableRow('personnel_requirements')">+ Add Row</button>
         </section>
 
         <section>
@@ -298,11 +318,11 @@
           <input
             type="file"
             accept=".pdf,.doc,.docx"
-            @change="handleFileUpload('budget')"
+            @change="handleFileUpload('budget', $event)"
           />
 
-          <p v-if="proposal.budgetFileName">
-            Uploaded file: {{ proposal.budgetFileName }}
+          <p v-if="proposal.line_item_budget_file">
+            Uploaded file: {{ proposal.line_item_budget_file.name }}
           </p>
         </section>
 
@@ -320,19 +340,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, index) in proposal.otherProjects" :key="index">
-                <td><input v-model="row.title" /></td>
-                <td><input v-model="row.agency" /></td>
+              <tr v-for="(row, index) in proposal.other_projects" :key="index">
+                <td><input v-model="row.project_title" /></td>
+                <td><input v-model="row.funding_agency" /></td>
                 <td><input v-model="row.involvement" /></td>
                 <td>
-                  <button class="btn-remove" @click="removeTableRow('otherProjects', index)">
+                  <button class="btn-remove" @click="removeTableRow('other_projects', index)">
                     ✕
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <button class="btn-add" @click="addTableRow('otherProjects')">+ Add Row</button>
+          <button class="btn-add" @click="addTableRow('other_projects')">+ Add Row</button>
         </section>
 
         <!-- 27. Other Supporting Documents -->
@@ -358,54 +378,136 @@ defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
 
 const proposal = reactive({
+  // PROJECT PROFILE
+  proposal_id: null,
+
   program_title: '',
   project_title: '',
   project_leader: '',
+  project_leader_sex: '',
+
   duration: '',
   start_date: '',
   end_date: '',
+
   department: '',
   address: '',
-  cooperating_agencies: '',
-  sites: [{ country: '', region: '', province: '', district: '', municipality: '', barangay: '' }],
-  research_type: '',
-  priorityAgenda: {
-    dagat: { selected: false, value: '' },
-    punla: { selected: false, value: '' },
-    kalikasan: { selected: false, value: '' },
-    negosyo: { selected: false, value: '' },
-    tanglaw: { selected: false, value: '' },
-  },
-  innovation_goals: '',
-  sector_relevance: '',
-  sdg: '',
-  executive_summary: '',
-  rationale: '',
-  theoretical_framework: '',
-  objectives_general: '',
-  objectives_specific: '',
-  reviewFile: null,
-  reviewFileName: '',
-  methodology: '',
-  roadmap: '',
-  technologyTRL: '',
-  expected_outputs: '',
-  potential_outcomes: '',
-  impact_economic: '',
-  impact_social: '',
-  beneficiariesFile: null,
-  beneficiariesFileName: '',
-  sustainability: '',
-  gadScore: '',
-  limitationsTable: [{ limitation: '', remarks: '' }],
-  risks: '',
-  logFrame: [{ outcome: '', output: '' }],
-  references: [{ author: '', title: '', year: '' }],
-  personnel: [{ position: '', time: '', responsibilities: '' }],
-  budget: [{ agency: '', ps: '', mooe: '', eo: '', total: '' }],
+
   other_projects_number: '',
-  otherProjects: [{ title: '', agency: '', involvement: '' }],
-  supportingFiles: [],
+
+  // COOPERATING AGENCIES
+  cooperating_agencies: '',
+
+  // IMPLEMENTATION SITES
+  sites: [
+    {
+      country: '',
+      region: '',
+      province: '',
+      district: '',
+      municipality: '',
+      barangay: ''
+    }
+  ],
+
+  // RESEARCH
+  research_type: '',
+
+  // PRIORITY AGENDA
+  priority_agendas: {
+  dagat: {
+    selected: false,
+    value: ''
+  },
+  punla: {
+    selected: false,
+    value: ''
+  },
+  kalikasan: {
+    selected: false,
+    value: ''
+  },
+  negosyo: {
+    selected: false,
+    value: ''
+  },
+  tanglaw: {
+    selected: false,
+    value: ''
+  }
+},
+
+  // TEXT FIELDS
+  innovation_goals: '',
+
+  sector_relevance: '',
+
+  sustainable_development_goals: '',
+
+  executive_summary: '',
+
+  rationale: '',
+
+  theoretical_framework: '',
+
+  general_objective: '',
+
+  specific_objectives: '',
+
+  methodology: '',
+
+  expected_outputs: '',
+
+  potential_outcomes: '',
+
+  economic_impact: '',
+
+  social_ethical_impact: '',
+
+  target_beneficiaries: '',
+
+  sustainability_plan: '',
+
+  limitations: '',
+
+  risks_assumptions: '',
+
+  // FILE UPLOADS
+  review_of_literature_file: null,
+
+  technology_roadmap_file: null,
+
+  gad_score_file: null,
+
+  line_item_budget_file: null,
+
+  supporting_documents: [],
+
+  // TABLES
+  logical_framework: [
+    {
+      outcome_indicator: '',
+      output_indicator: ''
+    }
+  ],
+
+  literature_cited: '',
+
+  personnel_requirements: [
+    {
+      position: '',
+      effort: '',
+      responsibilities: ''
+    }
+  ],
+
+  other_projects: [
+    {
+      project_title: '',
+      funding_agency: '',
+      involvement: ''
+    }
+  ]
 })
 
 const programList = [
@@ -417,7 +519,6 @@ const programList = [
 ]
 
 const close = () => emit('update:modelValue', false)
-const save = () => emit('save', { ...form })
 const addSite = () =>
   proposal.sites.push({
     country: '',
@@ -428,33 +529,68 @@ const addSite = () =>
     barangay: '',
   })
 const removeSite = (index) => proposal.sites.splice(index, 1)
-const addLimitation = () => proposal.limitationsTable.push({ limitation: '', remarks: '' })
-const removeLimitation = (index) => proposal.limitationsTable.splice(index, 1)
 
 const addTableRow = (key) => {
-  let newRow
-  if (key === 'logFrame') newRow = { outcome: '', output: '' }
-  else if (key === 'references') newRow = { author: '', title: '', year: '' }
-  else if (key === 'personnel') newRow = { position: '', time: '', responsibilities: '' }
-  else if (key === 'budget') newRow = { agency: '', ps: '', mooe: '', eo: '', total: '' }
-  else if (key === 'otherProjects') newRow = { title: '', agency: '', involvement: '' }
-  form[key].push(newRow)
+  let newRow = {}
+
+  if (key === 'logical_framework') {
+    newRow = {
+      outcome_indicator: '',
+      output_indicator: ''
+    }
+  }
+
+  else if (key === 'personnel_requirements') {
+    newRow = {
+      position: '',
+      effort: '',
+      responsibilities: ''
+    }
+  }
+
+  else if (key === 'other_projects') {
+    newRow = {
+      project_title: '',
+      funding_agency: '',
+      involvement: ''
+    }
+  }
+
+  proposal[key].push(newRow)
 }
 
-const removeTableRow = (key, index) => form[key].splice(index, 1)
+const removeTableRow = (key, index) => {
+  proposal[key].splice(index, 1)
+}
 
-const handleFileUpload = (type, e) => {
-  if (!e) return
-  const files = e.target.files
-  if (type === 'review')
-    ((proposal.reviewFile = files[0]), (proposal.reviewFileName = files[0]?.name || ''))
-  else if (type === 'beneficiaries')
-    ((proposal.beneficiariesFile = files[0]), (proposal.beneficiariesFileName = files[0]?.name || ''))
-  else if (type === 'supporting') proposal.supportingFiles = Array.from(files)
+const handleFileUpload = (type, event) => {
+  const file = event.target.files[0]
+
+  if (!file) return
+
+  if (type === 'review_of_literature') {
+    proposal.review_of_literature_file = file
+  }
+
+  else if (type === 'technology') {
+    proposal.technology_roadmap_file = file
+  }
+
+  else if (type === 'gad') {
+    proposal.gad_score_file = file
+  }
+
+  else if (type === 'budget') {
+    proposal.line_item_budget_file = file
+  }
+
+  else if (type === 'supporting') {
+    proposal.supporting_documents.push(file)
+  }
 }
 
 const downloadForm = () => {
-  const data = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(form, null, 2))
+  const data = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(proposal, null, 2))
   const a = document.createElement('a')
   a.href = data
   a.download = 'research-proposal.json'
@@ -462,14 +598,19 @@ const downloadForm = () => {
 }
 
 const saveAsDraft = () => {
-  console.log('Form saved as draft', { ...form })
-  emit('save', { ...form })
+  console.log('Form saved as draft', { ...proposal })
+  emit('save', { ...proposal })
 }
 
 const goNext = () => {
   console.log('Next step clicked')
-  emit('next', { ...form })
+  emit('next', { ...proposal })
 }
+
+const downloadBudgetFormat = () => {
+  window.open('/templates/Project-Line-Item-Budget.docx')
+}
+
 </script>
 
 <style scoped>

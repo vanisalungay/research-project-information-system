@@ -7,50 +7,62 @@ krisha, [29/12/2025 2:12 pm]
       <p>Overview of research proposals and funding management</p>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="stats">
-      <div class="card">
-        <div>
-          <p class="label">Submitted Proposals</p>
-          <h3>4</h3>
-          <span class="sub">+4 this month</span>
-        </div>
-        <div class="icon purple">📄</div>
-      </div>
+<!-- Stats Cards -->
+<div class="stats">
 
-      <div class="card">
-        <div>
-          <p class="label">Endorsed Proposals</p>
-          <h3>2</h3>
-          <span class="sub">75% approval rate</span>
-        </div>
-        <div class="icon green">✔️</div>
-      </div>
-
-      <div class="card">
-        <div>
-          <p class="label">Funded Projects</p>
-          <h3>2</h3>
-          <span class="sub">Active projects</span>
-        </div>
-        <div class="icon yellow">💰</div>
-      </div>
-
-      <div class="card">
-        <div>
-          <p class="label">Funds Released</p>
-          <h3>₱1.87M</h3>
-          <span class="sub">76% of allocated</span>
-        </div>
-        <div class="icon blue">📈</div>
-      </div>
+  <div class="card">
+    <div>
+      <p class="label">Total Proposals</p>
+      <h3>{{ totalProposals }}</h3>
     </div>
+  </div>
+
+  <div class="card">
+    <div>
+      <p class="label">Endorsed Proposals</p>
+      <h3>{{ endorsedProposals }}</h3>
+    </div>
+  </div>
+
+  <div class="card">
+    <div>
+      <p class="label">Pending Review</p>
+      <h3>{{ pendingReview }}</h3>
+    </div>
+  </div>
+
+  <div class="card">
+    <div>
+      <p class="label">Failed / Returned</p>
+      <h3>{{ failedProposals }}</h3>
+    </div>
+  </div>
+
+</div>
 
     <!-- Main Content -->
     <div class="content">
       <!-- Proposals Table -->
       <div class="panel">
         <div class="panel-header">
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
+          <h3>RECENT ACTIVITY</h3>
+        </div>
+
+        <div v-if="activities.length > 0" class="activity-container">
+          <div
+            v-for="item in activities"
+            :key="item.id"
+            :class="['activity-item', item.borderClass]"
+          >
+            <div class="activity-main">
+              <div class="activity-text">
+                <h4>{{ item.title }}</h4>
+                <p>{{ item.description }}</p>
+              </div>
+              <span :class="['badge', item.badgeClass]">{{ item.status }}</span>
+            </div>
+=======
           <h3>Proposals Awaiting RPS Action</h3>
           <button class="view-all" @click="$router.push('rpsendorsed-prop')">View All</button>
         </div>
@@ -78,10 +90,27 @@ krisha, [29/12/2025 2:12 pm]
             <span>₱150,000</span>
             <span class="status pending">Pending</span>
             <button class="review" @click="$router.push('rps-endorse')">Review</button>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
           </div>
         </div>
+
+        <div v-else class="empty-state">
+  <div class="empty-icon-wrapper">
+    📄
+  </div>
+
+  <h3>No Research Activity Yet</h3>
+
+  <p>
+    Research proposals, reviews, and status updates
+    will appear here once records are added.
+  </p>
+</div>
       </div>
 
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
+    
+=======
       <!-- Right Side -->
       <div class="side">
         <!-- Recent Activity -->
@@ -105,14 +134,30 @@ krisha, [29/12/2025 2:12 pm]
           <button class="secondary" @click="$router.push('funded-prop')">Manage Funding</button>
         </div>
       </div>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
     </div>
   </div>
 </template>
 
 <script>
 export default {
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
+  name: "RiiDashboard",
+
+  data() {
+    return {
+      activities: [],
+      totalProposals: 0,
+      endorsedProposals: 0,
+      pendingReview: 0,
+      failedProposals: 0
+    };
+  }
+};
+=======
   name: 'RpsStaffDashboard',
 }
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
 </script>
 
 <style scoped>
@@ -182,8 +227,7 @@ export default {
 /* Main Content */
 .content {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));  gap: 16px;
   margin-top: 20px;
 }
 
@@ -198,111 +242,115 @@ export default {
   align-items: center;
 }
 
-.view-all {
-  background: #eee;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+
+
+.activity-box {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
 
-/* Table */
-.table {
-  margin-top: 12px;
+.activity-header h3 {
+  margin: 0 0 16px 0;
+  color: #555555;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
-.table-header,
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
-  padding: 10px;
+.activity-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.activity-item {
+  background: #f7f6f0; /* Soft tint content wrapper to match the photo */
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Vertical Left Borders styled directly from screenshot */
+.pass-border { border-left: 5px solid #4a7c59; }
+.review-border { border-left: 5px solid #2b6cb0; }
+.fail-border { border-left: 5px solid #c53030; }
+
+.activity-main {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.table-header {
-  background: #4b3f72;
-  color: #fff;
-  border-radius: 6px;
+.activity-text h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #2d3748;
+  font-weight: 700;
 }
 
-.table-row {
-  border-bottom: 1px solid #eee;
+.activity-text p {
+  margin: 0;
+  font-size: 13px;
+  color: #718096;
 }
 
-.status {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  text-align: center;
+/* Badge styling matching the layout */
+.badge {
+  padding: 4px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.pending {
-  background: #fff1cc;
-  color: #b8860b;
+.passed-badge {
+  background: #e6f4ea;
+  color: #137333;
 }
 
-.revision {
-  background: #e0e7ff;
-  color: #3f51b5;
+.review-badge {
+  background: #e8f0fe;
+  color: #1a73e8;
 }
 
-.ready {
-  background: #e6fff3;
-  color: #2e7d32;
+.failed-badge {
+  background: #fde8e8;
+  color: #9b1c1c;
 }
 
-.review {
-  background: #6aa9ff;
-  border: none;
-  color: #fff;
-  padding: 6px;
-  border-radius: 6px;
-  cursor: pointer;
+.empty-state{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:70px 20px;
 }
 
-/* Activity */
-.activity {
-  list-style: none;
-  padding: 0;
-  font-size: 14px;
+.empty-icon-wrapper{
+  width:90px;
+  height:90px;
+  border-radius:50%;
+  background:#f3f4f6;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:42px;
+  margin-bottom:20px;
 }
 
-.activity li {
-  margin-bottom: 12px;
+.empty-state h3{
+  margin:0;
+  color:#374151;
+  font-size:22px;
 }
 
-.activity span {
-  display: block;
-  font-size: 12px;
-  color: #999;
-}
-
-.view-activity {
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  background: #f0f0f0;
-}
-
-/* Buttons */
-.primary {
-  width: 100%;
-  background: #ffd400;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.secondary {
-  width: 100%;
-  background: #6aa9ff;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  color: #fff;
+.empty-state p{
+  margin-top:10px;
+  color:#6b7280;
+  max-width:420px;
+  line-height:1.6;
 }
 </style>

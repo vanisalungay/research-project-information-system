@@ -1,234 +1,261 @@
 <template>
-  <div class="page">
-    <!-- Back -->
-    <button class="back-btn" @click="$router.push('funded-prop')">← Back to Proposal</button>
+<div class="page">
 
-    <!-- Header -->
-    <h2>Release Funds</h2>
-    <p class="subtitle">Process fund release for approved proposal</p>
+<div class="page-header">
+<h2>Budget Processing</h2>
+<p>Process returned budgets and release approved research funds.</p>
+</div>
 
-    <div class="layout">
-      <!-- LEFT -->
-      <div class="left">
-        <!-- Proposal Summary -->
-        <div class="card">
-          <h3>Proposal Summary</h3>
+<div class="toolbar">
+<input
+v-model="search"
+class="search"
+type="text"
+placeholder="Search proposal..."
+>
+</div>
 
-          <div class="summary-grid">
-            <div>
-              <label>Title</label>
-              <p>Educational Infrastructure Project</p>
-            </div>
+<div class="table-container">
 
-            <div>
-              <label>Proponent</label>
-              <p>Dr. Cat Moon</p>
-            </div>
+<table class="table">
 
-            <div>
-              <label>Category</label>
-              <p>Tanglaw Program</p>
-            </div>
+<thead>
+<tr>
+<th>Proposal ID</th>
+<th>Proposal Title</th>
+<th>Project Leader</th>
+<th>Budget</th>
+<th>Status</th>
+<th width="120">Action</th>
+</tr>
+</thead>
 
-            <div>
-              <label>Endorsed Date</label>
-              <p>2024-12-09</p>
-            </div>
-          </div>
+<tbody>
 
-          <div class="budget-cards">
-            <div class="budget blue">
-              <label>Total Budget</label>
-              <strong>₱180,000</strong>
-            </div>
+<tr
+v-for="proposal in filteredProposals"
+:key="proposal.id"
+>
 
-            <div class="budget green">
-              <label>Released</label>
-              <strong>₱180,000</strong>
-            </div>
+<td>{{proposal.code}}</td>
+<td>{{proposal.title}}</td>
+<td>{{proposal.leader}}</td>
+<td>₱ {{proposal.budget}}</td>
 
-            <div class="budget orange">
-              <label>Remaining</label>
-              <strong>₱0</strong>
-            </div>
-          </div>
-        </div>
+<td>
+<span
+class="status"
+:class="{
+ready:proposal.status=='Ready for Release',
+returned:proposal.status=='Returned',
+released:proposal.status=='Released'
+}"
+>
+{{proposal.status}}
+</span>
+</td>
 
-        <!-- Fund Release Details (DISABLED) -->
-        <div class="card disabled">
-          <h3>Fund Release Details</h3>
+<td>
+<button
+class="view-btn"
+@click="viewProposal(proposal)"
+>
+View
+</button>
+</td>
 
-          <label>Amount to Release (USD)</label>
-          <input type="number" value="0.00" disabled />
-          <small class="info">Maximum available: ₱0</small>
+</tr>
 
-          <label>Release Date</label>
-          <input type="date" disabled />
+<tr v-if="filteredProposals.length==0">
+<td colspan="6" class="empty">
+No budget records found.
+</td>
+</tr>
 
-          <label>Remarks / Notes</label>
-          <textarea disabled placeholder="No further releases allowed."></textarea>
-        </div>
-      </div>
+</tbody>
 
-      <!-- RIGHT -->
-      <div class="right">
-        <div class="card">
-          <span class="status">Approved & Funded</span>
+</table>
 
-          <p class="note">
-            This proposal has already received its full approved funding. No further fund releases
-            are allowed.
-          </p>
-        </div>
+</div>
 
-        <div class="card">
-          <h3>Release Summary</h3>
-
-          <div class="summary-row">
-            <span>Amount to Release</span>
-            <strong class="highlight">₱0.00</strong>
-          </div>
-
-          <div class="summary-row">
-            <span>Previously Released</span>
-            <span>₱180,000</span>
-          </div>
-
-          <div class="summary-row">
-            <span>Remaining After Release</span>
-            <span>₱0</span>
-          </div>
-
-          <button class="release-btn" disabled>Fully Funded</button>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 </template>
 
 <script>
-export default {
-  name: 'ReleaseFunds',
+export default{
+
+name:"RpsBudgetProcessing",
+
+data(){
+return{
+
+search:"",
+
+proposals: []
+
+}
+},
+
+computed:{
+
+filteredProposals(){
+
+return this.proposals.filter(p=>
+
+p.title.toLowerCase().includes(this.search.toLowerCase()) ||
+
+p.code.toLowerCase().includes(this.search.toLowerCase()) ||
+
+p.leader.toLowerCase().includes(this.search.toLowerCase())
+
+)
+
+}
+
+},
+
+methods:{
+
+viewProposal(proposal){
+
+this.$router.push({
+
+name:"BudgetProcessingViewer",
+
+params:{
+id:proposal.id
+}
+
+})
+
+}
+
+}
+
 }
 </script>
 
 <style scoped>
-.page {
-  padding: 24px;
-  font-family: Arial, sans-serif;
-  width: 500%;
-  max-width: 135%;
+
+.page{
+padding:25px;
+font-family:Segoe UI,sans-serif;
+background:#f5f7fb;
+min-height:100vh;
+width:136%;
 }
 
-.back-btn {
-  background: none;
-  border: none;
-  color: #4f46e5;
-  cursor: pointer;
-  margin-bottom: 12px;
+.page-header{
+margin-bottom:20px;
 }
 
-.subtitle {
-  color: #666;
-  margin-bottom: 20px;
+.page-header h2{
+margin:0;
+font-size:28px;
+font-weight:700;
+color:#1e293b;
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+.page-header p{
+margin-top:5px;
+font-size:14px;
+color:#64748b;
 }
 
-.card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  border: 1px solid #eee;
+.toolbar{
+margin-bottom:20px;
 }
 
-.disabled {
-  opacity: 0.6;
+.search{
+width:100%;
+padding:12px 15px;
+border:1px solid #d1d5db;
+border-radius:8px;
+font-size:14px;
+outline:none;
+box-sizing:border-box;
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+.search:focus{
+border-color:#2563eb;
 }
 
-label {
-  font-size: 12px;
-  color: #777;
+.table-container{
+background:#fff;
+border-radius:12px;
+overflow:hidden;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-input,
-textarea {
-  width: 100%;
-  padding: 8px;
-  margin: 6px 0 12px;
+.table{
+width:100%;
+border-collapse:collapse;
 }
 
-textarea {
-  min-height: 80px;
+.table thead{
+background:#1e40af;
+color:#fff;
 }
 
-.budget-cards {
-  display: flex;
-  gap: 12px;
+.table th,
+.table td{
+padding:15px;
+text-align:left;
+font-size:14px;
 }
 
-.budget {
-  flex: 1;
-  padding: 12px;
-  border-radius: 6px;
+.table td{
+border-bottom:1px solid #e5e7eb;
+color:#374151;
 }
 
-.blue {
-  background: #eef2ff;
+.table tbody tr:hover{
+background:#f8fafc;
 }
 
-.green {
-  background: #ecfdf5;
+.status{
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:600;
+display:inline-block;
+text-align:center;
+min-width:140px;
 }
 
-.orange {
-  background: #fff7ed;
+.ready{
+background:#dcfce7;
+color:#166534;
 }
 
-.status {
-  display: inline-block;
-  background: #dcfce7;
-  color: #166534;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+.returned{
+background:#fef3c7;
+color:#92400e;
 }
 
-.note {
-  font-size: 13px;
-  color: #555;
-  margin-top: 12px;
+.released{
+background:#dbeafe;
+color:#1d4ed8;
 }
 
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  margin: 10px 0;
+.view-btn{
+background:#2563eb;
+color:#fff;
+border:none;
+padding:8px 18px;
+border-radius:6px;
+cursor:pointer;
+font-size:13px;
 }
 
-.highlight {
-  color: #f59e0b;
+.view-btn:hover{
+background:#1d4ed8;
 }
 
-.release-btn {
-  width: 100%;
-  margin-top: 16px;
-  padding: 10px;
-  background: #ccc;
-  color: white;
-  border: none;
-  border-radius: 6px;
+.empty{
+padding:25px;
+text-align:center;
+color:#94a3b8;
 }
+
 </style>
