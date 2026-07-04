@@ -81,7 +81,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/utils/api'
 
 const router = useRouter()
 
@@ -90,8 +90,8 @@ const users = ref([])
 
 const fetchUsers = async () => {
   try {
-    const response = await axios.get(
-      'http://localhost:8081/api/users'
+    const response = await api.get(
+      '/api/users'
     )
 
     users.value = response.data.map(user => ({

@@ -6,6 +6,7 @@ import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,15 +24,23 @@ public class NotificationService {
     }
 
     public Notification createNotification(Long userId, String message) {
+        return createNotification(userId, message, null, null, null);
+    }
+
+    public Notification createNotification(Long userId, String message, String title, String type, Long proposalId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setMessage(message);
+        notification.setTitle(title != null ? title : "Notification");
+        notification.setType(type);
+        notification.setProposalId(proposalId);
         notification.setIsRead(false);
         return notificationRepository.save(notification);
     }
 
+    @Transactional
     public Notification markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
@@ -39,6 +48,7 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    @Transactional
     public void markAllAsRead(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));

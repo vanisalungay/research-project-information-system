@@ -33,8 +33,8 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+  color-scheme: light dark;
 }
-
 
 *,
 *::before,
@@ -57,4 +57,128 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* SYSTEM ADAPTIVE DARK MODE OVERRIDES */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0f172a;
+    --color-background-soft: #1e293b;
+    --color-background-mute: #0f172a;
+    --color-card-background: #1e293b;
+    
+    --color-border: #334155;
+    --color-border-hover: #475569;
+    
+    --color-text: #f1f5f9;
+    --color-text-soft: #94a3b8;
+    --color-heading: #f8fafc;
+    --color-primary: #3b82f6;
+  }
+
+  body {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+  }
+
+  /* Structural layout, content regions, panels, tables, cards, and modals */
+  main.content,
+  div[class*="content"],
+  div[class*="wrapper"],
+  div[class*="container"],
+  div[class*="panel"],
+  div[class*="card"],
+  div[class*="modal"],
+  div[class*="box"],
+  div[class*="form"],
+  div[class*="dialog"],
+  div[class*="popup"],
+  div[class*="login-container"],
+  div[class*="register-container"],
+  section,
+  aside:not(.sidebar), /* Maintain signature brand sidebar */
+  main,
+  table,
+  tr,
+  td,
+  th {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: #334155 !important;
+  }
+
+  /* Layout container backing canvas dark style */
+  div[class*="content-wrapper"],
+  div[class*="app-layout"],
+  div.app-layout,
+  main.content,
+  .content {
+    background-color: #0f172a !important;
+  }
+
+  /* Text & Typography Contrast */
+  h1, h2, h3, h4, h5, h6,
+  p, span, label, li, td, th, strong, b, i, em {
+    color: #f1f5f9 !important;
+  }
+
+  /* Muted metadata and sub-details */
+  small, 
+  span[class*="id"], 
+  span[class*="muted"], 
+  div[class*="muted"],
+  p[class*="muted"],
+  [class*="subtitle"],
+  [class*="description"],
+  td.proposal-id {
+    color: #94a3b8 !important;
+  }
+
+  /* Anchors and Links */
+  a {
+    color: #60a5fa !important;
+  }
+  a:hover {
+    color: #93c5fd !important;
+  }
+
+  /* Form Elements: Inputs, Selects, and Textareas */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748b !important;
+  }
+
+  /* Table Customizations */
+  th {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-bottom: 2px solid #334155 !important;
+  }
+
+  tr:hover td {
+    background-color: #0f172a !important;
+  }
+
+  /* Preserve high-contrast text readability on yellow/brand buttons */
+  button[class*="yellow"],
+  button[class*="primary"],
+  button[class*="submit"],
+  .create-btn,
+  .submit-btn {
+    color: #000000 !important;
+  }
 }

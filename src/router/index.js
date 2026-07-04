@@ -4,88 +4,91 @@ import { useUserDataStore } from '../stores/userData'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import NoNavLayout from '../layouts/NoNavLayout.vue'
 
-import Login from '../views/Login.vue'
-import About from '../views/About.vue'
-import ForgotPassword from '../views/ForgotPassword.vue'
-import CreateAccount from '../views/CreateAccount.vue'
-import BackendTest from '../views/BackendTest.vue'
-
-import ProfileSettings from '../views/ProfileSettings.vue'
-import ProfileInformation from '../views/ProfileInformation.vue'
-import Notification from '../views/Notification.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
-import UserAccounts from '@/views/UserAccounts.vue'
-import CreateUserModal from '@/views/CreateUserModal.vue'
+import Notification from '../views/Notifications/Notification.vue'
+import NotificationsHub from '../views/Notifications/Index.vue'
+import NotificationPage from '../views/Notifications/NotificationPage.vue'
+
+/* Auth */
+import Login from '../views/Auth/Login.vue'
+import ForgotPassword from '../views/Auth/ForgotPassword.vue'
+import CreateAccount from '../views/Auth/CreateAccount.vue'
+import ProponentLogin from '../views/Auth/ProponentLogin.vue'
+import ProponentRegister from '../views/Auth/ProponentRegister.vue'
+import ProponentForgotPassword from '../views/Auth/ProponentForgotPassword.vue'
+
+/* Shared */
+import About from '../views/Shared/About.vue'
+import BackendTest from '../views/Shared/BackendTest.vue'
+import FundViewProp from '../views/Shared/FundViewProp.vue'
+import ProfileSettings from '../views/Shared/ProfileSettings.vue'
+import ProfileInformation from '../views/Shared/ProfileInformation.vue'
+
+/* Admin */
+import UserAccounts from '@/views/Admin/UserAccounts.vue'
+import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 
 /* OVCRIGE */
-import OvcReviewProposal from '../views/OvcReviewProposal.vue'
-import OvcSubmittedProposal from '../views/OvcSubmittedProposal.vue'
-import OvcEndorsedProposal from '../views/OvcEndorsedProposal.vue'
-import OvcAssignReviewer from '../views/OvcAssignReviewer.vue'
-import OvcNotifications from '../views/OvcNotifications.vue'
-import OvcReturn4Revision from '../views/OvcReturn4Revision.vue'
+import OvcReviewProposal from '../views/Ovc/OvcReviewProposal.vue'
+import OvcSubmittedProposal from '../views/Ovc/OvcSubmittedProposal.vue'
+import OvcEndorsedProposal from '../views/Ovc/OvcEndorsedProposal.vue'
+import OvcAssignReviewer from '../views/Ovc/OvcAssignReviewer.vue'
+import OvcReturn4Revision from '../views/Ovc/OvcReturn4Revision.vue'
+import OvcNotifications from '../views/Notifications/OvcNotifications.vue'
 
 /* RPS */
 import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
 import RpsStaffDashboard from '@/views/Dashboard/RpsStaffDashboard.vue'
-import RpsAdminVerification from '@/views/RpsAdminVerification.vue'
-import RpsAdminNotification from '@/views/RpsAdminNotification.vue'
-import RpsStaffNotification from '@/views/RpsStaffNotification.vue'
-import RpsInbox from '@/views/RpsInbox.vue'
-import RpsEndPro from '@/views/RpsEndPro.vue'
-import RpsReturn4Rev from '@/views/RpsReturn4Rev.vue'
-import RpsSubmittedProposals from '@/views/RpsSubmittedProposals.vue'
-import RpsFundedPro from '@/views/RpsFundedPro.vue'
-import RpsEndorsedPro from '@/views/RpsEndorsedPro.vue'
-import RpsProposalDetails from '../views/RpsProposalDetails.vue'
-import RpsNotificationDetails from '../views/RpsNotificationDetails.vue'
-import RpsProposalReview from '../views/RpsProposalReview.vue'
-import RpsRevResultViewer from '../views/RpsRevResultViewer.vue'
-import RpsBudgetProcessing from '../views/RpsBudgetProcessing.vue'
-import RpsBudgetRelease from '../views/RpsBudgetRelease.vue'
-import RpsProposalMonitoringDetails from '../views/RpsProposalMonitoringDetails.vue'
-import RpsProposalMonitoring from '@/views/RpsProposalMonitoring.vue'
+import RpsAdminVerification from '@/views/Rps/RpsAdminVerification.vue'
+import RpsInbox from '@/views/Rps/RpsInbox.vue'
+import RpsEndPro from '@/views/Rps/RpsEndPro.vue'
+import RpsReturn4Rev from '@/views/Rps/RpsReturn4Rev.vue'
+import RpsSubmittedProposals from '@/views/Rps/RpsSubmittedProposals.vue'
+import RpsFundedPro from '@/views/Rps/RpsFundedPro.vue'
+import RpsEndorsedPro from '@/views/Rps/RpsEndorsedPro.vue'
+import RpsProposalDetails from '../views/Rps/RpsProposalDetails.vue'
+import RpsNotificationDetails from '../views/Notifications/RpsNotificationDetails.vue'
+import RpsProposalReview from '../views/Rps/RpsProposalReview.vue'
+import RpsRevResultViewer from '../views/Rps/RpsRevResultViewer.vue'
+import RpsBudgetProcessing from '../views/Rps/RpsBudgetProcessing.vue'
+import RpsBudgetRelease from '../views/Rps/RpsBudgetRelease.vue'
+import RpsProposalMonitoringDetails from '../views/Rps/RpsProposalMonitoringDetails.vue'
+import RpsProposalMonitoring from '@/views/Rps/RpsProposalMonitoring.vue'
+import RpsAdminNotification from '../views/Notifications/RpsAdminNotification.vue'
+import RpsStaffNotification from '../views/Notifications/RpsStaffNotification.vue'
 
 /* OVCAF */
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
-import OvcafValidate from '../views/OvcafValidate.vue'
-import OvcafNotification from '../views/OvcafNotification.vue'
+import OvcafValidate from '../views/Ovcaf/OvcafValidate.vue'
+import OvcafNotification from '../views/Notifications/OvcafNotification.vue'
 
 /* OC */
 import OCDashboard from '../views/Dashboard/OCDashboard.vue'
-import OCNotifications from '../views/OCNotifications.vue'
-import OCFinalApproval from '../views/OCFinalApproval.vue'
-import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
-import OcDetailedProposal from '../views/OcDetailedProposal.vue'
+import OCFinalApproval from '../views/Oc/OCFinalApproval.vue'
+import OCFinalApproval2 from '../views/Oc/OCFinalApproval2.vue'
+import OcDetailedProposal from '../views/Oc/OcDetailedProposal.vue'
+import OCNotifications from '../views/Notifications/OCNotifications.vue'
 
 /* REC */
 import RecDashboard from '../views/Dashboard/RecDashboard.vue'
-import RecAssignedProposal from '../views/RecAssignedProposal.vue'
-import RecReviewForm from '../views/RecReviewForm.vue'
-import RecMeetingDetails from '../views/RecMeetingDetails.vue'
-import RecRejectProposal from '../views/RecRejectProposal.vue'
-import RecReturn4Revision from '../views/RecReturn4Revision.vue'
-import RecNotification from '../views/RecNotification.vue'
-import RecDetailedProp from '../views/RecDetailedProp.vue'
+import RecAssignedProposal from '../views/Rec/RecAssignedProposal.vue'
+import RecReviewForm from '../views/Rec/RecReviewForm.vue'
+import RecMeetingDetails from '../views/Rec/RecMeetingDetails.vue'
+import RecRejectProposal from '../views/Rec/RecRejectProposal.vue'
+import RecReturn4Revision from '../views/Rec/RecReturn4Revision.vue'
+import RecDetailedProp from '../views/Rec/RecDetailedProp.vue'
+import RecNotification from '../views/Notifications/RecNotification.vue'
 
 /* PROPONENT */
 import ProponentDashboard from '../views/Dashboard/ProponentDashboard.vue'
-import ProponentNotifications from '@/views/ProponentNotifications.vue'
-import ProponentRevision from '@/views/ProponentRevision.vue'
-import ProponentProposals from '@/views/ProponentProposals.vue'
-import ProponentEvalCriteria from '@/views/ProponentEvalCriteria.vue'
-import ProponentFeedback from '@/views/ProponentFeedback.vue'
-import ProponentSubmitRev from '@/views/ProponentSubmitRev.vue'
-import ProponentPropDetails from '../views/ProponentPropDetails.vue'
-import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
-
-/* Authentication */
-import ProponentLogin from '../views/ProponentLogin.vue'
-import ProponentRegister from '../views/ProponentRegister.vue'
-import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
-
-/* Shared */
-import FundViewProp from '../views/FundViewProp.vue'
+import ProponentRevision from '@/views/Proponent/ProponentRevision.vue'
+import ProponentProposals from '@/views/Proponent/ProponentProposals.vue'
+import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
+import ProponentFeedback from '@/views/Proponent/ProponentFeedback.vue'
+import ProponentSubmitRev from '@/views/Proponent/ProponentSubmitRev.vue'
+import ProponentPropDetails from '../views/Proponent/ProponentPropDetails.vue'
+import ProponentDetiailedProp from '../views/Proponent/ProponentDetiailedProp.vue'
+import ProponentNotifications from '../views/Notifications/ProponentNotifications.vue'
 
 const routes = [
   {
@@ -93,6 +96,7 @@ const routes = [
     component: DefaultLayout,
     meta: { requiresAuth: true },
     children: [
+      { path: 'notifications', component: NotificationPage },
       { path: 'home', component: Dashboard },
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
@@ -121,51 +125,56 @@ const routes = [
 
       { path: 'rpsadmin-ver', component: RpsAdminVerification },
       { path: 'rpsadmin-dash', component: RpsAdminDashboard },
-      { path: 'rpsadmin-notif', component: RpsAdminNotification },
+      { path: 'rpsadmin-notif', component: NotificationPage },
 
       { path: 'rpsstaff-dash', component: RpsStaffDashboard },
-      { path: 'rpsstaff-notification', component: RpsStaffNotification },
+      { path: 'rpsstaff-notification', component: NotificationPage },
 
       { path: 'rps-endorse', component: RpsEndPro },
       { path: 'rps-return4rev', component: RpsReturn4Rev },
       { path: 'rps-subproposal', component: RpsSubmittedProposals },
       { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
-      { path: 'rpsfunded', component: RpsFundedPro },
+      { path: 'funded-prop', component: RpsFundedPro },
 
       { path: 'fundviewprop', component: FundViewProp },
 
       // ================= OVCAF =================
       { path: 'ovcaf-dash', component: OvcafDashboard },
-      { path: 'ovcaf-validate', component: OvcafValidate },
-      { path: 'ovcaf-notification', component: OvcafNotification },
+      { path: 'ovcaf-validate/:id?', name: 'OvcafValidate', component: OvcafValidate },
+      { path: 'ovcaf-notification', component: NotificationPage },
 
       // ================= OVCRIGE =================
       { path: 'review-prop', component: OvcReviewProposal },
+      { path: 'review-prop/:id', name: 'OvcReviewProposal', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
       { path: 'assign-reviewer', component: OvcAssignReviewer },
-      { path: 'notifications', component: OvcNotifications },
+      { path: 'assign-reviewer/:id', name: 'OvcAssignReviewer', component: OvcAssignReviewer },
+      { path: 'notifications', component: NotificationPage },
       { path: 'return4-revision', component: OvcReturn4Revision },
+      { path: 'return4-revision/:id', name: 'OvcReturn4Revision', component: OvcReturn4Revision },
 
       // ================= REC =================
       { path: 'rec-dash', component: RecDashboard },
       { path: 'assigned-proposals', component: RecAssignedProposal },
       { path: 'review-form', component: RecReviewForm },
+      { path: 'review-form/:id', name: 'RecReviewForm', component: RecReviewForm },
       { path: 'meeting-details', component: RecMeetingDetails },
+      { path: 'meeting-details/:id', name: 'RecMeetingDetails', component: RecMeetingDetails },
       { path: 'reject-proposal', component: RecRejectProposal },
       { path: 'return-proposals', component: RecReturn4Revision },
-      { path: 'rec-notif', component: RecNotification },
+      { path: 'rec-notif', component: NotificationPage },
       { path: 'rec-prop', component: RecDetailedProp },
 
       // ================= PROPONENT =================
       { path: 'proponent-dashboard', component: ProponentDashboard },
-      { path: 'proponent-notification', component: ProponentNotifications },
+      { path: 'proponent-notification', component: NotificationPage },
       { path: 'proposals', component: ProponentProposals },
       { path: 'revisions', component: ProponentRevision },
       { path: 'evalCriteria', component: ProponentEvalCriteria },
       { path: 'proponent-feedback', component: ProponentFeedback },
-      { path: 'submit-revision', component: ProponentSubmitRev },
-      { path: 'proponent-prop-details', component: ProponentPropDetails },
+      { path: 'submit-revision/:id?', component: ProponentSubmitRev },
+      { path: 'proponent-prop-details/:id?', component: ProponentPropDetails },
       {
         path: 'detailed-proposal',
         name: 'ProponentDetiailedProp',
@@ -174,9 +183,9 @@ const routes = [
 
       // ================= CHANCELLOR =================
       { path: 'oc-dashboard', component: OCDashboard },
-      { path: 'oc-notification', component: OCNotifications },
+      { path: 'oc-notification', component: NotificationPage },
       { path: 'oc-detailed', component: OcDetailedProposal },
-      { path: 'oc/final-approval/:id', component: OCFinalApproval },
+      { path: 'oc/final-approval/:id', name: 'OCFinalApproval', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
     ],
   },

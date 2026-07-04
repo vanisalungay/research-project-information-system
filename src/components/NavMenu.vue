@@ -39,16 +39,32 @@ const route = useRoute()
 const userStore = useUserDataStore()
 
 const allNavItems = [
-  // ===========================
-  // RPS ADMIN
-  // ===========================
   {
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/rpsadmin-dash',
-    roles: [UserRole.RPS_ADMIN],
+    path: '/home',
+    roles: [
+      UserRole.RPS_ADMIN,
+      UserRole.RPS_STAFF,
+      UserRole.PROPONENT,
+      UserRole.OVCAF,
+      UserRole.OVCRIGE,
+      UserRole.REC,
+      UserRole.OC,
+    ],
   },
+
+  // ===========================
+  // RPS ADMIN
+  // ===========================
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/rpsadmin-dash',
+  //   roles: [UserRole.RPS_ADMIN],
+  // },
 
   {
   icon: submittedIcon,
@@ -62,20 +78,20 @@ const allNavItems = [
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/rpsadmin-notif',
+    path: '/notifications',
     roles: [UserRole.RPS_ADMIN],
   },
 
   // ===========================
   // RPS STAFF
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/rpsstaff-dash',
-    roles: [UserRole.RPS_STAFF],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/rpsstaff-dash',
+  //   roles: [UserRole.RPS_STAFF],
+  // },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
@@ -87,7 +103,7 @@ const allNavItems = [
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/rpsstaff-notification',
+    path: '/notifications',
     roles: [UserRole.RPS_STAFF],
   },
   {
@@ -122,18 +138,18 @@ const allNavItems = [
   // ===========================
   // PROPONENT
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/proponent-dashboard',
-    roles: [UserRole.PROPONENT],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/proponent-dashboard',
+  //   roles: [UserRole.PROPONENT],
+  // },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/proponent-notification',
+    path: '/notifications',
     roles: [UserRole.PROPONENT],
   },
   {
@@ -161,13 +177,13 @@ const allNavItems = [
   // ===========================
   // OVCRIGE
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/home',
-    roles: [UserRole.OVCRIGE],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/home',
+  //   roles: [UserRole.OVCRIGE],
+  // },
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
@@ -193,31 +209,31 @@ const allNavItems = [
   // ===========================
   // OVCAF
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/ovcaf-dash',
-    roles: [UserRole.OVCAF],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/ovcaf-dash',
+  //   roles: [UserRole.OVCAF],
+  // },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/ovcaf-notification',
+    path: '/notifications',
     roles: [UserRole.OVCAF],
   },
 
   // ===========================
   // REC
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/rec-dash',
-    roles: [UserRole.REC],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/rec-dash',
+  //   roles: [UserRole.REC],
+  // },
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
@@ -229,25 +245,25 @@ const allNavItems = [
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/rec-notif',
+    path: '/notifications',
     roles: [UserRole.REC],
   },
 
   // ===========================
   // OC
   // ===========================
-  {
-    icon: dashboardIcon,
-    activeIcon: dashboardActiveIcon,
-    text: 'Dashboard',
-    path: '/oc-dashboard',
-    roles: [UserRole.OC],
-  },
+  // {
+  //   icon: dashboardIcon,
+  //   activeIcon: dashboardActiveIcon,
+  //   text: 'Dashboard',
+  //   path: '/oc-dashboard',
+  //   roles: [UserRole.OC],
+  // },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/oc-notification',
+    path: '/notifications',
     roles: [UserRole.OC],
   },
 

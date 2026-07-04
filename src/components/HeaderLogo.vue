@@ -79,11 +79,12 @@ const logout = () => {
 
   userStore.logout()
 
-  if (role === UserRole.PROPONENT) {
-    router.push('/proponent-login')
-  } else {
-    router.push('/login')
-  }
+  // if (role === UserRole.PROPONENT) {
+  //   router.push('/proponent-login')
+  // } else {
+  //   router.push('/login')
+  // }
+  router.push('/login')
 }
 
 const handleLogin = async () => {

@@ -23,11 +23,14 @@ public class ProposalController {
     @GetMapping
     public ResponseEntity<List<Proposal>> getProposals(
             @RequestParam(required = false) Long proponentId,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String[] statusIn) {
         if (proponentId != null) {
             return ResponseEntity.ok(proposalService.getProposalsByProponent(proponentId));
         } else if (status != null) {
             return ResponseEntity.ok(proposalService.getProposalsByStatus(status));
+        } else if (statusIn != null && statusIn.length > 0) {
+            return ResponseEntity.ok(proposalService.getProposalsByStatusIn(List.of(statusIn)));
         }
         return ResponseEntity.ok(proposalService.getAllProposals());
     }
@@ -59,6 +62,46 @@ public class ProposalController {
         return ResponseEntity.ok(updated);
     }
 
+    // ========== FLOW ACTIONS ==========
+
+    @PutMapping("/{id}/endorse")
+    public ResponseEntity<Proposal> endorseProposal(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "ENDORSED");
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/forward-to-rec")
+    public ResponseEntity<Proposal> forwardToRec(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "UNDER_REVIEW");
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/forward-to-oc")
+    public ResponseEntity<Proposal> forwardToOc(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "FOR_OC_APPROVAL");
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/final-approve")
+    public ResponseEntity<Proposal> finalApprove(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "APPROVED");
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/return-revision")
+    public ResponseEntity<Proposal> returnForRevision(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "REVISION");
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<Proposal> rejectProposal(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "REJECTED");
+        return ResponseEntity.ok(updated);
+    }
+
+    // ========== REVIEWS ==========
+
     @PostMapping("/{id}/reviews")
     public ResponseEntity<ProposalReview> submitReview(
             @PathVariable Long id,
@@ -71,5 +114,11 @@ public class ProposalController {
     @GetMapping("/{id}/reviews")
     public ResponseEntity<List<ProposalReview>> getProposalReviews(@PathVariable Long id) {
         return ResponseEntity.ok(reviewService.getReviewsForProposal(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProposal(@PathVariable Long id) {
+        proposalService.deleteProposal(id);
+        return ResponseEntity.noContent().build();
     }
 }

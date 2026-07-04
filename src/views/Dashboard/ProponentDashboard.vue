@@ -231,6 +231,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/utils/api'
 
 const router = useRouter()
 
@@ -267,11 +268,90 @@ async function fetchDashboard() {
   loading.value = true
 
   try {
-    // API will be connected here later
+    // Decode user session from localStorage
+    const stored = localStorage.getItem('user_data')
+    if (stored) {
+      const currentUser = JSON.parse(atob(stored))
+      const names = (currentUser.name || '').split(' ')
+      user.value = {
+        first_name: names[0] || 'User',
+        last_name: names.slice(1).join(' ') || ''
+      }
+
+      // Fetch dynamic proposals list from API
+      const response = await api.get('/api/proposals')
+      const data = response.data || []
+
+      // Filter to only display proposals owned by the current logged-in proponent
+      const myProposals = data.filter(p => 
+        (p.proponent && p.proponent.id === currentUser.id) ||
+        (p.projectLeader && p.projectLeader.toLowerCase().includes((currentUser.name || '').toLowerCase()))
+      )
+
+      // Map stats
+      statistics.value.activeProposals = myProposals.filter(p => 
+        p.status === 'SUBMITTED' || p.status === 'ENDORSED' || p.status === 'UNDER_REVIEW' || p.status === 'REC_APPROVED'
+      ).length
+
+      statistics.value.pendingRevisions = myProposals.filter(p => 
+        p.status === 'REVISION' || p.status === 'REC_REVISION'
+      ).length
+
+      statistics.value.approvedProposals = myProposals.filter(p => 
+        p.status === 'APPROVED' || p.status === 'RELEASED'
+      ).length
+
+      // Map recent proposals
+      recentProposals.value = myProposals.slice(0, 5).map(p => {
+        let statText = 'Under Review'
+        let statClass = 'under-review'
+        if (p.status === 'APPROVED' || p.status === 'RELEASED') {
+          statText = 'Approved'
+          statClass = 'approved'
+        } else if (p.status === 'REVISION' || p.status === 'REC_REVISION') {
+          statText = 'Revision Required'
+          statClass = 'revision'
+        } else if (p.status === 'REJECTED') {
+          statText = 'Rejected'
+          statClass = 'rejected'
+        }
+
+        return {
+          id: p.id,
+          title: p.projectTitle || 'Untitled Research Project',
+          proposalId: 'PROP-' + p.id,
+          dateSubmitted: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A',
+          status: statText,
+          statusClass: statClass
+        }
+      })
+
+      // Extract pending revisions for deadline banner
+      const revisionItems = myProposals.filter(p => p.status === 'REVISION' || p.status === 'REC_REVISION')
+      if (revisionItems.length > 0) {
+        revisionDeadline.value = {
+          pendingCount: revisionItems.length,
+          title: revisionItems[0].projectTitle || 'Project Revision Required',
+          proposalId: 'PROP-' + revisionItems[0].id,
+          daysLeft: 7
+        }
+      } else {
+        revisionDeadline.value = null
+      }
+    }
   } catch (error) {
-    console.error(error)
+    console.error("Failed to load proponent dashboard metrics:", error)
   } finally {
     loading.value = false
+  }
+}
+
+// Utility helper to safely parse current session user
+function parsedUser() {
+  try {
+    return JSON.parse(atob(localStorage.getItem('user_data')))
+  } catch (e) {
+    return { id: null }
   }
 }
 

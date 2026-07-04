@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import api from '@/utils/api'
 
 //
 export const UserRole = {
@@ -112,8 +112,8 @@ export const useUserDataStore = defineStore('userData', () => {
       console.log('PASSWORD:', password)
       console.log('ROLE:', role)
 
-      const response = await axios.post(
-        'http://localhost:8081/api/users/login',
+      const response = await api.post(
+        '/api/users/login',
         {
           email,
           password,
@@ -174,8 +174,8 @@ export const useUserDataStore = defineStore('userData', () => {
   async function googleLogin(token, role) {
     try {
       isLoading.value = true
-      const response = await axios.post(
-        'http://localhost:8081/api/users/google-login',
+      const response = await api.post(
+        '/api/users/google-login',
         {
           token,
           role,

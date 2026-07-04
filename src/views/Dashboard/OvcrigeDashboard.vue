@@ -164,7 +164,7 @@ View All
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/utils/api'
 
 const router = useRouter()
 
@@ -184,7 +184,7 @@ const loading = ref(true)
 const loadDashboard = async () => {
   try {
     // Fetch proposals
-    const proposalResponse = await axios.get('http://localhost:8081/api/proposals')
+    const proposalResponse = await api.get('/api/proposals')
 
     proposals.value = proposalResponse.data
 
@@ -203,8 +203,8 @@ const loadDashboard = async () => {
 
     // Notification endpoint
     // Replace userId later using logged in user
-    const notifResponse = await axios.get(
-      'http://localhost:8081/api/notifications?userId=4'
+    const notifResponse = await api.get(
+      '/api/notifications?userId=4'
     )
 
     notifications.value = notifResponse.data
@@ -300,8 +300,6 @@ const goToReview = id => {
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 3fr 1fr;
   gap: 20px;
 }
 

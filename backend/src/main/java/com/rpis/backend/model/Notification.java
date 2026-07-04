@@ -26,6 +26,15 @@ public class Notification {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "proposal_id")
+    private Long proposalId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

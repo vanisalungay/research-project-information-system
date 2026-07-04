@@ -1,0 +1,4 @@
+Scope
+This project focuses on the development of a Research Project Information System (RPIS) for the RII of MSU-Naawan. The system is designed to organize and automate the submission, review, approval, and monitoring of research project proposals.
+The system allows faculty proponents to submit proposals online, upload required documents, track the status of submissions, receive feedback, and submit revisions. It also allows the RII and other concerned offices to review proposals, manage evaluations, send notifications, and maintain records in a centralized database.
+For approved proposals, the system includes a feature where proponents may submit requests for additional funds such as travel requests. These requests are viewed and checked by the OVCAF to verify if the request is valid and complete. The system only supports the documentation and tracking of these requests and does not handle the actual release of funds.

@@ -33,6 +33,10 @@ public class User {
     private String role;
 
     private String status = "APPROVED";
+    
+    @Transient
+    private String token;
+
     // NEW FIELD
     private String departmentOffice;
 
@@ -41,4 +45,7 @@ public class User {
 
     // NEW FIELD
     private Boolean emailVerified = false;
+
+    private String contactNumber;
+    private String specialization;
 }

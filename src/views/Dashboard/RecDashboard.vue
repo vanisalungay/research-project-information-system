@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import axios from 'axios'
+import api from '@/utils/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -167,21 +167,27 @@ const pendingEvaluation = computed(() =>
 
 const loadDashboard = async () => {
   try {
-    const proposalRes = await axios.get(
-      'http://localhost:8081/api/proposals'
-    )
+    const proposalRes = await api.get('/api/proposals')
+    const allProposals = proposalRes.data || []
 
-    proposals.value = proposalRes.data
+    // Get current user
+    const stored = localStorage.getItem('user_data')
+    if (stored) {
+      const user = JSON.parse(atob(stored))
 
-    const user = JSON.parse(
-      atob(localStorage.getItem('user_data'))
-    )
+      // Filter proposals assigned to this REC user
+      // Assuming proposals have an 'assignedTo' field or similar
+      // For now, show all UNDER_REVIEW proposals
+      proposals.value = allProposals.filter(p =>
+        p.status === 'UNDER_REVIEW' ||
+        p.status === 'REC_APPROVED' ||
+        p.status === 'REC_REJECTED'
+      )
 
-    const notifRes = await axios.get(
-      `http://localhost:8081/api/notifications/user/${user.id}`
-    )
-
-    notifications.value = notifRes.data
+      // Load notifications
+      const notifRes = await api.get(`/api/notifications?userId=${user.id}`)
+      notifications.value = notifRes.data || []
+    }
   } catch (err) {
     console.error(err)
   }
@@ -202,11 +208,11 @@ const goToAssigned = () => {
 }
 
 const goToReview = (id) => {
-  router.push(`/review-form/${id}`)
+  router.push({ name: 'RecReviewForm', params: { id } })
 }
 
 const goToMeeting = (id) => {
-  router.push(`/meeting-details/${id}`)
+  router.push({ name: 'RecMeetingDetails', params: { id } })
 }
 </script>
 
@@ -250,8 +256,6 @@ const goToMeeting = (id) => {
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 3fr 1fr;
   gap: 20px;
 }
 

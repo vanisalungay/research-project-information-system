@@ -11,6 +11,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.rpis.backend.dto.GoogleLoginRequest;
+import com.rpis.backend.service.TokenService;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final TokenService tokenService;
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
@@ -92,6 +94,10 @@ public class UserController {
 
         if (user != null) {
 
+            // Generate and set token
+            String token = tokenService.generateToken(user.getId(), user.getRole());
+            user.setToken(token);
+
             // Hide password before sending response
             user.setPassword(null);
 
@@ -141,6 +147,11 @@ public class UserController {
                     }
 
                     existingUser.setPassword(null);
+                    
+                    // Generate and set token
+                    String token = tokenService.generateToken(existingUser.getId(), existingUser.getRole());
+                    existingUser.setToken(token);
+                    
                     return ResponseEntity.ok(existingUser);
                 } else {
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found.");
@@ -172,5 +183,26 @@ public class UserController {
         createdUser.setPassword(null);
 
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return userService.getUserById(id)
+                .map(user -> {
+                    user.setPassword(null); // Hide password for safety
+                    return ResponseEntity.ok(user);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            User updated = userService.updateUser(id, user);
+            updated.setPassword(null); // Hide password for safety
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

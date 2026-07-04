@@ -176,6 +176,36 @@ public class UserService {
         }
     }
 
+    public java.util.Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    public User updateUser(Long id, User updatedUser) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (updatedUser.getName() != null && !updatedUser.getName().trim().isEmpty()) {
+            user.setName(updatedUser.getName());
+        }
+        if (updatedUser.getEmail() != null && !updatedUser.getEmail().trim().isEmpty()) {
+            user.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().trim().isEmpty()) {
+            user.setPassword(updatedUser.getPassword());
+        }
+        if (updatedUser.getDepartmentOffice() != null) {
+            user.setDepartmentOffice(updatedUser.getDepartmentOffice());
+        }
+        if (updatedUser.getContactNumber() != null) {
+            user.setContactNumber(updatedUser.getContactNumber());
+        }
+        if (updatedUser.getSpecialization() != null) {
+            user.setSpecialization(updatedUser.getSpecialization());
+        }
+
+        return userRepository.save(user);
+    }
+
     private void createIfNotExist(String name, String email, String password, String role) {
         if (userRepository.findByEmail(email).isEmpty()) {
             User user = new User();

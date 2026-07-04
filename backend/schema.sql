@@ -168,6 +168,9 @@ CREATE TABLE notifications (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    type VARCHAR(100),
+    proposal_id BIGINT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

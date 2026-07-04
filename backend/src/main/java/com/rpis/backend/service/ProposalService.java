@@ -35,6 +35,10 @@ public class ProposalService {
         return proposalRepository.findByProponent(proponent);
     }
 
+    public List<Proposal> getProposalsByStatusIn(List<String> statuses) {
+        return proposalRepository.findByStatusIn(statuses);
+    }
+
     public Proposal getProposalById(Long id) {
         return proposalRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + id));
@@ -220,82 +224,192 @@ public class ProposalService {
         proposal.setStatus(status.toUpperCase());
         proposal = proposalRepository.save(proposal);
 
-        // Notify proponent of status updates
-        if (proposal.getProponent() != null) {
-            notificationService.createNotification(
-                    proposal.getProponent().getId(),
-                    "Your proposal \"" + proposal.getProjectTitle() + "\" status is now: " + status);
-        }
+        // Dispatch notifications to the next user level and the proponent
+        notifySubscribedRoles(proposal, null);
+
         return proposal;
     }
 
-    private void notifySubscribedRoles(Proposal proposal, String message) {
+    @Transactional
+    public void deleteProposal(Long id) {
+        Proposal proposal = getProposalById(id);
+        proposalRepository.delete(proposal);
+    }
 
+    private void notifySubscribedRoles(Proposal proposal, String message) {
         List<User> allUsers = userRepository.findAll();
+        String status = proposal.getStatus();
 
         for (User user : allUsers) {
-
             String role = user.getRole();
 
-            switch (proposal.getStatus()) {
-
-                // Newly submitted proposal
+            switch (status) {
+                // Newly submitted proposal -> notify RPS staff/admins to check
                 case "SUBMITTED":
                     if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(user.getId(), message);
+                        notificationService.createNotification(
+                            user.getId(), 
+                            "New proposal submitted for review: \"" + proposal.getProjectTitle() + "\"",
+                            "New Proposal Submitted",
+                            "PROPOSAL_UPDATE",
+                            proposal.getId()
+                        );
                     }
                     break;
 
-                // RPS endorsed it to OVCRIGE
+                // RPS endorsed it to OVCRIGE -> notify OVCRIGE to review & coordinate
                 case "ENDORSED":
                     if ("OVCRIGE".equals(role)) {
                         notificationService.createNotification(
-                                user.getId(),
-                                "A proposal has been endorsed to OVCRIGE: "
-                                        + proposal.getProjectTitle());
+                            user.getId(),
+                            "A proposal has been endorsed to OVCRIGE: \"" + proposal.getProjectTitle() + "\"",
+                            "Proposal Endorsed",
+                            "ENDORSEMENT",
+                            proposal.getId()
+                        );
                     }
                     break;
 
-                // OVCRIGE forwarded to REC
+                // OVCRIGE forwarded to REC -> notify REC to conduct technical/merit evaluation
                 case "UNDER_REVIEW":
                     if ("REC".equals(role)) {
                         notificationService.createNotification(
-                                user.getId(),
-                                "Proposal awaiting REC review: "
-                                        + proposal.getProjectTitle());
+                            user.getId(),
+                            "Proposal awaiting REC review and evaluation: \"" + proposal.getProjectTitle() + "\"",
+                            "Review Request",
+                            "REVIEW_REQUEST",
+                            proposal.getId()
+                        );
                     }
                     break;
 
-                // REC approved
-                case "APPROVED":
-                    if (proposal.getProponent() != null) {
+                // REC approved & recommended -> notify OVCRIGE to prepare chancellor final approval list
+                case "REC_APPROVED":
+                    if ("OVCRIGE".equals(role)) {
                         notificationService.createNotification(
-                                proposal.getProponent().getId(),
-                                "Your proposal \"" +
-                                        proposal.getProjectTitle() +
-                                        "\" has been approved.");
+                            user.getId(),
+                            "REC has evaluated and recommended proposal for approval: \"" + proposal.getProjectTitle() + "\"",
+                            "Proposal Approved by REC",
+                            "APPROVAL",
+                            proposal.getId()
+                        );
                     }
                     break;
 
-                // REC returned for revision
+                // OVCRIGE forwarded to OC -> notify OC (Chancellor) for final approval
+                case "FOR_OC_APPROVAL":
+                    if ("OC".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
+                            "Final Approval Required",
+                            "APPROVAL",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // REC returned for revision -> notify proponent to revise
+                case "REC_REVISION":
                 case "REVISION":
-                    if (proposal.getProponent() != null) {
+                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                                proposal.getProponent().getId(),
-                                "Your proposal \"" +
-                                        proposal.getProjectTitle() +
-                                        "\" requires revision.");
+                            user.getId(),
+                            "Your proposal \"" + proposal.getProjectTitle() + "\" has been returned for revision. Please check feedback.",
+                            "Revision Required",
+                            "REVISION",
+                            proposal.getId()
+                        );
                     }
                     break;
 
-                // REC rejected
+                // REC rejected or Chancellor rejected -> notify proponent
+                case "REC_REJECTED":
                 case "REJECTED":
-                    if (proposal.getProponent() != null) {
+                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                                proposal.getProponent().getId(),
-                                "Your proposal \"" +
-                                        proposal.getProjectTitle() +
-                                        "\" has been rejected.");
+                            user.getId(),
+                            "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected.",
+                            "Proposal Rejected",
+                            "REJECTION",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to authorize budget
+                case "APPROVED":
+                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Congratulations! Your proposal \"" + proposal.getProjectTitle() + "\" has received final approval by the Chancellor.",
+                            "Proposal Approved",
+                            "APPROVAL",
+                            proposal.getId()
+                        );
+                    } else if ("OVCAF".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "A proposal is approved and ready for budget endorsement: \"" + proposal.getProjectTitle() + "\"",
+                            "Budget Endorsement Required",
+                            "FUNDING",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // Budget ready for release -> notify OVCAF (Finance)
+                case "READY_FOR_RELEASE":
+                    if ("OVCAF".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Budget processing requested for proposal: \"" + proposal.getProjectTitle() + "\"",
+                            "Budget Processing Request",
+                            "FUNDING",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // Funds released -> notify proponent & RPS (RII/DARES) to monitor implementation
+                case "RELEASED":
+                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Implementation funds have been successfully released for your project: \"" + proposal.getProjectTitle() + "\"",
+                            "Funds Released",
+                            "FUNDING",
+                            proposal.getId()
+                        );
+                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Funds released. Ready for implementation monitoring: \"" + proposal.getProjectTitle() + "\"",
+                            "Implementation Monitoring",
+                            "PROPOSAL_UPDATE",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // Returned by OVCAF -> notify proponent & RPS
+                case "RETURNED":
+                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Budget release request for your proposal \"" + proposal.getProjectTitle() + "\" was returned.",
+                            "Budget Request Returned",
+                            "REVISION",
+                            proposal.getId()
+                        );
+                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "Budget release was returned by Finance Office for proposal: \"" + proposal.getProjectTitle() + "\"",
+                            "Budget Request Returned",
+                            "REVISION",
+                            proposal.getId()
+                        );
                     }
                     break;
             }
