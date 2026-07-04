@@ -1,4 +1,3 @@
-krisha, [29/12/2025 2:12 pm]
 <template>
   <div class="dashboard">
     <!-- Header -->
@@ -7,45 +6,42 @@ krisha, [29/12/2025 2:12 pm]
       <p>Overview of research proposals and funding management</p>
     </div>
 
-<!-- Stats Cards -->
-<div class="stats">
+    <!-- Stats Cards -->
+    <div class="stats">
+      <div class="card">
+        <div>
+          <p class="label">Total Proposals</p>
+          <h3>{{ totalProposals }}</h3>
+        </div>
+      </div>
 
-  <div class="card">
-    <div>
-      <p class="label">Total Proposals</p>
-      <h3>{{ totalProposals }}</h3>
+      <div class="card">
+        <div>
+          <p class="label">Endorsed Proposals</p>
+          <h3>{{ endorsedProposals }}</h3>
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <p class="label">Pending Review</p>
+          <h3>{{ pendingReview }}</h3>
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <p class="label">Failed / Returned</p>
+          <h3>{{ failedProposals }}</h3>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="card">
-    <div>
-      <p class="label">Endorsed Proposals</p>
-      <h3>{{ endorsedProposals }}</h3>
-    </div>
-  </div>
-
-  <div class="card">
-    <div>
-      <p class="label">Pending Review</p>
-      <h3>{{ pendingReview }}</h3>
-    </div>
-  </div>
-
-  <div class="card">
-    <div>
-      <p class="label">Failed / Returned</p>
-      <h3>{{ failedProposals }}</h3>
-    </div>
-  </div>
-
-</div>
 
     <!-- Main Content -->
     <div class="content">
-      <!-- Proposals Table -->
+      <!-- Left Panel -->
       <div class="panel">
         <div class="panel-header">
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
           <h3>RECENT ACTIVITY</h3>
         </div>
 
@@ -60,69 +56,91 @@ krisha, [29/12/2025 2:12 pm]
                 <h4>{{ item.title }}</h4>
                 <p>{{ item.description }}</p>
               </div>
-              <span :class="['badge', item.badgeClass]">{{ item.status }}</span>
+
+              <span :class="['badge', item.badgeClass]">
+                {{ item.status }}
+              </span>
             </div>
-=======
+          </div>
+
           <h3>Proposals Awaiting RPS Action</h3>
-          <button class="view-all" @click="$router.push('rpsendorsed-prop')">View All</button>
-        </div>
 
-        <div class="table">
-          <div class="table-header">
-            <span>Title</span>
-            <span>Proponent</span>
-            <span>Budget</span>
-            <span>Status</span>
-            <span>Actions</span>
-          </div>
+          <button
+            class="view-all"
+            @click="$router.push('rpsendorsed-prop')"
+          >
+            View All
+          </button>
 
-          <div class="table-row">
-            <span>Community Development Program 2024</span>
-            <span>Dr. Alien Shippy</span>
-            <span>₱150,000</span>
-            <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rps-endorse')">Review</button>
-          </div>
+          <div class="table">
+            <div class="table-header">
+              <span>Title</span>
+              <span>Proponent</span>
+              <span>Budget</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
 
-          <div class="table-row">
-            <span>Healthcare Facility Upgrade</span>
-            <span>Dr. Meow Chan</span>
-            <span>₱150,000</span>
-            <span class="status pending">Pending</span>
-            <button class="review" @click="$router.push('rps-endorse')">Review</button>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
+            <div class="table-row">
+              <span>Community Development Program 2024</span>
+              <span>Dr. Alien Shippy</span>
+              <span>₱150,000</span>
+              <span class="status pending">Pending</span>
+              <button
+                class="review"
+                @click="$router.push('rps-endorse')"
+              >
+                Review
+              </button>
+            </div>
+
+            <div class="table-row">
+              <span>Healthcare Facility Upgrade</span>
+              <span>Dr. Meow Chan</span>
+              <span>₱150,000</span>
+              <span class="status pending">Pending</span>
+              <button
+                class="review"
+                @click="$router.push('rps-endorse')"
+              >
+                Review
+              </button>
+            </div>
           </div>
         </div>
 
         <div v-else class="empty-state">
-  <div class="empty-icon-wrapper">
-    📄
-  </div>
+          <div class="empty-icon-wrapper">
+            📄
+          </div>
 
-  <h3>No Research Activity Yet</h3>
+          <h3>No Research Activity Yet</h3>
 
-  <p>
-    Research proposals, reviews, and status updates
-    will appear here once records are added.
-  </p>
-</div>
+          <p>
+            Research proposals, reviews, and status updates
+            will appear here once records are added.
+          </p>
+        </div>
       </div>
 
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
-    
-=======
       <!-- Right Side -->
       <div class="side">
         <!-- Recent Activity -->
         <div class="panel">
           <h3>Recent Activity</h3>
+
           <ul class="activity">
             <li>
-              <strong>New proposal submitted:</strong> “Community Development Program 2024”
+              <strong>New proposal submitted:</strong>
+              "Community Development Program 2024"
               <span>2 hours ago</span>
             </li>
           </ul>
-          <button class="view-activity" @click="$router.push('rpsstaff-notification')">
+
+          <button
+            class="view-activity"
+            @click="$router.push('rpsstaff-notification')"
+          >
             View All Activity
           </button>
         </div>
@@ -130,19 +148,28 @@ krisha, [29/12/2025 2:12 pm]
         <!-- Quick Actions -->
         <div class="panel">
           <h3>Quick Actions</h3>
-          <button class="primary" @click="$router.push('rps-subproposal')">Review Proposals</button>
-          <button class="secondary" @click="$router.push('funded-prop')">Manage Funding</button>
+
+          <button
+            class="primary"
+            @click="$router.push('rps-subproposal')"
+          >
+            Review Proposals
+          </button>
+
+          <button
+            class="secondary"
+            @click="$router.push('funded-prop')"
+          >
+            Manage Funding
+          </button>
         </div>
       </div>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
     </div>
   </div>
 </template>
-
 <script>
 export default {
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
-  name: "RiiDashboard",
+  name: "RpsStaffDashboard",
 
   data() {
     return {
@@ -154,10 +181,6 @@ export default {
     };
   }
 };
-=======
-  name: 'RpsStaffDashboard',
-}
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
 </script>
 
 <style scoped>

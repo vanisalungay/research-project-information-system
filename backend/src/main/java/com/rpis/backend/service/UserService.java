@@ -40,6 +40,24 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User createStaffAccount(User user) {
+
+        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+            throw new IllegalArgumentException(
+                    "Only MSU Naawan email addresses are allowed.");
+        }
+
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists.");
+        }
+
+        user.setStatus("APPROVED");
+        user.setEmailVerified(true);
+        user.setDateRegistered(java.time.LocalDate.now());
+
+        return userRepository.save(user);
+    }
+
     public User approveUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));

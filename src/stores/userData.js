@@ -174,7 +174,6 @@ export const useUserDataStore = defineStore('userData', () => {
   async function googleLogin(token, role) {
     try {
       isLoading.value = true
-
       const response = await axios.post(
         'http://localhost:8081/api/users/google-login',
         {
