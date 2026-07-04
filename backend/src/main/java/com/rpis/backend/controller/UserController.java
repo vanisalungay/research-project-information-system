@@ -110,21 +110,21 @@ public class UserController {
         try {
             NetHttpTransport transport = new NetHttpTransport();
             GsonFactory jsonFactory = new GsonFactory();
-            
+
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
                     .setAudience(Collections.singletonList("YOUR_GOOGLE_CLIENT_ID"))
                     .build();
-            
+
             GoogleIdToken idToken = verifier.verify(request.getToken());
             if (idToken != null) {
                 GoogleIdToken.Payload payload = idToken.getPayload();
                 String email = payload.getEmail();
-                
+
                 if (!email.endsWith("@msunaawan.edu.ph")) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)
                             .body("Only @msunaawan.edu.ph accounts are allowed.");
                 }
-                
+
                 java.util.Optional<User> existingUserOpt = userService.findByEmail(email);
                 if (existingUserOpt.isPresent()) {
                     User existingUser = existingUserOpt.get();
@@ -136,9 +136,10 @@ public class UserController {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                                 .body("Your account is pending admin approval.");
                     } else if (existingUser.getStatus().equalsIgnoreCase("REJECTED")) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Your account registration was rejected.");
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body("Your account registration was rejected.");
                     }
-                    
+
                     existingUser.setPassword(null);
                     return ResponseEntity.ok(existingUser);
                 } else {
@@ -148,7 +149,8 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Google token.");
             }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Google Authentication Failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Google Authentication Failed: " + e.getMessage());
         }
     }
 
@@ -159,5 +161,16 @@ public class UserController {
 
         return ResponseEntity.ok(
                 "Database seeded with temporary user accounts.");
+    }
+
+    @PostMapping("/admin/create")
+    public ResponseEntity<User> createStaffAccount(
+            @RequestBody User user) {
+
+        User createdUser = userService.createStaffAccount(user);
+
+        createdUser.setPassword(null);
+
+        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 }

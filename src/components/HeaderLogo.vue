@@ -51,23 +51,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 
-const userStore = useUserDataStore()
 const router = useRouter()
+const userStore = useUserDataStore()
 
-const errorMessage = ref('')
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
 
 const showDropdown = ref(false)
 const loginDialog = ref(null)
-loginDialog.value?.showModal()
+const selectedRole = ref(null)
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
+}
+
+const closeDialog = () => {
+  loginDialog.value?.close()
 }
 
 const logout = () => {
@@ -83,47 +87,96 @@ const logout = () => {
 }
 
 const handleLogin = async () => {
-  console.log('handleLogin', selectedRole)
-  if (await userStore.login(email.value, password.value, selectedRole)) {
-    router.push({ path: 'home' })
+  errorMessage.value = ''
+
+  try {
+    const success = await userStore.login(
+      email.value,
+      password.value,
+      selectedRole.value
+    )
+
+    if (!success) {
+      errorMessage.value = 'Invalid email or password.'
+      return
+    }
+
+    loginDialog.value?.close()
+
+    switch (selectedRole.value) {
+      case UserRole.RPS_ADMIN:
+        router.push('/rpsadmin-dash')
+        break
+
+      case UserRole.RPS_STAFF:
+        router.push('/rpsstaff-dash')
+        break
+
+      case UserRole.OVCRIGE:
+        router.push('/home')
+        break
+
+      case UserRole.OVCAF:
+        router.push('/ovcaf-dash')
+        break
+
+      case UserRole.REC:
+        router.push('/rec-dash')
+        break
+
+      case UserRole.OC:
+        router.push('/oc-dashboard')
+        break
+
+      case UserRole.PROPONENT:
+        router.push('/proponent-dashboard')
+        break
+
+      default:
+        router.push('/login')
+    }
+
     window.location.reload()
-  } else {
-    errorMessage.value = 'Invalid email or password'
+  } catch (err) {
+    errorMessage.value = err.message
   }
 }
 
-const closeDialog = () => {
-  loginDialog.value?.close()
-}
-
-const selectedRole = ref(null)
-const handleMenuItemClick = (menuItemData) => {
+const handleMenuItemClick = (menuItem) => {
   showDropdown.value = false
-  console.log('handleMenuItemClick', menuItemData)
-  switch (menuItemData) {
+
+  switch (menuItem) {
     case 'SWITCH TO RPS STAFF':
-      selectedRole = UserRole.RPS_STAFF
+      selectedRole.value = UserRole.RPS_STAFF
       loginDialog.value?.showModal()
       break
+
     case 'SWITCH TO RPS ADMIN':
-      selectedRole = UserRole.RPS_ADMIN
+      selectedRole.value = UserRole.RPS_ADMIN
       loginDialog.value?.showModal()
       break
+
     case 'LOGOUT':
       logout()
       break
-    default:
-      break
   }
 }
 
-const menuItems = []
+const menuItems = computed(() => {
+  const items = []
 
-if (userStore.user?.role === UserRole.RPS_ADMIN) menuItems.push('SWITCH TO RPS STAFF')
+  if (userStore.user?.role === UserRole.RPS_ADMIN) {
+    items.push('SWITCH TO RPS STAFF')
+  }
 
-if (userStore.user?.role === UserRole.RPS_STAFF) menuItems.push('SWITCH TO RPS ADMIN')
+  if (userStore.user?.role === UserRole.RPS_STAFF) {
+    items.push('SWITCH TO RPS ADMIN')
+  }
 
-menuItems.push('LOGOUT')
+  items.push('LOGOUT')
+
+  return items
+})
 </script>
 
 <style scoped>

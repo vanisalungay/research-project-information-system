@@ -32,7 +32,7 @@ public class User {
     @Column(nullable = false)
     private String role;
 
-    private String status = "PENDING";
+    private String status = "APPROVED";
     // NEW FIELD
     private String departmentOffice;
 

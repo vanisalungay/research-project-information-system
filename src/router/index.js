@@ -14,6 +14,11 @@ import ProfileSettings from '../views/ProfileSettings.vue'
 import ProfileInformation from '../views/ProfileInformation.vue'
 import Notification from '../views/Notification.vue'
 import Dashboard from '../views/Dashboard/Index.vue'
+<<<<<<< HEAD
+=======
+import UserAccounts from '@/views/UserAccounts.vue'
+import CreateUserModal from '@/views/CreateUserModal.vue'
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
 
 /* OVCRIGE */
 import OvcReviewProposal from '../views/OvcReviewProposal.vue'
@@ -77,6 +82,14 @@ import ProponentSubmitRev from '@/views/ProponentSubmitRev.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
 
+<<<<<<< HEAD
+=======
+/* Authentication */
+import ProponentLogin from '../views/ProponentLogin.vue'
+import ProponentRegister from '../views/ProponentRegister.vue'
+import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
+
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
 /* Shared */
 import FundViewProp from '../views/FundViewProp.vue'
 
@@ -91,6 +104,12 @@ const routes = [
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
 
+<<<<<<< HEAD
+=======
+      { path: '/user-accounts', name: 'UserAccounts', component: UserAccounts },
+      { path: '/create-user-modal', name: 'CreateUserModal', component: CreateUserModal },
+
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
       // ================= RPS =================
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
       { path: 'notification/:id', name: 'NotificationDetails', component: RpsNotificationDetails },
@@ -146,7 +165,12 @@ const routes = [
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
       { path: 'rec-prop', component: RecDetailedProp },
+<<<<<<< HEAD
 // ================= PROPONENT =================
+=======
+
+      // ================= PROPONENT =================
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-notification', component: ProponentNotifications },
       { path: 'proposals', component: ProponentProposals },
@@ -165,8 +189,13 @@ const routes = [
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
       { path: 'oc-detailed', component: OcDetailedProposal },
+<<<<<<< HEAD
       { path: 'oc-final-approval', component: OCFinalApproval },
       { path: 'oc-final-approval2', component: OCFinalApproval2 },
+=======
+      { path: 'oc/final-approval/:id', component: OCFinalApproval },
+      { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
     ],
   },
 
@@ -180,6 +209,13 @@ const routes = [
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
 
+<<<<<<< HEAD
+=======
+      { path: 'proponent-login', component: ProponentLogin },
+      { path: 'proponent-register', component: ProponentRegister },
+      { path: 'proponent-forgot-password', component: ProponentForgotPassword },
+
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
       { path: 'test-backend', component: BackendTest },
     ],
   },
