@@ -9,37 +9,37 @@
     <div class="layout">
       <!-- LEFT SIDE -->
       <div class="left">
-        <!-- PROPOSAL INFORMATION -->
-        <section class="card">
-          <h3>Proposal Information</h3>
+       <!-- PROPOSAL INFORMATION -->
+<section class="card">
+  <h3>Proposal Information</h3>
 
-          <div class="info-grid">
-            <div>
-              <label>Proposal Title</label>
-              <p>Community Health Outreach Program</p>
-            </div>
+  <div class="info-grid">
+    <div>
+      <label>Proposal Title</label>
+      <p></p>
+    </div>
 
-            <div>
-              <label>Proponent</label>
-              <p>Juan Dela Cruz</p>
-            </div>
+    <div>
+      <label>Proponent</label>
+      <p></p>
+    </div>
 
-            <div>
-              <label>Department</label>
-              <p>Public Health Services</p>
-            </div>
+    <div>
+      <label>Department</label>
+      <p></p>
+    </div>
 
-            <div>
-              <label>Date Submitted</label>
-              <p>March 12, 2025</p>
-            </div>
+    <div>
+      <label>Date Submitted</label>
+      <p></p>
+    </div>
 
-            <div>
-              <label>Status</label>
-              <span class="status">For Revision</span>
-            </div>
-          </div>
-        </section>
+    <div>
+      <label>Status</label>
+      <span class="status"></span>
+    </div>
+  </div>
+</section>
 
         <!-- SET DEADLINE -->
         <section class="card">

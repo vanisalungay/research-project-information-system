@@ -11,82 +11,157 @@
 
     <h3 class="section-title">Notifications</h3>
 
-    <!-- Notification Item -->
-    <div class="notification-card" @click="toggleNotification(1)">
-      <div class="notification-header">
-        <div class="icon success"></div>
+    <!-- Notifications -->
+    <div v-if="filteredNotifications.length">
 
-        <div class="notification-text">
-          <strong>REC Committee</strong>
-          <span class="status"> • requested revision</span>
-          <p>
-            Please update the informed consent forms to include detailed risk disclosures for
-            community participants.
-          </p>
-          <small>P-2024-003 · 3 hours ago · 4 messages</small>
+      <div
+        class="notification-card"
+        v-for="notification in filteredNotifications"
+        :key="notification.id"
+      >
+
+        <div
+          class="notification-header"
+          @click="toggleNotification(notification.id)"
+        >
+
+          <div class="icon success"></div>
+
+          <div class="notification-text">
+
+            <strong>{{ notification.sender }}</strong>
+
+            <span class="status">
+              • {{ notification.status }}
+            </span>
+
+            <p>
+              {{ notification.message }}
+            </p>
+
+            <small>
+              {{ notification.proposal_id }}
+              ·
+              {{ notification.created_at }}
+              ·
+              {{ notification.thread.length }} messages
+            </small>
+
+          </div>
+
+          <div class="arrow">
+            {{ activeNotification === notification.id ? '▲' : '▼' }}
+          </div>
+
         </div>
 
-        <div class="arrow">
-          {{ activeNotification === 1 ? '▲' : '▼' }}
-        </div>
+        <transition name="fade">
+
+          <div
+            v-if="activeNotification === notification.id"
+            class="notification-thread"
+          >
+
+            <p class="thread-title">
+              Thread: {{ notification.project_title }}
+            </p>
+
+            <div
+              class="thread-item"
+              v-for="message in notification.thread"
+              :key="message.id"
+            >
+
+              <div class="thread-header">
+                {{ message.sender }}
+                •
+                {{ message.status }}
+              </div>
+
+              <p class="thread-message">
+                {{ message.message }}
+              </p>
+
+              <small class="thread-time">
+                {{ message.created_at }}
+              </small>
+            </div>
+          </div>
+        </transition>
       </div>
     </div>
 
-    <!-- TOGGLE CONTENT -->
-    <transition name="fade">
-      <div v-if="activeNotification === 1" class="notification-thread">
-        <p class="thread-title">Thread: Community Development Program 2024</p>
+    <!-- EMPTY STATE -->
+    <div
+      v-else
+      class="notification-card empty-card"
+    >
 
-        <div class="thread-item">
-          <div class="thread-header">REC Committee • requested revision</div>
-          <p class="thread-message">
-            Please update the informed consent forms to include detailed risk disclosures for
-            community participants.
-          </p>
-          <small class="thread-time">3 hours ago</small>
-        </div>
+      <div class="notification-text">
 
-        <div class="thread-item">
-          <div class="thread-header">OVCRIGE Office • forwarded to REC</div>
-          <p class="thread-message">
-            Proposal has been forwarded to the Research Ethics Committee for ethics review.
-          </p>
-          <small class="thread-time">2 days ago</small>
-        </div>
+        <strong>No Notifications</strong>
 
-        <div class="thread-item">
-          <div class="thread-header">RII Staff • recommended approval</div>
-          <p class="thread-message">
-            Good potential but requires methodology clarification. Recommended for OVCRIGE review.
-          </p>
-          <small class="thread-time">1 week ago</small>
-        </div>
+        <p>
+          You don't have any notifications yet.
+        </p>
 
-        <div class="thread-item">
-          <div class="thread-header">You • submitted proposal</div>
-          <p class="thread-message">Successfully submitted proposal for review.</p>
-          <small class="thread-time">2 weeks ago</small>
-        </div>
+        <small>
+          Notifications from reviewers, OVCRIGE, REC, and RII staff will appear here once there are updates on your proposals.
+        </small>
       </div>
-    </transition>
+    </div>    
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProponentNotifications',
-  data() {
-    return {
-      activeNotification: null,
-      search: '',
-    }
-  },
-  methods: {
-    toggleNotification(id) {
-      this.activeNotification = this.activeNotification === id ? null : id
-    },
-  },
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+const loading = ref(false)
+
+const search = ref('')
+
+const activeNotification = ref(null)
+
+const notifications = ref([])
+
+const filteredNotifications = computed(() => {
+  if (!search.value) return notifications.value
+
+  const keyword = search.value.toLowerCase()
+
+  return notifications.value.filter(notification =>
+    notification.project_title.toLowerCase().includes(keyword) ||
+    notification.proposal_id.toLowerCase().includes(keyword) ||
+    notification.status.toLowerCase().includes(keyword)
+  )
+})
+
+function toggleNotification(id) {
+  activeNotification.value =
+    activeNotification.value === id ? null : id
 }
+
+async function fetchNotifications() {
+  loading.value = true
+
+  try {
+    // API goes here later
+    //
+    // Example:
+    // const response = await axios.get(...)
+    //
+    // notifications.value = response.data.notifications
+
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchNotifications()
+})
 </script>
 
 <style scoped>
@@ -112,7 +187,6 @@ export default {
   background: #eef6ff;
   border-radius: 12px;
   padding: 16px;
-  cursor: pointer;
   margin-bottom: 10px;
 }
 
@@ -120,9 +194,10 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  cursor: pointer;
 }
 
-.icon.success {
+.icon {
   width: 10px;
   height: 10px;
   background: #22c55e;
@@ -199,5 +274,33 @@ export default {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+.empty-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  cursor: default;
+}
+
+.empty-card .notification-text {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-card strong {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.empty-card p {
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.empty-card small {
+  color: #94a3b8;
 }
 </style>

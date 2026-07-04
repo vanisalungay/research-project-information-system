@@ -2,71 +2,125 @@
   <div class="endorsed-page">
     <h2>Endorsed Proposals</h2>
     <p class="subtitle">View all proposals approved by OVCRIGE</p>
-    <input class="search" placeholder="Search endorsed proposals..." />
+    <input
+      class="search"
+      v-model="search"
+      placeholder="Search endorsed proposals..."
+    />
 
     <div class="table-card">
       <table>
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Proponent</th>
-            <th>Category</th>
-            <th>Endorsed Date</th>
-            <th>Budget</th>
-            <th>Score</th>
-            <th>Actions</th>
+            <th>Project Title</th>
+            <th>Program</th>
+            <th>Project Leader</th>
+            <th>Status</th>
+            <th>Date Forwarded</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in proposals" :key="item.title">
-            <td>{{ item.title }}</td>
-            <td>{{ item.proponent }}</td>
-            <td>{{ item.category }}</td>
-            <td>{{ item.date }}</td>
-            <td>{{ item.budget }}</td>
-            <td>
-              <div class="score">
-                <div class="bar" :style="{ width: item.score + '%' }"></div>
-                <span>{{ item.score }}</span>
-              </div>
-            </td>
-            <td>
-              <button class="view" @click="goToReview">View</button>
-            </td>
-          </tr>
-        </tbody>
+
+<tr
+v-for="proposal in filteredProposals"
+:key="proposal.id"
+>
+
+<td>{{ proposal.projectTitle }}</td>
+
+<td>{{ proposal.programTitle }}</td>
+
+<td>{{ proposal.projectLeader }}</td>
+
+<td>
+
+<span class="status">
+{{ proposal.status }}
+</span>
+
+</td>
+
+<td>
+
+{{ proposal.updatedAt?.substring(0,10) }}
+
+</td>
+
+<td>
+
+<button
+class="view"
+@click="goToReview(proposal.id)"
+>
+
+View
+
+</button>
+
+</td>
+
+</tr>
+
+<tr v-if="filteredProposals.length===0">
+
+<td colspan="6" style="text-align:center">
+
+No endorsed proposals found.
+
+</td>
+
+</tr>
+
+</tbody>
       </table>
     </div>
   </div>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-const goToReview = () => {
-  router.push('/review-prop')
+const proposals = ref([])
+const search = ref('')
+
+const loadEndorsedProposals = async () => {
+  try {
+    const response = await axios.get(
+      'http://localhost:8081/api/proposals',
+      {
+        params: {
+          status: 'UNDER_REVIEW'
+        }
+      }
+    )
+
+    proposals.value = response.data
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const proposals = ref([
-  {
-    title: 'Educational Infrastructure Project',
-    proponent: 'Dr. Cat Moon',
-    category: 'Tanglaw Program',
-    date: '2024-12-09',
-    budget: '₱180,000',
-    score: 85,
-  },
-  {
-    title: 'Technology Innovation Initiative',
-    proponent: 'Dr. Blair Gwen',
-    category: 'Tanglaw Program',
-    date: '2024-12-03',
-    budget: '₱95,000',
-    score: 92,
-  },
-])
+onMounted(loadEndorsedProposals)
+
+const filteredProposals = computed(() => {
+  return proposals.value.filter((proposal) => {
+    const keyword = search.value.toLowerCase()
+
+    return (
+      proposal.projectTitle?.toLowerCase().includes(keyword) ||
+      proposal.programTitle?.toLowerCase().includes(keyword) ||
+      proposal.projectLeader?.toLowerCase().includes(keyword)
+    )
+  })
+})
+
+const goToReview = (id) => {
+  router.push(`/review-prop/${id}`)
+}
 </script>
 
 <style>
@@ -116,11 +170,13 @@ td {
   gap: 8px;
 }
 
-.score .bar {
-  height: 6px;
-  background: #2ecc71;
-  border-radius: 4px;
-  width: 60px;
+.status {
+  background: #dff3ff;
+  color: #0067b8;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .view {

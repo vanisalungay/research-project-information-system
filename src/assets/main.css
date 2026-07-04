@@ -1,7 +1,15 @@
 @import './css/base.css';
 @import './css/fonts.css';
 
+html,
+body,
 #app {
-  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
   font-weight: normal;
 }

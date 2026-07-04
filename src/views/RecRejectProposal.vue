@@ -14,37 +14,37 @@
     <div class="layout-grid">
       <!-- LEFT SECTION -->
       <div class="left-col">
-        <!-- PROPOSAL INFORMATION -->
-        <div class="card">
-          <h3 class="card-title">Proposal Information</h3>
+       <!-- PROPOSAL INFORMATION -->
+<div class="card">
+  <h3 class="card-title">Proposal Information</h3>
 
-          <div class="info-grid">
-            <div class="info-box">
-              <label>Title</label>
-              <p>Community Development Program</p>
-            </div>
+  <div class="info-grid">
+    <div class="info-box">
+      <label>Title</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Proponent</label>
-              <p>Dr. Allen Shiopy</p>
-            </div>
+    <div class="info-box">
+      <label>Proponent</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Type</label>
-              <p>Research</p>
-            </div>
+    <div class="info-box">
+      <label>Type</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Program ID</label>
-              <p>43</p>
-            </div>
+    <div class="info-box">
+      <label>Program ID</label>
+      <p></p>
+    </div>
 
-            <div class="info-box">
-              <label>Category</label>
-              <p>Extension Program</p>
-            </div>
-          </div>
-        </div>
+    <div class="info-box">
+      <label>Category</label>
+      <p></p>
+    </div>
+  </div>
+</div>
 
         <!-- REJECTION DETAILS -->
         <div class="card">
@@ -70,25 +70,6 @@
           </div>
         </div>
 
-        <!-- REVIEWER SUMMARY -->
-        <div class="card">
-          <h3 class="card-title">Reviewer's Evaluation Summary</h3>
-
-          <p class="summary-header"><strong>Assigned Reviewer:</strong> Jane Smith</p>
-          <p class="summary-note">Reviewer’s comments are shown below, including key concerns.</p>
-
-          <div class="summary-box">
-            <strong>Assigned Reviewers:</strong> Jane Smith
-            <p class="summary-note">
-              Reviewers’ comments below indicate issues leading to rejection.
-            </p>
-          </div>
-
-          <div class="form-group">
-            <label>Reviewer Comments (Optional)</label>
-            <textarea rows="4" placeholder="Enter reviewer notes..."></textarea>
-          </div>
-        </div>
       </div>
 
       <!-- RIGHT SECTION -->

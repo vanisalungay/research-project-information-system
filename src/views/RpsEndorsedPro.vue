@@ -1,5 +1,11 @@
 <template>
   <div class="page">
+<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
+=======
+    <!-- Header -->
+    <h2>RII Endorsed Proposals</h2>
+    <p class="subtitle">Proposals endorsed by RPS and forwarded to OVCRIGE</p>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
 
     <div class="page-header">
       <div>
@@ -8,6 +14,7 @@
       </div>
     </div>
 
+<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
     <div class="toolbar">
       <input
         v-model="search"
@@ -16,10 +23,26 @@
         placeholder="Search Proposal Code, Title or Project Leader..."
       />
     </div>
+=======
+    <!-- Table -->
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Proponent</th>
+          <th>Category</th>
+          <th>RPS Endorsed</th>
+          <th>Sent to OVCRIGE</th>
+          <th>OVCRIGE Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
 
     <div class="table-container">
       <table class="table">
 
+<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
         <thead>
           <tr>
             <th>Proposal Code</th>
@@ -30,6 +53,12 @@
             <th width="180">Actions</th>
           </tr>
         </thead>
+=======
+          <td>
+            <span class="check">✔</span>
+            {{ proposal.rpsEndorsed }}
+          </td>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
 
         <tbody>
 
@@ -83,12 +112,40 @@
 
 <script>
 export default {
+<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
   name: "RIIEndorsedProposals",
 
   data() {
     return {
       search: "",
       proposals: []
+=======
+  name: 'RPSEndorsedProposals',
+
+  data() {
+    return {
+      search: '',
+      proposals: [
+        {
+          id: 1,
+          title: 'Educational Infrastructure Project',
+          proponent: 'Dr. Cat Moon',
+          category: 'Tanglaw Program',
+          rpsEndorsed: '2024-12-09',
+          sentToOVCRIGE: '2024-12-09',
+          ovcrigeStatus: 'Pending OVCRIGE Review',
+        },
+        {
+          id: 2,
+          title: 'Technology Innovation Initiative',
+          proponent: 'Dr. Blair Gwen',
+          category: 'Tanglaw Program',
+          rpsEndorsed: '2024-12-03',
+          sentToOVCRIGE: '2024-12-03',
+          ovcrigeStatus: 'Pending OVCRIGE Review',
+        },
+      ],
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
     }
   },
 

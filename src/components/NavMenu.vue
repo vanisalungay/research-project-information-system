@@ -86,8 +86,8 @@ const allNavItems = [
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/riistaff-dash',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsstaff-dash',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -102,16 +102,16 @@ const allNavItems = [
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/riistaff-notification',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsstaff-notification',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
     icon: EndorseIcon,
     activeIcon: EndorseActiveIcon,
     text: 'Endorsed Proposals',
-    path: '/riiendorsed-prop',
-    roles: [UserRole.RII_STAFF],
+    path: '/rpsendorsed-prop',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -120,6 +120,9 @@ const allNavItems = [
     text: 'Budget Processing',
     path: '/budget-processing',
     roles: [UserRole.RII_STAFF],
+    text: 'Funded Proposal',
+    path: '/funded-prop',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -133,15 +136,15 @@ const allNavItems = [
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/riiadmin-dash',
-    roles: [UserRole.RII_ADMIN],
+    path: '/rpsadmin-dash',
+    roles: [UserRole.RPS_ADMIN],
   },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
     text: 'Notifications',
-    path: '/riiadmin-notif',
-    roles: [UserRole.RII_ADMIN],
+    path: '/rpsadmin-notif',
+    roles: [UserRole.RPS_ADMIN],
   },
   
   
@@ -159,6 +162,9 @@ const allNavItems = [
       UserRole.OC,
       UserRole.OVCAF
     ],
+    text: 'Submitted Proposals',
+    path: '/rps-subproposal',
+    roles: [UserRole.RPS_STAFF],
   },
 
   {
@@ -188,7 +194,7 @@ const allNavItems = [
   {
     icon: submittedIcon,
     activeIcon: submittedActiveIcon,
-    text: 'Assigned Proposals',
+    text: 'Submitted Proposals',
     path: '/assigned-proposals',
     roles: [UserRole.REC],
   },
@@ -209,28 +215,7 @@ const allNavItems = [
     roles: [UserRole.OVCRIGE],
   },
 
-  {
-    icon: proposalIcon,
-    activeIcon: proposalActiveIcon,
-    text: 'Proposals',
-    path: '/proposals',
-    roles: [UserRole.PROPONENT],
-  },
-  {
-    icon: revisionIcon,
-    activeIcon: revisionActiveIcon,
-    text: 'Revisions',
-    path: '/revisions',
-    roles: [UserRole.PROPONENT],
-  },
-
-  {
-    icon: EndorseIcon,
-    activeIcon: EndorseActiveIcon,
-    text: 'Evaluation Criteria',
-    path: '/evalCriteria',
-    roles: [UserRole.PROPONENT],
-  },
+  
   {
     icon: SettingsIcon,
     activeIcon: SettingsActiveIcon,
@@ -240,8 +225,8 @@ const allNavItems = [
       UserRole.REC,
       UserRole.OVCRIGE,
       UserRole.OC,
-      UserRole.RII_ADMIN,
-      UserRole.RII_STAFF,
+      UserRole.RPS_ADMIN,
+      UserRole.RPS_STAFF,
       UserRole.PROPONENT,
     ],
   },

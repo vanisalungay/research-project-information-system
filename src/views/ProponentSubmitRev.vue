@@ -1,194 +1,105 @@
 <template>
-  <div class="edit-proposal-container">
-    <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
-    <br />
+  <div class="revision-wrapper">
+    <!-- PAGE HEADER -->
+    <div class="revision-header">
+      <h2>Revision Dashboard</h2>
 
-    <div class="top-bar">
-      <h3>
-        Edit Proposal
-        <span class="editing-mode-badge">Editing Mode</span>
-      </h3>
-      <p class="top-subtitle">Update your proposal information and resubmit for review</p>
+      <div class="revision-count">
+        {{ revisions.length }} Proposals Need Revision
+      </div>
     </div>
 
-    <div class="notice-box">
-      <p>
-        <strong>⚠️ You are editing an existing proposal</strong><br />
-        Any changes made will update your original submission. Once you resubmit, the proposal will
-        go through the review process again.
-      </p>
-    </div>
+    <!-- LOADING (non-invasive, optional text only) -->
+    <p v-if="loading">Loading...</p>
 
-    <div class="main-content">
-      <div class="sections">
-        <div class="section-steps">
-          <button
-            v-for="step in steps"
-            :key="step.id"
-            :class="['step-btn', { active: currentStep === step.id }]"
-            @click="currentStep = step.id"
-          >
-            <span class="step-number">{{ step.id }}</span>
-            <span class="step-title">{{ step.title }}</span>
-          </button>
+    <!-- REVISION CARDS -->
+    <div
+      v-for="revision in revisions"
+      :key="revision.id"
+      class="revision-card"
+    >
+      <!-- CARD HEADER -->
+      <div class="card-header">
+        <div>
+          <h3>{{ revision.title }}</h3>
+          <span class="revision-tag">Revision Required</span>
+          <p class="proposal-id">ID: {{ revision.code }}</p>
         </div>
 
-        <div class="changes-summary">
-          <p class="version-title">Changes Summary</p>
-          <p>
-            <b>Version 2.0</b><br />
-            <small>Last edited: Dec 14, 2024</small>
-          </p>
-          <p class="previous-versions">
-            <small>Previous versions:<br />v1.0 - Dec 10, 2024</small>
-          </p>
+        <div class="deadline">
+          <p>Revision Deadline</p>
+          <span>{{ revision.deadline }}</span>
         </div>
       </div>
 
-      <div class="form-section">
-        <div class="form-header">
-          <h4>Basic Information</h4>
-          <div class="progress-bar">
-            <div class="progress" :style="{ width: progressWidth + '%' }"></div>
-          </div>
-        </div>
+      <!-- REVIEWER COMMENTS -->
+      <div class="comments-box">
+        <strong>Reviewer Comments:</strong>
+        <p>{{ revision.comment }}</p>
+      </div>
 
-        <form @submit.prevent="saveProposal">
-          <label class="form-label">
-            Proposal Title
-            <input
-              type="text"
-              v-model="form.proposalTitle"
-              placeholder="Community Development Program 2024"
-              autocomplete="off"
-            />
-          </label>
+      <!-- ACTION BUTTONS -->
+      <div class="card-actions">
+        <button class="submit-btn" @click="submitRevision(revision.id)">
+          ✏️ Submit Revision
+        </button>
 
-          <label class="form-label">
-            Category
-            <input type="text" v-model="form.category" autocomplete="off" />
-          </label>
-
-          <div class="form-row">
-            <label class="form-label">
-              Organization Name
-              <input
-                type="text"
-                v-model="form.organizationName"
-                placeholder="ABC Foundation"
-                autocomplete="off"
-              />
-            </label>
-
-            <label class="form-label">
-              Contact Person
-              <input
-                type="text"
-                v-model="form.contactPerson"
-                placeholder="John Doe"
-                autocomplete="off"
-              />
-            </label>
-          </div>
-
-          <div class="form-row">
-            <label class="form-label">
-              Email Address
-              <input
-                type="email"
-                v-model="form.emailAddress"
-                placeholder="john@abc.org"
-                autocomplete="off"
-              />
-            </label>
-
-            <label class="form-label">
-              Phone Number
-              <input
-                type="tel"
-                v-model="form.phoneNumber"
-                placeholder="+1 (555) 123-4567"
-                autocomplete="off"
-              />
-            </label>
-          </div>
-
-          <label class="form-label">
-            Executive Summary
-            <textarea
-              v-model="form.executiveSummary"
-              placeholder="Provide a brief overview of your proposal"
-              rows="4"
-            ></textarea>
-          </label>
-
-          <div class="buttons-row">
-            <button type="button" class="btn previous" @click="previousStep">Previous</button>
-            <button type="button" class="btn save-draft" @click="saveDraft">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                class="icon-save"
-              >
-                <path
-                  d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-12l-4-4zM7 18a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7-6h-4v-2h4v2zm3-5.5L18.5 7H16v-2.5z"
-                />
-              </svg>
-              Save Draft
-            </button>
-            <button type="submit" class="btn save">Save</button>
-          </div>
-        </form>
+        <button class="details-btn" @click="viewDetails(revision.id)">
+          👁 View Details
+        </button>
       </div>
     </div>
+
+    <!-- EMPTY STATE (optional but safe, no layout change) -->
+    <p v-if="!loading && revisions.length === 0">
+      No revisions available.
+    </p>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'EditProposalContent',
-  data() {
-    return {
-      currentStep: 1,
-      steps: [
-        { id: 1, title: 'Basic Information' },
-        { id: 2, title: 'Project Details' },
-        { id: 3, title: 'Budget & Timeline' },
-        { id: 4, title: 'Attachments & Review' },
-      ],
-      form: {
-        proposalTitle: 'Community Development Program 2024',
-        category: '',
-        organizationName: 'ABC Foundation',
-        contactPerson: 'John Doe',
-        emailAddress: 'john@abc.org',
-        phoneNumber: '+1 (555) 123-4567',
-        executiveSummary: '',
-      },
-    }
-  },
-  computed: {
-    progressWidth() {
-      return this.currentStep * 25
-    },
-  },
-  methods: {
-    previousStep() {
-      if (this.currentStep > 1) {
-        this.currentStep--
-      }
-    },
-    saveDraft() {
-      alert('Draft saved!')
-    },
-    saveProposal() {
-      alert('Proposal saved!')
-    },
-  },
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// ✅ backend-ready only (no fake data)
+type Revision = {
+  id: number
+  title: string
+  code: string
+  comment: string
+  deadline: string
 }
+
+const revisions = ref<Revision[]>([])
+const loading = ref(false)
+
+const fetchRevisions = async () => {
+  loading.value = true
+
+  try {
+    // 🔌 backend will be connected here later
+    // const res = await axios.get('/api/revisions')
+    // revisions.value = res.data
+
+    revisions.value = [] // keep empty until backend exists
+  } catch (err) {
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const submitRevision = (id: number) => {
+  router.push('/submit-revision')
+}
+
+const viewDetails = (id: number) => {
+  router.push('/proponent-prop-details')
+}
+
+onMounted(fetchRevisions)
 </script>
 
 <style scoped>

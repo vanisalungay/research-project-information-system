@@ -139,7 +139,7 @@ export default {
 
     goToPendingAccounts(notification) {
       notification.read = true
-      this.$router.push('/rii-admin/pending-accounts')
+      this.$router.push('/rps-admin/pending-accounts')
     },
   },
 }

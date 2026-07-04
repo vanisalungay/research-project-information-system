@@ -45,6 +45,7 @@ krisha, [29/12/2025 2:12 pm]
       <!-- Proposals Table -->
       <div class="panel">
         <div class="panel-header">
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
           <h3>RECENT ACTIVITY</h3>
         </div>
 
@@ -61,6 +62,35 @@ krisha, [29/12/2025 2:12 pm]
               </div>
               <span :class="['badge', item.badgeClass]">{{ item.status }}</span>
             </div>
+=======
+          <h3>Proposals Awaiting RPS Action</h3>
+          <button class="view-all" @click="$router.push('rpsendorsed-prop')">View All</button>
+        </div>
+
+        <div class="table">
+          <div class="table-header">
+            <span>Title</span>
+            <span>Proponent</span>
+            <span>Budget</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+
+          <div class="table-row">
+            <span>Community Development Program 2024</span>
+            <span>Dr. Alien Shippy</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rps-endorse')">Review</button>
+          </div>
+
+          <div class="table-row">
+            <span>Healthcare Facility Upgrade</span>
+            <span>Dr. Meow Chan</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rps-endorse')">Review</button>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
           </div>
         </div>
 
@@ -78,13 +108,40 @@ krisha, [29/12/2025 2:12 pm]
 </div>
       </div>
 
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
     
+=======
+      <!-- Right Side -->
+      <div class="side">
+        <!-- Recent Activity -->
+        <div class="panel">
+          <h3>Recent Activity</h3>
+          <ul class="activity">
+            <li>
+              <strong>New proposal submitted:</strong> “Community Development Program 2024”
+              <span>2 hours ago</span>
+            </li>
+          </ul>
+          <button class="view-activity" @click="$router.push('rpsstaff-notification')">
+            View All Activity
+          </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="panel">
+          <h3>Quick Actions</h3>
+          <button class="primary" @click="$router.push('rps-subproposal')">Review Proposals</button>
+          <button class="secondary" @click="$router.push('funded-prop')">Manage Funding</button>
+        </div>
+      </div>
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
     </div>
   </div>
 </template>
 
 <script>
 export default {
+<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
   name: "RiiDashboard",
 
   data() {
@@ -97,6 +154,10 @@ export default {
     };
   }
 };
+=======
+  name: 'RpsStaffDashboard',
+}
+>>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
 </script>
 
 <style scoped>

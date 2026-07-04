@@ -60,7 +60,7 @@
         <section class="card actions-card">
           <h3>OVCRIGE Actions</h3>
 
-          <button class="btn primary" @click="goToAssignReviewer">Assign / Change Reviewer</button>
+          <button class="btn primary" @click="goToAssignReviewer">Endorse to REC</button>
 
           <button class="btn warning" @click="goToReturnForRevision">Return for Revision</button>
         </section>
@@ -68,14 +68,17 @@
 
       <!-- RIGHT -->
       <div class="right">
-        <section class="card center">
-          <h3>Assigned Reviewer</h3>
-          <p class="name">{{ proposal.reviewer.name }}</p>
-          <p>{{ proposal.reviewer.role }}</p>
-          <span class="status-good">Evaluation Complete</span>
-          <button class="btn outline" @click="goToAssignReviewer">Change Reviewer</button>
-        </section>
+       <section class="card center">
+  <h3>REC Status</h3>
 
+  <p class="name">{{ proposal.reviewer.name }}</p>
+
+  <p>{{ proposal.reviewer.role }}</p>
+
+  <span class="status-good">
+    {{ proposal.status }}
+  </span>
+</section>
         <section class="card">
           <h3>Attachments</h3>
 
@@ -112,6 +115,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
+const router = useRouter()
+
 const proposal = ref({
   title: '',
   status: '',
@@ -134,40 +139,47 @@ const proposal = ref({
 
 onMounted(() => {
   proposal.value = {
-    title: 'Community Development Program 2024',
-    status: 'Pending Review',
-    program: 'Kalikasan Program',
-    proponent: 'Dr. Allen Shippy',
-    email: 'allenshippy@msunaawan.edu.ph',
-    phone: '+63 912 345 6789',
-    budget: '₱150,000',
-    date: 'December 10, 2024',
+    // Header
+    title: '',
+    status: '',
 
+    // Proposal Information
+    program: '',
+    proponent: '',
+    email: '',
+    phone: '',
+    budget: '',
+    date: '',
+
+    // Timeline (labels only)
     timeline: [
-      { label: 'Submitted', date: 'Dec 10, 2024' },
-      { label: 'Reviewer Assigned', date: 'Dec 12, 2024' },
-      { label: 'Under Review', date: 'Dec 14, 2024' },
-      { label: 'OVCRIGE Decision', date: 'Pending' },
+      { label: 'Proposal Submitted', date: '' },
+      { label: 'Received by OVCRIGE', date: '' },
+      { label: 'Endorsed to REC', date: '' },
+      { label: 'REC Evaluation', date: '' },
     ],
 
+    // Reviewer Evaluation Summary
     scores: [
-      { label: 'Overall Score', score: 88 },
-      { label: 'Relevance', score: 90 },
-      { label: 'Budget Feasibility', score: 80 },
-      { label: 'Impact', score: 85 },
+      { label: 'Overall Score', score: 0 },
+      { label: 'Relevance', score: 0 },
+      { label: 'Budget Feasibility', score: 0 },
+      { label: 'Impact', score: 0 },
     ],
-    remarks: 'The proposal aligns well with community needs. Minor revisions are recommended.',
-    recommendation: 'Approve with Minor Revisions',
+
+    remarks: '',
+    recommendation: '',
 
     reviewer: {
-      name: 'Dr. Jane Smith',
-      role: 'Senior Evaluator',
+      name: '',
+      role: '',
     },
 
+    // Attachments
     attachments: [
       {
-        name: 'Project_Proposal.pdf',
-        url: '/files/Project_Proposal.pdf',
+        name: '',
+        url: '',
       },
     ],
   }
@@ -176,7 +188,10 @@ onMounted(() => {
 const goToDetailed = () => {
   router.push('/rec-prop')
 }
+
 const downloadFile = (file) => {
+  if (!file.url) return
+
   const link = document.createElement('a')
   link.href = file.url
   link.download = file.name
@@ -187,13 +202,13 @@ const downloadFile = (file) => {
 
 const downloadAll = () => {
   proposal.value.attachments.forEach((file, index) => {
+    if (!file.url) return
+
     setTimeout(() => {
       downloadFile(file)
     }, index * 300)
   })
 }
-
-const router = useRouter()
 
 const goToReturnForRevision = () => {
   router.push('/return4-revision')

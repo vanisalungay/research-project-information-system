@@ -1,11 +1,12 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 //
 export const UserRole = {
   PROPONENT: 'PROPONENT',
-  RII_ADMIN: 'RII_ADMIN',
-  RII_STAFF: 'RII_STAFF',
+  RPS_ADMIN: 'RPS_ADMIN',
+  RPS_STAFF: 'RPS_STAFF',
   OVCRIGE: 'OVCRIGE',
   OVCAF: 'OVCAF',
   REC: 'REC',
@@ -23,12 +24,12 @@ const TEMPORARY_ACCOUNTS = {
     role: UserRole.PROPONENT,
     password: 'proponentpassword1234',
   },
-  [UserRole.RII_STAFF]: {
+  [UserRole.RPS_STAFF]: {
     id: 2,
-    name: 'RII Staff',
-    email: 'rii_staff@gmail.com',
-    role: UserRole.RII_STAFF,
-    password: 'riistaffpassword1234',
+    name: 'RPS Staff',
+    email: 'rps_staff@gmail.com',
+    role: UserRole.RPS_STAFF,
+    password: 'rpsstaffpassword1234',
   },
   [UserRole.OVCAF]: {
     id: 3,
@@ -51,12 +52,12 @@ const TEMPORARY_ACCOUNTS = {
     role: UserRole.REC,
     password: 'recpassword1234',
   },
-  [UserRole.RII_ADMIN]: {
+  [UserRole.RPS_ADMIN]: {
     id: 6,
-    name: 'RII Admin User',
-    email: 'rii_admin@gmail.com',
-    role: UserRole.RII_ADMIN,
-    password: 'riiadminpassword1234',
+    name: 'RPS Admin User',
+    email: 'rps_admin@gmail.com',
+    role: UserRole.RPS_ADMIN,
+    password: 'rpsadminpassword1234',
   },
   [UserRole.OC]: {
     id: 7,
@@ -107,15 +108,90 @@ export const useUserDataStore = defineStore('userData', () => {
     try {
       isLoading.value = true
 
-      const targetUser = TEMPORARY_ACCOUNTS[role]
+      console.log('EMAIL:', email)
+      console.log('PASSWORD:', password)
+      console.log('ROLE:', role)
 
-      if (targetUser && targetUser.email === email && targetUser.password === password) {
-        const { password, ...safeUser } = targetUser
-        setUser(safeUser)
+      const response = await axios.post(
+        'http://localhost:8081/api/users/login',
+        {
+          email,
+          password,
+          role,
+        }
+      )
+
+      console.log('LOGIN RESPONSE:', response.data)
+      if (response.data) {
+        setUser(response.data)
         return true
       }
 
       return false
+    } catch (error) {
+      console.warn("Backend login failed or server offline. Checking local mock and offline users database...")
+
+      // 1. Check offline registered users in localStorage
+      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
+      const offlineUser = offlineUsers.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() &&
+          u.role.toUpperCase() === role.toUpperCase()
+      )
+
+      if (offlineUser) {
+        if (offlineUser.password === password) {
+          if (offlineUser.status && offlineUser.status.toUpperCase() === 'PENDING') {
+            throw new Error('Your account is pending RPS ADMIN approval.')
+          } else if (offlineUser.status && offlineUser.status.toUpperCase() === 'REJECTED') {
+            throw new Error('Your account registration was rejected.')
+          } else if (offlineUser.status && offlineUser.status.toUpperCase() === 'APPROVED') {
+            console.log("Logged in using offline registered account.")
+            setUser(offlineUser)
+            return true
+          }
+        }
+      }
+
+      // 2. Check hardcoded TEMPORARY_ACCOUNTS
+      const tempUser = TEMPORARY_ACCOUNTS[role]
+      if (
+        tempUser &&
+        tempUser.email.toLowerCase() === email.toLowerCase() &&
+        tempUser.password === password
+      ) {
+        console.log("Logged in using local mock credentials.")
+        setUser(tempUser)
+        return true
+      }
+
+      console.error(error)
+      throw new Error(error.response?.data || 'Invalid email, password, or role.')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function googleLogin(token, role) {
+    try {
+      isLoading.value = true
+
+      const response = await axios.post(
+        'http://localhost:8081/api/users/google-login',
+        {
+          token,
+          role,
+        }
+      )
+
+      if (response.data) {
+        setUser(response.data)
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error(error)
+      throw new Error(error.response?.data || 'Google login failed.')
     } finally {
       isLoading.value = false
     }
@@ -134,6 +210,7 @@ export const useUserDataStore = defineStore('userData', () => {
     setUser,
     clearUser,
     login,
+    googleLogin,
     logout,
   }
 })

@@ -1,15 +1,33 @@
 <template>
   <div class="revision-wrapper">
-    <!-- PAGE HEADER -->
+    <!-- HEADER -->
     <div class="revision-header">
       <h2>Revision Dashboard</h2>
 
-      <div class="revision-count">{{ revisions.length }} Proposals Need Revision</div>
+      <div class="revision-count">
+        {{ revisions.length }} Proposals Need Revision
+      </div>
     </div>
 
-    <!-- REVISION CARDS -->
-    <div v-for="revision in revisions" :key="revision.id" class="revision-card">
-      <!-- CARD HEADER -->
+    <!-- LOADING -->
+    <p v-if="loading">Loading...</p>
+
+    <!-- ERROR -->
+    <p v-if="error" class="error-text">
+      {{ error }}
+    </p>
+
+    <!-- EMPTY STATE -->
+    <p v-if="!loading && revisions.length === 0">
+      No revisions found.
+    </p>
+
+    <!-- CARDS -->
+    <div
+      v-for="revision in revisions"
+      :key="revision.id"
+      class="revision-card"
+    >
       <div class="card-header">
         <div>
           <h3>{{ revision.title }}</h3>
@@ -23,61 +41,85 @@
         </div>
       </div>
 
-      <!-- REVIEWER COMMENTS -->
       <div class="comments-box">
         <strong>Reviewer Comments:</strong>
         <p>{{ revision.comment }}</p>
       </div>
 
-      <!-- ACTION BUTTONS -->
       <div class="card-actions">
-        <button class="submit-btn" @click="submitRevision(revision.id)">✏️ Submit Revision</button>
+        <button
+          class="submit-btn"
+          @click="submitRevision(revision.id)"
+        >
+          ✏️ Submit Revision
+        </button>
 
-        <button class="details-btn" @click="viewDetails(revision.id)">👁 View Details</button>
+        <button
+          class="details-btn"
+          @click="viewDetails(revision.id)"
+        >
+          👁 View Details
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-type Revision = {
-  id: number
-  title: string
-  code: string
-  comment: string
-  deadline: string
+/**
+ * EMPTY STATE (NO MOCK DATA)
+ */
+const revisions = ref<any[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+/**
+ * FETCH FROM BACKEND
+ * Expected:
+ * GET /api/revisions
+ */
+async function fetchRevisions() {
+  loading.value = true
+  error.value = null
+
+  try {
+    const res = await axios.get('/api/revisions')
+
+    // supports either:
+    // 1. [ ... ]
+    // 2. { data: [ ... ] }
+    revisions.value = Array.isArray(res.data)
+      ? res.data
+      : res.data.data || []
+  } catch (err) {
+    console.error(err)
+    error.value = 'Failed to load revisions.'
+    revisions.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
-const revisions = ref<Revision[]>([
-  {
-    id: 1,
-    title: 'Community Development Program 2024',
-    code: 'P-2024-003',
-    comment:
-      'Please clarify the methodology section and provide more details on the community engagement strategy.',
-    deadline: '5 days left',
-  },
-  {
-    id: 2,
-    title: 'Healthcare Facility Upgrade',
-    code: 'P-2024-004',
-    comment: 'Additional literature review required. Please expand on the sampling methodology.',
-    deadline: '5 days left',
-  },
-])
-
-const submitRevision = () => {
-  router.push('/submit-revision')
+/**
+ * ROUTING (backend-ready)
+ */
+const submitRevision = (id: number) => {
+  router.push(`/submit-revision/${id}`)
 }
 
 const viewDetails = (id: number) => {
-  router.push(`proponent-prop-details`)
+  router.push(`/proponent-prop-details/${id}`)
 }
+
+onMounted(() => {
+  fetchRevisions()
+})
 </script>
 
 <style scoped>

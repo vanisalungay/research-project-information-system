@@ -3,21 +3,21 @@
     <div class="top-grid">
       <!-- Proposal Information -->
       <div class="card">
-        <h2 class="title">Community Water and Filtration Enhancement Program 2024</h2>
-        <p class="subtitle">Proposal ID #1</p>
+        <h2 class="title"> {{ proposal.project_title }}</h2>
+        <p class="subtitle"> Proposal ID: {{ proposal.proposal_id }} </p>
 
         <div class="info-grid">
           <div>
             <span class="label">Category</span>
-            <span class="value">Kalikasan Program</span>
+            <span class="value">{{ proposal.program_title }}</span>
           </div>
           <div>
             <span class="label">Total Budget</span>
-            <span class="value">₱150,000</span>
+            <span class="value">₱{{ Number(proposal.total_budget).toLocaleString() }}</span>
           </div>
           <div>
             <span class="label">Duration</span>
-            <span class="value">12 months</span>
+            <span class="value">{{ proposal.duration }}</span>
           </div>
         </div>
 
@@ -30,20 +30,7 @@
         </div>
       </div>
 
-      <!-- Assigned Reviewer -->
-      <div class="card reviewer-card">
-        <span class="label">Assigned Reviewer</span>
-
-        <div class="reviewer">
-          <div class="avatar">SR</div>
-          <div>
-            <strong>Dr. Sarah Johnson</strong>
-            <p>Senior Evaluator</p>
-          </div>
-        </div>
-
-        <button class="btn btn-contact full">Contact Reviewer</button>
-      </div>
+      
     </div>
 
     <!-- WORKFLOW + ATTACHMENTS -->
@@ -53,54 +40,35 @@
         <h3 class="section-title">Workflow Timeline</h3>
 
         <div class="workflow">
-          <div class="wf-item success">
-            <div class="wf-header">
-              <span>Submission</span>
-              <span class="wf-date">2024-12-10</span>
+          <template
+            v-for="(item, index) in proposal.workflow"
+            :key="item.id"
+          >
+            <div class="wf-item" :class="item.status">
+              <div class="wf-header">
+                <span>{{ item.stage }}</span>
+                <span class="wf-date">{{ item.created_at }}</span>
+              </div>
+
+              <p class="wf-meta">{{ item.action_by }}</p>
+
+              <p>{{ item.remarks }}</p>
+
+              <span
+                v-if="item.status === 'current'"
+                class="status-pill"
+              >
+                Current Stage
+              </span>
             </div>
-            <p class="wf-meta">By You</p>
-            <p>"Proposal successfully submitted"</p>
-          </div>
 
-          <div class="wf-arrow">↓</div>
-
-          <div class="wf-item success">
-            <div class="wf-header">
-              <span>RII Review</span>
-              <span class="wf-date">2024-12-11</span>
+            <div
+              v-if="index !== proposal.workflow.length - 1"
+              class="wf-arrow"
+            >
+              ↓
             </div>
-            <p class="wf-meta">By Dr. Maria Santos (RII)</p>
-            <p>"Endorsed by RII – Project aligns with institutional research priorities"</p>
-          </div>
-
-          <div class="wf-arrow">↓</div>
-
-          <div class="wf-item success">
-            <div class="wf-header">
-              <span>Sent to OVCGRE</span>
-              <span class="wf-date">2024-12-11</span>
-            </div>
-            <p class="wf-meta">By RII Administrator</p>
-            <p>"Forwarded to OVCGRE for final approval"</p>
-          </div>
-
-          <div class="wf-arrow">↓</div>
-
-          <div class="wf-item current">
-            <div class="wf-header">
-              <span>OVCGRE Review</span>
-            </div>
-            <p>"Currently under OVCGRE review"</p>
-            <span class="status-pill">Current Stage</span>
-          </div>
-
-          <div class="wf-arrow">↓</div>
-
-          <div class="wf-item pending">
-            <div class="wf-header">
-              <span>Final Approval</span>
-            </div>
-          </div>
+          </template>
         </div>
       </div>
 
@@ -109,10 +77,12 @@
         <h3 class="section-title">Attachments</h3>
 
         <ul class="files">
-          <li>📄 proposal.pdf</li>
-          <li>📊 budget_breakdown.xlsx</li>
-          <li>📄 timeline.pdf</li>
-          <li>🖼 water-enhancement.jpg</li>
+          <li
+            v-for="file in proposal.attachments"
+            :key="file.id"
+          >
+            {{ file.file_name }}
+          </li>
         </ul>
       </div>
     </div>
@@ -121,81 +91,204 @@
     <div class="card">
       <h3 class="section-title">Activity Log</h3>
 
-      <div class="activity-log">
-        <div class="log-item blue">
-          <div class="log-header">
-            <strong>Proposal submitted</strong>
-            <span>2024-12-10 08:30 AM</span>
-          </div>
-          <p>Complete proposal package submitted successfully</p>
+      <div
+        v-for="log in proposal.activity_logs"
+        :key="log.id"
+        class="log-item"
+        :class="log.type"
+      >
+        <div class="log-header">
+          <strong>{{ log.title }}</strong>
+          <span>{{ log.created_at }}</span>
         </div>
 
-        <div class="log-item sky">
-          <div class="log-header">
-            <strong>Received by RII</strong>
-            <span>2024-12-10 09:45 AM</span>
-          </div>
-          <p>Proposal routed to RII for evaluation</p>
-        </div>
-
-        <div class="log-item purple">
-          <div class="log-header">
-            <strong>RII Review Completed</strong>
-            <span>2024-12-11 01:15 PM</span>
-          </div>
-          <p>Review completed by Dr. Maria Santos</p>
-        </div>
-
-        <div class="log-item green">
-          <div class="log-header">
-            <strong>Endorsed by RII</strong>
-            <span>2024-12-11 02:10 PM</span>
-          </div>
-          <p>
-            Project aligns with institutional research priorities. Budget is reasonable and
-            methodology is sound.
-          </p>
-        </div>
-
-        <div class="log-item sky">
-          <div class="log-header">
-            <strong>Transferred to OVCGRE</strong>
-            <span>2024-12-11 03:20 PM</span>
-          </div>
-          <p>Your proposal has been forwarded to OVCGRE for final review and approval</p>
-        </div>
-
-        <div class="log-item lavender">
-          <div class="log-header">
-            <strong>Currently Under OVCGRE Review</strong>
-            <span>2024-12-11 03:21 PM</span>
-          </div>
-          <p>Pending OVCGRE administrative action</p>
-        </div>
+        <p>{{ log.description }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const editProposal = () => {
-  router.push('/submit-revision')
+const loading = ref(false)
+
+const proposal = ref({
+  // DATABASE
+  id: null,
+  proposal_id: '',
+
+  // PROJECT PROFILE
+  program_title: '',
+  project_title: '',
+  project_leader: '',
+  project_leader_sex: '',
+
+  duration: '',
+  start_date: '',
+  end_date: '',
+
+  department: '',
+  address: '',
+
+  other_projects_number: '',
+
+  // COOPERATING AGENCIES
+  cooperating_agencies: '',
+
+  // IMPLEMENTATION SITES
+  sites: [],
+
+  // TYPE OF RESEARCH
+  research_type: '',
+
+  // PRIORITY AGENDA
+  priority_agendas: {
+    dagat: {
+      selected: false,
+      value: ''
+    },
+    punla: {
+      selected: false,
+      value: ''
+    },
+    kalikasan: {
+      selected: false,
+      value: ''
+    },
+    negosyo: {
+      selected: false,
+      value: ''
+    },
+    tanglaw: {
+      selected: false,
+      value: ''
+    }
+  },
+
+  // TEXT FIELDS
+  innovation_goals: '',
+  sector_relevance: '',
+  sustainable_development_goals: '',
+  executive_summary: '',
+
+  rationale: '',
+  theoretical_framework: '',
+  general_objective: '',
+  specific_objectives: '',
+
+  methodology: '',
+
+  expected_outputs: '',
+  potential_outcomes: '',
+
+  economic_impact: '',
+  social_ethical_impact: '',
+
+  target_beneficiaries: '',
+  sustainability_plan: '',
+
+  limitations: '',
+  risks_assumptions: '',
+
+  literature_cited: '',
+
+  // TABLES
+  logical_framework: [],
+
+  personnel_requirements: [],
+
+  other_projects: [],
+
+  // FILES
+  review_of_literature_file: null,
+  technology_roadmap_file: null,
+  gad_score_file: null,
+  line_item_budget_file: null,
+
+  supporting_documents: [],
+
+  // DETAILS PAGE
+  total_budget: 0,
+  status: '',
+  current_stage: '',
+  pdf_url: '',
+
+  // WORKFLOW
+  workflow: [
+    // backend
+    // {
+    //   id: 1,
+    //   stage: '',
+    //   created_at: '',
+    //   action_by
+    //   remarks: '',
+    //   status: '' 
+    // }
+  ],
+
+  // ATTACHMENTS
+  attachments: [
+    // backend
+    // {
+    //   id: null,
+    //   file_name: '',
+    //   file_path: '',
+    //   file_type: '',
+    //   uploaded_at: ''
+    // }
+  ],
+
+  // ACTIVITY LOG
+  activity_logs: [
+    // backend
+    // {
+    //   id: 1,
+    //   title: '',
+    //   description: '',
+    //   created_at: '',
+    //   type: 'success'
+    // }
+  ],
+})
+
+async function fetchProposal() {
+  loading.value = true
+
+  try {
+    // API goes here later
+
+    // Example:
+    // const response = await axios.get(...)
+    // proposal.value = response.data
+
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
 
-const viewDetails = () => {
-  router.push('/detailed-proposal')
+function editProposal() {
+  router.push(`/submit-revision/${proposal.value.id}`)
 }
 
-const downloadPdf = () => {
-  const link = document.createElement('a')
-  link.href = '/files/proposal.pdf'
-  link.download = 'proposal.pdf'
-  link.click()
+function viewDetails() {
+  router.push(`/detailed-proposal/${proposal.value.id}`)
 }
+
+function downloadPdf() {
+  if (!proposal.value.pdf_url) return
+
+  window.open(proposal.value.pdf_url, '_blank')
+}
+
+onMounted(() => {
+  fetchProposal()
+})
 </script>
 
 <style scoped>
@@ -207,7 +300,7 @@ const downloadPdf = () => {
 /* GRID */
 .top-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 
@@ -303,38 +396,6 @@ const downloadPdf = () => {
 
 .btn-download:hover {
   background: #f5f5f5;
-}
-
-/* CONTACT REVIEWER BUTTON */
-.btn-contact {
-  background: #1e88e5;
-  color: #fff;
-  border: 1px solid #1e88e5;
-  font-weight: 500;
-}
-
-.btn-contact:hover {
-  background: #1565c0;
-  border-color: #1565c0;
-}
-
-/* REVIEWER */
-.reviewer {
-  display: flex;
-  gap: 12px;
-  margin: 12px 0 20px;
-  align-items: center;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  background: #673ab7;
-  color: #fff;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-weight: bold;
 }
 
 /* WORKFLOW */
