@@ -1,108 +1,153 @@
 <template>
   <div class="dashboard-content">
+    <!-- Summary Cards -->
     <div class="summary-cards">
       <div class="card">
         <p class="card-title">Pending Final Approval</p>
-        <h2>{{ stats.pending }}</h2>
+        <h2>{{ stats.pending_final_approval }}</h2>
       </div>
 
       <div class="card">
         <p class="card-title">Approved This Month</p>
-        <h2>{{ stats.approvedThisMonth }}</h2>
+        <h2>{{ stats.approved_this_month }}</h2>
       </div>
 
       <div class="card">
         <p class="card-title">Special Orders Issued</p>
-        <h2>{{ stats.specialOrders }}</h2>
+        <h2>{{ stats.special_orders_issued }}</h2>
       </div>
     </div>
 
+    <!-- For Final Approval -->
     <div class="section">
       <h3>Proposals for Final Approval</h3>
 
-      <div class="proposal-card" v-for="proposal in forFinalApproval" :key="proposal.id">
-        <div class="proposal-header">
-          <h4>{{ proposal.title }}</h4>
-          <span class="status endorsed">Endorsed</span>
+      <div
+        v-if="forFinalApproval.length"
+      >
+        <div
+          class="proposal-card"
+          v-for="proposal in forFinalApproval"
+          :key="proposal.id"
+        >
+          <div class="proposal-header">
+            <h4>{{ proposal.project_title }}</h4>
+
+            <span class="status endorsed">
+              {{ proposal.proposal_status }}
+            </span>
+          </div>
+
+          <p class="tag">
+            {{ proposal.research_category }}
+          </p>
+
+          <p class="meta">
+            {{ proposal.project_leader }} • {{ proposal.submitted_at }}
+          </p>
+
+          <button
+            class="action-btn"
+            @click="reviewProposal(proposal.id)"
+          >
+            Review & Approve
+          </button>
         </div>
+      </div>
 
-        <p class="tag">{{ proposal.category }}</p>
-
-        <p class="meta">{{ proposal.adviser }} • {{ proposal.date }}</p>
-
-        <button class="action-btn" @click="reviewProposal(proposal.id)">Review & Approve</button>
+      <div
+        v-else
+        class="proposal-card"
+      >
+        No proposals awaiting final approval.
       </div>
     </div>
 
+    <!-- Approved Proposals -->
     <div class="section">
       <h3>Approved Proposals</h3>
 
-      <div class="proposal-card" v-for="proposal in approvedProposals" :key="proposal.id">
-        <div class="proposal-header">
-          <h4>{{ proposal.title }}</h4>
-          <span class="status approved">Approved</span>
+      <div
+        v-if="approvedProposals.length"
+      >
+        <div
+          class="proposal-card"
+          v-for="proposal in approvedProposals"
+          :key="proposal.id"
+        >
+          <div class="proposal-header">
+            <h4>{{ proposal.project_title }}</h4>
+
+            <span class="status approved">
+              {{ proposal.proposal_status }}
+            </span>
+          </div>
+
+          <p class="tag">
+            {{ proposal.research_category }}
+          </p>
+
+          <p class="meta">
+            {{ proposal.project_leader }} • {{ proposal.approved_at }}
+          </p>
         </div>
+      </div>
 
-        <p class="tag">{{ proposal.category }}</p>
-
-        <p class="meta">{{ proposal.adviser }} • {{ proposal.date }}</p>
+      <div
+        v-else
+        class="proposal-card"
+      >
+        No approved proposals available.
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'DashboardContent',
-  data() {
-    return {
-      stats: {
-        pending: 3,
-        approvedThisMonth: 7,
-        specialOrders: 15,
-      },
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-      forFinalApproval: [
-        {
-          id: 1,
-          title: 'Community Development Program 2024',
-          category: 'Dagat/Punla',
-          adviser: 'Dr. Maria Santos',
-          date: 'Dec 13, 2024',
-        },
-        {
-          id: 2,
-          title: 'Biodegradable Packaging from Agricultural Waste',
-          category: 'Kalikasan',
-          adviser: 'Dr. Lisa Garcia',
-          date: 'Dec 12, 2024',
-        },
-      ],
+const router = useRouter()
 
-      approvedProposals: [
-        {
-          id: 3,
-          title: 'Climate-Resilient Rice Varieties Development',
-          category: 'Punla',
-          adviser: 'Dr. Thomas Lee',
-          date: 'Nov 20, 2024',
-        },
-        {
-          id: 4,
-          title: 'Digital Literacy for Rural Communities',
-          category: 'Tanglaw',
-          adviser: 'Dr. Ramon Diaz',
-          date: 'Nov 18, 2024',
-        },
-      ],
-    }
-  },
-  methods: {
-    reviewProposal(id) {
-      this.$router.push(`/oc/final-approval/${id}`)
-    },
-  },
+const loading = ref(false)
+
+const stats = ref({
+  pending_final_approval: 0,
+  approved_this_month: 0,
+  special_orders_issued: 0,
+})
+
+const forFinalApproval = ref([])
+
+const approvedProposals = ref([])
+
+async function fetchDashboard() {
+  loading.value = true
+
+  try {
+    // Backend API goes here later
+
+    // Example:
+    // const response = await axios.get('/api/oc/dashboard')
+    //
+    // stats.value = response.data.stats
+    // forFinalApproval.value = response.data.for_final_approval
+    // approvedProposals.value = response.data.approved_proposals
+
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
+
+function reviewProposal(id) {
+  router.push(`/oc/final-approval/${id}`)
+}
+
+onMounted(() => {
+  fetchDashboard()
+})
 </script>
 
 <style scoped>

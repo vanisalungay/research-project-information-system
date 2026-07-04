@@ -1,195 +1,246 @@
 <template>
   <div class="page">
-    <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
-
-    <div class="card proposal-card">
-      <div class="proposal-left">
-        <h1>Community Development Program 2024</h1>
-
-        <div class="proposal-meta">
-          <div>
-            <span>Proponent</span>
-            <p>Dr. Maria Santos</p>
-          </div>
-          <div>
-            <span>Program</span>
-            <p>DAGAT</p>
-          </div>
-          <div>
-            <span>Budget</span>
-            <p>PHP 750,000</p>
-          </div>
-          <div>
-            <span>Duration</span>
-            <p>12 Months</p>
-          </div>
-        </div>
-      </div>
-      <button class="view-btn" @click="goToDetailed">View Details</button>
+    <div v-if="loading">
+      Loading proposal...
     </div>
 
-    <div class="status-row">
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>RII DARES</h4>
-          <p>Endorsed</p>
-          <small>Dec 11, 2024</small>
-        </div>
-      </div>
-
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>REC Evaluation</h4>
-          <p>Approved</p>
-          <small>Score: 89/100 (89.0%)</small>
-        </div>
-      </div>
-
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>OVCRIGE</h4>
-          <p>Forwarded to OC</p>
-          <small>Dec 13, 2024</small>
-        </div>
-      </div>
+    <div v-else-if="error">
+      Failed to load proposal.
     </div>
 
-    <!-- REC EVALUATION SUMMARY -->
-    <div class="card">
-      <h3>REC Evaluation Summary</h3>
-
-      <div class="eval-row" v-for="row in evaluation" :key="row.label">
-        <div class="eval-header">
-          <span>{{ row.label }}</span>
-          <span>{{ row.score }}</span>
-        </div>
-
-        <div class="bar">
-          <div class="bar-fill" :style="{ width: row.percent + '%' }"></div>
-        </div>
-      </div>
-
-      <div class="overall">
-        <div class="eval-header">
-          <strong>Overall Evaluation Score</strong>
-          <strong>89/100 (89.0%)</strong>
-        </div>
-        <div class="bar overall-bar">
-          <div class="bar-fill"></div>
-        </div>
-      </div>
+    <div v-else-if="isEmpty">
+      No proposal found.
     </div>
 
-    <!-- REC RECOMMENDATION -->
-    <div class="card">
-      <h3>REC Recommendation</h3>
-      <div class="recommendation">
-        <strong>Recommended for Approval</strong>
-        <p>
-          The Research Evaluation Committee unanimously recommends this proposal for approval. The
-          research methodology is sound, the budget is justified, and the expected outcomes align
-          with the university’s research priorities.
+    <div v-else>
+      <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
+
+      <div class="card proposal-card">
+        <div class="proposal-left">
+          <h1>{{ proposal.project_title }}</h1>
+
+          <div class="proposal-meta">
+            <div>
+              <span>Proponent</span>
+              <p>{{ proposal.project_leader }}</p>
+            </div>
+
+            <div>
+              <span>Program</span>
+              <p>{{ proposal.program_title }}</p>
+            </div>
+
+            <div>
+              <span>Budget</span>
+              <p>{{ proposal.total_budget }}</p>
+            </div>
+
+            <div>
+              <span>Duration</span>
+              <p>{{ proposal.duration }}</p>
+            </div>
+          </div>
+        </div>
+        <button class="view-btn" @click="goToDetailed">View Details</button>
+      </div>
+
+      <div class="status-row">
+        <div
+          class="card status-card"
+          v-for="status in workflowStatus"
+          :key="status.id"
+        >
+          <div class="status-dot"></div>
+
+          <div>
+            <h4>{{ status.stage }}</h4>
+            <p>{{ status.status }}</p>
+            <small>{{ status.description }}</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- REC EVALUATION SUMMARY -->
+      <div class="card">
+        <h3>REC Evaluation Summary</h3>
+
+        <div class="eval-row" v-for="row in evaluation" :key="row.label">
+          <div class="eval-header">
+            <span>{{ row.label }}</span>
+            <span>{{ row.score }}</span>
+          </div>
+
+          <div class="bar">
+            <div class="bar-fill" :style="{ width: row.percent + '%' }"></div>
+          </div>
+        </div>
+
+        <div class="overall">
+          <div class="eval-header">
+            <strong>Overall Evaluation Score</strong>
+            <strong>{{ proposal.overall_score }}</strong>
+          </div>
+          <div class="bar overall-bar">
+            <div
+              class="bar-fill"
+              :style="{ width: proposal.overall_percent + '%' }"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REC RECOMMENDATION -->
+      <div class="card">
+        <h3>REC Recommendation</h3>
+        <div class="recommendation">
+          <strong>{{ proposal.recommendation_title }}</strong>
+          <p>{{ proposal.recommendation }}</p>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY -->
+      <div class="card">
+        <h3>Executive Summary</h3>
+        <p class="summary-text" style="text-align: justify">
+          {{ proposal.executive_summary }}
         </p>
-      </div>
-    </div>
 
-    <!-- EXECUTIVE SUMMARY -->
-    <div class="card">
-      <h3>Executive Summary</h3>
-      <p class="summary-text" style="text-align: justify">
-        This research proposal aims to develop sustainable aquaculture systems in coastal
-        communities, addressing both environmental conservation and livelihood improvement. The
-        study will implement and evaluate integrated multi-trophic aquaculture (IMTA) systems in
-        three pilot sites.
-      </p>
-
-      <div class="summary-stats">
-        <div>
-          <span>Expected Duration</span>
-          <p>12 months</p>
-        </div>
-        <div>
-          <span>Beneficiaries</span>
-          <p>300 coastal farmers</p>
+        <div class="summary-stats">
+          <div>
+            <span>Expected Duration</span>
+            <p>{{ proposal.duration }}</p>
+          </div>
+          <div>
+            <span>Beneficiaries</span>
+            <p>{{ proposal.target_beneficiaries }}</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- CHANCELLOR NOTES -->
-    <div class="card">
-      <h3>Chancellor’s Notes</h3>
-      <textarea placeholder="Add your notes and comments..."></textarea>
-    </div>
-
-    <!-- APPROVE -->
-    <div class="footer">
-      <button class="approve" @click="showConfirm = true">Approve for Implementation</button>
-    </div>
-  </div>
-
-  <!-- CONFIRMATION MODAL -->
-  <div v-if="showConfirm" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <span>Approve for Implementation</span>
-        <span class="close" @click="showConfirm = false">×</span>
+      <!-- CHANCELLOR NOTES -->
+      <div class="card">
+        <h3>Chancellor’s Notes</h3>
+        <textarea
+          v-model="chancellorNotes"
+          placeholder="Add your notes and comments..."
+        ></textarea>
       </div>
 
-      <div class="modal-body">
-        <div class="check-icon">✓</div>
-
-        <h4>Approve This Proposal?</h4>
-
-        <p>
-          This is proposal will be approved for implementation. You can upload the Special Order
-          separately.
-        </p>
+      <!-- APPROVE -->
+      <div class="footer">
+        <button class="approve" @click="showConfirm = true">Approve for Implementation</button>
       </div>
+    </div>
 
-      <div class="modal-actions">
-        <button class="btn-cancel" @click="showConfirm = false">Cancel</button>
-        <button class="btn-confirm" @click="confirmApproval">Confirm Approval</button>
+    <!-- CONFIRMATION MODAL -->
+    <div v-if="showConfirm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span>Approve for Implementation</span>
+          <span class="close" @click="showConfirm = false">×</span>
+        </div>
+
+        <div class="modal-body">
+          <div class="check-icon">✓</div>
+
+          <h4>Approve This Proposal?</h4>
+
+          <p>
+            This is proposal will be approved for implementation. You can upload the Special Order
+            separately.
+          </p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="showConfirm = false">Cancel</button>
+          <button class="btn-confirm" @click="confirmApproval">Confirm Approval</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'FinalApproval',
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
-  data() {
-    return {
-      showConfirm: false,
-      evaluation: [
-        { label: 'Relevance and Significance', score: '18/20', percent: 90 },
-        { label: 'Research Methodology', score: '22/25', percent: 88 },
-        { label: 'Feasibility and Timeline', score: '13/15', percent: 87 },
-        { label: 'Budget Justification', score: '14/15', percent: 93 },
-        { label: 'Expected Outcomes', score: '13/15', percent: 87 },
-        { label: 'Researcher Qualifications', score: '9/10', percent: 90 },
-      ],
-    }
-  },
+const router = useRouter()
+const route = useRoute()
 
-  methods: {
-    goToDetailed() {
-      this.$router.push('/oc-detailed')
-    },
+const proposalId = route.params.id
 
-    confirmApproval() {
-      this.showConfirm = false
-      const proposalId = this.$route.params.id
+const loading = ref(false)
 
-      this.$router.push({
-        path: `/oc/final-approval/${proposalId}/approved`,
-      })
-    },
-  },
+const error = ref(false)
+
+const showConfirm = ref(false)
+
+const proposal = ref({
+  id: null,
+  project_title: '',
+  project_leader: '',
+  program_title: '',
+  total_budget: '',
+  duration: '',
+  executive_summary: '',
+  target_beneficiaries: '',
+  overall_score: '',
+  overall_percent: 0,
+  recommendation_title: '',
+  recommendation: '',
+})
+
+const workflowStatus = ref([])
+
+const evaluation = ref([])
+
+const chancellorNotes = ref('')
+
+const isEmpty = computed(() => {
+  return !proposal.value.id
+})
+
+async function fetchProposal() {
+  loading.value = true
+  error.value = false
+
+  try {
+    // const response = await axios.get(`/api/oc/final-approval/${proposalId}`)
+
+    // proposal.value = response.data.proposal
+    // workflowStatus.value = response.data.workflow_status
+    // evaluation.value = response.data.evaluation
+    // chancellorNotes.value = response.data.chancellor_notes
+
+  } catch (err) {
+    console.error(err)
+    error.value = true
+  } finally {
+    loading.value = false
+  }
 }
+
+function goToDetailed() {
+  router.push(`/oc-detailed/${proposalId}`)
+}
+
+async function confirmApproval() {
+  showConfirm.value = false
+
+  try {
+    // await axios.post(`/api/oc/final-approval/${proposalId}/approve`, {
+    //   chancellor_notes: chancellorNotes.value
+    // })
+
+    router.push('/oc-final-approval2')
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+onMounted(() => {
+  fetchProposal()
+})
 </script>
 
 <style scoped>
@@ -312,10 +363,6 @@ export default {
 
 .overall {
   margin-top: 20px;
-}
-
-.overall-bar .bar-fill {
-  width: 89%;
 }
 
 .recommendation {

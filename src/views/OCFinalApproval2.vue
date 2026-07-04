@@ -1,205 +1,351 @@
 <template>
   <div class="page">
-    <!-- BACK -->
-    <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
-
-    <!-- PROPOSAL HEADER CARD -->
-    <div class="card proposal-card">
-      <div class="proposal-left">
-        <h1>Community Development Program 2024</h1>
-
-        <div class="proposal-meta">
-          <div>
-            <span>Proponent</span>
-            <p>Dr. Maria Santos</p>
-          </div>
-          <div>
-            <span>Program</span>
-            <p>DAGAT</p>
-          </div>
-          <div>
-            <span>Budget</span>
-            <p>PHP 750,000</p>
-          </div>
-          <div>
-            <span>Duration</span>
-            <p>12 Months</p>
-          </div>
-        </div>
-      </div>
-      <button class="view-btn" @click="goToDetailed">View Details</button>
+    <!-- Loading -->
+    <div v-if="loading" class="card">
+      <h3>Loading...</h3>
+      <p>Please wait while the proposal is being loaded.</p>
     </div>
 
-    <!-- STATUS FLOW -->
-    <div class="status-row">
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>RII DARES</h4>
-          <p>Endorsed</p>
-          <small>Dec 11, 2024</small>
-        </div>
-      </div>
-
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>REC Evaluation</h4>
-          <p>Approved</p>
-          <small>Score: 89/100 (89.0%)</small>
-        </div>
-      </div>
-
-      <div class="card status-card">
-        <div class="status-dot"></div>
-        <div>
-          <h4>OVCRIGE</h4>
-          <p>Forwarded to OC</p>
-          <small>Dec 13, 2024</small>
-        </div>
-      </div>
+    <!-- Error -->
+    <div v-else-if="error" class="card">
+      <h3>Unable to Load Proposal</h3>
+      <p>Something went wrong while retrieving the proposal.</p>
     </div>
 
-    <!-- REC EVALUATION SUMMARY -->
-    <div class="card">
-      <h3>REC Evaluation Summary</h3>
-
-      <div v-for="item in evaluation" :key="item.label" class="eval-row">
-        <div class="eval-header">
-          <span>{{ item.label }}</span>
-          <span>{{ item.score }}</span>
-        </div>
-
-        <div class="bar">
-          <div class="bar-fill" :style="{ width: item.percent + '%' }"></div>
-        </div>
-      </div>
-
-      <div class="overall">
-        <div class="eval-header">
-          <strong>Overall Evaluation Score</strong>
-          <strong>89/100 (89.0%)</strong>
-        </div>
-        <div class="bar overall-bar">
-          <div class="bar-fill"></div>
-        </div>
-      </div>
+    <!-- Empty State -->
+    <div v-else-if="!proposal.project_title" class="card">
+      <h3>No Proposal Found</h3>
+      <p>The requested proposal does not exist or has been removed.</p>
     </div>
 
-    <!-- REC RECOMMENDATION -->
-    <div class="card">
-      <h3>REC Recommendation</h3>
-      <div class="recommendation">
-        <strong>Recommended for Approval</strong>
-        <p>
-          The Research Evaluation Committee unanimously recommends this proposal for approval. The
-          research methodology is sound, the budget is justified, and the expected outcomes align
-          with the university’s research priorities.
-        </p>
-      </div>
-    </div>
+    <!-- CONTENT -->
+    <template v-else>
+      <!-- BACK -->
+      <div class="back" @click="$router.go(-1)">← Back to Dashboard</div>
 
-    <!-- FINAL APPROVAL -->
-    <div class="card">
-      <div class="recommendation">
-        <strong>Proposal Approved</strong>
-        <p>
-          This proposal has been approved for implementation. Please upload the Special Order
-          document to proceed.
-        </p>
-      </div>
-    </div>
+      <!-- PROPOSAL HEADER CARD -->
+      <div class="card proposal-card">
+        <div class="proposal-left">
+          <h1>{{ proposal.project_title }}</h1>
 
-    <div class="footer">
-      <button class="approve-btn" @click="showUploadModal = true">Upload Special Order</button>
-    </div>
+          <div class="proposal-meta">
+            <div>
+              <span>Proponent</span>
+              <p>{{ proposal.project_leader }}</p>
+            </div>
 
-    <!-- UPLOAD SPECIAL ORDER MODAL -->
-    <div v-if="showUploadModal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-icon">🏅</div>
-          <h3>Upload Special Order</h3>
-          <p>Upload the official Special Order document for this research proposal</p>
+            <div>
+              <span>Program</span>
+              <p>{{ proposal.program_title }}</p>
+            </div>
+
+            <div>
+              <span>Budget</span>
+              <p>{{ proposal.total_budget }}</p>
+            </div>
+
+            <div>
+              <span>Duration</span>
+              <p>{{ proposal.duration }}</p>
+            </div>
+          </div>
         </div>
 
-        <!-- PROPOSAL INFO -->
-        <div class="modal-info">
+        <button class="view-btn" @click="goToDetailed">
+          View Details
+        </button>
+      </div>
+
+      <!-- STATUS -->
+      <div class="status-row">
+        <div
+          class="card status-card"
+          v-for="status in workflowStatus"
+          :key="status.id"
+        >
+          <div class="status-dot"></div>
+
           <div>
-            <span>Proposal Title</span>
-            <p>Sustainable Aquaculture Systems in Coastal Communities</p>
+            <h4>{{ status.stage }}</h4>
+            <p>{{ status.status }}</p>
+            <small>{{ status.description }}</small>
           </div>
-          <div>
-            <span>Proponent</span>
-            <p>Dr. Maria Santos</p>
-          </div>
-          <div>
-            <span>Program</span>
-            <p>DAGAT</p>
-          </div>
-          <div>
-            <span>Budget</span>
-            <p>PHP 750,000</p>
-          </div>
-        </div>
-
-        <!-- FILE UPLOAD -->
-        <div class="upload-box">
-          <input type="file" accept="application/pdf" hidden ref="fileInput" />
-          <div class="upload-area" @click="$refs.fileInput.click()">
-            <p>Click to upload or drag and drop</p>
-            <small>PDF files only (Max 5MB)</small>
-          </div>
-        </div>
-
-        <!-- ACTION BUTTONS -->
-        <div class="modal-actions">
-          <button class="cancel-btn" @click="showUploadModal = false">Cancel</button>
-          <button class="issue-btn" @click="issueSpecialOrder">Issue Special Order</button>
         </div>
       </div>
-    </div>
 
-    <!-- APPROVAL SUCCESS MODAL -->
-    <div v-if="showSuccessModal" class="modal-overlay">
-      <div class="success-card">
-        <button class="close-btn" @click="showSuccessModal = false">×</button>
-        <div class="success-icon">✔</div>
-        <h3>Proposal Approved!</h3>
-        <p class="success-text">The proposal has been successfully approved.</p>
-        <button class="success-btn" @click="goToDashboard">View Approved Proposals</button>
+      <!-- REC EVALUATION -->
+      <div class="card">
+        <h3>REC Evaluation Summary</h3>
+
+        <div
+          class="eval-row"
+          v-for="item in evaluation"
+          :key="item.label"
+        >
+          <div class="eval-header">
+            <span>{{ item.label }}</span>
+            <span>{{ item.score }}</span>
+          </div>
+
+          <div class="bar">
+            <div
+              class="bar-fill"
+              :style="{ width: item.percent + '%' }"
+            ></div>
+          </div>
+        </div>
+
+        <div class="overall">
+          <div class="eval-header">
+            <strong>Overall Evaluation Score</strong>
+            <strong>{{ proposal.overall_score }}</strong>
+          </div>
+
+          <div class="bar">
+            <div
+              class="bar-fill"
+              :style="{ width: proposal.overall_percent + '%' }"
+            ></div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <!-- RECOMMENDATION -->
+      <div class="card">
+        <h3>REC Recommendation</h3>
+
+        <div class="recommendation">
+          <strong>{{ proposal.recommendation_title }}</strong>
+          <p>{{ proposal.recommendation }}</p>
+        </div>
+      </div>
+
+      <!-- FINAL APPROVAL -->
+      <div class="card">
+        <div class="recommendation">
+          <strong>Proposal Approved</strong>
+
+          <p>
+            This proposal has been approved for implementation.
+            Please upload the Special Order document.
+          </p>
+        </div>
+      </div>
+
+      <!-- BUTTON -->
+      <div class="footer">
+        <button
+          class="approve-btn"
+          @click="showUploadModal = true"
+        >
+          Upload Special Order
+        </button>
+      </div>
+
+      <!-- UPLOAD MODAL -->
+      <div
+        v-if="showUploadModal"
+        class="modal-overlay"
+      >
+        <div class="modal-card">
+
+          <div class="modal-header">
+            <div class="modal-icon">🏅</div>
+
+            <h3>Upload Special Order</h3>
+
+            <p>
+              Upload the official Special Order document.
+            </p>
+          </div>
+
+          <div class="modal-info">
+            <div>
+              <span>Proposal Title</span>
+              <p>{{ proposal.project_title }}</p>
+            </div>
+
+            <div>
+              <span>Proponent</span>
+              <p>{{ proposal.project_leader }}</p>
+            </div>
+
+            <div>
+              <span>Program</span>
+              <p>{{ proposal.program_title }}</p>
+            </div>
+
+            <div>
+              <span>Budget</span>
+              <p>{{ proposal.total_budget }}</p>
+            </div>
+          </div>
+
+          <div class="upload-box">
+
+            <input
+              type="file"
+              accept=".pdf"
+              hidden
+              ref="fileInput"
+              @change="handleFileUpload"
+            />
+
+            <div
+              class="upload-area"
+              @click="$refs.fileInput.click()"
+            >
+              <p v-if="!selectedFile">
+                Click to upload or drag and drop
+              </p>
+
+              <p v-else>
+                {{ selectedFile.name }}
+              </p>
+
+              <small>
+                PDF files only (Max 5MB)
+              </small>
+            </div>
+
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="cancel-btn"
+              @click="showUploadModal = false"
+            >
+              Cancel
+            </button>
+
+            <button
+              class="issue-btn"
+              @click="issueSpecialOrder"
+            >
+              Issue Special Order
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SUCCESS MODAL -->
+      <div
+        v-if="showSuccessModal"
+        class="modal-overlay"
+      >
+        <div class="success-card">
+
+          <button
+            class="close-btn"
+            @click="showSuccessModal = false"
+          >
+            ×
+          </button>
+
+          <div class="success-icon">
+            ✔
+          </div>
+
+          <h3>Proposal Approved!</h3>
+
+          <p class="success-text">
+            The proposal has been successfully approved and the
+            Special Order has been issued.
+          </p>
+
+          <button
+            class="success-btn"
+            @click="goToDashboard"
+          >
+            View Approved Proposals
+          </button>
+
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'OCFinalApproval2',
+  name: "OCFinalApproval2",
+
   data() {
     return {
+      loading: false,
+      error: false,
+
       showUploadModal: false,
       showSuccessModal: false,
-      evaluation: [
-        { label: 'Relevance and Significance', score: '18/20', percent: 90 },
-        { label: 'Research Methodology', score: '22/25', percent: 88 },
-        { label: 'Feasibility and Timeline', score: '13/15', percent: 87 },
-        { label: 'Budget Justification', score: '14/15', percent: 93 },
-        { label: 'Expected Outcomes', score: '13/15', percent: 87 },
-        { label: 'Researcher Qualifications', score: '9/10', percent: 90 },
-      ],
+
+      selectedFile: null,
+
+      proposal: {
+        id: null,
+        project_title: "",
+        project_leader: "",
+        program_title: "",
+        total_budget: "",
+        duration: "",
+        recommendation_title: "",
+        recommendation: "",
+        overall_score: "",
+        overall_percent: 0,
+      },
+
+      workflowStatus: [],
+
+      evaluation: [],
     }
   },
+
+  mounted() {
+    this.fetchProposal()
+  },
+
   methods: {
-    goToDetailed() {
-      this.$router.push('/oc-detailed')
+    async fetchProposal() {
+      this.loading = true
+
+      try {
+        // const response = await axios.get(`/api/oc/final-approval/${this.$route.params.id}`)
+
+        // this.proposal = response.data.proposal
+        // this.workflowStatus = response.data.workflow_status
+        // this.evaluation = response.data.evaluation
+
+      } catch (e) {
+        this.error = true
+        console.log(e)
+      } finally {
+        this.loading = false
+      }
     },
-    issueSpecialOrder() {
+
+    handleFileUpload(event) {
+      this.selectedFile = event.target.files[0]
+    },
+
+    goToDetailed() {
+      this.$router.push("/oc-detailed")
+    },
+
+    async issueSpecialOrder() {
+
+      if (!this.selectedFile) {
+        alert("Please upload a PDF first.")
+        return
+      }
+
+      // Upload API here
+
       this.showUploadModal = false
       this.showSuccessModal = true
     },
+
     goToDashboard() {
-      this.$router.push('/home')
+      this.$router.push("/home")
     },
   },
 }

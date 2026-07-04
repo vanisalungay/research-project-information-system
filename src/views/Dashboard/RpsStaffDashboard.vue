@@ -1,4 +1,3 @@
-krisha, [29/12/2025 2:12 pm]
 <template>
   <div class="dashboard">
     <!-- Header -->
@@ -45,7 +44,6 @@ krisha, [29/12/2025 2:12 pm]
       <!-- Proposals Table -->
       <div class="panel">
         <div class="panel-header">
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
           <h3>RECENT ACTIVITY</h3>
         </div>
 
@@ -62,9 +60,7 @@ krisha, [29/12/2025 2:12 pm]
               </div>
               <span :class="['badge', item.badgeClass]">{{ item.status }}</span>
             </div>
-=======
-          <h3>Proposals Awaiting RPS Action</h3>
-          <button class="view-all" @click="$router.push('rpsendorsed-prop')">View All</button>
+          </div>
         </div>
 
         <div class="table">
@@ -90,27 +86,20 @@ krisha, [29/12/2025 2:12 pm]
             <span>₱150,000</span>
             <span class="status pending">Pending</span>
             <button class="review" @click="$router.push('rps-endorse')">Review</button>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
           </div>
         </div>
 
-        <div v-else class="empty-state">
-  <div class="empty-icon-wrapper">
-    📄
-  </div>
-
-  <h3>No Research Activity Yet</h3>
-
-  <p>
-    Research proposals, reviews, and status updates
-    will appear here once records are added.
-  </p>
-</div>
+        <div v-if="activities.length === 0" class="empty-state">
+          <div class="empty-icon-wrapper">📄</div>
+          <h3>No Research Activity Yet</h3>
+          <p>
+            Research proposals, reviews, and status updates
+            will appear here once records are added.
+          </p>
+        </div>
       </div>
 
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
     
-=======
       <!-- Right Side -->
       <div class="side">
         <!-- Recent Activity -->
@@ -134,15 +123,13 @@ krisha, [29/12/2025 2:12 pm]
           <button class="secondary" @click="$router.push('funded-prop')">Manage Funding</button>
         </div>
       </div>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
     </div>
   </div>
 </template>
 
 <script>
 export default {
-<<<<<<< HEAD:src/views/Dashboard/RiiStaffDashboard.vue
-  name: "RiiDashboard",
+  name: "RpsStaffDashboard",
 
   data() {
     return {
@@ -150,14 +137,10 @@ export default {
       totalProposals: 0,
       endorsedProposals: 0,
       pendingReview: 0,
-      failedProposals: 0
+      failedProposals: 0,
     };
-  }
+  },
 };
-=======
-  name: 'RpsStaffDashboard',
-}
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/Dashboard/RpsStaffDashboard.vue
 </script>
 
 <style scoped>

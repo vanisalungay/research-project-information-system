@@ -1,11 +1,10 @@
 <template>
   <div class="page">
-<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
-=======
     <!-- Header -->
     <h2>RII Endorsed Proposals</h2>
-    <p class="subtitle">Proposals endorsed by RPS and forwarded to OVCRIGE</p>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
+    <p class="subtitle">
+      Proposals endorsed by RPS and forwarded to OVCRIGE
+    </p>
 
     <div class="page-header">
       <div>
@@ -14,7 +13,7 @@
       </div>
     </div>
 
-<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
+    <!-- Search -->
     <div class="toolbar">
       <input
         v-model="search"
@@ -23,50 +22,31 @@
         placeholder="Search Proposal Code, Title or Project Leader..."
       />
     </div>
-=======
-    <!-- Table -->
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Proponent</th>
-          <th>Category</th>
-          <th>RPS Endorsed</th>
-          <th>Sent to OVCRIGE</th>
-          <th>OVCRIGE Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
 
+    <!-- Table -->
     <div class="table-container">
       <table class="table">
-
-<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
         <thead>
           <tr>
             <th>Proposal Code</th>
             <th>Proposal Title</th>
             <th>Project Leader</th>
             <th>Reviewer Score</th>
-            <th width="280"> Status</th>
+            <th>Status</th>
             <th width="180">Actions</th>
           </tr>
         </thead>
-=======
-          <td>
-            <span class="check">✔</span>
-            {{ proposal.rpsEndorsed }}
-          </td>
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
 
         <tbody>
-
-          <tr v-for="proposal in filteredProposals" :key="proposal.id">
+          <tr
+            v-for="proposal in filteredProposals"
+            :key="proposal.id"
+          >
             <td>{{ proposal.code }}</td>
             <td>{{ proposal.title }}</td>
             <td>{{ proposal.leader }}</td>
             <td>{{ proposal.reviewerScore }}%</td>
+
             <td class="status-cell">
               <span
                 class="status"
@@ -81,19 +61,23 @@
                 {{ proposal.status }}
               </span>
             </td>
-              <td class="actions">
-                <button class="view-btn" @click="viewProposal(proposal)">
-                  View
-                </button>
 
-                <button
-                  class="endorse-btn"
-                  @click="endorseProposal(proposal)"
-                  :disabled="proposal.status !== 'Waiting for OVCRIGE Endorsement'"
-                >
-                  Endorse
-                </button>
-              </td>
+            <td class="actions">
+              <button
+                class="view-btn"
+                @click="viewProposal(proposal)"
+              >
+                View
+              </button>
+
+              <button
+                class="endorse-btn"
+                @click="endorseProposal(proposal)"
+                :disabled="proposal.status !== 'Waiting for OVCRIGE Endorsement'"
+              >
+                Endorse
+              </button>
+            </td>
           </tr>
 
           <tr v-if="filteredProposals.length === 0">
@@ -101,75 +85,69 @@
               No approved proposals found.
             </td>
           </tr>
-
         </tbody>
-
       </table>
     </div>
-
   </div>
 </template>
 
 <script>
 export default {
-<<<<<<< HEAD:src/views/RiiEndorsedPro.vue
   name: "RIIEndorsedProposals",
 
   data() {
     return {
       search: "",
-      proposals: []
-=======
-  name: 'RPSEndorsedProposals',
 
-  data() {
-    return {
-      search: '',
       proposals: [
         {
           id: 1,
-          title: 'Educational Infrastructure Project',
-          proponent: 'Dr. Cat Moon',
-          category: 'Tanglaw Program',
-          rpsEndorsed: '2024-12-09',
-          sentToOVCRIGE: '2024-12-09',
-          ovcrigeStatus: 'Pending OVCRIGE Review',
+          code: "RII-001",
+          title: "Educational Infrastructure Project",
+          leader: "Dr. Cat Moon",
+          reviewerScore: 95,
+          status: "Waiting for OVCRIGE Endorsement"
         },
         {
           id: 2,
-          title: 'Technology Innovation Initiative',
-          proponent: 'Dr. Blair Gwen',
-          category: 'Tanglaw Program',
-          rpsEndorsed: '2024-12-03',
-          sentToOVCRIGE: '2024-12-03',
-          ovcrigeStatus: 'Pending OVCRIGE Review',
+          code: "RII-002",
+          title: "Technology Innovation Initiative",
+          leader: "Dr. Blair Gwen",
+          reviewerScore: 91,
+          status: "Approved by OVCRIGE"
         },
-      ],
->>>>>>> 67684fe00bc53027705e4a78dea4c48195fe9a2c:src/views/RpsEndorsedPro.vue
+        {
+          id: 3,
+          code: "RII-003",
+          title: "Marine Biodiversity Assessment",
+          leader: "Dr. John Cruz",
+          reviewerScore: 89,
+          status: "Returned by OVCRIGE"
+        }
+      ]
     }
   },
 
   computed: {
     filteredProposals() {
-      const keyword = this.search.toLowerCase().trim();
+      const keyword = this.search.toLowerCase().trim()
 
-      return this.proposals.filter(p =>
-        p.code.toLowerCase().includes(keyword) ||
-        p.title.toLowerCase().includes(keyword) ||
-        p.leader.toLowerCase().includes(keyword)
-      );
+      return this.proposals.filter(proposal =>
+        proposal.code.toLowerCase().includes(keyword) ||
+        proposal.title.toLowerCase().includes(keyword) ||
+        proposal.leader.toLowerCase().includes(keyword)
+      )
     }
   },
 
   methods: {
     viewProposal(proposal) {
       this.$router.push("/rii-endorse")
-     
     },
 
-    endorseProposal(proposal){
-      proposal.status="Sent to OVCRIGE";
-      alert("Proposal successfully endorsed to OVCRIGE.");
+    endorseProposal(proposal) {
+      proposal.status = "Sent to OVCRIGE"
+      alert("Proposal successfully endorsed to OVCRIGE.")
     }
   }
 }
@@ -183,7 +161,6 @@ export default {
   min-height:100vh;
   width: 136%;
 }
-
 .page-header{
   margin-bottom:20px;
 }
