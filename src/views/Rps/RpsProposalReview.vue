@@ -98,9 +98,9 @@
 
       <!-- RIGHT: Review Actions -->
       <aside class="proposal-sidebar">
-        <div class="review-card">
-          <h2>RPS Evaluation</h2>
-          <div class="review-section">
+         <div class="review-card">
+           <h2>Reviewer Accountability</h2>
+           <div class="review-section">
             <h4>Proposal Status</h4>
             <span class="status-badge" :class="(proposal.status || '').toLowerCase()">{{ proposal.status }}</span>
           </div>

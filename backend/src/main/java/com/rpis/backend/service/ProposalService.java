@@ -231,6 +231,14 @@ public class ProposalService {
     }
 
     @Transactional
+    public Proposal updateReviewerInfo(Long id, String reviewedBy, String reviewedByPosition) {
+        Proposal proposal = getProposalById(id);
+        proposal.setReviewedBy(reviewedBy);
+        proposal.setReviewedByPosition(reviewedByPosition);
+        return proposalRepository.save(proposal);
+    }
+
+    @Transactional
     public void deleteProposal(Long id) {
         Proposal proposal = getProposalById(id);
         proposalRepository.delete(proposal);

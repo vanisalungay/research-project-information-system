@@ -268,12 +268,37 @@
             </div>
           </div>
 
+          <!-- Reviewer Accountability -->
+          <div class="sidebar-card accountability-card">
+            <h3>Reviewer Accountability</h3>
+            <div class="reviewer-info">
+              <div class="info-item">
+                <label>Reviewer Name</label>
+                <input type="text" v-model="reviewerName" class="reviewer-input" placeholder="Enter your full name" />
+              </div>
+              <div class="info-item">
+                <label>Position</label>
+                <select v-model="reviewerPosition" class="position-select">
+                  <option value="">-- Select Position --</option>
+                  <option value="RSP_STAFF">RSP Staff</option>
+                  <option value="RSP_DIRECTOR">RSP Director</option>
+                </select>
+              </div>
+            </div>
+            <div class="certify-section">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="isCertified" />
+                <span>I certify that I am the assigned reviewer.</span>
+              </label>
+            </div>
+            <button class="btn-action btn-primary" @click="beginReview" :disabled="!canBeginReview">
+              Begin Review
+            </button>
+          </div>
+
           <!-- Action Buttons -->
           <div class="sidebar-card action-card">
             <h3>Actions</h3>
-            <button class="btn-action btn-primary" @click="goToReview">
-              Begin Review
-            </button>
             <button class="btn-action btn-secondary" @click="downloadProposal">
               Download Proposal
             </button>
@@ -294,9 +319,18 @@ const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
 
+// Reviewer Accountability fields
+const reviewerName = ref('')
+const reviewerPosition = ref('')
+const isCertified = ref(false)
+
 const hasPriorityAgendas = computed(() => {
   if (!proposal.value.priorityAgendas) return false
   return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
+})
+
+const canBeginReview = computed(() => {
+  return reviewerName.value && reviewerPosition.value && isCertified.value
 })
 
 const fetchProposal = async () => {
@@ -318,14 +352,30 @@ const fetchProposal = async () => {
   }
 }
 
-onMounted(fetchProposal)
+const saveReviewerInfo = async () => {
+  try {
+    await api.put(`/api/proposals/${proposal.value.id}/reviewer-info`, null, {
+      params: {
+        reviewedBy: reviewerName.value,
+        reviewedByPosition: reviewerPosition.value
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+const beginReview = async () => {
+  await saveReviewerInfo()
+  window.location.href = `/proposal/${proposal.value.id}/review`
+}
+
+onMounted(() => {
+  fetchProposal()
+})
 
 const goBack = () => {
   window.history.back()
-}
-
-const goToReview = () => {
-  window.location.href = `/proposal/${proposal.value.id}/review`
 }
 
 const downloadProposal = () => {
@@ -826,6 +876,63 @@ const formatDate = (dateString) => {
   font-weight: 500;
 }
 
+/* REVIEWER ACCOUNTABILITY */
+.accountability-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accountability-card .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.accountability-card label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.reviewer-input, .position-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.reviewer-input {
+  font-size: 14px;
+}
+
+.reviewer-input::placeholder {
+  color: #9ca3af;
+}
+
+.certify-section {
+  margin-top: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* ACTION CARD */
 .action-card {
   display: flex;
@@ -853,6 +960,11 @@ const formatDate = (dateString) => {
   background: #4338ca;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.btn-action.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-action.btn-secondary {

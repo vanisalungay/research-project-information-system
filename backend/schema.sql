@@ -62,6 +62,8 @@ CREATE TABLE proposals (
     references_text TEXT,
     other_projects_number VARCHAR(50),
     status VARCHAR(50) DEFAULT 'DRAFT',
+    reviewed_by VARCHAR(255),
+    reviewed_by_position VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

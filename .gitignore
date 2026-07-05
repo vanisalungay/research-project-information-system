@@ -40,3 +40,4 @@ backend/target/
 backend/jdk-*/
 backend/apache-maven-*/
 backend/apache-maven-*
+.aider*

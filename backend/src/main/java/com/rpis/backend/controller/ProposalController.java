@@ -122,6 +122,15 @@ public class ProposalController {
         return ResponseEntity.ok(reviewService.getReviewsForProposal(id));
     }
 
+    @PutMapping("/{id}/reviewer-info")
+    public ResponseEntity<Proposal> updateReviewerInfo(
+            @PathVariable Long id,
+            @RequestParam String reviewedBy,
+            @RequestParam String reviewedByPosition) {
+        Proposal updated = proposalService.updateReviewerInfo(id, reviewedBy, reviewedByPosition);
+        return ResponseEntity.ok(updated);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProposal(@PathVariable Long id) {
         proposalService.deleteProposal(id);

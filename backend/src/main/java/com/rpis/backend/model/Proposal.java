@@ -133,6 +133,12 @@ public class Proposal {
 
     private String status = "DRAFT";
 
+    @Column(name = "reviewed_by")
+    private String reviewedBy;
+
+    @Column(name = "reviewed_by_position")
+    private String reviewedByPosition;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
