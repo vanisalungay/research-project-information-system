@@ -296,7 +296,20 @@ public class ProposalService {
                     }
                     break;
 
-                // OVCRIGE forwarded to OC -> notify OC (Chancellor) for final approval
+                // OVCRIGE forwarded to OVCAF -> notify OVCAF to review & endorse
+                case "FOR_OVCAF_APPROVAL":
+                    if ("OVCAF".equals(role)) {
+                        notificationService.createNotification(
+                            user.getId(),
+                            "A proposal is ready for your review and endorsement: \"" + proposal.getProjectTitle() + "\"",
+                            "Proposal for OVCAF Review",
+                            "ENDORSEMENT",
+                            proposal.getId()
+                        );
+                    }
+                    break;
+
+                // OVCAF endorsed to OC -> notify OC (Chancellor) for final approval
                 case "FOR_OC_APPROVAL":
                     if ("OC".equals(role)) {
                         notificationService.createNotification(

@@ -76,6 +76,12 @@ public class ProposalController {
         return ResponseEntity.ok(updated);
     }
 
+    @PutMapping("/{id}/forward-to-ovcaf")
+    public ResponseEntity<Proposal> forwardToOvcaf(@PathVariable Long id) {
+        Proposal updated = proposalService.updateProposalStatus(id, "FOR_OVCAF_APPROVAL");
+        return ResponseEntity.ok(updated);
+    }
+
     @PutMapping("/{id}/forward-to-oc")
     public ResponseEntity<Proposal> forwardToOc(@PathVariable Long id) {
         Proposal updated = proposalService.updateProposalStatus(id, "FOR_OC_APPROVAL");
