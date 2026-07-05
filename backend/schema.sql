@@ -1,6 +1,7 @@
 -- PostgreSQL Database Schema for Research Project Information System (RPIS)
 
 -- Drop tables if they exist to start fresh (useful for development/testing)
+DROP TABLE IF EXISTS project_reports CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS proposal_reviews CASCADE;
 DROP TABLE IF EXISTS proposal_limitations CASCADE;
@@ -175,4 +176,21 @@ CREATE TABLE notifications (
     proposal_id BIGINT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Project Reports Table (Quarterly Progress and Financial Reports)
+CREATE TABLE project_reports (
+    id BIGSERIAL PRIMARY KEY,
+    proposal_id BIGINT REFERENCES proposals(id) ON DELETE CASCADE,
+    report_type VARCHAR(50) NOT NULL, -- QUARTERLY_PROGRESS, FINANCIAL
+    period VARCHAR(20) NOT NULL, -- Q1, Q2, Q3, Q4, FINAL
+    file_name VARCHAR(255),
+    file_path VARCHAR(500),
+    remarks VARCHAR(1000),
+    submitted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMP,
+    review_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, APPROVED, RETURNED
+    review_comments VARCHAR(1000)
 );

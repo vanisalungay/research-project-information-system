@@ -88,6 +88,7 @@ import ProponentSubmitRev from '@/views/Proponent/ProponentSubmitRev.vue'
 import ProponentPropDetails from '../views/Proponent/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/Proponent/ProponentDetiailedProp.vue'
 import ProponentNotifications from '../views/Notifications/ProponentNotifications.vue'
+import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
 
 const routes = [
   {
@@ -179,6 +180,11 @@ const routes = [
         path: 'detailed-proposal',
         name: 'ProponentDetiailedProp',
         component: ProponentDetiailedProp
+      },
+      { 
+        path: 'proponent-proposal-monitoring', 
+        name: 'ProponentProposalMonitoring',
+        component: ProponentProposalMonitoring 
       },
 
       // ================= CHANCELLOR =================

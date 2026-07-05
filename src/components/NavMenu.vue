@@ -165,6 +165,13 @@ const allNavItems = [
     path: '/evalCriteria',
     roles: [UserRole.PROPONENT],
   },
+  {
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
+    text: 'Proposal Monitoring',
+    path: '/proponent-proposal-monitoring',
+    roles: [UserRole.PROPONENT],
+  },
 
   // ===========================
   // OVCRIGE
