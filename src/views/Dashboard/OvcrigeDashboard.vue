@@ -24,18 +24,18 @@
       <!-- STATS -->
       <div class="stats">
         <div class="card">
-          <p>Total Submissions</p>
-          <h3>{{ stats.totalSubmissions }}</h3>
-        </div>
-
-        <div class="card">
-          <p>Endorsed Proposals</p>
+          <p>Endorsed from RPS</p>
           <h3>{{ stats.endorsed }}</h3>
         </div>
 
         <div class="card">
-          <p>Pending Review</p>
-          <h3>{{ stats.pending }}</h3>
+          <p>Under REC Review</p>
+          <h3>{{ stats.underReview }}</h3>
+        </div>
+
+        <div class="card">
+          <p>REC Approved</p>
+          <h3>{{ stats.recApproved }}</h3>
         </div>
 
         <div class="card">
@@ -47,8 +47,8 @@
       <div class="content">
         <section class="table-section">
           <div class="table-header">
-            <h3>Latest Submitted Proposals</h3>
-            <button class="view-all" @click="goToSubmitted">View All</button>
+            <h3>Latest Endorsed Proposals</h3>
+            <button class="view-all" @click="goToEndorsed">View All</button>
           </div>
 
           <table>
@@ -170,9 +170,9 @@ const router = useRouter()
 
 // Dashboard data (will come from backend)
 const stats = ref({
-  totalSubmissions: 0,
   endorsed: 0,
-  pending: 0,
+  underReview: 0,
+  recApproved: 0,
   revision: 0
 })
 
@@ -188,17 +188,20 @@ const loadDashboard = async () => {
 
     proposals.value = proposalResponse.data
 
-    stats.value.totalSubmissions = proposals.value.length
     stats.value.endorsed = proposals.value.filter(
       p => p.status === 'ENDORSED'
     ).length
 
-    stats.value.pending = proposals.value.filter(
-      p => p.status === 'SUBMITTED'
+    stats.value.underReview = proposals.value.filter(
+      p => p.status === 'UNDER_REVIEW'
+    ).length
+
+    stats.value.recApproved = proposals.value.filter(
+      p => p.status === 'REC_APPROVED' || p.status === 'OVC_APPROVED'
     ).length
 
     stats.value.revision = proposals.value.filter(
-      p => p.status === 'REVISION'
+      p => p.status === 'REVISION' || p.status === 'REC_REVISION'
     ).length
 
     // Notification endpoint
@@ -224,8 +227,8 @@ const goToNotifications = () => {
   router.push('/notifications')
 }
 
-const goToSubmitted = () => {
-  router.push('/submit-proposals')
+const goToEndorsed = () => {
+  router.push('/endorsed-proposals')
 }
 
 const goToReview = id => {

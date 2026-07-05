@@ -383,41 +383,38 @@ const closeApproveModal = () => {
 const confirmApproval = async () => {
   try {
     loading.value = true
-    await api.put(`/api/proposals/${proposal.value.id}/status`, {
-      status: 'REC_APPROVED'
-    })
+    await api.put(`/api/proposals/${proposal.value.id}/status?status=REC_APPROVED`)
     showApproveModal.value = false
     showSuccessMessage.value = true
+    proposal.value.status = 'REC_APPROVED'
     setTimeout(() => {
       router.push('/rec-dash')
     }, 1500)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to approve proposal.'
+    alert('Failed to approve proposal. Please try again.')
   } finally {
     loading.value = false
   }
 }
 
-const closeSuccessMessage = () => {
-  showSuccessMessage.value = false
-  router.push('/rec-dash')
-}
-
-// navigation buttons
-const goToDetailed = () => {
-  const proposalId = proposal.value.id || route.params.id
-  router.push({ path: '/detailed-proposal', query: { id: proposalId } })
+const goToReturn = () => {
+  router.push({ name: 'RecReturn4Revision', params: { id: proposal.value.id } })
 }
 
 const goToReject = () => {
-  const proposalId = proposal.value.id || route.params.id
-  router.push({ path: '/reject-proposal', query: { id: proposalId } })
+  router.push({ name: 'RecRejectProposal', params: { id: proposal.value.id } })
 }
 
-const goToReturn = () => {
+const goToDetailed = () => {
   const proposalId = proposal.value.id || route.params.id
-  router.push({ path: '/return-proposals', query: { id: proposalId } })
+  router.push({ path: '/rec-prop', query: { id: proposalId } })
+}
+
+const closeSuccessMessage = () => {
+  showSuccessMessage.value = false
+  router.push('/rec-dash')
 }
 </script>
 

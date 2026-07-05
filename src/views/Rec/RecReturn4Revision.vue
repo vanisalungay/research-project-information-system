@@ -264,9 +264,7 @@ const confirmReturn = async () => {
   try {
     loading.value = true
     // Update proposal status to REVISION
-    await api.put(`/api/proposals/${proposal.value.id}/status`, {
-      status: 'REVISION'
-    })
+    await api.put(`/api/proposals/${proposal.value.id}/return-revision`)
     
     showConfirmModal.value = false
     showSuccessMessage.value = true

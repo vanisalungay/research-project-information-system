@@ -1,10 +1,9 @@
 <template>
   <div class="dashboard-content animate-fade">
-    
     <!-- HEADER -->
     <div class="dashboard-header">
       <h2>CHANCELLOR DASHBOARD</h2>
-      <p>Office of the Chancellor - Final Executive Review & Special Orders</p>
+      <p>Office of the Chancellor — Final Approval, Budget Determination & Special Orders (SO)</p>
     </div>
 
     <!-- METRICS CARDS -->
@@ -13,21 +12,19 @@
         <p class="card-title">Pending Final Approval</p>
         <h2>{{ stats.pending }}</h2>
       </div>
-
       <div class="card bg-green">
-        <p class="card-title">Approved Projects</p>
+        <p class="card-title">Approved / Released</p>
         <h2>{{ stats.approved }}</h2>
       </div>
-
       <div class="card bg-blue">
-        <p class="card-title">Special Orders Issued</p>
-        <h2>{{ stats.specialOrders }}</h2>
+        <p class="card-title">Sent to OVCAF (Budget)</p>
+        <h2>{{ stats.sentToOvcaf }}</h2>
       </div>
     </div>
 
     <div v-if="isLoading" class="loading-state">
       <div class="loading-spinner"></div>
-      <p>Loading chancellor records...</p>
+      <p>Loading proposals...</p>
     </div>
 
     <div v-else class="sections-container">
@@ -35,17 +32,22 @@
       <div class="section">
         <h3>Proposals for Final Approval</h3>
 
-        <div v-if="forFinalApproval.length > 0" class="cards-list">
-          <div class="proposal-card" v-for="proposal in forFinalApproval" :key="proposal.id">
-            <div class="proposal-header">
-              <h4>{{ proposal.title }}</h4>
-              <span class="status endorsed">Endorsed</span>
+        <div v-if="forFinalApproval.length > 0" class="table-wrapper">
+          <div class="table-header">
+            <div class="th">Proposal Title</div>
+            <div class="th">Proponent</div>
+            <div class="th">Date Endorsed</div>
+            <div class="th">Status</div>
+            <div class="th">Action</div>
+          </div>
+          <div class="table-row" v-for="p in forFinalApproval" :key="p.id">
+            <div class="td title-cell">{{ p.title }}</div>
+            <div class="td">{{ p.adviser }}</div>
+            <div class="td">{{ p.date }}</div>
+            <div class="td"><span class="status-badge pending">{{ p.status }}</span></div>
+            <div class="td">
+              <button class="action-btn" @click="reviewProposal(p.id)">Review & Approve</button>
             </div>
-
-            <p class="tag">{{ proposal.category }}</p>
-            <p class="meta">Leader: {{ proposal.adviser }} • Submitted: {{ proposal.date }}</p>
-
-            <button class="action-btn" @click="reviewProposal(proposal.id)">Review & Approve</button>
           </div>
         </div>
 
@@ -54,24 +56,33 @@
         </div>
       </div>
 
-      <!-- SECTION 2: Approved Projects -->
+      <!-- SECTION 2: Approved / Sent to OVCAF -->
       <div class="section">
-        <h3>Approved Proposals</h3>
+        <h3>Approved & Budget-Forwarded Proposals</h3>
 
-        <div v-if="approvedProposals.length > 0" class="cards-list">
-          <div class="proposal-card border-left-green" v-for="proposal in approvedProposals" :key="proposal.id">
-            <div class="proposal-header">
-              <h4>{{ proposal.title }}</h4>
-              <span class="status approved">Approved</span>
+        <div v-if="approvedProposals.length > 0" class="table-wrapper">
+          <div class="table-header">
+            <div class="th">Proposal Title</div>
+            <div class="th">Proponent</div>
+            <div class="th">Date</div>
+            <div class="th">Status</div>
+            <div class="th">Action</div>
+          </div>
+          <div class="table-row" v-for="p in approvedProposals" :key="p.id">
+            <div class="td title-cell">{{ p.title }}</div>
+            <div class="td">{{ p.adviser }}</div>
+            <div class="td">{{ p.date }}</div>
+            <div class="td">
+              <span class="status-badge" :class="p.badgeClass">{{ p.status }}</span>
             </div>
-
-            <p class="tag">{{ proposal.category }}</p>
-            <p class="meta">Leader: {{ proposal.adviser }} • {{ proposal.date }}</p>
+            <div class="td">
+              <button class="view-btn" @click="reviewProposal(p.id)">View</button>
+            </div>
           </div>
         </div>
 
-        <div v-else class="empty-state-banner">
-          <p>Approved proposals will be listed here once orders are finalized.</p>
+        <div v-else class="empty-banner">
+          <p>Approved proposals and those forwarded to Finance/OVCAF for budget processing will appear here.</p>
         </div>
       </div>
     </div>
@@ -85,51 +96,46 @@ import api from '@/utils/api'
 
 const router = useRouter()
 
-const stats = ref({
-  pending: 0,
-  approved: 0,
-  specialOrders: 0
-})
-
+const stats = ref({ pending: 0, approved: 0, sentToOvcaf: 0 })
 const forFinalApproval = ref([])
 const approvedProposals = ref([])
 const isLoading = ref(true)
 
-const loadChancellorDashboard = async () => {
+const loadDashboard = async () => {
   try {
     isLoading.value = true
-    const response = await api.get('/api/proposals')
-    const data = response.data || []
 
-    // Calculate executive statistics dynamically
-    stats.value.pending = data.filter(p => p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED').length
-    stats.value.approved = data.filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED').length
-    stats.value.specialOrders = data.filter(p => p.status === 'RELEASED').length
+    // Fetch proposals that are relevant to OC
+    const [pendingRes, approvedRes] = await Promise.all([
+      api.get('/api/proposals?statusIn=REC_APPROVED&statusIn=FOR_OC_APPROVAL&statusIn=OVC_APPROVED'),
+      api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED'),
+    ])
 
-    // Map proposals awaiting OC final action
-    forFinalApproval.value = data
-      .filter(p => p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED')
-      .map(p => ({
-        id: p.id,
-        title: p.projectTitle || 'Untitled Proposal',
-        category: p.fundingProgram || 'Research Grant',
-        adviser: p.projectLeader || 'Unknown Proponent',
-        date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'
-      }))
+    const pendingData = Array.isArray(pendingRes.data) ? pendingRes.data : []
+    const approvedData = Array.isArray(approvedRes.data) ? approvedRes.data : []
 
-    // Map already approved proposals
-    approvedProposals.value = data
-      .filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
-      .map(p => ({
-        id: p.id,
-        title: p.projectTitle || 'Untitled Proposal',
-        category: p.fundingProgram || 'Research Grant',
-        adviser: p.projectLeader || 'Unknown Proponent',
-        date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'
-      }))
+    stats.value.pending = pendingData.length
+    stats.value.sentToOvcaf = approvedData.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
+    stats.value.approved = approvedData.length
 
+    forFinalApproval.value = pendingData.map(p => ({
+      id: p.id,
+      title: p.projectTitle || 'Untitled Proposal',
+      adviser: p.projectLeader || p.proponent?.name || 'Unknown',
+      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      status: p.status,
+    }))
+
+    approvedProposals.value = approvedData.map(p => ({
+      id: p.id,
+      title: p.projectTitle || 'Untitled Proposal',
+      adviser: p.projectLeader || p.proponent?.name || 'Unknown',
+      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      status: p.status,
+      badgeClass: p.status === 'FOR_OVCAF_APPROVAL' ? 'budget' : 'approved',
+    }))
   } catch (error) {
-    console.error("Failed to compile Chancellor statistics:", error)
+    console.error('Failed to load Chancellor dashboard:', error)
   } finally {
     isLoading.value = false
   }
@@ -139,7 +145,7 @@ const reviewProposal = (id) => {
   router.push(`/oc/final-approval/${id}`)
 }
 
-onMounted(loadChancellorDashboard)
+onMounted(loadDashboard)
 </script>
 
 <style scoped>
@@ -151,7 +157,7 @@ onMounted(loadChancellorDashboard)
 }
 
 .dashboard-header {
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid #e2e8f0;
   padding-bottom: 14px;
   margin-bottom: 24px;
   text-align: left;
@@ -160,13 +166,13 @@ onMounted(loadChancellorDashboard)
 .dashboard-header h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-heading, #0f172a);
+  color: #0f172a;
   margin: 0 0 4px 0;
 }
 
 .dashboard-header p {
   font-size: 0.875rem;
-  color: var(--color-text-soft, #64748b);
+  color: #64748b;
   margin: 0;
 }
 
@@ -178,18 +184,18 @@ onMounted(loadChancellorDashboard)
 }
 
 .card {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   text-align: left;
 }
 
 .card-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-soft, #64748b);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0;
@@ -199,11 +205,10 @@ onMounted(loadChancellorDashboard)
   margin-top: 8px;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-heading, #0f172a);
+  color: #0f172a;
   margin-bottom: 0;
 }
 
-/* Background accents */
 .bg-yellow { border-top: 4px solid #f59e0b; }
 .bg-green { border-top: 4px solid #10b981; }
 .bg-blue { border-top: 4px solid #3b82f6; }
@@ -211,134 +216,140 @@ onMounted(loadChancellorDashboard)
 .sections-container {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  text-align: left;
+  gap: 28px;
 }
 
 .section h3 {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--color-heading, #1e293b);
-  margin: 0 0 16px 0;
-  border-left: 4px solid #2452ff;
+  color: #1e293b;
+  margin: 0 0 14px 0;
+  border-left: 4px solid #3b82f6;
   padding-left: 12px;
 }
 
-.cards-list,
-.cards-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* Table */
+.table-wrapper {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.proposal-card {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-left: 4px solid #f59e0b;
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
+  align-items: center;
 }
 
-.border-left-green {
-  border-left-color: #10b981 !important;
-}
-
-.proposal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.proposal-header h4 {
-  font-size: 1rem;
+.table-header {
+  background: #1e293b;
+  color: white;
   font-weight: 600;
-  color: var(--color-heading, #0f172a);
-  margin: 0;
+  font-size: 13px;
 }
 
-.status {
+.th, .td {
+  padding: 13px 14px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.td {
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table-row:last-child .td {
+  border-bottom: none;
+}
+
+.title-cell {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 12px;
 }
 
-.status.endorsed {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.status.approved {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.tag {
-  font-size: 0.75rem;
-  background: var(--color-background-soft, #f1f5f9);
-  color: var(--color-text-soft, #475569);
-  padding: 4px 10px;
-  border-radius: 4px;
-  width: fit-content;
-  margin: 0;
-  font-weight: 500;
+.status-badge.budget {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.meta {
-  font-size: 0.8125rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0;
-}
-
+/* Buttons */
 .action-btn {
-  align-self: flex-start;
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: white !important;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 7px 15px;
+  border-radius: 7px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-  margin-top: 4px;
+  transition: background 0.15s;
 }
 
 .action-btn:hover {
-  background: #1d40cc;
-  border-color: #1d40cc;
+  background: #2563eb;
 }
 
+.view-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 7px 15px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.view-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Loading */
 .loading-state {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 60px;
   gap: 12px;
+  padding: 60px;
 }
 
 .loading-spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid rgba(36, 82, 255, 0.2);
-  border-top-color: #2452ff;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.empty-banner,
-.empty-state-banner {
-  padding: 24px;
-  background: var(--color-background-soft, #f8fafc);
-  border: 1px dashed var(--color-border, #cbd5e1);
+.empty-banner {
+  padding: 32px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
   border-radius: 10px;
-  color: var(--color-text-soft, #64748b);
+  color: #64748b;
   font-size: 0.875rem;
   text-align: center;
 }
@@ -348,17 +359,20 @@ onMounted(loadChancellorDashboard)
 }
 
 .animate-fade {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
   .summary-cards {
     grid-template-columns: 1fr;
+  }
+  .table-header, .table-row {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

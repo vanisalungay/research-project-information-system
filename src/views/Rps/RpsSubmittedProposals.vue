@@ -86,7 +86,7 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=ENDORSED&statusIn=REVISION&statusIn=REJECTED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED')
+        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=REVISION')
         this.proposals = Array.isArray(res.data) ? res.data : []
       } catch (err) {
         console.error(err)

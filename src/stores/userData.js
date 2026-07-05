@@ -108,10 +108,6 @@ export const useUserDataStore = defineStore('userData', () => {
     try {
       isLoading.value = true
 
-      console.log('EMAIL:', email)
-      console.log('PASSWORD:', password)
-      console.log('ROLE:', role)
-
       const response = await api.post(
         '/api/users/login',
         {

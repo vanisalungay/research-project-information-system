@@ -11,49 +11,74 @@
     <!-- STATS METRICS ROW -->
     <div class="stats-container">
       <div class="stat-card">
-        <div class="stat-title">ENDORSED PROPOSALS</div>
-        <div class="stat-number">{{ stats.endorsed }}</div>
+        <div class="stat-title">PROPOSALS FOR REVIEW</div>
+        <div class="stat-number">{{ stats.forReview }}</div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-title">PENDING RELEASE EVALUATIONS</div>
-        <div class="stat-number">{{ stats.pending }}</div>
+        <div class="stat-title">ENDORSED TO OC</div>
+        <div class="stat-number">{{ stats.endorsedToOc }}</div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-title">COMPLETED REVIEWS & RELEASED</div>
+        <div class="stat-title">APPROVED / RELEASED</div>
         <div class="stat-number">{{ stats.completed }}</div>
       </div>
     </div>
 
-    <!-- PROPOSALS TABLE -->
-    <div class="table-title">APPROVED PROPOSALS REQUESTING FUNDS</div>
+    <!-- PROPOSALS FOR REVIEW -->
+    <div class="table-title">PROPOSALS AWAITING OVCAF REVIEW</div>
 
     <div v-if="isLoading" class="loading-state">
       <div class="loading-spinner"></div>
-      <p>Loading funding entries...</p>
+      <p>Loading proposals...</p>
     </div>
 
-    <div v-else-if="proposals.length > 0" class="table-wrapper">
+    <div v-else-if="forReview.length > 0" class="table-wrapper">
       <div class="table-header">
         <div class="th">Proposal Title</div>
         <div class="th">Proponent Name</div>
-        <div class="th">Amount Requested</div>
+        <div class="th">Status</div>
         <div class="th">Action</div>
       </div>
 
-      <div class="table-row" v-for="proposal in proposals" :key="proposal.id">
+      <div class="table-row" v-for="proposal in forReview" :key="proposal.id">
         <div class="td">{{ proposal.title }}</div>
         <div class="td">{{ proposal.proponent }}</div>
-        <div class="td">{{ proposal.amount }}</div>
+        <div class="td"><span class="status-badge pending">{{ proposal.status }}</span></div>
         <div class="td actions-cell">
-          <div class="validate-btn" @click="$router.push('ovcaf-validate')">Validate</div>
+          <div class="review-btn" @click="$router.push({ name: 'OvcafValidate', params: { id: proposal.id } })">Review</div>
         </div>
       </div>
     </div>
 
     <div v-else class="empty-state">
-      <p>No proposals currently requesting funding validation.</p>
+      <p>No proposals awaiting OVCAF review.</p>
+    </div>
+
+    <!-- APPROVED/COMPLETED PROPOSALS -->
+    <div class="table-title" style="margin-top:32px;">APPROVED PROPOSALS REQUESTING FUNDS</div>
+
+    <div v-if="completed.length > 0" class="table-wrapper">
+      <div class="table-header">
+        <div class="th">Proposal Title</div>
+        <div class="th">Proponent Name</div>
+        <div class="th">Status</div>
+        <div class="th">Action</div>
+      </div>
+
+      <div class="table-row" v-for="proposal in completed" :key="proposal.id">
+        <div class="td">{{ proposal.title }}</div>
+        <div class="td">{{ proposal.proponent }}</div>
+        <div class="td"><span class="status-badge approved">{{ proposal.status }}</span></div>
+        <div class="td actions-cell">
+          <div class="validate-btn" @click="$router.push({ name: 'OvcafValidate', params: { id: proposal.id } })">View</div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <p>No approved proposals requesting funding.</p>
     </div>
   </div>
 </template>
@@ -62,10 +87,11 @@
 import { ref, onMounted } from 'vue'
 import api from '@/utils/api'
 
-const proposals = ref([])
+const forReview = ref([])
+const completed = ref([])
 const stats = ref({
-  endorsed: 0,
-  pending: 0,
+  forReview: 0,
+  endorsedToOc: 0,
   completed: 0
 })
 const isLoading = ref(true)
@@ -76,27 +102,35 @@ const loadDashboard = async () => {
     const response = await api.get('/api/proposals')
     const data = response.data || []
 
-    // Calculate dynamic stats
-    stats.value.endorsed = data.filter(
-      p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE'
-    ).length
+    // Proposals awaiting OVCAF review (includes REC-approved awaiting OC budget determination)
+    stats.value.forReview = data.filter(p => p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED').length
 
-    stats.value.pending = data.filter(
-      p => p.status === 'READY_FOR_RELEASE'
-    ).length
+    // Proposals endorsed to OC by OVCAF
+    stats.value.endorsedToOc = data.filter(p => p.status === 'FOR_OC_APPROVAL').length
 
+    // Completed (approved, released)
     stats.value.completed = data.filter(
-      p => p.status === 'RELEASED'
+      p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED'
     ).length
 
-    // Filter proposals to show only approved or ready for release
-    proposals.value = data
-      .filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
+    // List proposals for OVCAF review (all proposals that have passed REC)
+    forReview.value = data
+      .filter(p => p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED')
       .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Project',
         proponent: p.projectLeader || 'Unknown Proponent',
-        amount: p.budget ? '₱ ' + p.budget.toLocaleString() : 'N/A'
+        status: p.status
+      }))
+
+    // List completed/funding proposals
+    completed.value = data
+      .filter(p => p.status === 'FOR_OC_APPROVAL' || p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
+      .map(p => ({
+        id: p.id,
+        title: p.projectTitle || 'Untitled Project',
+        proponent: p.projectLeader || 'Unknown Proponent',
+        status: p.status
       }))
 
   } catch (error) {
@@ -220,7 +254,7 @@ onMounted(loadDashboard)
   padding-left: 16px;
 }
 
-.validate-btn {
+.review-btn, .validate-btn {
   background: #2452ff;
   color: white !important;
   padding: 6px 16px;
@@ -232,8 +266,24 @@ onMounted(loadDashboard)
   transition: background 0.15s ease;
 }
 
-.validate-btn:hover {
+.review-btn:hover, .validate-btn:hover {
   background: #1d40cc;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .loading-state {

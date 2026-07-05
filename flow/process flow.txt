@@ -1,0 +1,42 @@
+FLOW
+1. Faculty Proponent
+● Receives the official Call for Proposals.
+● Prepares the proposal using the required format and guidelines.
+● Submits the proposal to RPS for review.
+2. RPS (Research and Publication Services)
+● Disseminates the Call for Proposals to faculty members.
+● Reviews the submitted proposal for completeness and compliance.
+● If the proposal is incomplete or requires revisions, it is returned to the Faculty
+Proponent for revision and resubmission.
+● If the proposal is complete, it is endorsed to OVCRIGE for evaluation.
+3. OVCRIGE
+● Receives the endorsed proposal from RPS.
+● Coordinates the evaluation process through the REC.
+4. REC (Research Ethics Committee/Research Evaluation Committee)
+● Conducts the technical and merit-based evaluation of the proposal.
+● If the proposal is rejected or returned for revision, the decision is forwarded to
+OVCRIGE.
+● If the proposal passes the evaluation, the recommendation is forwarded to OVCRIGE.
+OVCRIGE
+● Receives the REC's evaluation result.
+● Notifies the RPS of the decision through the OVCRIGE Secretariat.
+● RPS notifies the Proponent about the decision.
+● If the proposal is rejected or returned for revision, the Faculty Proponent revises and
+resubmits it to RPS.
+● If the proposal is approved, forwards it to the Office of the Chancellor for final
+approval.
+Office of the Chancellor
+● Reviews the endorsed proposal.
+● Grants the final approval for projects recommended for implementation. Grants SO
+(Special Order)
+● Determines whether the project requires a budget.
+○ If No: The Faculty Proponent proceeds with project implementation.
+○ If Yes: The proposal is forwarded to the Finance Office/OVCAF.
+Finance Office / OVCAF
+● Endorses and authorizes the budget for implementation.
+● Releases the approved project funds.
+Faculty Proponent
+● Implements the approved project.
+● Submits quarterly progress and financial reports.
+RPS
+● Monitors project implem

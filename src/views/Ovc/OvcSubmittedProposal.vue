@@ -2,8 +2,8 @@
   <div class="submitted-page">
     <!-- PAGE TITLE -->
     <div class="page-header">
-      <h2>Submitted Proposals</h2>
-      <p>Review and manage all proposal submissions</p>
+      <h2>Endorsed Proposals (from RPS)</h2>
+      <p>Proposals endorsed by RPS for OVCRIGE review and REC coordination</p>
     </div>
 
     <!-- FILTER BAR -->
@@ -12,6 +12,7 @@
       <select v-model="statusFilter">
         <option value="ALL">All Status</option>
         <option value="ENDORSED">Endorsed</option>
+        <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
         <option value="FOR_OC_APPROVAL">For OC Approval</option>
       </select>
     </div>
@@ -79,7 +80,7 @@ const loadProposals = async () => {
   error.value = null
   try {
     // OVCRIGE sees proposals that are ENDORSED (from RPS) and FOR_OC_APPROVAL (after REC)
-    const res = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=FOR_OC_APPROVAL&statusIn=REC_APPROVED&statusIn=OVC_APPROVED')
+    const res = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=OVC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL')
     proposals.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
     console.error(err)

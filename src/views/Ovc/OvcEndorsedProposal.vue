@@ -1,7 +1,7 @@
 <template>
   <div class="endorsed-page">
-    <h2>Endorsed Proposals (After REC)</h2>
-    <p class="subtitle">Proposals approved by REC that are ready to be forwarded to the Chancellor (OC) for final approval</p>
+    <h2>Proposals for OC Endorsement</h2>
+    <p class="subtitle">Proposals approved by REC that OVCRIGE must forward to the Office of the Chancellor (OC) for final approval per the process flow</p>
     <input class="search" v-model="search" placeholder="Search endorsed proposals..." />
 
     <div class="table-card">

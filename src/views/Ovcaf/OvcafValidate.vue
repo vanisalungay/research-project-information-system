@@ -2,7 +2,8 @@
   <div class="page-wrapper">
     <!-- HEADER TITLE -->
     <div class="header-banner">
-      <h1>FUND REQUEST VALIDATION</h1>
+      <h1 v-if="proposal.status === 'FOR_OVCAF_APPROVAL'">PROPOSAL REVIEW & ENDORSEMENT</h1>
+      <h1 v-else>FUND REQUEST VALIDATION</h1>
     </div>
 
     <!-- Loading -->
@@ -19,9 +20,16 @@
     <template v-else-if="proposal.id">
       <!-- ACTION BUTTONS -->
       <div class="action-buttons">
-        <button class="btn-yellow" @click="approveEndorse" :disabled="actionLoading">
+        <!-- Approval Chain: Endorse to OC -->
+        <button v-if="proposal.status === 'FOR_OVCAF_APPROVAL'" class="btn-yellow" @click="endorseToOc" :disabled="actionLoading">
+          {{ actionLoading ? 'Processing...' : 'Endorse to Chancellor (OC) for Final Approval' }}
+        </button>
+
+        <!-- Budget Processing: Approve & Endorse to RII -->
+        <button v-if="canProcessBudget" class="btn-yellow" @click="approveEndorse" :disabled="actionLoading">
           {{ actionLoading ? 'Processing...' : 'Approve & Endorse to RII' }}
         </button>
+
         <button class="btn-yellow" @click="returnProponent" :disabled="actionLoading">
           {{ actionLoading ? 'Processing...' : 'Return to Proponent' }}
         </button>
@@ -101,9 +109,10 @@
     <!-- APPROVE CONFIRMATION MODAL -->
     <div class="overlay" v-if="showApproveConfirm">
       <div class="confirm-box">
-        <p class="confirm-text">Are you sure you want to approve this fund request and endorse it to RII for release?</p>
+        <p class="confirm-text" v-if="approvalType === 'oc'">Are you sure you want to endorse this proposal to the Chancellor's Office for final approval?</p>
+        <p class="confirm-text" v-else>Are you sure you want to approve this fund request and endorse it to RII for release?</p>
         <div class="confirm-actions">
-          <button class="btn-confirm" @click="approveConfirmed">CONFIRM</button>
+          <button class="btn-confirm" @click="confirmApprove">CONFIRM</button>
           <button class="btn-cancel" @click="showApproveConfirm = false">CANCEL</button>
         </div>
       </div>
@@ -117,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 
@@ -127,12 +136,17 @@ const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
 const actionLoading = ref(false)
+const approvalType = ref('budget')
 
 const showRejectModal = ref(false)
 const rejectReason = ref('')
 const showApproveConfirm = ref(false)
 const showSuccess = ref(false)
 const successMessage = ref('')
+
+const canProcessBudget = computed(() => {
+  return proposal.value.status === 'APPROVED' || proposal.value.status === 'READY_FOR_RELEASE'
+})
 
 const loadProposal = async () => {
   loading.value = true
@@ -155,21 +169,33 @@ const loadProposal = async () => {
 
 onMounted(loadProposal)
 
-const approveEndorse = () => {
+const endorseToOc = () => {
+  approvalType.value = 'oc'
   showApproveConfirm.value = true
 }
 
-const approveConfirmed = async () => {
+const approveEndorse = () => {
+  approvalType.value = 'budget'
+  showApproveConfirm.value = true
+}
+
+const confirmApprove = async () => {
   showApproveConfirm.value = false
   actionLoading.value = true
   try {
     const proposalId = route.params.id
-    await api.put(`/api/proposals/${proposalId}/status?status=READY_FOR_RELEASE`)
-    successMessage.value = 'Fund request approved and endorsed to RII.'
+    if (approvalType.value === 'oc') {
+      await api.put(`/api/proposals/${proposalId}/forward-to-oc`)
+      successMessage.value = 'Proposal has been endorsed to the Chancellor (OC) for final approval.'
+      proposal.value.status = 'FOR_OC_APPROVAL'
+    } else {
+      await api.put(`/api/proposals/${proposalId}/status?status=READY_FOR_RELEASE`)
+      successMessage.value = 'Fund request approved and endorsed to RII.'
+      proposal.value.status = 'READY_FOR_RELEASE'
+    }
     showSuccess.value = true
-    proposal.value.status = 'READY_FOR_RELEASE'
   } catch (err) {
-    successMessage.value = 'Failed to approve fund request. Please try again.'
+    successMessage.value = 'Failed to process request. Please try again.'
     showSuccess.value = true
   } finally {
     actionLoading.value = false
@@ -250,6 +276,7 @@ const downloadProject = () => {
   justify-content: center;
   gap: 20px;
   box-sizing: border-box;
+  flex-wrap: wrap;
 }
 .content-area {
   padding: 20px 40px;

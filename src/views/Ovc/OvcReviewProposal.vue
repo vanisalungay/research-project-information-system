@@ -49,8 +49,8 @@
           <button v-if="proposal.status === 'ENDORSED'" class="btn primary" @click="forwardToRec" :disabled="actionLoading">
             {{ actionLoading ? 'Processing...' : 'Forward to REC for Evaluation' }}
           </button>
-          <button v-if="proposal.status === 'REC_APPROVED' || proposal.status === 'OVC_APPROVED'" class="btn primary" @click="forwardToOc" :disabled="actionLoading">
-            {{ actionLoading ? 'Processing...' : 'Forward to Chancellor (OC) for Final Approval' }}
+          <button v-if="proposal.status === 'REC_APPROVED' || proposal.status === 'OVC_APPROVED'" class="btn primary" @click="forwardToOvcaf" :disabled="actionLoading">
+            {{ actionLoading ? 'Processing...' : 'Forward to OVCAF for Review & Endorsement' }}
           </button>
           <button class="btn warning" @click="returnForRevision" :disabled="actionLoading">
             {{ actionLoading ? 'Processing...' : 'Return for Revision' }}
@@ -73,10 +73,10 @@
                 <small>{{ proposal.createdAt?.substring(0,10) || 'N/A' }}</small>
               </div>
             </li>
-            <li v-if="proposal.status === 'ENDORSED' || proposal.status !== 'SUBMITTED'">
+            <li v-if="proposal.status !== 'SUBMITTED'">
               <span class="dot"></span>
               <div>
-                <strong>Endorsed to OVCRIGE</strong>
+                <strong>{{ proposal.status === 'UNDER_REVIEW' ? 'Forwarded to REC' : proposal.status === 'REC_APPROVED' ? 'REC Approved' : proposal.status === 'FOR_OVCAF_APPROVAL' ? 'Forwarded to OVCAF' : proposal.status === 'FOR_OC_APPROVAL' ? 'Forwarded to OC' : 'Status Updated' }}</strong>
                 <small>{{ proposal.updatedAt?.substring(0,10) || 'N/A' }}</small>
               </div>
             </li>
@@ -170,6 +170,22 @@ const forwardToRec = async () => {
     successMessage.value = 'Proposal has been forwarded to REC for evaluation.'
     showSuccess.value = true
     proposal.value.status = 'UNDER_REVIEW'
+  } catch (err) {
+    errorMessage.value = 'Failed to forward proposal. Please try again.'
+    showError.value = true
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const forwardToOvcaf = async () => {
+  actionLoading.value = true
+  try {
+    const proposalId = route.params.id
+    await api.put(`/api/proposals/${proposalId}/forward-to-ovcaf`)
+    successMessage.value = 'Proposal has been forwarded to OVCAF for review and endorsement.'
+    showSuccess.value = true
+    proposal.value.status = 'FOR_OVCAF_APPROVAL'
   } catch (err) {
     errorMessage.value = 'Failed to forward proposal. Please try again.'
     showError.value = true

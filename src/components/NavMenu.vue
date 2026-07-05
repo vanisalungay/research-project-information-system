@@ -185,13 +185,6 @@ const allNavItems = [
   //   roles: [UserRole.OVCRIGE],
   // },
   {
-    icon: submittedIcon,
-    activeIcon: submittedActiveIcon,
-    text: 'Submitted Proposals',
-    path: '/submit-proposals',
-    roles: [UserRole.OVCRIGE],
-  },
-  {
     icon: EndorseIcon,
     activeIcon: EndorseActiveIcon,
     text: 'Endorsed Proposals',
@@ -216,6 +209,13 @@ const allNavItems = [
   //   path: '/ovcaf-dash',
   //   roles: [UserRole.OVCAF],
   // },
+  {
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
+    text: 'Proposals for Review',
+    path: '/ovcaf-dash',
+    roles: [UserRole.OVCAF],
+  },
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,

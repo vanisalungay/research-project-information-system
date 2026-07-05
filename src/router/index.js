@@ -161,8 +161,10 @@ const routes = [
       { path: 'review-form/:id', name: 'RecReviewForm', component: RecReviewForm },
       { path: 'meeting-details', component: RecMeetingDetails },
       { path: 'meeting-details/:id', name: 'RecMeetingDetails', component: RecMeetingDetails },
-      { path: 'reject-proposal', component: RecRejectProposal },
-      { path: 'return-proposals', component: RecReturn4Revision },
+      { path: 'reject-proposal', name: 'RecRejectProposal', component: RecRejectProposal },
+      { path: 'reject-proposal/:id', name: 'RecRejectProposalWithId', component: RecRejectProposal },
+      { path: 'return-proposals', name: 'RecReturn4Revision', component: RecReturn4Revision },
+      { path: 'return-proposals/:id', name: 'RecReturn4RevisionWithId', component: RecReturn4Revision },
       { path: 'rec-notif', component: NotificationPage },
       { path: 'rec-prop', component: RecDetailedProp },
 

@@ -182,9 +182,7 @@ const cancelReject = () => {
 const confirmReject = async () => {
   try {
     loading.value = true
-    await api.put(`/api/proposals/${proposal.value.id}/status`, {
-      status: 'REC_REJECTED'
-    })
+    await api.put(`/api/proposals/${proposal.value.id}/reject`)
     showRejectModal.value = false
     showRejectSuccess.value = true
     
