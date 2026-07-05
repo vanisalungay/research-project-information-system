@@ -90,13 +90,13 @@ const allNavItems = [
     path: '/rpsstaff-notification',
     roles: [UserRole.RPS_STAFF],
   },
-  {
-    icon: submittedIcon,
-    activeIcon: submittedActiveIcon,
-    text: 'Submitted Proposals',
-    path: '/rps-subproposal',
-    roles: [UserRole.RPS_STAFF],
-  },
+  // {
+  //   icon: submittedIcon,
+  //   activeIcon: submittedActiveIcon,
+  //   text: 'Submitted Proposals',
+  //   path: '/rps-subproposal',
+  //   roles: [UserRole.RPS_STAFF],
+  // },
   {
     icon: EndorseIcon,
     activeIcon: EndorseActiveIcon,
@@ -114,8 +114,8 @@ const allNavItems = [
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
-    text: 'Funded Proposal',
-    path: '/funded-prop',
+    text: 'Proposal Monitoring',
+    path: '/rps-proposal-monitoring',
     roles: [UserRole.RPS_STAFF],
   },
 
@@ -168,13 +168,13 @@ const allNavItems = [
     path: '/home',
     roles: [UserRole.OVCRIGE],
   },
-  {
-    icon: submittedIcon,
-    activeIcon: submittedActiveIcon,
-    text: 'Submitted Proposals',
-    path: '/submit-proposals',
-    roles: [UserRole.OVCRIGE],
-  },
+  // {
+  //   icon: submittedIcon,
+  //   activeIcon: submittedActiveIcon,
+  //   text: 'Submitted Proposals',
+  //   path: '/submit-proposals',
+  //   roles: [UserRole.OVCRIGE],
+  // },
   {
     icon: EndorseIcon,
     activeIcon: EndorseActiveIcon,
@@ -197,16 +197,28 @@ const allNavItems = [
     icon: dashboardIcon,
     activeIcon: dashboardActiveIcon,
     text: 'Dashboard',
-    path: '/ovcaf-dash',
+    path: '/ovcaf/dash',
     roles: [UserRole.OVCAF],
   },
+
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
-    text: 'Notifications',
-    path: '/ovcaf-notification',
+    text: 'Proposal Inbox',
+    path: '/ovcaf/inbox',
     roles: [UserRole.OVCAF],
   },
+
+  {
+    icon: notificationIcon,
+    activeIcon: notificationActiveIcon,
+    text: 'Financial Reports',
+    path: '/ovcaf/reports',
+    roles: [UserRole.OVCAF],
+  },
+
+
+
 
   // ===========================
   // REC

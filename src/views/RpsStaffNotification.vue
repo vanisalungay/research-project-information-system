@@ -157,8 +157,6 @@
         🔔
       </div>
 
-      <h3>No Notifications Found</h3>
-
       <p>
         Proposal submissions,
         endorsements,

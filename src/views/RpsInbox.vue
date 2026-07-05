@@ -134,7 +134,8 @@ export default {
 
       // Temporary data
       // Ilisi lang ni ug API response kung naa na ang backend
-      proposals: [],
+      proposals: [
+      ],
     };
   },
 

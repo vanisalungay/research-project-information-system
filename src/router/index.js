@@ -47,9 +47,10 @@ import RpsProposalMonitoringDetails from '../views/RpsProposalMonitoringDetails.
 import RpsProposalMonitoring from '@/views/RpsProposalMonitoring.vue'
 
 /* OVCAF */
-import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
-import OvcafValidate from '../views/OvcafValidate.vue'
-import OvcafNotification from '../views/OvcafNotification.vue'
+import OvcafFinancialValidation from '../views/OvcafFinancialValidation.vue'
+import OvcafProposalInbox from '../views/OvcafProposalInbox.vue'
+import OvcafProposalDetails from '../views/OvcafProposalDetails.vue'
+import OvcafReports from '../views/OvcafReports.vue'
 
 /* OC */
 import OCDashboard from '../views/Dashboard/OCDashboard.vue'
@@ -86,6 +87,8 @@ import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
 
 /* Shared */
 import FundViewProp from '../views/FundViewProp.vue'
+import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
+
 
 const routes = [
   {
@@ -135,9 +138,13 @@ const routes = [
       { path: 'fundviewprop', component: FundViewProp },
 
       // ================= OVCAF =================
-      { path: 'ovcaf-dash', component: OvcafDashboard },
-      { path: 'ovcaf-validate', component: OvcafValidate },
-      { path: 'ovcaf-notification', component: OvcafNotification },
+      { path: '/ovcaf/dash', component: OvcafDashboard},
+      { path: '/ovcaf/inbox', name: 'ProposalInbox', component: OvcafProposalInbox, }, 
+      { path: '/ovcaf/proposals/:id', name: 'ProposalDetails', component: OvcafProposalDetails, },
+      { path: '/ovcaf/validate/:id', name: 'FinancialValidation', component: OvcafFinancialValidation, },
+      { path: '/ovcaf/reports', name: 'Reports', component: OvcafReports, },
+
+
 
       // ================= OVCRIGE =================
       { path: 'review-prop', component: OvcReviewProposal },

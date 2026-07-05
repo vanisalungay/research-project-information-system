@@ -122,48 +122,6 @@
           </p>
         </div>
       </div>
-
-      <!-- Right Side -->
-      <div class="side">
-        <!-- Recent Activity -->
-        <div class="panel">
-          <h3>Recent Activity</h3>
-
-          <ul class="activity">
-            <li>
-              <strong>New proposal submitted:</strong>
-              "Community Development Program 2024"
-              <span>2 hours ago</span>
-            </li>
-          </ul>
-
-          <button
-            class="view-activity"
-            @click="$router.push('rpsstaff-notification')"
-          >
-            View All Activity
-          </button>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="panel">
-          <h3>Quick Actions</h3>
-
-          <button
-            class="primary"
-            @click="$router.push('rps-subproposal')"
-          >
-            Review Proposals
-          </button>
-
-          <button
-            class="secondary"
-            @click="$router.push('funded-prop')"
-          >
-            Manage Funding
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>

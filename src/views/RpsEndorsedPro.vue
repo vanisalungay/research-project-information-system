@@ -1,10 +1,6 @@
 <template>
   <div class="page">
     <!-- Header -->
-    <h2>RII Endorsed Proposals</h2>
-    <p class="subtitle">
-      Proposals endorsed by RPS and forwarded to OVCRIGE
-    </p>
 
     <div class="page-header">
       <div>
@@ -99,32 +95,7 @@ export default {
     return {
       search: "",
 
-      proposals: [
-        {
-          id: 1,
-          code: "RII-001",
-          title: "Educational Infrastructure Project",
-          leader: "Dr. Cat Moon",
-          reviewerScore: 95,
-          status: "Waiting for OVCRIGE Endorsement"
-        },
-        {
-          id: 2,
-          code: "RII-002",
-          title: "Technology Innovation Initiative",
-          leader: "Dr. Blair Gwen",
-          reviewerScore: 91,
-          status: "Approved by OVCRIGE"
-        },
-        {
-          id: 3,
-          code: "RII-003",
-          title: "Marine Biodiversity Assessment",
-          leader: "Dr. John Cruz",
-          reviewerScore: 89,
-          status: "Returned by OVCRIGE"
-        }
-      ]
+      proposals: []
     }
   },
 
@@ -142,7 +113,7 @@ export default {
 
   methods: {
     viewProposal(proposal) {
-      this.$router.push("/rii-endorse")
+      this.$router.push("/rps-endorse")
     },
 
     endorseProposal(proposal) {
