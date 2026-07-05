@@ -139,6 +139,9 @@ public class Proposal {
     @Column(name = "reviewed_by_position")
     private String reviewedByPosition;
 
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

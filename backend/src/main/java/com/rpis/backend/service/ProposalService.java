@@ -239,6 +239,19 @@ public class ProposalService {
     }
 
     @Transactional
+    public Proposal returnForRevision(Long id, String remarks) {
+        Proposal proposal = getProposalById(id);
+        proposal.setStatus("RPS_RETURNED");
+        proposal.setRemarks(remarks);
+        proposal = proposalRepository.save(proposal);
+
+        // Notify proponent about the revision request
+        notifySubscribedRoles(proposal, null);
+
+        return proposal;
+    }
+
+    @Transactional
     public void deleteProposal(Long id) {
         Proposal proposal = getProposalById(id);
         proposalRepository.delete(proposal);
@@ -333,6 +346,8 @@ public class ProposalService {
                 // REC returned for revision -> notify proponent to revise
                 case "REC_REVISION":
                 case "REVISION":
+                // RPS returned for revision -> notify proponent to revise
+                case "RPS_RETURNED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
                             user.getId(),

@@ -65,6 +65,7 @@ CREATE TABLE proposals (
     status VARCHAR(50) DEFAULT 'DRAFT',
     reviewed_by VARCHAR(255),
     reviewed_by_position VARCHAR(50),
+    remarks TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

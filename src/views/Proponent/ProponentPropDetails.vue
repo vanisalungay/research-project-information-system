@@ -317,7 +317,7 @@ function editProposal() {
   router.push(`/submit-revision/${proposal.value.id}`)
 }
 
-function viewDetails() {
+async function viewDetails() {
   // Use the fetched proposal ID from the data
   const proposalId = proposal.value.id || route.params.id || route.query.id
   if (proposalId) {

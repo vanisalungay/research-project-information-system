@@ -114,7 +114,7 @@
             <button class="approve-btn" @click="endorseProposal" :disabled="actionLoading">
               {{ actionLoading ? 'Processing...' : '✓ Endorse to OVCRIGE' }}
             </button>
-            <button class="return-btn" @click="showReturnOptions = !showReturnOptions" :disabled="actionLoading">
+            <button class="return-btn" @click="returnForRevision" :disabled="actionLoading">
               ⟳ Return for Revision
             </button>
             <button class="reject-btn" @click="rejectProposal" :disabled="actionLoading">
@@ -122,9 +122,6 @@
             </button>
           </div>
 
-          <div v-if="showReturnOptions" class="return-options">
-            <p><strong>Note:</strong> The proposal will be returned to the proponent for revision.</p>
-          </div>
         </div>
       </aside>
     </div>
@@ -271,10 +268,12 @@ export default {
       if (!confirmed) return
       this.actionLoading = true
       try {
-        await api.put(`/api/proposals/${this.$route.params.id}/return-revision`)
+        await api.put(`/api/proposals/${this.$route.params.id}/return-revision`, null, {
+          params: { remarks: this.remarks.trim() }
+        })
         this.successMessage = 'Proposal returned to proponent for revision.'
         this.showSuccess = true
-        this.proposal.status = 'REVISION'
+        this.proposal.status = 'RPS_RETURNED'
       } catch (err) {
         console.error(err)
         this.errorMessage = 'Failed to return proposal. Please try again.'
@@ -339,6 +338,7 @@ export default {
 .status-badge.submitted { background: #f3e8ff; color: #6b21a8; }
 .status-badge.endorsed { background: #d9f5e5; color: #1e7f4f; }
 .status-badge.revision { background: #e0e7ff; color: #3730a3; }
+.status-badge.rps_returned { background: #fef3c7; color: #92400e; }
 textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical; }
 .review-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .approve-btn, .return-btn, .reject-btn { padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }

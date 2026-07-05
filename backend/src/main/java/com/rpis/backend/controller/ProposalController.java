@@ -95,8 +95,10 @@ public class ProposalController {
     }
 
     @PutMapping("/{id}/return-revision")
-    public ResponseEntity<Proposal> returnForRevision(@PathVariable Long id) {
-        Proposal updated = proposalService.updateProposalStatus(id, "REVISION");
+    public ResponseEntity<Proposal> returnForRevision(
+            @PathVariable Long id,
+            @RequestParam(required = false) String remarks) {
+        Proposal updated = proposalService.returnForRevision(id, remarks);
         return ResponseEntity.ok(updated);
     }
 

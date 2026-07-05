@@ -100,13 +100,14 @@ async function fetchRevisions() {
         const isMine = (p.proponent && p.proponent.id === user.id) || 
                        (p.projectLeader && p.projectLeader.toLowerCase().includes((user.name || '').toLowerCase()))
                        
-        const isRevision = p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED'
+        const isRevision = p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED'
         
         return isMine && isRevision
       }).map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Proposal',
-        feedback: 'Feedback provided by reviewer.', // This would ideally come from the reviews endpoint
+        code: p.id,
+        comment: p.remarks || 'No specific comments provided. Please review your proposal and make necessary revisions.',
         deadline: 'Pending Action',
         status: p.status
       }))
