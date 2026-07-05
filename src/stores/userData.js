@@ -125,7 +125,15 @@ export const useUserDataStore = defineStore('userData', () => {
 
       return false
     } catch (error) {
-      console.warn("Backend login failed or server offline. Checking local mock and offline users database...")
+      // If the backend responded with a proper HTTP error (401, 403, etc.),
+      // re-throw it immediately — don't fall back to mock accounts.
+      if (error.response) {
+        console.error('Backend login failed:', error.response.status, error.response.data)
+        throw new Error(error.response?.data || 'Invalid email, password, or role.')
+      }
+
+      // If no response at all, the server is unreachable — fall back to offline/local accounts
+      console.warn("Backend server unreachable. Checking local mock and offline users database...")
 
       // 1. Check offline registered users in localStorage
       const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
@@ -155,13 +163,12 @@ export const useUserDataStore = defineStore('userData', () => {
         tempUser.email.toLowerCase() === email.toLowerCase() &&
         tempUser.password === password
       ) {
-        console.log("Logged in using local mock credentials.")
+        console.log("Logged in using local mock credentials (server offline).")
         setUser(tempUser)
         return true
       }
 
-      console.error(error)
-      throw new Error(error.response?.data || 'Invalid email, password, or role.')
+      throw new Error('Server unreachable and no matching local account found.')
     } finally {
       isLoading.value = false
     }
