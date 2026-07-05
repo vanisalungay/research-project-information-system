@@ -1,17 +1,9 @@
 <template>
   <nav>
     <ul>
-      <li
-        v-for="item in navItems"
-        :key="item.path"
-        :class="{ active: isSelected(item.path) }"
-      >
+      <li v-for="item in navItems" :key="item.path" :class="{ active: isSelected(item.path) }">
         <router-link :to="item.path">
-          <img
-            class="nav-icon"
-            :src="isSelected(item.path) ? item.activeIcon : item.icon"
-            alt=""
-          />
+          <img class="nav-icon" :src="isSelected(item.path) ? item.activeIcon : item.icon" alt="" />
           {{ item.text }}
         </router-link>
       </li>
@@ -67,12 +59,12 @@ const allNavItems = [
   // },
 
   {
-  icon: submittedIcon,
-  activeIcon: submittedActiveIcon,
-  text: 'User Accounts',
-  path: '/user-accounts',
-  roles: [UserRole.RPS_ADMIN],
-},
+    icon: submittedIcon,
+    activeIcon: submittedActiveIcon,
+    text: 'User Accounts',
+    path: '/user-accounts',
+    roles: [UserRole.RPS_ADMIN],
+  },
 
   {
     icon: notificationIcon,
@@ -130,8 +122,8 @@ const allNavItems = [
   {
     icon: notificationIcon,
     activeIcon: notificationActiveIcon,
-    text: 'Funded Proposal',
-    path: '/funded-prop',
+    text: 'Proposal Monitoring',
+    path: '/rps-proposal-monitoring',
     roles: [UserRole.RPS_STAFF],
   },
 

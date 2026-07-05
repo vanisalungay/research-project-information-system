@@ -44,7 +44,6 @@ import RpsInbox from '@/views/Rps/RpsInbox.vue'
 import RpsEndPro from '@/views/Rps/RpsEndPro.vue'
 import RpsReturn4Rev from '@/views/Rps/RpsReturn4Rev.vue'
 import RpsSubmittedProposals from '@/views/Rps/RpsSubmittedProposals.vue'
-import RpsFundedPro from '@/views/Rps/RpsFundedPro.vue'
 import RpsEndorsedPro from '@/views/Rps/RpsEndorsedPro.vue'
 import RpsProposalDetails from '../views/Rps/RpsProposalDetails.vue'
 import RpsNotificationDetails from '../views/Notifications/RpsNotificationDetails.vue'
@@ -134,7 +133,6 @@ const routes = [
       { path: 'rps-return4rev', component: RpsReturn4Rev },
       { path: 'rps-subproposal', component: RpsSubmittedProposals },
       { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
-      { path: 'funded-prop', component: RpsFundedPro },
 
       { path: 'fundviewprop', component: FundViewProp },
 
