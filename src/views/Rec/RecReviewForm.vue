@@ -318,6 +318,14 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -325,6 +333,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 const route = useRoute()
@@ -393,7 +405,7 @@ const confirmApproval = async () => {
   } catch (err) {
     console.error(err)
     error.value = 'Failed to approve proposal.'
-    alert('Failed to approve proposal. Please try again.')
+    await showAlert('Failed to approve proposal. Please try again.', { type: 'error', title: 'Approval Failed' })
   } finally {
     loading.value = false
   }

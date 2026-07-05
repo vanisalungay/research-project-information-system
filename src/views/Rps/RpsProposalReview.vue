@@ -144,14 +144,30 @@
         <button class="btn-primary" @click="showError = false">OK</button>
       </div>
     </div>
+
+    <!-- Confirm Dialog -->
+    <ConfirmDialog
+      v-if="dialog.show"
+      :type="dialog.type"
+      :variant="dialog.variant"
+      :title="dialog.title"
+      :message="dialog.message"
+      :confirmText="dialog.confirmText"
+      :cancelText="dialog.cancelText"
+      @confirm="dialog.onConfirm"
+      @cancel="dialog.onCancel"
+      @close="dialog.show = false"
+    />
   </div>
 </template>
 
 <script>
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 export default {
   name: 'RpsProposalReview',
+  components: { ConfirmDialog },
   data() {
     return {
       proposal: {},
@@ -164,12 +180,42 @@ export default {
       showError: false,
       successMessage: '',
       errorMessage: '',
+      dialog: {
+        show: false,
+        type: 'info',
+        variant: 'alert',
+        title: '',
+        message: '',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        onConfirm: () => {},
+        onCancel: () => {},
+      },
     }
   },
   async mounted() {
     await this.fetchProposal()
   },
   methods: {
+    _showDialog(message, options = {}) {
+      return new Promise((resolve) => {
+        this.dialog.type = options.type || 'info'
+        this.dialog.variant = options.variant || 'alert'
+        this.dialog.title = options.title || 'Notice'
+        this.dialog.message = message
+        this.dialog.confirmText = options.confirmText || 'OK'
+        this.dialog.cancelText = options.cancelText || 'Cancel'
+        this.dialog.onConfirm = () => { this.dialog.show = false; resolve(true) }
+        this.dialog.onCancel = () => { this.dialog.show = false; resolve(false) }
+        this.dialog.show = true
+      })
+    },
+    _showAlert(message, options = {}) {
+      return this._showDialog(message, { ...options, variant: 'alert' })
+    },
+    _showConfirm(message, options = {}) {
+      return this._showDialog(message, { ...options, variant: 'confirm' })
+    },
     async fetchProposal() {
       this.loading = true
       this.error = null
@@ -192,7 +238,12 @@ export default {
       this.$router.push('/rps-subproposal')
     },
     async endorseProposal() {
-      if (!confirm('Endorse this proposal to OVCRIGE?')) return
+      const confirmed = await this._showConfirm('Endorse this proposal to OVCRIGE?', {
+        title: 'Endorse Proposal',
+        type: 'info',
+        confirmText: 'Endorse'
+      })
+      if (!confirmed) return
       this.actionLoading = true
       try {
         await api.put(`/api/proposals/${this.$route.params.id}/endorse`)
@@ -209,10 +260,15 @@ export default {
     },
     async returnForRevision() {
       if (!this.remarks.trim()) {
-        alert('Please provide remarks before returning for revision.')
+        await this._showAlert('Please provide remarks before returning for revision.', { type: 'warning', title: 'Remarks Required' })
         return
       }
-      if (!confirm('Return this proposal for revision?')) return
+      const confirmed = await this._showConfirm('Return this proposal for revision?', {
+        title: 'Return for Revision',
+        type: 'warning',
+        confirmText: 'Return'
+      })
+      if (!confirmed) return
       this.actionLoading = true
       try {
         await api.put(`/api/proposals/${this.$route.params.id}/return-revision`)
@@ -228,7 +284,12 @@ export default {
       }
     },
     async rejectProposal() {
-      if (!confirm('Are you sure you want to reject this proposal?')) return
+      const confirmed = await this._showConfirm('Are you sure you want to reject this proposal?', {
+        title: 'Reject Proposal',
+        type: 'danger',
+        confirmText: 'Reject'
+      })
+      if (!confirmed) return
       this.actionLoading = true
       try {
         await api.put(`/api/proposals/${this.$route.params.id}/reject`)
@@ -243,8 +304,8 @@ export default {
         this.actionLoading = false
       }
     },
-    downloadProposal() {
-      alert('Download feature coming soon.')
+    async downloadProposal() {
+      await this._showAlert('Download feature coming soon.', { type: 'info', title: 'Coming Soon' })
     },
   },
 }

@@ -88,12 +88,24 @@
         </p>
       </form>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 
@@ -104,13 +116,13 @@ const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
   if (password.value !== confirmPassword.value) {
-    alert('Passwords do not match')
+    await showAlert('Passwords do not match', { type: 'error', title: 'Password Mismatch' })
     return
   }
 
-  alert('Proponent account created successfully!')
+  await showAlert('Proponent account created successfully!', { type: 'success', title: 'Account Created' })
   router.push('/proponent-login')
 }
 </script>

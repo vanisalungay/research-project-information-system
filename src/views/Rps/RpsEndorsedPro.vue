@@ -88,16 +88,36 @@
         </tbody>
       </table>
     </div>
+
+    <ConfirmDialog
+      v-if="dialog.show"
+      :type="dialog.type"
+      :variant="dialog.variant"
+      :title="dialog.title"
+      :message="dialog.message"
+      :confirmText="dialog.confirmText"
+      @confirm="dialog.onConfirm"
+      @cancel="dialog.onCancel"
+      @close="dialog.show = false"
+    />
   </div>
 </template>
 
 <script>
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
 export default {
   name: "RIIEndorsedProposals",
+  components: { ConfirmDialog },
 
   data() {
     return {
       search: "",
+      dialog: {
+        show: false, type: 'info', variant: 'alert', title: '', message: '',
+        confirmText: 'OK', cancelText: 'Cancel',
+        onConfirm: () => {}, onCancel: () => {},
+      },
 
       proposals: [
         {
@@ -141,13 +161,25 @@ export default {
   },
 
   methods: {
+    _showAlert(message, options = {}) {
+      return new Promise((resolve) => {
+        this.dialog.type = options.type || 'info'
+        this.dialog.variant = 'alert'
+        this.dialog.title = options.title || 'Notice'
+        this.dialog.message = message
+        this.dialog.confirmText = options.confirmText || 'OK'
+        this.dialog.onConfirm = () => { this.dialog.show = false; resolve() }
+        this.dialog.onCancel = () => { this.dialog.show = false; resolve() }
+        this.dialog.show = true
+      })
+    },
     viewProposal(proposal) {
       this.$router.push("/rii-endorse")
     },
 
-    endorseProposal(proposal) {
+    async endorseProposal(proposal) {
       proposal.status = "Sent to OVCRIGE"
-      alert("Proposal successfully endorsed to OVCRIGE.")
+      await this._showAlert("Proposal successfully endorsed to OVCRIGE.", { type: 'success', title: 'Endorsed' })
     }
   }
 }

@@ -588,12 +588,24 @@
       </footer>
     </div>
   </div>
+
+  <ConfirmDialog
+    v-if="dialogState.show"
+    v-bind="dialogState"
+    @confirm="dialogState.onConfirm"
+    @cancel="dialogState.onCancel"
+    @close="dialogState.show = false"
+  />
 </template>
 
 <script setup>
 import { reactive } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
@@ -697,17 +709,17 @@ const saveAsDraft = async () => {
     const userStore = useUserDataStore()
     const proponentId = userStore.user?.id
     if (!proponentId) {
-      alert('You must be logged in to save drafts.')
+      await showAlert('You must be logged in to save drafts.', { type: 'warning', title: 'Login Required' })
       return
     }
     const payload = mapFormToDTO({ ...proposal }, proponentId, 'DRAFT')
     const res = await api.post('/api/proposals', payload)
-    alert('Draft saved successfully!')
+    await showAlert('Draft saved successfully!', { type: 'success', title: 'Draft Saved' })
     emit('save', res.data)
     emit('update:modelValue', false)
   } catch (err) {
     console.error(err)
-    alert('Failed to save draft. Please try again.')
+    await showAlert('Failed to save draft. Please try again.', { type: 'error', title: 'Save Failed' })
   }
 }
 const goNext = () => emit('next', { ...proposal })

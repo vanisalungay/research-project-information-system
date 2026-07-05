@@ -121,6 +121,15 @@
         <button class="btn primary" @click="showError = false">OK</button>
       </div>
     </div>
+
+    <!-- CONFIRM DIALOG -->
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -128,6 +137,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 const route = useRoute()
@@ -227,7 +240,12 @@ const returnForRevision = async () => {
 }
 
 const rejectProposal = async () => {
-  if (!confirm('Are you sure you want to reject this proposal?')) return
+  const confirmed = await showConfirm('Are you sure you want to reject this proposal?', {
+    title: 'Reject Proposal',
+    type: 'danger',
+    confirmText: 'Reject'
+  })
+  if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id

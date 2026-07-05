@@ -90,12 +90,24 @@
       </tbody>
     </table>
   </div>
+
+  <ConfirmDialog
+    v-if="dialogState.show"
+    v-bind="dialogState"
+    @confirm="dialogState.onConfirm"
+    @cancel="dialogState.onCancel"
+    @close="dialogState.show = false"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 import ProponentSubmitProp from './ProponentSubmitProp.vue'
 import ProponentSubmitProp2 from './ProponentSubmitProp2.vue'
@@ -147,14 +159,19 @@ const viewProposal = (id) => {
 }
 
 const deleteProposal = async (id) => {
-  if (!confirm('Are you sure you want to delete this draft proposal?')) return
+  const confirmed = await showConfirm('Are you sure you want to delete this draft proposal?', {
+    title: 'Delete Draft',
+    type: 'danger',
+    confirmText: 'Delete'
+  })
+  if (!confirmed) return
   try {
     await api.delete(`/api/proposals/${id}`)
     proposals.value = proposals.value.filter(p => p.id !== id)
-    alert('Draft deleted successfully.')
+    await showAlert('Draft deleted successfully.', { type: 'success', title: 'Draft Deleted' })
   } catch (err) {
     console.error(err)
-    alert('Failed to delete proposal. Please try again.')
+    await showAlert('Failed to delete proposal. Please try again.', { type: 'error', title: 'Delete Failed' })
   }
 }
 

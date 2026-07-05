@@ -109,6 +109,14 @@
         </p>
       </div>
     </template>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -116,6 +124,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const userStore = useUserDataStore()
 
@@ -180,7 +192,7 @@ const markAsRead = async (id) => {
     }
   } catch (err) {
     console.error(err)
-    alert('Failed to mark notification as read')
+    await showAlert('Failed to mark notification as read', { type: 'error', title: 'Error' })
   }
 }
 
@@ -193,7 +205,7 @@ const markAllAsRead = async () => {
     notifications.value.forEach(n => n.isRead = true)
   } catch (err) {
     console.error(err)
-    alert('Failed to mark all notifications as read')
+    await showAlert('Failed to mark all notifications as read', { type: 'error', title: 'Error' })
   }
 }
 

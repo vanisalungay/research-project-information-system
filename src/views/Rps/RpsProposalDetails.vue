@@ -306,6 +306,14 @@
         </aside>
       </div>
     </template>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -313,6 +321,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const route = useRoute()
 const proposal = ref({})
@@ -378,8 +390,8 @@ const goBack = () => {
   window.history.back()
 }
 
-const downloadProposal = () => {
-  alert('Downloading proposal PDF...')
+const downloadProposal = async () => {
+  await showAlert('Downloading proposal PDF...', { type: 'info', title: 'Download' })
 }
 
 const downloadFile = (fileName) => {

@@ -648,15 +648,36 @@
 
         </aside>
     </div>
+
+    <ConfirmDialog
+      v-if="dialog.show"
+      :type="dialog.type"
+      :variant="dialog.variant"
+      :title="dialog.title"
+      :message="dialog.message"
+      :confirmText="dialog.confirmText"
+      :cancelText="dialog.cancelText"
+      @confirm="dialog.onConfirm"
+      @cancel="dialog.onCancel"
+      @close="dialog.show = false"
+    />
   </div>
 </template>
 
 <script>
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
 export default {
   name: "RpsBudgetRelease",
+  components: { ConfirmDialog },
 
   data() {
   return {
+    dialog: {
+      show: false, type: 'info', variant: 'alert', title: '', message: '',
+      confirmText: 'OK', cancelText: 'Cancel',
+      onConfirm: () => {}, onCancel: () => {},
+    },
     reviewer: {
       name: "",
       position: "RII Staff",
@@ -711,9 +732,24 @@ export default {
 
 
   methods: {
+    _showDialog(message, options = {}) {
+      return new Promise((resolve) => {
+        this.dialog.type = options.type || 'info'
+        this.dialog.variant = options.variant || 'alert'
+        this.dialog.title = options.title || 'Notice'
+        this.dialog.message = message
+        this.dialog.confirmText = options.confirmText || 'OK'
+        this.dialog.cancelText = options.cancelText || 'Cancel'
+        this.dialog.onConfirm = () => { this.dialog.show = false; resolve(true) }
+        this.dialog.onCancel = () => { this.dialog.show = false; resolve(false) }
+        this.dialog.show = true
+      })
+    },
+    _showAlert(message, options = {}) { return this._showDialog(message, { ...options, variant: 'alert' }) },
+    _showConfirm(message, options = {}) { return this._showDialog(message, { ...options, variant: 'confirm' }) },
 
-    downloadProposal() {
-      alert("Download Proposal PDF");
+    async downloadProposal() {
+      await this._showAlert("Download Proposal PDF", { type: 'info', title: 'Download' });
     },
     viewAttachment(filePath){
 
@@ -733,10 +769,12 @@ export default {
     this.$router.push("/riiendorsed-prop")
   },
 
-  releaseFunds(){
-    const confirmed = confirm(
-      "Are you sure you want to release the funds?"
-    );
+  async releaseFunds(){
+    const confirmed = await this._showConfirm("Are you sure you want to release the funds?", {
+      title: 'Release Funds',
+      type: 'warning',
+      confirmText: 'Release'
+    });
     if(!confirmed) return;
     this.status = "Released";
     this.releaseInfo = {
@@ -744,29 +782,24 @@ export default {
       releasedBy: this.reviewer.name || "Budget Officer",
       referenceNo: "BR-" + Date.now()
     };
-    alert("Funds released successfully.");
+    await this._showAlert("Funds released successfully.", { type: 'success', title: 'Funds Released' });
   },
 
-  returnBudget() {
-  if (!this.evaluation.finalRemarks.trim()) {
-    alert("Please enter OVCAF remarks first.");
-    return;
-  }
+  async returnBudget() {
+    if (!this.evaluation.finalRemarks.trim()) {
+      await this._showAlert("Please enter OVCAF remarks first.", { type: 'warning', title: 'Remarks Required' });
+      return;
+    }
 
-  this.releaseStatus = "Returned";
+    this.releaseStatus = "Returned";
+    this.proposal.release_status = "Returned";
+    this.proposal.ovcaf_remarks = this.evaluation.finalRemarks;
 
-  this.proposal.release_status = "Returned";
-  this.proposal.ovcaf_remarks = this.evaluation.finalRemarks;
+    localStorage.setItem("budgetProposal", JSON.stringify(this.proposal));
 
-  localStorage.setItem(
-    "budgetProposal",
-    JSON.stringify(this.proposal)
-  );
-
-  alert("Budget returned successfully.");
-
-  this.goBack();
-},
+    await this._showAlert("Budget returned successfully.", { type: 'success', title: 'Budget Returned' });
+    this.goBack();
+  },
 
 
 

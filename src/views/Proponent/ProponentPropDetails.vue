@@ -111,6 +111,14 @@
         <p>{{ log.description }}</p>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -119,6 +127,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 const route = useRoute()
@@ -311,7 +323,7 @@ function viewDetails() {
   if (proposalId) {
     router.push({ path: '/detailed-proposal', query: { id: proposalId } })
   } else {
-    alert('No proposal ID available')
+    await showAlert('No proposal ID available', { type: 'warning', title: 'Missing ID' })
   }
 }
 

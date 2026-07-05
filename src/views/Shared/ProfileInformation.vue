@@ -79,11 +79,23 @@
         <button class="cancel-btn" @click="cancelChanges">Cancel</button>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { reactive } from 'vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const form = reactive({
   fullName: '',
@@ -93,7 +105,7 @@ const form = reactive({
   specialization: [],
 })
 
-const saveChanges = () => {
+const saveChanges = async () => {
   const hasInput =
     form.fullName.trim() ||
     form.email.trim() ||
@@ -102,11 +114,11 @@ const saveChanges = () => {
     form.specialization.length > 0
 
   if (!hasInput) {
-    alert('Please fill out at least one field before saving.')
+    await showAlert('Please fill out at least one field before saving.', { type: 'warning', title: 'Validation Error' })
     return
   }
 
-  alert('You successfully saved your changes.')
+  await showAlert('You successfully saved your changes.', { type: 'success', title: 'Changes Saved' })
 }
 
 const cancelChanges = () => {

@@ -226,6 +226,14 @@
         Go to Revisions
       </button>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -233,6 +241,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const route = useRoute()
 
@@ -346,8 +358,8 @@ const submitRevision = async () => {
   }
 }
 
-const saveDraft = () => {
-  alert('Draft saved successfully!')
+const saveDraft = async () => {
+  await showAlert('Draft saved successfully!', { type: 'success', title: 'Draft Saved' })
 }
 
 const goBack = () => {

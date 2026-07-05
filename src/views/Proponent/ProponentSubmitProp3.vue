@@ -151,6 +151,14 @@
         </div>
       </footer>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -158,6 +166,10 @@
 import { ref } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -189,7 +201,7 @@ const saveAsDraftLocal = async () => {
   try {
     await saveOrUpdateProposal('DRAFT')
     emit('savedraft')
-    alert('Proposal saved as draft successfully!')
+    await showAlert('Proposal saved as draft successfully!', { type: 'success', title: 'Draft Saved' })
   } catch (err) {
     error.value = 'Failed to save draft. Please try again.'
   } finally {

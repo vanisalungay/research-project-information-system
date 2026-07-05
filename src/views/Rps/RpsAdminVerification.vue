@@ -108,6 +108,14 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -115,6 +123,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const route = useRoute()
 
@@ -211,7 +223,7 @@ const confirmAction = async () => {
       closeModal()
       showSuccess.value = true
     } else {
-      alert('Failed to update account status. User not found in offline database.')
+      await showAlert('Failed to update account status. User not found in offline database.', { type: 'error', title: 'Update Failed' })
     }
   }
 }

@@ -280,6 +280,14 @@
     <div v-if="showSuccess" class="toast success">
       {{ successMessage }}
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -287,6 +295,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 
@@ -486,12 +498,12 @@ const handleFinancialFile = (event) => {
 
 const submitReports = async () => {
   if (!quarterlyReport.value && !financialReport.value) {
-    alert('Please select at least one file to upload.')
+    await showAlert('Please select at least one file to upload.', { type: 'warning', title: 'No Files Selected' })
     return
   }
   
   if (!reportPeriod.value) {
-    alert('Please select a report period.')
+    await showAlert('Please select a report period.', { type: 'warning', title: 'Period Required' })
     return
   }
   

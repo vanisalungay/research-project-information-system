@@ -195,6 +195,14 @@
       </div>
 
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -202,6 +210,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const userStore = useUserDataStore()
 const activeTab = ref('personal')
@@ -303,15 +315,15 @@ onMounted(loadUserProfile)
 
 const saveSecurity = async () => {
   if (!securityForm.newName && !securityForm.newPassword) {
-    return alert('Please fill out at least one change field.')
+    return showAlert('Please fill out at least one change field.', { type: 'warning', title: 'Validation Error' })
   }
   
   if (securityForm.newName && securityForm.newName !== securityForm.confirmName) {
-    return alert('New username confirmation does not match.')
+    return showAlert('New username confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
   }
   
   if (securityForm.newPassword && securityForm.newPassword !== securityForm.confirmPassword) {
-    return alert('New password confirmation does not match.')
+    return showAlert('New password confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
   }
 
   const updatedUserObj = {
@@ -339,7 +351,7 @@ const saveSecurity = async () => {
       userStore.setUser(updatedUserObj)
     }
     
-    alert('Security settings updated successfully!')
+    await showAlert('Security settings updated successfully!', { type: 'success' })
     securityForm.newName = ''
     securityForm.newPassword = ''
     securityForm.confirmName = ''
@@ -351,7 +363,7 @@ const saveSecurity = async () => {
     // Fallback save to keep offline / demo working seamlessly
     userStore.setUser(updatedUserObj)
     
-    alert('Security settings updated successfully (offline mode)!')
+    await showAlert('Security settings updated successfully (offline mode)!', { type: 'success' })
     securityForm.newName = ''
     securityForm.newPassword = ''
     securityForm.confirmName = ''
@@ -362,7 +374,7 @@ const saveSecurity = async () => {
 
 const savePersonal = async () => {
   if (!personalForm.fullName.trim() || !personalForm.email.trim()) {
-    return alert('Full Name and Email Address are required.')
+    return showAlert('Full Name and Email Address are required.', { type: 'warning', title: 'Validation Error' })
   }
 
   const updatedUserObj = {
@@ -401,7 +413,7 @@ const savePersonal = async () => {
       userStore.setUser(updatedUserObj)
     }
     
-    alert('Personal info saved successfully!')
+    await showAlert('Personal info saved successfully!', { type: 'success' })
     loadUserProfile()
   } catch (error) {
     console.warn("PostgreSQL save failed, applying fallback local update.", error)
@@ -409,13 +421,13 @@ const savePersonal = async () => {
     // Fallback save to keep offline / demo working seamlessly
     userStore.setUser(updatedUserObj)
     
-    alert('Personal info saved successfully (offline mode)!')
+    await showAlert('Personal info saved successfully (offline mode)!', { type: 'success' })
     loadUserProfile()
   }
 }
 
-const saveNotif = () => {
-  alert('Notification preferences updated successfully!')
+const saveNotif = async () => {
+  await showAlert('Notification preferences updated successfully!', { type: 'success' })
 }
 </script>
 

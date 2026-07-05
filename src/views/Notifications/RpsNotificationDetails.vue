@@ -125,20 +125,51 @@
 
     </div>
 
+    <ConfirmDialog
+      v-if="dialog.show"
+      :type="dialog.type"
+      :variant="dialog.variant"
+      :title="dialog.title"
+      :message="dialog.message"
+      :confirmText="dialog.confirmText"
+      @confirm="dialog.onConfirm"
+      @cancel="dialog.onCancel"
+      @close="dialog.show = false"
+    />
   </div>
 </template>
 
 <script>
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
 export default {
   name: "RpsNotificationDetails",
+  components: { ConfirmDialog },
 
   data() {
     return {
       notification: {},
+      dialog: {
+        show: false, type: 'info', variant: 'alert', title: '', message: '',
+        confirmText: 'OK', cancelText: 'Cancel',
+        onConfirm: () => {}, onCancel: () => {},
+      },
     };
   },
 
     methods: {
+    _showAlert(message, options = {}) {
+      return new Promise((resolve) => {
+        this.dialog.type = options.type || 'info'
+        this.dialog.variant = 'alert'
+        this.dialog.title = options.title || 'Notice'
+        this.dialog.message = message
+        this.dialog.confirmText = options.confirmText || 'OK'
+        this.dialog.onConfirm = () => { this.dialog.show = false; resolve() }
+        this.dialog.onCancel = () => { this.dialog.show = false; resolve() }
+        this.dialog.show = true
+      })
+    },
 
     viewProposal() {
       this.$router.push(`/proposal/${this.notification.proposalId}`);
@@ -152,8 +183,8 @@ export default {
       this.$router.push('/fundrelease');
     },
 
-    markAsRead() {
-      alert("Notification marked as read.");
+    async markAsRead() {
+      await this._showAlert("Notification marked as read.", { type: 'success', title: 'Marked as Read' });
     },
 
   },

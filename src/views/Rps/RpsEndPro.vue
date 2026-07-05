@@ -651,15 +651,35 @@
 
     </div>
 
+    <ConfirmDialog
+      v-if="dialog.show"
+      :type="dialog.type"
+      :variant="dialog.variant"
+      :title="dialog.title"
+      :message="dialog.message"
+      :confirmText="dialog.confirmText"
+      :cancelText="dialog.cancelText"
+      @confirm="dialog.onConfirm"
+      @cancel="dialog.onCancel"
+      @close="dialog.show = false"
+    />
   </div>
 </template>
 
 <script>
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
 export default {
   name: "RpsProposalDetails",
+  components: { ConfirmDialog },
 
   data() {
     return {
+      dialog: {
+        show: false, type: 'info', variant: 'alert', title: '', message: '',
+        confirmText: 'OK', cancelText: 'Cancel',
+        onConfirm: () => {}, onCancel: () => {},
+      },
       reviewer: {
         name: "",
         position: "RII Staff",
@@ -692,6 +712,21 @@ export default {
   },
 
   methods: {
+    _showDialog(message, options = {}) {
+      return new Promise((resolve) => {
+        this.dialog.type = options.type || 'info'
+        this.dialog.variant = options.variant || 'alert'
+        this.dialog.title = options.title || 'Notice'
+        this.dialog.message = message
+        this.dialog.confirmText = options.confirmText || 'OK'
+        this.dialog.cancelText = options.cancelText || 'Cancel'
+        this.dialog.onConfirm = () => { this.dialog.show = false; resolve(true) }
+        this.dialog.onCancel = () => { this.dialog.show = false; resolve(false) }
+        this.dialog.show = true
+      })
+    },
+    _showAlert(message, options = {}) { return this._showDialog(message, { ...options, variant: 'alert' }) },
+    _showConfirm(message, options = {}) { return this._showDialog(message, { ...options, variant: 'confirm' }) },
     goToReview() {
       this.$router.push({
         name: "ProposalReview",
@@ -718,8 +753,8 @@ export default {
       this.$router.push("riiendorsed-prop")
     },
 
-    downloadProposal() {
-      alert("Download Proposal PDF");
+    async downloadProposal() {
+      await this._showAlert("Download Proposal PDF", { type: 'info', title: 'Download' });
     },
     viewAttachment(filePath){
 
@@ -735,41 +770,41 @@ export default {
     link.click();
     },
 
-    saveDraft() {
-    alert("Draft successfully saved.");
+    async saveDraft() {
+      await this._showAlert("Draft successfully saved.", { type: 'success', title: 'Draft Saved' });
     },
 
-    submitReview() {
-    if (!this.evaluation.recommendation) {
-    alert("Please select an Overall Recommendation.");
-    return;
-    }
+    async submitReview() {
+      if (!this.evaluation.recommendation) {
+        await this._showAlert("Please select an Overall Recommendation.", { type: 'warning', title: 'Validation Error' });
+        return;
+      }
 
-    if (
-     this.evaluation.recommendation == "Return" &&
-     !this.evaluation.finalRemarks.trim()
-    ) {
-    alert("Final Remarks are required.");
-    return;
-    }
+      if (
+       this.evaluation.recommendation == "Return" &&
+       !this.evaluation.finalRemarks.trim()
+      ) {
+        await this._showAlert("Final Remarks are required.", { type: 'warning', title: 'Remarks Required' });
+        return;
+      }
 
-    if (
-    this.reviewerPercentage < 80 &&
-    this.evaluation.recommendation == "Approve"
-     ) {
-    alert("Proposal cannot be approved because the score is below 80%.");
-    return;
-    }
+      if (
+        this.reviewerPercentage < 80 &&
+        this.evaluation.recommendation == "Approve"
+      ) {
+        await this._showAlert("Proposal cannot be approved because the score is below 80%.", { type: 'error', title: 'Score Below Threshold' });
+        return;
+      }
 
-    const confirmSubmit = confirm(
-    "Are you sure you want to submit this review?"
-    );
+      const confirmed = await this._showConfirm("Are you sure you want to submit this review?", {
+        title: 'Submit Review',
+        type: 'warning',
+        confirmText: 'Submit'
+      });
 
-    if (!confirmSubmit) {
-    return;
-    }
+      if (!confirmed) return;
 
-    alert("Review submitted successfully.");
+      await this._showAlert("Review submitted successfully.", { type: 'success', title: 'Review Submitted' });
     },
 
 

@@ -206,6 +206,14 @@
         </div>
       </div>
     </Transition>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -213,6 +221,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 
@@ -260,7 +272,7 @@ const handleRegister = async () => {
   try {
     await api.post('/api/users', payload)
 
-    alert('Account created successfully! You can now log in.')
+    await showAlert('Account created successfully! You can now log in.', { type: 'success', title: 'Account Created' })
     router.push('/login')
   } catch (error) {
     console.log(error)
@@ -300,7 +312,7 @@ const handleRegister = async () => {
     offlineUsers.push(newUser)
     localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
 
-    alert('Account created successfully! You can now log in.')
+    await showAlert('Account created successfully! You can now log in.', { type: 'success', title: 'Account Created' })
     router.push('/login')
   }
 }
