@@ -49,8 +49,8 @@
           <button v-if="proposal.status === 'ENDORSED'" class="btn primary" @click="forwardToRec" :disabled="actionLoading">
             {{ actionLoading ? 'Processing...' : 'Forward to REC for Evaluation' }}
           </button>
-          <button v-if="proposal.status === 'REC_APPROVED' || proposal.status === 'OVC_APPROVED'" class="btn primary" @click="forwardToOvcaf" :disabled="actionLoading">
-            {{ actionLoading ? 'Processing...' : 'Forward to OVCAF for Review & Endorsement' }}
+          <button v-if="proposal.status === 'REC_APPROVED'" class="btn primary" @click="forwardToOc" :disabled="actionLoading">
+            {{ actionLoading ? 'Processing...' : 'Forward to Chancellor (OC) for Final Approval' }}
           </button>
           <button class="btn warning" @click="returnForRevision" :disabled="actionLoading">
             {{ actionLoading ? 'Processing...' : 'Return for Revision' }}
