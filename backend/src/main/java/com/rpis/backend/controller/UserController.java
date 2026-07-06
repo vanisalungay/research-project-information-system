@@ -175,14 +175,15 @@ public class UserController {
     }
 
     @PostMapping("/admin/create")
-    public ResponseEntity<User> createStaffAccount(
+    public ResponseEntity<?> createStaffAccount(
             @RequestBody User user) {
-
-        User createdUser = userService.createStaffAccount(user);
-
-        createdUser.setPassword(null);
-
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+        try {
+            User createdUser = userService.createStaffAccount(user);
+            createdUser.setPassword(null);
+            return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
