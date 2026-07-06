@@ -186,16 +186,23 @@ const allNavItems = [
 
   // OVCAF
   {
+    iconKey: 'notification',
+    text: 'Notifications',
+    path: '/notifications',
+    roles: [UserRole.OVCAF],
+    section: 'main',
+  },
+  {
     iconKey: 'review',
-    text: 'Proposals for Review',
-    path: '/ovcaf-dash',
+    text: 'Inbox',
+    path: '/ovcaf/inbox',
     roles: [UserRole.OVCAF],
     section: 'main',
   },
   {
     iconKey: 'notification',
-    text: 'Notifications',
-    path: '/notifications',
+    text: 'Financial Reports',
+    path: '/ovcaf/reports',
     roles: [UserRole.OVCAF],
     section: 'main',
   },

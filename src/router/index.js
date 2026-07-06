@@ -60,6 +60,10 @@ import RpsStaffNotification from '../views/Notifications/RpsStaffNotification.vu
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/Ovcaf/OvcafValidate.vue'
 import OvcafNotification from '../views/Notifications/OvcafNotification.vue'
+import OvcafProposalInbox from '../views/Ovcaf/OvcafProposalInbox.vue'
+import OvcafReports from '../views/Ovcaf/OvcafReports.vue'
+import OvcafProposalDetails from '../views/Ovcaf/OvcafProposalDetails.vue'
+import OvcafFinancialValidation from '../views/Ovcaf/OvcafFinancialValidation.vue'
 
 /* OC */
 import OCDashboard from '../views/Dashboard/OCDashboard.vue'
@@ -139,8 +143,12 @@ const routes = [
 
       // ================= OVCAF =================
       { path: 'ovcaf-dash', component: OvcafDashboard },
-      { path: 'ovcaf-validate/:id?', name: 'OvcafValidate', component: OvcafValidate },
+      { path: 'ovcaf/validate/:id?', component: OvcafFinancialValidation },
       { path: 'ovcaf-notification', component: NotificationPage },
+      { path: '/ovcaf/inbox', component: OvcafProposalInbox },
+      { path: '/ovcaf/reports', component: OvcafReports},
+      { path: '/ovcaf/proposals/:id', component: OvcafProposalDetails},
+      { path: 'ovcaf-validate', component: OvcafValidate},
 
       // ================= OVCRIGE =================
       { path: 'review-prop', component: OvcReviewProposal },
