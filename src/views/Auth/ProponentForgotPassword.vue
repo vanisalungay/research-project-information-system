@@ -18,62 +18,38 @@
     <div class="right-panel">
       <h2 class="welcome">Forgot Password</h2>
 
-      <p class="subtitle">
-        Enter your registered email address and we'll send you a password reset link.
+      <div class="contact-admin-card">
+        <div class="card-icon">🔑</div>
+
+        <h3>Need to reset your password?</h3>
+
+        <p class="instruction">
+          Please contact the <strong>Research and Publication Services (RPS) Admin</strong> to request a password reset for your account.
+        </p>
+
+        <div class="admin-details">
+          <div class="detail-row">
+            <span class="detail-label">Office:</span>
+            <span class="detail-value">Research and Publication Services (RPS)</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Institution:</span>
+            <span class="detail-value">MSU-Naawan</span>
+          </div>
+        </div>
+
+        <p class="note">
+          The RPS Admin will reset your password and provide you with a temporary one. You can then change it after logging in.
+        </p>
+      </div>
+
+      <p class="back">
+        Remember your password?
+        <router-link to="/proponent-login">Back to Sign In</router-link>
       </p>
-
-      <form class="forgot-form" @submit.prevent="handleReset">
-        <label>Email Address</label>
-
-        <input
-          type="email"
-          v-model="email"
-          placeholder="you@msunaawan.edu.ph"
-          required
-        />
-
-        <button type="submit" class="login-btn">
-          Send Reset Link
-        </button>
-
-        <p v-if="successMessage" class="success">
-          {{ successMessage }}
-        </p>
-
-        <p v-if="errorMessage" class="error">
-          {{ errorMessage }}
-        </p>
-
-        <p class="back">
-          Remember your password?
-          <router-link to="/proponent-login">
-            Back to Sign In
-          </router-link>
-        </p>
-      </form>
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-
-const email = ref('')
-const successMessage = ref('')
-const errorMessage = ref('')
-
-const handleReset = () => {
-  errorMessage.value = ''
-
-  if (!email.value) {
-    errorMessage.value = 'Please enter your email address.'
-    return
-  }
-
-  successMessage.value =
-    'A password reset link has been sent to your email address.'
-}
-</script>
 
 <style scoped>
 .login-wrapper {
@@ -117,60 +93,71 @@ const handleReset = () => {
 .welcome {
   font-size: 36px;
   font-weight: 700;
-}
-
-.subtitle {
   margin-bottom: 25px;
-  color: #555;
+}
+
+.contact-admin-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 32px;
   max-width: 500px;
+  text-align: center;
 }
 
-.forgot-form {
-  width: 400px;
-  display: flex;
-  flex-direction: column;
+.card-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
 }
 
-.forgot-form label {
-  margin-bottom: 8px;
-  color: #1f1a3d;
-  font-weight: 500;
+.contact-admin-card h3 {
+  font-size: 20px;
+  color: #1f2937;
+  margin-bottom: 12px;
 }
 
-.forgot-form input {
-  padding: 12px;
-  margin-bottom: 15px;
-  border-radius: 6px;
-  border: 1px solid #bbb;
-}
-
-.login-btn {
-  background: #2452ff;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-bottom: 15px;
+.instruction {
+  color: #4b5563;
   font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 
-.login-btn:hover {
-  background: #1b44d6;
+.admin-details {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
-.success {
-  color: #16a34a;
-  margin-bottom: 10px;
+.detail-row {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
 }
 
-.error {
-  color: #dc2626;
-  margin-bottom: 10px;
+.detail-label {
+  font-weight: 600;
+  color: #64748b;
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.detail-value {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.note {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .back {
-  margin-top: 10px;
+  margin-top: 24px;
 }
 
 .back a {
