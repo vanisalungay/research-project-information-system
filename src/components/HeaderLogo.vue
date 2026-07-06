@@ -80,7 +80,7 @@ const logout = () => {
   userStore.logout()
 
   if (role === UserRole.PROPONENT) {
-    router.push('/proponent-login')
+    router.push('/login')
   } else {
     router.push('/login')
   }

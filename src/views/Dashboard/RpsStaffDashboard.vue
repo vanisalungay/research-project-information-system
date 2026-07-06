@@ -62,6 +62,7 @@
               </span>
             </div>
           </div>
+        </div>
 
           <h3>Proposals Awaiting RPS Action</h3>
 
@@ -81,6 +82,18 @@
               <span>Actions</span>
             </div>
 
+          <div class="table-row">
+            <span>Healthcare Facility Upgrade</span>
+            <span>Dr. Meow Chan</span>
+            <span>₱150,000</span>
+            <span class="status pending">Pending</span>
+            <button class="review" @click="$router.push('rps-endorse')">Review</button>
+          </div>
+        </div>
+
+        <div v-if="activities.length === 0" class="empty-state">
+          <div class="empty-icon-wrapper">📄</div>
+          <h3>No Research Activity Yet</h3>
             <div class="table-row">
               <span>Community Development Program 2024</span>
               <span>Dr. Alien Shippy</span>
@@ -109,17 +122,46 @@
           </div>
         </div>
 
-        <div v-else class="empty-state">
-          <div class="empty-icon-wrapper">
-            📄
-          </div>
 
-          <h3>No Research Activity Yet</h3>
+      <!-- Right Side -->
+      <div class="side">
+        <!-- Recent Activity -->
+        <div class="panel">
+          <h3>Recent Activity</h3>
 
-          <p>
-            Research proposals, reviews, and status updates
-            will appear here once records are added.
-          </p>
+          <ul class="activity">
+            <li>
+              <strong>New proposal submitted:</strong>
+              "Community Development Program 2024"
+              <span>2 hours ago</span>
+            </li>
+          </ul>
+
+          <button
+            class="view-activity"
+            @click="$router.push('rpsstaff-notification')"
+          >
+            View All Activity
+          </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="panel">
+          <h3>Quick Actions</h3>
+
+          <button
+            class="primary"
+            @click="$router.push('rps-subproposal')"
+          >
+            Review Proposals
+          </button>
+
+          <button
+            class="secondary"
+            @click="$router.push('funded-prop')"
+          >
+            Manage Funding
+          </button>
         </div>
       </div>
     </div>
@@ -135,9 +177,9 @@ export default {
       totalProposals: 0,
       endorsedProposals: 0,
       pendingReview: 0,
-      failedProposals: 0
+      failedProposals: 0,
     };
-  }
+  },
 };
 </script>
 

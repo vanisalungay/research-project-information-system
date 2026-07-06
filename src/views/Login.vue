@@ -72,7 +72,14 @@ const password = ref('')
 const errorMessage = ref('')
 
 const roles = [
+<<<<<<< HEAD
+  { 
+    name: 'Proponent', 
+    desc: 'Research Proposal Submitter', 
+    value: UserRole.PROPONENT },
+=======
   { name: 'Proponent', desc: 'Research Proposal Submitter', value: UserRole.PROPONENT },
+>>>>>>> 27448d6fcff94e571d47a983ffa9d77e0d6a6bab
   { 
     name: 'RPS', 
     desc: 'Research and Publication Services', 
@@ -168,7 +175,6 @@ const handleGoogleLogin = async (response) => {
   font-weight: 700;
   line-height: 1.2;
 }
-
 .title span {
   color: #ffdf00;
 }

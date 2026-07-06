@@ -132,7 +132,6 @@ export default {
   min-height:100vh;
   width: 136%;
 }
-
 .page-header{
   margin-bottom:20px;
 }

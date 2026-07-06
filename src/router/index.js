@@ -57,7 +57,7 @@ import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCNotifications from '../views/OCNotifications.vue'
 import OCFinalApproval from '../views/OCFinalApproval.vue'
 import OCFinalApproval2 from '../views/OCFinalApproval2.vue'
-import OcDetailedProposal from '../views/OcDetailedProposal.vue'
+import OCDetailedProposal from '../views/OCDetailedProposal.vue'
 
 /* REC */
 import RecDashboard from '../views/Dashboard/RecDashboard.vue'
@@ -79,11 +79,6 @@ import ProponentFeedback from '@/views/ProponentFeedback.vue'
 import ProponentSubmitRev from '@/views/ProponentSubmitRev.vue'
 import ProponentPropDetails from '../views/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/ProponentDetiailedProp.vue'
-
-/* Authentication */
-import ProponentLogin from '../views/ProponentLogin.vue'
-import ProponentRegister from '../views/ProponentRegister.vue'
-import ProponentForgotPassword from '../views/ProponentForgotPassword.vue'
 
 /* Shared */
 import FundViewProp from '../views/FundViewProp.vue'
@@ -163,6 +158,7 @@ const routes = [
       { path: 'return-proposals', component: RecReturn4Revision },
       { path: 'rec-notif', component: RecNotification },
       { path: 'rec-prop', component: RecDetailedProp },
+      // ================= PROPONENT =================
 
       // ================= PROPONENT =================
       { path: 'proponent-dashboard', component: ProponentDashboard },
@@ -182,7 +178,9 @@ const routes = [
       // ================= CHANCELLOR =================
       { path: 'oc-dashboard', component: OCDashboard },
       { path: 'oc-notification', component: OCNotifications },
-      { path: 'oc-detailed', component: OcDetailedProposal },
+      { path: 'oc-detailed', component: OCDetailedProposal },
+      { path: 'oc-final-approval', component: OCFinalApproval },
+      { path: 'oc-final-approval2', component: OCFinalApproval2 },
       { path: 'oc/final-approval/:id', component: OCFinalApproval },
       { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
     ],
@@ -197,10 +195,6 @@ const routes = [
       { path: 'about', component: About },
       { path: 'create-account', component: CreateAccount },
       { path: 'register', component: ForgotPassword },
-
-      { path: 'proponent-login', component: ProponentLogin },
-      { path: 'proponent-register', component: ProponentRegister },
-      { path: 'proponent-forgot-password', component: ProponentForgotPassword },
 
       { path: 'test-backend', component: BackendTest },
     ],
