@@ -170,7 +170,7 @@
             </li>
           </ul>
 
-          <button class="side-action-btn border-top" @click="$router.push('/rpsstaff-notification')">
+          <button class="side-action-btn border-top" @click="$router.push('/notifications')">
             View All Logs
           </button>
         </div>
@@ -184,7 +184,7 @@
             <button class="hub-btn primary" @click="$router.push('/rps-subproposal')">
               Review Submitted Proposals
             </button>
-            <button class="hub-btn secondary" @click="$router.push('/rpsfunded')">
+            <button class="hub-btn secondary" @click="$router.push('/budget-processing')">
               Manage Funding Releases
             </button>
           </div>
@@ -199,6 +199,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
+import { useUserDataStore } from '@/stores/userData'
 
 const proposals = ref([])
 const activities = ref([])
@@ -208,12 +209,8 @@ const pendingReview = ref(0)
 const failedProposals = ref(0)
 const isLoading = ref(true)
 
-// Static activity fallback log data if no database activity exists
-const activityLogs = ref([
-  { text: 'Proposal "Community Development Program" submitted by leader.', time: '2 hours ago' },
-  { text: 'Proposal "Healthcare Facility Upgrade" forwarded to review list.', time: '1 day ago' },
-  { text: 'System seed initialized with temporary test accounts.', time: '3 days ago' }
-])
+// Dynamic activity logs from notifications API
+const activityLogs = ref([])
 
 // Compute list of dynamic pending proposals needing action
 const pendingProposalsList = computed(() => {
@@ -221,6 +218,36 @@ const pendingProposalsList = computed(() => {
     .filter(p => p.status === 'SUBMITTED' || p.status === 'PENDING')
     .slice(0, 3)
 })
+
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffHours < 1) return 'Just now'
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+const loadActivityLogs = async () => {
+  try {
+    const userStore = useUserDataStore()
+    const userId = userStore.user?.id
+    if (!userId) return
+    const res = await api.get('/api/notifications', { params: { userId } })
+    const data = Array.isArray(res.data) ? res.data : []
+    activityLogs.value = data.slice(0, 5).map(n => ({
+      text: n.message || n.title || 'System notification',
+      time: formatTimeAgo(n.createdAt)
+    }))
+  } catch (err) {
+    console.error('Failed to load activity logs:', err)
+    activityLogs.value = []
+  }
+}
 
 const loadDashboardData = async () => {
   try {
@@ -233,7 +260,7 @@ const loadDashboardData = async () => {
     totalProposals.value = data.length
     endorsedProposals.value = data.filter(p => p.status === 'ENDORSED' || p.status === 'APPROVED' || p.status === 'REC_APPROVED').length
     pendingReview.value = data.filter(p => p.status === 'SUBMITTED' || p.status === 'PENDING').length
-    failedProposals.value = data.filter(p => p.status === 'REJECTED' || p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED').length
+    failedProposals.value = data.filter(p => p.status === 'REJECTED' || p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED').length
 
     // Filter dynamic submissions list for top activity logs
     if (data.length > 0) {
@@ -248,7 +275,7 @@ const loadDashboardData = async () => {
           statusText = 'Approved'
           borderClass = 'pass-border'
           badgeClass = 'passed-badge'
-        } else if (p.status === 'REJECTED' || p.status === 'RETURNED') {
+        } else if (p.status === 'REJECTED' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED') {
           statusText = 'Returned'
           borderClass = 'fail-border'
           badgeClass = 'failed-badge'
@@ -268,6 +295,9 @@ const loadDashboardData = async () => {
         }
       })
     }
+
+    // Load dynamic activity logs
+    await loadActivityLogs()
   } catch (error) {
     console.error("Failed to compile dashboard metrics:", error)
   } finally {

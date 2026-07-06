@@ -98,10 +98,13 @@ export default {
     },
     viewProposal(proposal) {
       if (proposal.status === 'SUBMITTED') {
-        this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
-      } else if (proposal.status === 'ENDORSED') {
-        this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
+        // SUBMITTED proposals go to the review page with endorse/return/reject actions
+        this.$router.push({ name: 'ProposalReview', params: { id: proposal.id } })
+      } else if (proposal.status === 'REVISION' || proposal.status === 'RPS_RETURNED') {
+        // Returned proposals go to the review viewer
+        this.$router.push({ name: 'ReviewResultViewer', params: { id: proposal.id } })
       } else {
+        // All other statuses go to the details viewer
         this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
       }
     },

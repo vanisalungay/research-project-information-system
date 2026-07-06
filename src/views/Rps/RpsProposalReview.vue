@@ -106,18 +106,39 @@
           </div>
 
           <div class="review-section">
+            <h4>Reviewer Name</h4>
+            <input type="text" v-model="reviewerName" placeholder="Enter your full name" class="reviewer-input" />
+          </div>
+
+          <div class="review-section">
+            <h4>Reviewer Position</h4>
+            <select v-model="reviewerPosition" class="position-select">
+              <option value="">-- Select Position --</option>
+              <option value="RPS_STAFF">RPS Staff</option>
+              <option value="RPS_DIRECTOR">RPS Director</option>
+            </select>
+          </div>
+
+          <div class="review-section">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="isCertified" />
+              <span>I certify that I am the assigned reviewer.</span>
+            </label>
+          </div>
+
+          <div class="review-section">
             <h4>Reviewer Notes</h4>
             <textarea v-model="remarks" rows="5" placeholder="Enter your review remarks or comments..."></textarea>
           </div>
 
           <div class="review-actions">
-            <button class="approve-btn" @click="endorseProposal" :disabled="actionLoading">
+            <button class="approve-btn" @click="endorseProposal" :disabled="actionLoading || !canPerformAction">
               {{ actionLoading ? 'Processing...' : '✓ Endorse to OVCRIGE' }}
             </button>
-            <button class="return-btn" @click="returnForRevision" :disabled="actionLoading">
+            <button class="return-btn" @click="returnForRevision" :disabled="actionLoading || !canPerformAction">
               ⟳ Return for Revision
             </button>
-            <button class="reject-btn" @click="rejectProposal" :disabled="actionLoading">
+            <button class="reject-btn" @click="rejectProposal" :disabled="actionLoading || !canPerformAction">
               ✕ Reject Proposal
             </button>
           </div>
@@ -171,6 +192,9 @@ export default {
       loading: true,
       error: null,
       remarks: '',
+      reviewerName: '',
+      reviewerPosition: '',
+      isCertified: false,
       showReturnOptions: false,
       actionLoading: false,
       showSuccess: false,
@@ -188,6 +212,11 @@ export default {
         onConfirm: () => {},
         onCancel: () => {},
       },
+    }
+  },
+  computed: {
+    canPerformAction() {
+      return this.reviewerName.trim() && this.reviewerPosition && this.isCertified
     }
   },
   async mounted() {
@@ -234,7 +263,23 @@ export default {
     goBack() {
       this.$router.push('/rps-subproposal')
     },
+    async saveReviewerInfo() {
+      try {
+        await api.put(`/api/proposals/${this.$route.params.id}/reviewer-info`, null, {
+          params: {
+            reviewedBy: this.reviewerName.trim(),
+            reviewedByPosition: this.reviewerPosition
+          }
+        })
+      } catch (err) {
+        console.error('Failed to save reviewer info:', err)
+      }
+    },
     async endorseProposal() {
+      if (!this.canPerformAction) {
+        await this._showAlert('Please complete the reviewer accountability section before endorsing.', { type: 'warning', title: 'Reviewer Info Required' })
+        return
+      }
       const confirmed = await this._showConfirm('Endorse this proposal to OVCRIGE?', {
         title: 'Endorse Proposal',
         type: 'info',
@@ -243,6 +288,8 @@ export default {
       if (!confirmed) return
       this.actionLoading = true
       try {
+        // Save reviewer identity first
+        await this.saveReviewerInfo()
         await api.put(`/api/proposals/${this.$route.params.id}/endorse`)
         this.successMessage = 'Proposal has been endorsed to OVCRIGE.'
         this.showSuccess = true
@@ -256,6 +303,10 @@ export default {
       }
     },
     async returnForRevision() {
+      if (!this.canPerformAction) {
+        await this._showAlert('Please complete the reviewer accountability section before returning.', { type: 'warning', title: 'Reviewer Info Required' })
+        return
+      }
       if (!this.remarks.trim()) {
         await this._showAlert('Please provide remarks before returning for revision.', { type: 'warning', title: 'Remarks Required' })
         return
@@ -268,6 +319,8 @@ export default {
       if (!confirmed) return
       this.actionLoading = true
       try {
+        // Save reviewer identity first
+        await this.saveReviewerInfo()
         await api.put(`/api/proposals/${this.$route.params.id}/return-revision`, null, {
           params: { remarks: this.remarks.trim() }
         })
@@ -283,6 +336,10 @@ export default {
       }
     },
     async rejectProposal() {
+      if (!this.canPerformAction) {
+        await this._showAlert('Please complete the reviewer accountability section before rejecting.', { type: 'warning', title: 'Reviewer Info Required' })
+        return
+      }
       const confirmed = await this._showConfirm('Are you sure you want to reject this proposal?', {
         title: 'Reject Proposal',
         type: 'danger',
@@ -291,6 +348,8 @@ export default {
       if (!confirmed) return
       this.actionLoading = true
       try {
+        // Save reviewer identity first
+        await this.saveReviewerInfo()
         await api.put(`/api/proposals/${this.$route.params.id}/reject`)
         this.successMessage = 'Proposal has been rejected.'
         this.showSuccess = true
@@ -340,6 +399,11 @@ export default {
 .status-badge.revision { background: #e0e7ff; color: #3730a3; }
 .status-badge.rps_returned { background: #fef3c7; color: #92400e; }
 textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical; }
+.reviewer-input, .position-select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; margin-top: 4px; }
+.reviewer-input::placeholder { color: #9ca3af; }
+.position-select { cursor: pointer; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569; cursor: pointer; margin-top: 4px; }
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 .review-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .approve-btn, .return-btn, .reject-btn { padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .approve-btn { background: #10b981; color: white; }

@@ -8,8 +8,8 @@
 
     <div class="page-header">
       <div>
-        <h2>Approved Proposals</h2>
-        <p>Review and monitor approved proposals for OVCRIGE endorsement.</p>
+        <h2>Endorsed Proposals</h2>
+        <p>Review and track proposals endorsed to OVCRIGE.</p>
       </div>
     </div>
 
@@ -19,19 +19,30 @@
         v-model="search"
         type="text"
         class="search"
-        placeholder="Search Proposal Code, Title or Project Leader..."
+        placeholder="Search Proposal Title, Project Leader..."
       />
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="loading-state">
+      <p>Loading endorsed proposals...</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="loading-state">
+      <p class="error-text">{{ error }}</p>
+      <button class="retry-btn" @click="fetchProposals">Retry</button>
+    </div>
+
     <!-- Table -->
-    <div class="table-container">
+    <div v-else class="table-container">
       <table class="table">
         <thead>
           <tr>
-            <th>Proposal Code</th>
+            <th>ID</th>
             <th>Proposal Title</th>
             <th>Project Leader</th>
-            <th>Reviewer Score</th>
+            <th>College</th>
             <th>Status</th>
             <th width="180">Actions</th>
           </tr>
@@ -42,23 +53,17 @@
             v-for="proposal in filteredProposals"
             :key="proposal.id"
           >
-            <td>{{ proposal.code }}</td>
-            <td>{{ proposal.title }}</td>
-            <td>{{ proposal.leader }}</td>
-            <td>{{ proposal.reviewerScore }}%</td>
+            <td>#{{ proposal.id }}</td>
+            <td>{{ proposal.projectTitle || 'Untitled' }}</td>
+            <td>{{ proposal.projectLeader || proposal.proponent?.name || 'N/A' }}</td>
+            <td>{{ proposal.college || 'N/A' }}</td>
 
             <td class="status-cell">
               <span
                 class="status"
-                :class="{
-                  pending: proposal.status === 'Waiting for OVCRIGE Endorsement',
-                  approved: proposal.status === 'Approved by OVCRIGE',
-                  returned: proposal.status === 'Returned by OVCRIGE',
-                  rejected: proposal.status === 'Rejected by OVCRIGE',
-                  endorsed: proposal.status === 'Sent to OVCRIGE'
-                }"
+                :class="getStatusClass(proposal.status)"
               >
-                {{ proposal.status }}
+                {{ formatStatus(proposal.status) }}
               </span>
             </td>
 
@@ -69,118 +74,97 @@
               >
                 View
               </button>
-
-              <button
-                class="endorse-btn"
-                @click="endorseProposal(proposal)"
-                :disabled="proposal.status !== 'Waiting for OVCRIGE Endorsement'"
-              >
-                Endorse
-              </button>
             </td>
           </tr>
 
           <tr v-if="filteredProposals.length === 0">
             <td colspan="6" class="empty">
-              No approved proposals found.
+              No endorsed proposals found.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <ConfirmDialog
-      v-if="dialog.show"
-      :type="dialog.type"
-      :variant="dialog.variant"
-      :title="dialog.title"
-      :message="dialog.message"
-      :confirmText="dialog.confirmText"
-      @confirm="dialog.onConfirm"
-      @cancel="dialog.onCancel"
-      @close="dialog.show = false"
-    />
   </div>
 </template>
 
 <script>
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import api from '@/utils/api'
 
 export default {
   name: "RIIEndorsedProposals",
-  components: { ConfirmDialog },
 
   data() {
     return {
       search: "",
-      dialog: {
-        show: false, type: 'info', variant: 'alert', title: '', message: '',
-        confirmText: 'OK', cancelText: 'Cancel',
-        onConfirm: () => {}, onCancel: () => {},
-      },
-
-      proposals: [
-        {
-          id: 1,
-          code: "RII-001",
-          title: "Educational Infrastructure Project",
-          leader: "Dr. Cat Moon",
-          reviewerScore: 95,
-          status: "Waiting for OVCRIGE Endorsement"
-        },
-        {
-          id: 2,
-          code: "RII-002",
-          title: "Technology Innovation Initiative",
-          leader: "Dr. Blair Gwen",
-          reviewerScore: 91,
-          status: "Approved by OVCRIGE"
-        },
-        {
-          id: 3,
-          code: "RII-003",
-          title: "Marine Biodiversity Assessment",
-          leader: "Dr. John Cruz",
-          reviewerScore: 89,
-          status: "Returned by OVCRIGE"
-        }
-      ]
+      proposals: [],
+      loading: false,
+      error: null,
     }
   },
 
   computed: {
     filteredProposals() {
       const keyword = this.search.toLowerCase().trim()
+      if (!keyword) return this.proposals
 
       return this.proposals.filter(proposal =>
-        proposal.code.toLowerCase().includes(keyword) ||
-        proposal.title.toLowerCase().includes(keyword) ||
-        proposal.leader.toLowerCase().includes(keyword)
+        (proposal.projectTitle || '').toLowerCase().includes(keyword) ||
+        (proposal.projectLeader || proposal.proponent?.name || '').toLowerCase().includes(keyword) ||
+        (String(proposal.id)).includes(keyword)
       )
     }
   },
 
   methods: {
-    _showAlert(message, options = {}) {
-      return new Promise((resolve) => {
-        this.dialog.type = options.type || 'info'
-        this.dialog.variant = 'alert'
-        this.dialog.title = options.title || 'Notice'
-        this.dialog.message = message
-        this.dialog.confirmText = options.confirmText || 'OK'
-        this.dialog.onConfirm = () => { this.dialog.show = false; resolve() }
-        this.dialog.onCancel = () => { this.dialog.show = false; resolve() }
-        this.dialog.show = true
-      })
-    },
-    viewProposal(proposal) {
-      this.$router.push("/rii-endorse")
+    async fetchProposals() {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
+        this.proposals = Array.isArray(res.data) ? res.data : []
+      } catch (err) {
+        console.error('Failed to fetch endorsed proposals:', err)
+        this.error = 'Failed to load endorsed proposals.'
+        this.proposals = []
+      } finally {
+        this.loading = false
+      }
     },
 
-    async endorseProposal(proposal) {
-      proposal.status = "Sent to OVCRIGE"
-      await this._showAlert("Proposal successfully endorsed to OVCRIGE.", { type: 'success', title: 'Endorsed' })
+    viewProposal(proposal) {
+      this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
+    },
+
+    formatStatus(status) {
+      const statusMap = {
+        'ENDORSED': 'Endorsed to OVCRIGE',
+        'UNDER_REVIEW': 'Under REC Evaluation',
+        'REC_APPROVED': 'REC Approved',
+        'FOR_OVCAF_APPROVAL': 'For OVCAF Review',
+        'FOR_OC_APPROVAL': 'For Chancellor Approval',
+        'APPROVED': 'Approved',
+      }
+      return statusMap[status] || status
+    },
+
+    getStatusClass(status) {
+      const classMap = {
+        'ENDORSED': 'endorsed',
+        'UNDER_REVIEW': 'pending',
+        'REC_APPROVED': 'approved',
+        'FOR_OVCAF_APPROVAL': 'pending',
+        'FOR_OC_APPROVAL': 'pending',
+        'APPROVED': 'approved',
+        'REJECTED': 'rejected',
+        'RETURNED': 'returned',
+      }
+      return classMap[status] || 'pending'
     }
+  },
+
+  mounted() {
+    this.fetchProposals()
   }
 }
 </script>
@@ -191,7 +175,9 @@ export default {
   font-family:Segoe UI,sans-serif;
   background:#f5f7fb;
   min-height:100vh;
-  width: 136%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .page-header{
@@ -209,6 +195,11 @@ export default {
   margin-top:5px;
   color:#64748b;
   font-size:14px;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 16px;
 }
 
 .toolbar{
@@ -230,6 +221,26 @@ export default {
   border-color:#2563eb;
 }
 
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+.retry-btn {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .table-container{
   background:#fff;
   border-radius:12px;
@@ -249,7 +260,6 @@ export default {
 .table thead th{
   background: #1e293b !important;
   color:#fff !important;
- 
 }
 
 .table th{
@@ -277,24 +287,10 @@ export default {
   padding:8px 14px;
   border-radius:6px;
   cursor:pointer;
-  margin-right:8px;
 }
 
 .view-btn:hover{
   background:#2563eb;
-}
-
-.endorse-btn{
-  background:#16a34a;
-  color:#fff;
-  border:none;
-  padding:8px 14px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-.endorse-btn:hover{
-  background:#15803d;
 }
 
 .empty{
@@ -308,14 +304,11 @@ export default {
   border-radius:20px;
   font-size:12px;
   font-weight:600;
+  display:inline-block;
 }
 
 .status-cell{
   vertical-align:middle;
-}
-
-.status{
-  display:inline-block;
 }
 
 .pending{
@@ -347,39 +340,5 @@ export default {
   display:flex;
   gap:8px;
   align-items:center;
-}
-
-.view-btn,
-.endorse-btn{
-  border:none;
-  border-radius:6px;
-  padding:8px 14px;
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.view-btn{
-  background:#3b82f6;
-  color:white;
-}
-
-.view-btn:hover{
-  background:#2563eb;
-}
-
-.endorse-btn{
-  background:#16a34a;
-  color:white;
-}
-
-.endorse-btn:hover{
-  background:#15803d;
-}
-
-.endorse-btn:disabled{
-  background:#cbd5e1;
-  cursor:not-allowed;
 }
 </style>

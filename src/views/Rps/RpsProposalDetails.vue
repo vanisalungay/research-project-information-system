@@ -280,8 +280,8 @@
                 <label>Position</label>
                 <select v-model="reviewerPosition" class="position-select">
                   <option value="">-- Select Position --</option>
-                  <option value="RSP_STAFF">RSP Staff</option>
-                  <option value="RSP_DIRECTOR">RSP Director</option>
+                  <option value="RPS_STAFF">RPS Staff</option>
+                  <option value="RPS_DIRECTOR">RPS Director</option>
                 </select>
               </div>
             </div>

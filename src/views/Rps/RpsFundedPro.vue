@@ -106,10 +106,12 @@ export default {
 
             this.$router.push({
 
-                name: "BudgetProcessingViewer",
+                name: "ProposalDetails",
 
                 params: {
+
                     id: proposal.id
+
                 }
 
             })
@@ -117,8 +119,6 @@ export default {
         }
 
     }
-
-}
 </script>
 
 <style scoped>

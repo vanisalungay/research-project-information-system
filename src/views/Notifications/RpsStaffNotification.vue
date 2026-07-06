@@ -10,7 +10,7 @@
         </p>
       </div>
 
-      <button class="mark-all-btn" @click="markAllAsRead">
+      <button class="mark-all-btn" @click="markAllAsRead" :disabled="unreadCount === 0">
         ✓ Mark All as Read
       </button>
     </div>
@@ -38,9 +38,20 @@
       </button>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="empty-state">
+      <p>Loading notifications...</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="empty-state">
+      <p class="error-text">{{ error }}</p>
+      <button class="retry-btn" @click="fetchNotifications">Retry</button>
+    </div>
+
     <!-- Notification List -->
     <div
-      v-if="filteredNotifications.length"
+      v-else-if="filteredNotifications.length"
       class="notification-list"
     >
 
@@ -48,6 +59,7 @@
         v-for="notification in filteredNotifications"
         :key="notification.id"
         class="notification"
+        :class="{ unread: !notification.read }"
         @click="openNotification(notification)"
       >
 
@@ -78,43 +90,9 @@
             </p>
 
             <div class="info-line">
-                <span>{{ notification.proposal }}</span>
+                <span>{{ notification.type }}</span>
                 <span class="separator">•</span>
-                <span>{{ notification.researcher }}</span>
-            </div>
-
-            <small class="time">
-              {{ notification.date }}
-            </small>
-
-            <!-- ACTION BUTTONS -->
-
-            <div class="actions">
-
-              <button
-                v-if="notification.type==='review'"
-                class="action-btn"
-                @click.stop="$router.push('fundviewprop')"
-              >
-                Review Proposal
-              </button>
-
-              <button
-                v-if="notification.type==='endorse'"
-                class="action-btn"
-                @click.stop="$router.push('rii-endorse')"
-              >
-                Review & Endorse
-              </button>
-
-              <button
-                v-if="notification.type==='release'"
-                class="action-btn"
-                @click.stop="$router.push('fundrelease')"
-              >
-                Release Funds
-              </button>
-
+                <span>{{ notification.date }}</span>
             </div>
 
           </div>
@@ -174,15 +152,19 @@
 </template>
 
 <script>
+import api from '@/utils/api'
+import { useUserDataStore } from '@/stores/userData'
+
 export default {
-  name: "Notifications",
+  name: "RpsStaffNotification",
 
   data() {
     return {
       search: "",
       activeTab: "all",
-
       notifications: [],
+      loading: false,
+      error: null,
     };
   },
 
@@ -230,8 +212,7 @@ export default {
         list = list.filter((n) => {
           return (
             n.title.toLowerCase().includes(keyword) ||
-            n.proposal.toLowerCase().includes(keyword) ||
-            n.researcher.toLowerCase().includes(keyword)
+            n.message.toLowerCase().includes(keyword)
           );
         });
       }
@@ -242,26 +223,103 @@ export default {
   },
 
   methods: {
+    getIconForType(type) {
+      const iconMap = {
+        'PROPOSAL_UPDATE': '📄',
+        'ENDORSEMENT': '✅',
+        'REVIEW_REQUEST': '🔍',
+        'APPROVAL': '🎉',
+        'REVISION': '🔄',
+        'REJECTION': '❌',
+        'FUNDING': '💰',
+      };
+      return iconMap[type] || '🔔';
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffHours < 1) return 'Just now';
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    },
+
+    async fetchNotifications() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const userStore = useUserDataStore();
+        const userId = userStore.user?.id;
+        if (!userId) {
+          this.error = 'User not authenticated.';
+          return;
+        }
+        const res = await api.get(`/api/notifications`, { params: { userId } });
+        const data = Array.isArray(res.data) ? res.data : [];
+        this.notifications = data.map(n => ({
+          id: n.id,
+          title: n.title || 'Notification',
+          message: n.message || '',
+          type: n.type || 'GENERAL',
+          icon: this.getIconForType(n.type),
+          read: n.isRead || false,
+          date: this.formatDate(n.createdAt),
+          proposalId: n.proposalId,
+        }));
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+        this.error = 'Failed to load notifications. Please try again.';
+        this.notifications = [];
+      } finally {
+        this.loading = false;
+      }
+    },
 
     openNotification(notification) {
-      this.$router.push(`/notification/${notification.id}`);
-    },
-  
-    markAllAsRead() {
-      this.notifications.forEach(notification => {
-        notification.read = true;
-      });
+      // Mark as read when opened
+      if (!notification.read) {
+        this.markAsRead(notification);
+      }
+      // Navigate to proposal details if linked
+      if (notification.proposalId) {
+        this.$router.push(`/proposal/${notification.proposalId}`);
+      }
     },
 
-    markAsRead(notification) {
-      notification.read = true;
+    async markAllAsRead() {
+      try {
+        const userStore = useUserDataStore();
+        const userId = userStore.user?.id;
+        if (!userId) return;
+        await api.put(`/api/notifications/read-all`, null, { params: { userId } });
+        this.notifications.forEach(n => { n.read = true; });
+      } catch (err) {
+        console.error('Failed to mark all as read:', err);
+      }
+    },
+
+    async markAsRead(notification) {
+      try {
+        await api.put(`/api/notifications/${notification.id}/read`);
+        notification.read = true;
+      } catch (err) {
+        console.error('Failed to mark as read:', err);
+      }
     },
 
     dismiss(notification) {
-      this.notifications =
-        this.notifications.filter(n => n.id !== notification.id);
+      this.notifications = this.notifications.filter(n => n.id !== notification.id);
     },
+  },
 
+  mounted() {
+    this.fetchNotifications();
   }
 };
 </script>
@@ -269,8 +327,8 @@ export default {
 <style scoped>
 .page {
   padding: 24px;
-  width: 500%;
-  max-width: 135%;
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   font-family: Arial, sans-serif;
   background: #f7f8fc;
@@ -306,8 +364,13 @@ export default {
   transition: .3s;
 }
 
-.mark-all-btn:hover {
+.mark-all-btn:hover:not(:disabled) {
   background: #1d4ed8;
+}
+
+.mark-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* SEARCH */
@@ -324,6 +387,7 @@ export default {
   font-size: 14px;
   outline: none;
   transition: .3s;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -449,62 +513,34 @@ export default {
 }
 
 .message {
-  display: none;
-}
-
-.info-box {
-  background: transparent;
-  padding: 0;
-  margin-top: 2px;
-}
-
-.info-box p {
-  margin: 1px 0;
-  font-size: 12px;
-  color: #6b7280;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
 }
 
 .time{
     margin-top:2px;
     font-size:11px;
 }
-/* ACTION BUTTONS */
-
-.actions {
-  display: none;
-}
-
-.action-btn {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 9px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: .3s;
-}
-
-.action-btn:hover {
-  background: #1d4ed8;
-}
 
 /* CONTROLS */
 
 .controls {
-  display: none;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .read-btn,
 .delete-btn {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: .3s;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
 }
 
@@ -530,6 +566,7 @@ export default {
 
 .empty-state {
   padding: 45px 20px;
+  text-align: center;
 }
 .empty-icon {
   width: 90px;
@@ -558,15 +595,30 @@ export default {
   line-height: 1.6;
 }
 
-/* SCROLLBAR */
-
-.notification-list::-webkit-scrollbar {
-  width: 8px;
+.error-text {
+  color: #dc2626;
 }
 
-.notification-list::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 20px;
+.retry-btn {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.info-line{
+    display:flex;
+    gap:5px;
+    font-size:12px;
+    color:#6b7280;
+    margin-top:4px;
+}
+
+.separator {
+  color: #9ca3af;
 }
 
 /* RESPONSIVE */
@@ -612,25 +664,5 @@ export default {
     justify-content: flex-end;
   }
 
-  .actions {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-  }
-
 }
-.info-line{
-    display:flex;
-    gap:5px;
-    font-size:12px;
-    color:#6b7280;
-    margin-top:2px;
-}
-
-.separator {
-  color: #9ca3af;
-}
-
 </style>
