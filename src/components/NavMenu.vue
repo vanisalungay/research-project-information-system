@@ -251,7 +251,7 @@ const isSelected = (path) => route.path === path
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 20px 12px;
+  padding: 20px 0 20px 12px;
 }
 
 .nav-list {
@@ -288,6 +288,7 @@ li {
   border-radius: 10px;
   transition: all 0.15s ease;
   position: relative;
+  margin-right: 12px;
 }
 
 li:hover {
@@ -298,6 +299,7 @@ li.active {
   background: #ffffff;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  margin-right: 0;
 }
 
 li.active:hover {
@@ -344,16 +346,4 @@ li.active .nav-link {
   text-overflow: ellipsis;
 }
 
-/* Active indicator bar */
-li.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: #ffd803;
-  border-radius: 0 3px 3px 0;
-}
 </style>

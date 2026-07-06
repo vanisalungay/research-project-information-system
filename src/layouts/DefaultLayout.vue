@@ -4,15 +4,13 @@
       <HeaderLogo />
     </header>
 
-    <div class="container">
-      <aside class="sidebar">
-        <NavMenu />
-      </aside>
+    <aside class="sidebar">
+      <NavMenu />
+    </aside>
 
-      <main class="content">
-        <router-view />
-      </main>
-    </div>
+    <main class="content">
+      <router-view />
+    </main>
   </div>
 </template>
 
@@ -22,32 +20,32 @@ import NavMenu from '@/components/NavMenu.vue'
 </script>
 
 <style scoped>
+.app-layout {
+  display: grid;
+  grid-template-rows: 169px 1fr;
+  grid-template-columns: 246px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
 header {
+  grid-column: 1 / -1;
   background: #262342;
   color: #fff;
   padding: 24px;
-  text-align: center;
-  height: 169px;
   display: flex;
   align-items: center;
 }
 
-.app-layout {
-  min-height: 100vh;
-}
-
-.container {
-  display: flex;
-  min-height: calc(100vh - 169px);
-}
-
 .sidebar {
-  width: 246px;
   background: #ffd803;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .content {
-  flex: 1;
+  overflow-y: auto;
   padding: 20px;
 }
 </style>
