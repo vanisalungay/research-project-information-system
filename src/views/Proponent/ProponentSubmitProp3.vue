@@ -94,11 +94,13 @@
               <div class="files-summary">
                 <div class="file-row" :class="{ attached: proposalData.review_of_literature_file }">
                   <span class="file-name">Review of Literature</span>
-                  <span class="file-status">{{ proposalData.review_of_literature_file ? '✓ Attached' : '— Not attached' }}</span>
+                  <span class="file-status">{{ proposalData.review_of_literature_file ? '✓ Attached' : '— Not attached'
+                    }}</span>
                 </div>
                 <div class="file-row" :class="{ attached: proposalData.technology_roadmap_file }">
                   <span class="file-name">Technology Roadmap</span>
-                  <span class="file-status">{{ proposalData.technology_roadmap_file ? '✓ Attached' : '— Not attached' }}</span>
+                  <span class="file-status">{{ proposalData.technology_roadmap_file ? '✓ Attached' : '— Not attached'
+                    }}</span>
                 </div>
                 <div class="file-row" :class="{ attached: proposalData.gad_score_file }">
                   <span class="file-name">GAD Score</span>
@@ -106,7 +108,8 @@
                 </div>
                 <div class="file-row" :class="{ attached: proposalData.line_item_budget_file }">
                   <span class="file-name">Line-Item Budget</span>
-                  <span class="file-status">{{ proposalData.line_item_budget_file ? '✓ Attached' : '— Not attached' }}</span>
+                  <span class="file-status">{{ proposalData.line_item_budget_file ? '✓ Attached' : '— Not attached'
+                    }}</span>
                 </div>
               </div>
             </div>
@@ -136,29 +139,33 @@
       <!-- FOOTER (only show when not submitting/submitted) -->
       <footer v-if="!submitting && !submitted" class="modal-footer">
         <button class="btn-secondary" @click="goBack" :disabled="submitting">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
           Back
         </button>
         <div class="footer-right">
           <button class="btn-outline" @click="saveAsDraftLocal" :disabled="submitting">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
             Save as Draft
           </button>
           <button class="btn-primary" @click="submitProposal" :disabled="!confirmed || submitting">
             Submit Proposal
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14" />
+              <path d="M12 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </footer>
     </div>
 
-    <ConfirmDialog
-      v-if="dialogState.show"
-      v-bind="dialogState"
-      @confirm="dialogState.onConfirm"
-      @cancel="dialogState.onCancel"
-      @close="dialogState.show = false"
-    />
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
@@ -187,6 +194,16 @@ const submitting = ref(false)
 const submitted = ref(false)
 const submitMessage = ref('')
 const error = ref(null)
+
+const resetForm = () => {
+  confirmed.value = false
+  submitted.value = false
+  submitting.value = false
+  submitMessage.value = ''
+  error.value = null
+}
+
+defineExpose({ resetForm })
 
 const close = () => emit('update:modelValue', false)
 
@@ -598,12 +615,12 @@ const saveOrUpdateProposal = async (status) => {
   margin-top: 1px;
 }
 
-.confirm-checkbox input:checked + .checkmark {
+.confirm-checkbox input:checked+.checkmark {
   background: #4f46e5;
   border-color: #4f46e5;
 }
 
-.confirm-checkbox input:checked + .checkmark::after {
+.confirm-checkbox input:checked+.checkmark::after {
   content: '✓';
   color: #fff;
   font-size: 14px;
@@ -617,7 +634,8 @@ const saveOrUpdateProposal = async (status) => {
 }
 
 /* ===== LOADING / SUCCESS STATES ===== */
-.loading-state, .success-state {
+.loading-state,
+.success-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -637,7 +655,9 @@ const saveOrUpdateProposal = async (status) => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .success-icon {
@@ -709,6 +729,7 @@ const saveOrUpdateProposal = async (status) => {
 .btn-secondary:hover {
   background: #e2e8f0;
 }
+
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -734,6 +755,7 @@ const saveOrUpdateProposal = async (status) => {
   color: #4f46e5;
   background: #f8faff;
 }
+
 .btn-outline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -759,6 +781,7 @@ const saveOrUpdateProposal = async (status) => {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
+
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -770,13 +793,16 @@ const saveOrUpdateProposal = async (status) => {
 .modal-body::-webkit-scrollbar {
   width: 6px;
 }
+
 .modal-body::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .modal-body::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
+
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }

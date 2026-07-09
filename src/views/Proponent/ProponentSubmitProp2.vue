@@ -10,30 +10,34 @@
           </div>
           <div class="header-actions">
             <button class="btn-download" @click="downloadForm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               Download Form
             </button>
             <button class="close-btn" @click="close">✕</button>
           </div>
         </header>
 
-      <!-- PROGRESS BAR -->
-      <div class="progress-bar">
-        <div class="progress-step completed" @click="$emit('goToStep', 1)">
-          <span class="step-number">✓</span>
-          <span class="step-label">Proposal Details</span>
+        <!-- PROGRESS BAR -->
+        <div class="progress-bar">
+          <div class="progress-step completed" @click="$emit('goToStep', 1)">
+            <span class="step-number">✓</span>
+            <span class="step-label">Proposal Details</span>
+          </div>
+          <div class="progress-line filled"></div>
+          <div class="progress-step active" @click="$emit('goToStep', 2)">
+            <span class="step-number">2</span>
+            <span class="step-label">Certification</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" @click="$emit('goToStep', 3)">
+            <span class="step-number">3</span>
+            <span class="step-label">Review & Submit</span>
+          </div>
         </div>
-        <div class="progress-line filled"></div>
-        <div class="progress-step active" @click="$emit('goToStep', 2)">
-          <span class="step-number">2</span>
-          <span class="step-label">Certification</span>
-        </div>
-        <div class="progress-line"></div>
-        <div class="progress-step" @click="$emit('goToStep', 3)">
-          <span class="step-number">3</span>
-          <span class="step-label">Review & Submit</span>
-        </div>
-      </div>
 
         <!-- BODY -->
         <div class="modal-body">
@@ -45,7 +49,10 @@
             </div>
             <div class="cert-card">
               <div class="cert-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4" />
+                  <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
+                </svg>
               </div>
               <p class="cert-text">
                 I hereby certify that the foregoing statements are true and accurate, and that I have no
@@ -84,10 +91,16 @@
               <div class="form-group">
                 <label>Signature</label>
                 <div class="upload-area" @click="triggerUpload('submitted')">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
                   <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image' }}</span>
                 </div>
-                <input type="file" ref="submittedFile" @change="handleFile('submitted', $event)" hidden accept="image/*,.pdf" />
+                <input type="file" ref="submittedFile" @change="handleFile('submitted', $event)" hidden
+                  accept="image/*,.pdf" />
               </div>
               <div v-if="uploadedFiles.submitted" class="file-info">
                 <span>📄 {{ uploadedFiles.submitted.name }}</span>
@@ -123,10 +136,16 @@
               <div class="form-group">
                 <label>Signature</label>
                 <div class="upload-area" @click="triggerUpload('endorsed')">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
                   <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image' }}</span>
                 </div>
-                <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden accept="image/*,.pdf" />
+                <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
+                  accept="image/*,.pdf" />
               </div>
               <div v-if="uploadedFiles.endorsed" class="file-info">
                 <span>📄 {{ uploadedFiles.endorsed.name }}</span>
@@ -139,21 +158,32 @@
         <!-- FOOTER -->
         <footer class="modal-footer">
           <button class="btn-secondary" @click="goBack">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
             Back
           </button>
           <div class="footer-right">
             <button class="btn-outline" @click="saveDraft">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
               Save Draft
             </button>
             <button class="btn-outline" @click="viewCriteria">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
               View Criteria
             </button>
             <button class="btn-primary" @click="submitForm">
               Submit Proposal
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </button>
           </div>
         </footer>
@@ -184,6 +214,13 @@ const handleFile = (type, event) => {
   const file = event.target.files[0]
   if (file) uploadedFiles[type] = file
 }
+
+const resetForm = () => {
+  uploadedFiles.submitted = null
+  uploadedFiles.endorsed = null
+}
+
+defineExpose({ resetForm })
 
 const goBack = () => emit('openPrevious', modalId)
 const saveDraft = () => emit('close')

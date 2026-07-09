@@ -69,6 +69,10 @@
                   <p>{{ proposal.projectLeader || 'Not provided' }}</p>
                 </div>
                 <div class="info-item">
+                  <label>Sex</label>
+                  <p>{{ proposal.projectLeaderSex || 'Not provided' }}</p>
+                </div>
+                <div class="info-item">
                   <label>Duration</label>
                   <p>{{ proposal.duration || 'Not provided' }} months</p>
                 </div>
@@ -83,6 +87,10 @@
                 <div class="info-item full-width">
                   <label>Implementing College / Department</label>
                   <p>{{ proposal.college || 'Not provided' }}</p>
+                </div>
+                <div class="info-item full-width">
+                  <label>Address / Contact</label>
+                  <p>{{ proposal.address || 'Not provided' }}</p>
                 </div>
               </div>
             </div>
@@ -110,18 +118,22 @@
                 <table class="data-table">
                   <thead>
                     <tr>
+                      <th>#</th>
                       <th>Country</th>
                       <th>Region</th>
                       <th>Province</th>
+                      <th>District</th>
                       <th>Municipality</th>
                       <th>Barangay</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(site, index) in proposal.sites" :key="index">
+                      <td>{{ index + 1 }}</td>
                       <td>{{ site.country }}</td>
                       <td>{{ site.region }}</td>
                       <td>{{ site.province }}</td>
+                      <td>{{ site.district }}</td>
                       <td>{{ site.municipality }}</td>
                       <td>{{ site.barangay }}</td>
                     </tr>
@@ -176,6 +188,36 @@
           <section class="content-card">
             <div class="card-header">
               <span class="card-number">06</span>
+              <h2>Innovation Goals</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.innovationGoals || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">07</span>
+              <h2>Sector Relevance</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sectorRelevance || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">08</span>
+              <h2>Sustainable Development Goals</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sdg || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">09</span>
               <h2>Executive Summary</h2>
             </div>
             <div class="card-body">
@@ -183,9 +225,59 @@
             </div>
           </section>
 
+          <!-- Introduction -->
           <section class="content-card">
             <div class="card-header">
-              <span class="card-number">07</span>
+              <span class="card-number">10</span>
+              <h2>Introduction</h2>
+            </div>
+            <div class="card-body">
+              <div class="subsection">
+                <h3>10.1 Rationale / Significance</h3>
+                <p class="text-content">{{ proposal.rationale || 'Not provided' }}</p>
+              </div>
+              <div class="subsection">
+                <h3>10.2 Scientific Basis / Theoretical Framework</h3>
+                <p class="text-content">{{ proposal.framework || 'Not provided' }}</p>
+              </div>
+              <div class="subsection">
+                <h3>10.3 Objectives</h3>
+                <div class="objectives">
+                  <div>
+                    <strong>General Objective:</strong>
+                    <p>{{ proposal.objectivesGeneral || 'Not provided' }}</p>
+                  </div>
+                  <div>
+                    <strong>Specific Objectives:</strong>
+                    <p>{{ proposal.objectivesSpecific || 'Not provided' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Documents Section -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">11</span>
+              <h2>Review of Literature</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.reviewFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.reviewFileName }}</p>
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No file uploaded.</p>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">12</span>
               <h2>Methodology</h2>
             </div>
             <div class="card-body">
@@ -193,10 +285,260 @@
             </div>
           </section>
 
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">13</span>
+              <h2>Technology Roadmap</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.roadmapFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.roadmapFileName }}</p>
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 14. Expected Outputs -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">14</span>
+              <h2>Expected Outputs (6Ps)</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outputs || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 15. Potential Outcomes -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">15</span>
+              <h2>Potential Outcomes</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outcomes || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 16. Potential Impacts -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">16</span>
+              <h2>Potential Impacts (2Is)</h2>
+            </div>
+            <div class="card-body">
+              <div class="subsection">
+                <h3>a. Economic Impact</h3>
+                <p class="text-content">{{ proposal.impactEconomic || 'Not provided' }}</p>
+              </div>
+              <div class="subsection">
+                <h3>b. Social / Ethical Impact</h3>
+                <p class="text-content">{{ proposal.impactSocial || 'Not provided' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 17. Target Beneficiaries -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">17</span>
+              <h2>Target Beneficiaries</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.beneficiaries || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 18. Sustainability Plan -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">18</span>
+              <h2>Sustainability Plan</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sustainability || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 19. GAD Score -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">19</span>
+              <h2>Gender and Development (GAD) Score</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.gadFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.gadFileName }}</p>
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 20. Limitations -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">20</span>
+              <h2>Limitations of the Project</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.limitations || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 21. Risks & Assumptions -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">21</span>
+              <h2>Risk Management Plan</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.risks || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 22. Logical Framework -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">22</span>
+              <h2>Logical Framework</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.logFrame && proposal.logFrame.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Outcome Indicators</th>
+                      <th>Output Indicators / Physical Target</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.logFrame" :key="index">
+                      <td>{{ row.outcome || '-' }}</td>
+                      <td>{{ row.output || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No logical framework data.</p>
+            </div>
+          </section>
+
+          <!-- 23. Literature Cited -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">23</span>
+              <h2>Literature Cited</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.literatureCited || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 24. Personnel Requirement -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">24</span>
+              <h2>Personnel Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.personnel && proposal.personnel.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Position</th>
+                      <th>% Time Devoted</th>
+                      <th>Responsibilities</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.personnel" :key="index">
+                      <td>{{ row.position || '-' }}</td>
+                      <td>{{ row.time || '-' }}</td>
+                      <td>{{ row.responsibilities || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No personnel data.</p>
+            </div>
+          </section>
+
+          <!-- 25. Line-Item Budget -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">25</span>
+              <h2>Line-Item Budget Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.budgetFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.budgetFileName }}</p>
+                  <p class="file-type">Budget Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No budget file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 26. Other Ongoing Projects -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">26</span>
+              <h2>Other Ongoing Projects</h2>
+            </div>
+            <div class="card-body">
+              <p v-if="proposal.otherProjectsNumber" class="text-content" style="margin-bottom: 12px;">
+                <strong>Number of other projects:</strong> {{ proposal.otherProjectsNumber }}
+              </p>
+              <div v-if="proposal.otherProjects && proposal.otherProjects.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Funding Agency</th>
+                      <th>Involvement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.otherProjects" :key="index">
+                      <td>{{ row.title || '-' }}</td>
+                      <td>{{ row.agency || '-' }}</td>
+                      <td>{{ row.involvement || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No other projects.</p>
+            </div>
+          </section>
+
+          <!-- 27. Other Supporting Documents -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">27</span>
+              <h2>Other Supporting Documents</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">Please refer to the attached documents for additional necessary documents.</p>
+            </div>
+          </section>
+
           <!-- Documents -->
           <section class="content-card">
             <div class="card-header">
-              <span class="card-number">08</span>
+              <span class="card-number">28</span>
               <h2>Documents & Attachments</h2>
             </div>
             <div class="card-body">
@@ -307,13 +649,8 @@
       </div>
     </template>
 
-    <ConfirmDialog
-      v-if="dialogState.show"
-      v-bind="dialogState"
-      @confirm="dialogState.onConfirm"
-      @cancel="dialogState.onCancel"
-      @close="dialogState.show = false"
-    />
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
@@ -489,12 +826,35 @@ const formatDate = (dateString) => {
   text-transform: uppercase;
 }
 
-.status-badge.draft { background: #e5e7eb; color: #374151; }
-.status-badge.submitted { background: #f3e8ff; color: #6b21a8; }
-.status-badge.under_review { background: #ede9fe; color: #6d28d9; }
-.status-badge.approved { background: #dcfce7; color: #166534; }
-.status-badge.rejected { background: #fee2e2; color: #991b1b; }
-.status-badge.revision { background: #e0e7ff; color: #3730a3; }
+.status-badge.draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-badge.under_review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
 
 .header-actions {
   display: flex;
@@ -532,7 +892,8 @@ const formatDate = (dateString) => {
 }
 
 /* LOADING & ERROR */
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -551,7 +912,9 @@ const formatDate = (dateString) => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state p {
@@ -653,6 +1016,90 @@ const formatDate = (dateString) => {
   color: #475569;
   margin: 0;
   white-space: pre-wrap;
+}
+
+/* SUBSECTION */
+.subsection {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.subsection:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.subsection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.objectives {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.objectives div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.objectives strong {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.objectives p {
+  font-size: 14px;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* FILE ATTACHMENT */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.file-type {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
 }
 
 /* TYPE BADGE */
@@ -838,12 +1285,35 @@ const formatDate = (dateString) => {
   text-transform: uppercase;
 }
 
-.status-indicator.draft { background: #f1f5f9; color: #64748b; }
-.status-indicator.submitted { background: #f3e8ff; color: #6b21a8; }
-.status-indicator.under_review { background: #ede9fe; color: #6d28d9; }
-.status-indicator.approved { background: #dcfce7; color: #166534; }
-.status-indicator.rejected { background: #fee2e2; color: #991b1b; }
-.status-indicator.revision { background: #e0e7ff; color: #3730a3; }
+.status-indicator.draft {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-indicator.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-indicator.under_review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-indicator.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-indicator.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-indicator.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
 
 .status-meta {
   display: flex;
@@ -908,7 +1378,8 @@ const formatDate = (dateString) => {
   text-transform: uppercase;
 }
 
-.reviewer-input, .position-select {
+.reviewer-input,
+.position-select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #d1d5db;

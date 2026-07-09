@@ -4,7 +4,9 @@
     <header class="page-header">
       <div class="header-left">
         <button class="back-btn" @click="$router.go(-1)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
           Back
         </button>
         <div class="header-info">
@@ -58,6 +60,10 @@
                 <div class="info-item">
                   <label>Project Leader</label>
                   <p>{{ proposal.projectLeader || 'Not provided' }}</p>
+                </div>
+                <div class="info-item">
+                  <label>Sex</label>
+                  <p>{{ proposal.projectLeaderSex || 'Not provided' }}</p>
                 </div>
                 <div class="info-item">
                   <label>Duration</label>
@@ -289,6 +295,238 @@
               <p v-else class="empty-text">No file uploaded.</p>
             </div>
           </section>
+
+          <!-- 14. Expected Outputs -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">14</span>
+              <h2>Expected Outputs (6Ps)</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outputs || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 15. Potential Outcomes -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">15</span>
+              <h2>Potential Outcomes</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outcomes || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 16. Potential Impacts -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">16</span>
+              <h2>Potential Impacts (2Is)</h2>
+            </div>
+            <div class="card-body">
+              <div class="subsection">
+                <h3>a. Economic Impact</h3>
+                <p class="text-content">{{ proposal.impactEconomic || 'Not provided' }}</p>
+              </div>
+              <div class="subsection">
+                <h3>b. Social / Ethical Impact</h3>
+                <p class="text-content">{{ proposal.impactSocial || 'Not provided' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 17. Target Beneficiaries -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">17</span>
+              <h2>Target Beneficiaries</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.beneficiaries || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 18. Sustainability Plan -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">18</span>
+              <h2>Sustainability Plan</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sustainability || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 19. GAD Score -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">19</span>
+              <h2>Gender and Development (GAD) Score</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.gadFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.gadFileName }}</p>
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 20. Limitations -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">20</span>
+              <h2>Limitations of the Project</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.limitations || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 21. Risks & Assumptions -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">21</span>
+              <h2>Risk Management Plan</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.risks || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 22. Logical Framework -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">22</span>
+              <h2>Logical Framework</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.logFrame && proposal.logFrame.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Outcome Indicators</th>
+                      <th>Output Indicators / Physical Target</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.logFrame" :key="index">
+                      <td>{{ row.outcome || '-' }}</td>
+                      <td>{{ row.output || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No logical framework data.</p>
+            </div>
+          </section>
+
+          <!-- 23. Literature Cited -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">23</span>
+              <h2>Literature Cited</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.literatureCited || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 24. Personnel Requirement -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">24</span>
+              <h2>Personnel Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.personnel && proposal.personnel.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Position</th>
+                      <th>% Time Devoted</th>
+                      <th>Responsibilities</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.personnel" :key="index">
+                      <td>{{ row.position || '-' }}</td>
+                      <td>{{ row.time || '-' }}</td>
+                      <td>{{ row.responsibilities || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No personnel data.</p>
+            </div>
+          </section>
+
+          <!-- 25. Line-Item Budget -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">25</span>
+              <h2>Line-Item Budget Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.budgetFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.budgetFileName }}</p>
+                  <p class="file-type">Budget Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">Download</button>
+              </div>
+              <p v-else class="empty-text">No budget file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 26. Other Ongoing Projects -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">26</span>
+              <h2>Other Ongoing Projects</h2>
+            </div>
+            <div class="card-body">
+              <p v-if="proposal.otherProjectsNumber" class="text-content" style="margin-bottom: 12px;">
+                <strong>Number of other projects:</strong> {{ proposal.otherProjectsNumber }}
+              </p>
+              <div v-if="proposal.otherProjects && proposal.otherProjects.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Funding Agency</th>
+                      <th>Involvement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.otherProjects" :key="index">
+                      <td>{{ row.title || '-' }}</td>
+                      <td>{{ row.agency || '-' }}</td>
+                      <td>{{ row.involvement || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No other projects.</p>
+            </div>
+          </section>
+
+          <!-- 27. Other Supporting Documents -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">27</span>
+              <h2>Other Supporting Documents</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">Please refer to the attached documents for additional necessary documents.</p>
+            </div>
+          </section>
         </div>
 
         <!-- RIGHT COLUMN: Sidebar -->
@@ -492,12 +730,35 @@ const printProposal = () => {
   text-transform: uppercase;
 }
 
-.status-badge.draft { background: #e5e7eb; color: #374151; }
-.status-badge.submitted { background: #f3e8ff; color: #6b21a8; }
-.status-badge.under_review { background: #ede9fe; color: #6d28d9; }
-.status-badge.approved { background: #dcfce7; color: #166534; }
-.status-badge.rejected { background: #fee2e2; color: #991b1b; }
-.status-badge.revision { background: #e0e7ff; color: #3730a3; }
+.status-badge.draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-badge.under_review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
 
 .header-actions {
   display: flex;
@@ -532,7 +793,8 @@ const printProposal = () => {
 }
 
 /* LOADING & ERROR */
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -551,7 +813,9 @@ const printProposal = () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state p {
@@ -876,12 +1140,35 @@ const printProposal = () => {
   text-transform: uppercase;
 }
 
-.status-indicator.draft { background: #f1f5f9; color: #64748b; }
-.status-indicator.submitted { background: #f3e8ff; color: #6b21a8; }
-.status-indicator.under_review { background: #ede9fe; color: #6d28d9; }
-.status-indicator.approved { background: #dcfce7; color: #166534; }
-.status-indicator.rejected { background: #fee2e2; color: #991b1b; }
-.status-indicator.revision { background: #e0e7ff; color: #3730a3; }
+.status-indicator.draft {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-indicator.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-indicator.under_review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-indicator.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-indicator.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-indicator.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
 
 .status-meta {
   display: flex;

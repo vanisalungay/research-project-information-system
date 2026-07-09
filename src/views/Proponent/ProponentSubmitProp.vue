@@ -9,7 +9,11 @@
         </div>
         <div class="header-actions">
           <button class="btn-download" @click="downloadForm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
             Download Form
           </button>
           <button class="close-btn" @click="close">✕</button>
@@ -87,7 +91,9 @@
             </div>
             <div class="form-group">
               <label>Address / Contact</label>
-              <textarea v-model="proposal.address" placeholder="Barangay, Municipality, District, Province, Region / Telephone / Fax / Email" rows="3"></textarea>
+              <textarea v-model="proposal.address"
+                placeholder="Barangay, Municipality, District, Province, Region / Telephone / Fax / Email"
+                rows="3"></textarea>
             </div>
           </div>
         </section>
@@ -101,7 +107,8 @@
           <div class="section-card">
             <div class="form-group">
               <label>Name/s and Address/es</label>
-              <textarea v-model="proposal.cooperating_agencies" placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
+              <textarea v-model="proposal.cooperating_agencies"
+                placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
             </div>
           </div>
         </section>
@@ -180,7 +187,8 @@
           </div>
           <div class="section-card">
             <div class="agenda-grid">
-              <div v-for="program in programList" :key="program.key" class="agenda-item" :class="{ selected: proposal.priority_agendas[program.key].selected }">
+              <div v-for="program in programList" :key="program.key" class="agenda-item"
+                :class="{ selected: proposal.priority_agendas[program.key].selected }">
                 <label class="agenda-checkbox">
                   <input type="checkbox" v-model="proposal.priority_agendas[program.key].selected" />
                   <span class="checkmark"></span>
@@ -188,7 +196,8 @@
                 </label>
                 <div class="agenda-value" v-if="proposal.priority_agendas[program.key].selected">
                   <span class="agenda-sub">{{ program.subLabel }}:</span>
-                  <input v-model="proposal.priority_agendas[program.key].value" :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
+                  <input v-model="proposal.priority_agendas[program.key].value"
+                    :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
                 </div>
               </div>
             </div>
@@ -202,7 +211,8 @@
             <h3>Innovation Goals</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.innovation_goals" placeholder="Describe the innovation goals of this project..." rows="4"></textarea>
+            <textarea v-model="proposal.innovation_goals" placeholder="Describe the innovation goals of this project..."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -212,7 +222,8 @@
             <h3>Sector Relevance</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.sector_relevance" placeholder="Public Health, Environment, Agriculture, etc." rows="4"></textarea>
+            <textarea v-model="proposal.sector_relevance" placeholder="Public Health, Environment, Agriculture, etc."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -222,7 +233,8 @@
             <h3>Sustainable Development Goals (SDG)</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.sustainable_development_goals" placeholder="List applicable SDGs addressed..." rows="4"></textarea>
+            <textarea v-model="proposal.sustainable_development_goals" placeholder="List applicable SDGs addressed..."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -232,7 +244,8 @@
             <h3>Executive Summary</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5" class="word-limit"></textarea>
+            <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5"
+              class="word-limit"></textarea>
             <span class="char-count">{{ proposal.executive_summary.length }} / ~1400 chars</span>
           </div>
         </section>
@@ -276,7 +289,12 @@
           <div class="section-card">
             <div class="file-upload">
               <div class="upload-area" @click="$refs.litFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                </svg>
                 <span>Click to upload literature review file</span>
                 <span class="upload-hint">PDF, DOC, DOCX accepted</span>
               </div>
@@ -296,7 +314,8 @@
             <h3>Methodology</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.methodology" placeholder="Describe the research methodology..." rows="5"></textarea>
+            <textarea v-model="proposal.methodology" placeholder="Describe the research methodology..."
+              rows="5"></textarea>
           </div>
         </section>
 
@@ -310,7 +329,12 @@
           <div class="section-card">
             <div class="file-upload">
               <div class="upload-area" @click="$refs.techFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                </svg>
                 <span>Upload technology roadmap</span>
               </div>
               <input ref="techFile" type="file" @change="handleFileUpload('technology', $event)" hidden />
@@ -339,7 +363,8 @@
             <h3>Potential Outcomes</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.potential_outcomes" placeholder="Describe potential outcomes..." rows="4"></textarea>
+            <textarea v-model="proposal.potential_outcomes" placeholder="Describe potential outcomes..."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -367,7 +392,8 @@
             <h3>Target Beneficiaries</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.target_beneficiaries" placeholder="Describe the target beneficiaries..." rows="4"></textarea>
+            <textarea v-model="proposal.target_beneficiaries" placeholder="Describe the target beneficiaries..."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -378,7 +404,8 @@
             <h3>Sustainability Plan</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.sustainability_plan" placeholder="Describe the sustainability plan..." rows="4"></textarea>
+            <textarea v-model="proposal.sustainability_plan" placeholder="Describe the sustainability plan..."
+              rows="4"></textarea>
           </div>
         </section>
 
@@ -391,7 +418,12 @@
           <div class="section-card">
             <div class="file-upload">
               <div class="upload-area" @click="$refs.gadFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                </svg>
                 <span>Upload GAD score document</span>
               </div>
               <input ref="gadFile" type="file" @change="handleFileUpload('gad', $event)" hidden />
@@ -421,7 +453,8 @@
             <h3>Risk Management Plan</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.risks_assumptions" placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
+            <textarea v-model="proposal.risks_assumptions"
+              placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
           </div>
         </section>
 
@@ -446,7 +479,8 @@
                   <tr v-for="(row, index) in proposal.logical_framework" :key="index">
                     <td><input v-model="row.outcome_indicator" placeholder="e.g. Improved water quality" /></td>
                     <td><input v-model="row.output_indicator" placeholder="e.g. 5 filtration units installed" /></td>
-                    <td><button class="btn-icon btn-remove" @click="removeTableRow('logical_framework', index)">✕</button></td>
+                    <td><button class="btn-icon btn-remove"
+                        @click="removeTableRow('logical_framework', index)">✕</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -462,7 +496,8 @@
             <h3>Literature Cited</h3>
           </div>
           <div class="section-card">
-            <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..." rows="5"></textarea>
+            <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..."
+              rows="5"></textarea>
           </div>
         </section>
 
@@ -488,7 +523,8 @@
                     <td><input v-model="row.position" placeholder="e.g. Research Assistant" /></td>
                     <td><input v-model="row.effort" placeholder="e.g. 50%" /></td>
                     <td><input v-model="row.responsibilities" placeholder="e.g. Data collection" /></td>
-                    <td><button class="btn-icon btn-remove" @click="removeTableRow('personnel_requirements', index)">✕</button></td>
+                    <td><button class="btn-icon btn-remove"
+                        @click="removeTableRow('personnel_requirements', index)">✕</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -506,15 +542,25 @@
           <div class="section-card">
             <div class="budget-actions">
               <button class="btn-outline" @click="downloadBudgetFormat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
                 Download Budget Template
               </button>
               <div class="file-upload inline">
                 <div class="upload-area small" @click="$refs.budgetFile.click()">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
                   <span>Upload filled budget file</span>
                 </div>
-                <input ref="budgetFile" type="file" accept=".pdf,.doc,.docx" @change="handleFileUpload('budget', $event)" hidden />
+                <input ref="budgetFile" type="file" accept=".pdf,.doc,.docx"
+                  @change="handleFileUpload('budget', $event)" hidden />
               </div>
             </div>
             <div v-if="proposal.line_item_budget_file" class="file-info">
@@ -551,7 +597,8 @@
                     <td><input v-model="row.project_title" placeholder="Project title" /></td>
                     <td><input v-model="row.funding_agency" placeholder="e.g. DOST" /></td>
                     <td><input v-model="row.involvement" placeholder="e.g. Project Leader" /></td>
-                    <td><button class="btn-icon btn-remove" @click="removeTableRow('other_projects', index)">✕</button></td>
+                    <td><button class="btn-icon btn-remove" @click="removeTableRow('other_projects', index)">✕</button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -577,25 +624,26 @@
         <button class="btn-secondary" @click="close">Cancel</button>
         <div class="footer-right">
           <button class="btn-outline" @click="saveAsDraft">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
             Save as Draft
           </button>
           <button class="btn-primary" @click="goNext">
             Next Step
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </button>
         </div>
       </footer>
     </div>
   </div>
 
-  <ConfirmDialog
-    v-if="dialogState.show"
-    v-bind="dialogState"
-    @confirm="dialogState.onConfirm"
-    @cancel="dialogState.onCancel"
-    @close="dialogState.show = false"
-  />
+  <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+    @cancel="dialogState.onCancel" @close="dialogState.show = false" />
 </template>
 
 <script setup>
@@ -610,7 +658,7 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
 
-const proposal = reactive({
+const getInitialProposal = () => ({
   proposal_id: null,
   program_title: '',
   project_title: '',
@@ -659,6 +707,17 @@ const proposal = reactive({
   personnel_requirements: [{ position: '', effort: '', responsibilities: '' }],
   other_projects: [{ project_title: '', funding_agency: '', involvement: '' }]
 })
+
+const proposal = reactive(getInitialProposal())
+
+const resetForm = () => {
+  const initial = getInitialProposal()
+  Object.keys(initial).forEach(key => {
+    proposal[key] = initial[key]
+  })
+}
+
+defineExpose({ resetForm })
 
 const programList = [
   { key: 'dagat', label: 'DAGAT Program', subLabel: 'Commodity' },
@@ -1031,7 +1090,9 @@ const mapFormToDTO = (data, proponentId, status) => {
   margin-bottom: 6px;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
@@ -1044,13 +1105,16 @@ input, select, textarea {
   font-family: inherit;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-input::placeholder, textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: #94a3b8;
 }
 
@@ -1305,12 +1369,12 @@ select {
   flex-shrink: 0;
 }
 
-.agenda-checkbox input:checked + .checkmark {
+.agenda-checkbox input:checked+.checkmark {
   background: #4f46e5;
   border-color: #4f46e5;
 }
 
-.agenda-checkbox input:checked + .checkmark::after {
+.agenda-checkbox input:checked+.checkmark::after {
   content: '✓';
   color: #fff;
   font-size: 12px;

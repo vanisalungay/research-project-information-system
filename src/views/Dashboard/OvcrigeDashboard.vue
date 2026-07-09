@@ -75,30 +75,21 @@
                 </td>
               </tr>
 
-              <tr
-                v-for="proposal in proposals.slice(0,5)"
-                :key="proposal.id"
-              >
+              <tr v-for="proposal in proposals.slice(0, 5)" :key="proposal.id">
                 <td>{{ proposal.projectTitle }}</td>
                 <td>
                   {{ proposal.proponent?.name || '-' }}
                 </td>
                 <td>
-                  {{ proposal.createdAt?.substring(0,10) }}
+                  {{ proposal.createdAt?.substring(0, 10) }}
                 </td>
                 <td>
-                  <span
-                    class="badge"
-                    :class="proposal.status.toLowerCase()"
-                  >
+                  <span class="badge" :class="proposal.status.toLowerCase()">
                     {{ proposal.status }}
                   </span>
                 </td>
                 <td>
-                  <button
-                    class="review"
-                    @click="goToReview(proposal.id)"
-                  >
+                  <button class="review" @click="goToReview(proposal.id)">
                     Review
                   </button>
                 </td>
@@ -107,55 +98,45 @@
           </table>
         </section>
 
-       <aside class="notifications">
+        <aside class="notifications">
 
-<h3>Notifications</h3>
+          <h3>Notifications</h3>
 
-<ul>
+          <ul>
 
-<li
-    v-if="loading"
->
-Loading...
-</li>
+            <li v-if="loading">
+              Loading...
+            </li>
 
-<li
-    v-else-if="notifications.length===0"
->
-No notifications.
-</li>
+            <li v-else-if="notifications.length === 0">
+              No notifications.
+            </li>
 
-<li
-    v-for="notification in notifications.slice(0,5)"
-    :key="notification.id"
->
+            <li v-for="notification in notifications.slice(0, 5)" :key="notification.id">
 
-<strong>
+              <strong>
 
-{{ notification.message }}
+                {{ notification.message }}
 
-</strong>
+              </strong>
 
-<small>
+              <small>
 
-{{ notification.createdAt?.substring(0,16) }}
+                {{ notification.createdAt?.substring(0, 16) }}
 
-</small>
+              </small>
 
-</li>
+            </li>
 
-</ul>
+          </ul>
 
-<button
-class="view-all"
-@click="goToNotifications"
->
+          <button class="view-all" @click="goToNotifications">
 
-View All
+            View All
 
-</button>
+          </button>
 
-</aside>
+        </aside>
       </div>
     </div>
   </div>
@@ -183,8 +164,8 @@ const loading = ref(true)
 
 const loadDashboard = async () => {
   try {
-    // Fetch proposals
-    const proposalResponse = await api.get('/api/proposals')
+    // Fetch proposals relevant to OVCRIGE workflow
+    const proposalResponse = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
 
     proposals.value = proposalResponse.data
 

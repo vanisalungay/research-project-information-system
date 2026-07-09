@@ -44,174 +44,641 @@
     <!-- REVISION FORM -->
     <template v-else-if="proposalId">
       <div class="content-grid">
-        <!-- LEFT COLUMN: Main Form -->
+        <!-- LEFT COLUMN -->
         <div class="main-content">
-          <!-- Project Profile Section -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">01</span>
-              <h2>Project Profile</h2>
-            </div>
-            <div class="card-body">
-              <div class="info-grid">
-                <div class="info-item">
-                  <label>Program Title *</label>
-                  <input v-model="formData.programTitle" type="text" required />
+          <div class="modal-body">
+            <!-- 1. Project Profile -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">01</span>
+                <h3>Project Profile</h3>
+              </div>
+              <div class="section-card">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Program Title</label>
+                    <input v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                  </div>
+                  <div class="form-group">
+                    <label>Project Title</label>
+                    <input v-model="proposal.project_title"
+                      placeholder="e.g. Community-Based Water Filtration System" />
+                  </div>
                 </div>
-                <div class="info-item">
-                  <label>Project Title *</label>
-                  <input v-model="formData.projectTitle" type="text" required />
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Project Leader</label>
+                    <input v-model="proposal.project_leader" placeholder="Full name of project leader" />
+                  </div>
+                  <div class="form-group">
+                    <label>Sex</label>
+                    <select v-model="proposal.project_leader_sex">
+                      <option value="">Select Sex</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="info-item">
-                  <label>Project Leader *</label>
-                  <input v-model="formData.projectLeader" type="text" required />
+                <div class="form-row three-col">
+                  <div class="form-group">
+                    <label>Duration (months)</label>
+                    <input v-model="proposal.duration" placeholder="e.g. 12" />
+                  </div>
+                  <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" v-model="proposal.start_date" />
+                  </div>
+                  <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" v-model="proposal.end_date" />
+                  </div>
                 </div>
-                <div class="info-item">
-                  <label>Duration (months) *</label>
-                  <input v-model="formData.duration" type="text" required />
+                <div class="form-group">
+                  <label>Implementing College / Department</label>
+                  <input v-model="proposal.department" placeholder="e.g. College of Engineering" />
                 </div>
-                <div class="info-item">
-                  <label>Start Date *</label>
-                  <input v-model="formData.startDate" type="date" required />
-                </div>
-                <div class="info-item">
-                  <label>End Date *</label>
-                  <input v-model="formData.endDate" type="date" required />
-                </div>
-                <div class="info-item full-width">
-                  <label>Implementing College / Department *</label>
-                  <input v-model="formData.college" type="text" required />
-                </div>
-                <div class="info-item full-width">
+                <div class="form-group">
                   <label>Address / Contact</label>
-                  <input v-model="formData.address" type="text" />
+                  <textarea v-model="proposal.address"
+                    placeholder="Barangay, Municipality, District, Province, Region / Telephone / Fax / Email"
+                    rows="3"></textarea>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Research Details Section -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">02</span>
-              <h2>Research Details</h2>
-            </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label>Cooperating Agencies</label>
-                <textarea v-model="formData.cooperatingAgencies" rows="3"></textarea>
+            <!-- 2. Cooperating Agency/ies -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">02</span>
+                <h3>Cooperating Agencies</h3>
               </div>
-              <div class="form-group">
-                <label>Type of Research</label>
-                <select v-model="formData.researchType">
-                  <option value="">Select type</option>
-                  <option value="BASIC">Basic Research</option>
-                  <option value="APPLIED">Applied Research</option>
-                  <option value="DEVELOPMENT">Development Research</option>
-                </select>
+              <div class="section-card">
+                <div class="form-group">
+                  <label>Name/s and Address/es</label>
+                  <textarea v-model="proposal.cooperating_agencies"
+                    placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Innovation Goals</label>
-                <textarea v-model="formData.innovationGoals" rows="4"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Sector Relevance</label>
-                <textarea v-model="formData.sectorRelevance" rows="4"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Sustainable Development Goals</label>
-                <textarea v-model="formData.sdg" rows="3"></textarea>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Executive Summary & Introduction -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">03</span>
-              <h2>Executive Summary & Introduction</h2>
-            </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label>Executive Summary</label>
-                <textarea v-model="formData.executiveSummary" rows="5"></textarea>
+            <!-- 3. Sites of Implementation -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">03</span>
+                <h3>Sites of Implementation</h3>
               </div>
-              <div class="form-group">
-                <label>Rationale / Significance</label>
-                <textarea v-model="formData.rationale" rows="4"></textarea>
+              <div class="section-card">
+                <div class="table-wrapper">
+                  <table class="form-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Country</th>
+                        <th>Region</th>
+                        <th>Province</th>
+                        <th>District</th>
+                        <th>Municipality</th>
+                        <th>Barangay</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(site, index) in proposal.sites" :key="index">
+                        <td class="row-num">{{ index + 1 }}</td>
+                        <td><input v-model="site.country" placeholder="" /></td>
+                        <td><input v-model="site.region" placeholder="" /></td>
+                        <td><input v-model="site.province" placeholder="" /></td>
+                        <td><input v-model="site.district" placeholder="" /></td>
+                        <td><input v-model="site.municipality" placeholder="" /></td>
+                        <td><input v-model="site.barangay" placeholder="" /></td>
+                        <td><button class="btn-icon btn-remove" @click="removeSite(index)" title="Remove">✕</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add" @click="addSite">+ Add Site</button>
               </div>
-              <div class="form-group">
-                <label>Scientific Basis / Theoretical Framework</label>
-                <textarea v-model="formData.framework" rows="4"></textarea>
-              </div>
-              <div class="form-group">
-                <label>General Objective</label>
-                <textarea v-model="formData.objectivesGeneral" rows="3"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Specific Objectives</label>
-                <textarea v-model="formData.objectivesSpecific" rows="4"></textarea>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Methodology Section -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">04</span>
-              <h2>Methodology</h2>
-            </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label>Methodology</label>
-                <textarea v-model="formData.methodology" rows="6"></textarea>
+            <!-- 4. Type of Research -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">04</span>
+                <h3>Type of Research</h3>
               </div>
-            </div>
-          </section>
+              <div class="section-card">
+                <div class="radio-group">
+                  <label class="radio-card" :class="{ active: proposal.research_type === 'Basic' }">
+                    <input type="radio" value="Basic" v-model="proposal.research_type" />
+                    <div class="radio-content">
+                      <span class="radio-title">Basic Research</span>
+                      <span class="radio-desc">Fundamental research to expand knowledge</span>
+                    </div>
+                  </label>
+                  <label class="radio-card" :class="{ active: proposal.research_type === 'Applied' }">
+                    <input type="radio" value="Applied" v-model="proposal.research_type" />
+                    <div class="radio-content">
+                      <span class="radio-title">Applied Research</span>
+                      <span class="radio-desc">Practical application of existing knowledge</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <!-- 5. Priority Agenda -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">05</span>
+                <h3>Priority Agenda</h3>
+                <span class="section-sub">(based on MSUN RIIDE 2025–2028)</span>
+              </div>
+              <div class="section-card">
+                <div class="agenda-grid">
+                  <div v-for="program in programList" :key="program.key" class="agenda-item"
+                    :class="{ selected: proposal.priority_agendas[program.key].selected }">
+                    <label class="agenda-checkbox">
+                      <input type="checkbox" v-model="proposal.priority_agendas[program.key].selected" />
+                      <span class="checkmark"></span>
+                      <span class="agenda-label">{{ program.label }}</span>
+                    </label>
+                    <div class="agenda-value" v-if="proposal.priority_agendas[program.key].selected">
+                      <span class="agenda-sub">{{ program.subLabel }}:</span>
+                      <input v-model="proposal.priority_agendas[program.key].value"
+                        :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 6–9: Text Sections -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">06</span>
+                <h3>Innovation Goals</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.innovation_goals"
+                  placeholder="Describe the innovation goals of this project..." rows="4"></textarea>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">07</span>
+                <h3>Sector Relevance</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.sector_relevance"
+                  placeholder="Public Health, Environment, Agriculture, etc." rows="4"></textarea>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">08</span>
+                <h3>Sustainable Development Goals (SDG)</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.sustainable_development_goals"
+                  placeholder="List applicable SDGs addressed..." rows="4"></textarea>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">09</span>
+                <h3>Executive Summary</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5"
+                  class="word-limit"></textarea>
+                <span class="char-count">{{ proposal.executive_summary?.length || 0 }} / ~1400 chars</span>
+              </div>
+            </section>
+
+            <!-- 10. INTRODUCTION -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">10</span>
+                <h3>Introduction</h3>
+              </div>
+              <div class="section-card">
+                <div class="sub-section">
+                  <h4>10.1 Rationale / Significance</h4>
+                  <p class="field-note">Not to exceed 300 words</p>
+                  <textarea v-model="proposal.rationale" rows="4"></textarea>
+                </div>
+                <div class="sub-section">
+                  <h4>10.2 Scientific Basis / Theoretical Framework</h4>
+                  <textarea v-model="proposal.theoretical_framework" rows="4"></textarea>
+                </div>
+                <div class="sub-section">
+                  <h4>10.3 Objectives</h4>
+                  <div class="form-group">
+                    <label>General Objective:</label>
+                    <textarea v-model="proposal.general_objective" rows="3"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>Specific Objectives:</label>
+                    <textarea v-model="proposal.specific_objectives" rows="3"></textarea>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 11. Review of Literature -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">11</span>
+                <h3>Review of Literature</h3>
+              </div>
+              <div class="section-card">
+                <div class="file-upload">
+                  <div class="upload-area" @click="$refs.litFile.click()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>Click to upload literature review file</span>
+                    <span class="upload-hint">PDF, DOC, DOCX accepted</span>
+                  </div>
+                  <input ref="litFile" type="file" @change="handleFileUpload('review_of_literature', $event)" hidden />
+                  <div v-if="proposal.review_of_literature_file" class="file-info">
+                    <span>📄 {{ proposal.review_of_literature_file.name }}</span>
+                    <button class="btn-remove-file" @click="proposal.review_of_literature_file = null">✕</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 12. Methodology -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">12</span>
+                <h3>Methodology</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.methodology" placeholder="Describe the research methodology..."
+                  rows="5"></textarea>
+              </div>
+            </section>
+
+            <!-- 13. Technology Roadmap -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">13</span>
+                <h3>Technology Roadmap</h3>
+                <span class="section-sub">(if applicable)</span>
+              </div>
+              <div class="section-card">
+                <div class="file-upload">
+                  <div class="upload-area" @click="$refs.techFile.click()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>Upload technology roadmap</span>
+                  </div>
+                  <input ref="techFile" type="file" @change="handleFileUpload('technology', $event)" hidden />
+                  <div v-if="proposal.technology_roadmap_file" class="file-info">
+                    <span>📄 {{ proposal.technology_roadmap_file.name }}</span>
+                    <button class="btn-remove-file" @click="proposal.technology_roadmap_file = null">✕</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 14–16: Outputs, Outcomes, Impacts -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">14</span>
+                <h3>Expected Outputs (6Ps)</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.expected_outputs" placeholder="List expected outputs..."
+                  rows="4"></textarea>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">15</span>
+                <h3>Potential Outcomes</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.potential_outcomes" placeholder="Describe potential outcomes..."
+                  rows="4"></textarea>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">16</span>
+                <h3>Potential Impacts (2Is)</h3>
+              </div>
+              <div class="section-card">
+                <div class="form-group">
+                  <label>a. Economic Impact:</label>
+                  <textarea v-model="proposal.economic_impact" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>b. Social / Ethical Impact:</label>
+                  <textarea v-model="proposal.social_ethical_impact" rows="3"></textarea>
+                </div>
+              </div>
+            </section>
+
+            <!-- 17. Target Beneficiaries -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">17</span>
+                <h3>Target Beneficiaries</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.target_beneficiaries" placeholder="Describe the target beneficiaries..."
+                  rows="4"></textarea>
+              </div>
+            </section>
+
+            <!-- 18. Sustainability Plan -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">18</span>
+                <h3>Sustainability Plan</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.sustainability_plan" placeholder="Describe the sustainability plan..."
+                  rows="4"></textarea>
+              </div>
+            </section>
+
+            <!-- 19. GAD Score -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">19</span>
+                <h3>Gender and Development (GAD) Score</h3>
+              </div>
+              <div class="section-card">
+                <div class="file-upload">
+                  <div class="upload-area" @click="$refs.gadFile.click()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>Upload GAD score document</span>
+                  </div>
+                  <input ref="gadFile" type="file" @change="handleFileUpload('gad', $event)" hidden />
+                  <div v-if="proposal.gad_score_file" class="file-info">
+                    <span>📄 {{ proposal.gad_score_file.name }}</span>
+                    <button class="btn-remove-file" @click="proposal.gad_score_file = null">✕</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 20. Limitations -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">20</span>
+                <h3>Limitations of the Project</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.limitations" placeholder="Describe project limitations..."
+                  rows="4"></textarea>
+              </div>
+            </section>
+
+            <!-- 21. Risks -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">21</span>
+                <h3>Risk Management Plan</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.risks_assumptions"
+                  placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
+              </div>
+            </section>
+
+            <!-- 22. Logical Framework -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">22</span>
+                <h3>Logical Framework</h3>
+                <span class="section-sub">Outcome and Output Indicators</span>
+              </div>
+              <div class="section-card">
+                <div class="table-wrapper">
+                  <table class="form-table">
+                    <thead>
+                      <tr>
+                        <th>Outcome Indicators</th>
+                        <th>Output Indicators / Physical Target</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, index) in proposal.logical_framework" :key="index">
+                        <td><input v-model="row.outcome_indicator" placeholder="e.g. Improved water quality" /></td>
+                        <td><input v-model="row.output_indicator" placeholder="e.g. 5 filtration units installed" />
+                        </td>
+                        <td><button class="btn-icon btn-remove"
+                            @click="removeTableRow('logical_framework', index)">✕</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add" @click="addTableRow('logical_framework')">+ Add Row</button>
+              </div>
+            </section>
+
+            <!-- 23. Literature Cited -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">23</span>
+                <h3>Literature Cited</h3>
+              </div>
+              <div class="section-card">
+                <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..."
+                  rows="5"></textarea>
+              </div>
+            </section>
+
+            <!-- 24. Personnel -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">24</span>
+                <h3>Personnel Requirement</h3>
+              </div>
+              <div class="section-card">
+                <div class="table-wrapper">
+                  <table class="form-table">
+                    <thead>
+                      <tr>
+                        <th>Position</th>
+                        <th>% Time Devoted</th>
+                        <th>Responsibilities</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, index) in proposal.personnel_requirements" :key="index">
+                        <td><input v-model="row.position" placeholder="e.g. Research Assistant" /></td>
+                        <td><input v-model="row.effort" placeholder="e.g. 50%" /></td>
+                        <td><input v-model="row.responsibilities" placeholder="e.g. Data collection" /></td>
+                        <td><button class="btn-icon btn-remove"
+                            @click="removeTableRow('personnel_requirements', index)">✕</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add" @click="addTableRow('personnel_requirements')">+ Add Row</button>
+              </div>
+            </section>
+
+            <!-- 25. Budget -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">25</span>
+                <h3>Line-Item Budget Requirement</h3>
+              </div>
+              <div class="section-card">
+                <div class="budget-actions">
+                  <button class="btn-outline" @click="downloadBudgetFormat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download Budget Template
+                  </button>
+                  <div class="file-upload inline">
+                    <div class="upload-area small" @click="$refs.budgetFile.click()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="12" y1="18" x2="12" y2="12" />
+                        <line x1="9" y1="15" x2="15" y2="15" />
+                      </svg>
+                      <span>Upload filled budget file</span>
+                    </div>
+                    <input ref="budgetFile" type="file" accept=".pdf,.doc,.docx"
+                      @change="handleFileUpload('budget', $event)" hidden />
+                  </div>
+                </div>
+                <div v-if="proposal.line_item_budget_file" class="file-info">
+                  <span>📄 {{ proposal.line_item_budget_file.name }}</span>
+                  <button class="btn-remove-file" @click="proposal.line_item_budget_file = null">✕</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- 26. Other Projects -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">26</span>
+                <h3>Other Ongoing Projects</h3>
+                <span class="section-sub">Being handled by the Project Leader</span>
+              </div>
+              <div class="section-card">
+                <div class="form-group">
+                  <label>Number of other projects:</label>
+                  <input v-model="proposal.other_projects_number" placeholder="e.g. 2" class="input-short" />
+                </div>
+                <div class="table-wrapper">
+                  <table class="form-table">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Funding Agency</th>
+                        <th>Involvement</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, index) in proposal.other_projects" :key="index">
+                        <td><input v-model="row.project_title" placeholder="Project title" /></td>
+                        <td><input v-model="row.funding_agency" placeholder="e.g. DOST" /></td>
+                        <td><input v-model="row.involvement" placeholder="e.g. Project Leader" /></td>
+                        <td><button class="btn-icon btn-remove"
+                            @click="removeTableRow('other_projects', index)">✕</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add" @click="addTableRow('other_projects')">+ Add Project</button>
+              </div>
+            </section>
+
+            <!-- 27. Other Supporting Documents -->
+            <section class="form-section">
+              <div class="section-header">
+                <span class="section-number">27</span>
+                <h3>Other Supporting Documents</h3>
+              </div>
+              <div class="section-card">
+                <p class="field-note">Please refer to the next page for additional necessary documents.</p>
+              </div>
+            </section>
+          </div>
         </div>
 
-        <!-- RIGHT COLUMN: Sidebar -->
+        <!-- SIDEBAR -->
         <aside class="sidebar">
-          <!-- Info Card -->
           <div class="sidebar-card">
             <h3>Revision Information</h3>
+
             <div class="info-list">
               <div class="info-item">
                 <span class="info-label">Proposal ID</span>
-                <span class="info-value">#{{ proposalId }}</span>
+                <span class="info-value">
+                  #{{ proposalId }}
+                </span>
               </div>
+
               <div class="info-item">
                 <span class="info-label">Status</span>
-                <span class="info-value status-badge revision">REVISION</span>
+                <span class="info-value status-badge revision">
+                  REVISION
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Instructions Card -->
           <div class="sidebar-card">
             <h3>Instructions</h3>
+
             <ul class="instructions-list">
-              <li>Review the feedback from reviewers</li>
-              <li>Update the required sections based on the feedback</li>
-              <li>Make sure all changes are addressed</li>
-              <li>Submit the revised proposal for re-evaluation</li>
+              <li>Review the feedback from reviewers.</li>
+              <li>Update all required sections.</li>
+              <li>Ensure all corrections are addressed.</li>
+              <li>Submit the revised proposal for evaluation.</li>
             </ul>
           </div>
 
-          <!-- Action Buttons -->
           <div class="sidebar-card action-card">
             <h3>Actions</h3>
+
             <button class="btn-action btn-cancel" @click="goBack">
               ← Cancel
             </button>
+
             <button class="btn-action btn-draft" @click="saveDraft">
               💾 Save Draft
             </button>
-            <button 
-              class="btn-action btn-submit" 
-              @click="submitRevision"
-              :disabled="loading"
-            >
+
+            <button class="btn-action btn-submit" @click="submitRevision" :disabled="loading">
               {{ loading ? 'Submitting...' : '✓ Submit Revision' }}
             </button>
           </div>
@@ -219,82 +686,133 @@
       </div>
     </template>
 
-    <!-- NO PROPOSAL ID -->
-    <div v-else class="no-proposal-message">
-      <p>No proposal selected for revision.</p>
-      <button class="btn-primary" @click="$router.push('/revisions')">
-        Go to Revisions
-      </button>
-    </div>
-
-    <ConfirmDialog
-      v-if="dialogState.show"
-      v-bind="dialogState"
-      @confirm="dialogState.onConfirm"
-      @cancel="dialogState.onCancel"
-      @close="dialogState.show = false"
-    />
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
-const { dialogState, showAlert, showConfirm } = useDialog()
-
 const route = useRoute()
+const router = useRouter()
 
-// Get proposal ID from route params
+const { dialogState, showAlert } = useDialog()
+
 const proposalId = computed(() => route.params.id as string | undefined)
-
-// Form data for revision submission
-const formData = ref({
-  programTitle: '',
-  projectTitle: '',
-  projectLeader: '',
-  duration: '',
-  startDate: '',
-  endDate: '',
-  college: '',
-  address: '',
-  cooperatingAgencies: '',
-  researchType: '',
-  innovationGoals: '',
-  sectorRelevance: '',
-  sdg: '',
-  executiveSummary: '',
-  rationale: '',
-  framework: '',
-  objectivesGeneral: '',
-  objectivesSpecific: '',
-  methodology: '',
-  reviewFileName: '',
-  roadmapFileName: '',
-  gadFileName: '',
-  beneficiariesFileName: ''
-})
 
 const loading = ref(false)
 const error = ref('')
 const successMessage = ref('')
 
-// Fetch existing proposal data
+
+
+const proposal = ref({
+  program_title: '',
+  project_title: '',
+  project_leader: '',
+  project_leader_sex: '',
+  duration: '',
+  start_date: '',
+  end_date: '',
+  department: '',
+  address: '',
+  cooperating_agencies: '',
+  research_type: '',
+  innovation_goals: '',
+  sector_relevance: '',
+  sustainable_development_goals: '',
+  executive_summary: '',
+  rationale: '',
+  theoretical_framework: '',
+  general_objective: '',
+  specific_objectives: '',
+  methodology: '',
+  expected_outputs: '',
+  potential_outcomes: '',
+  economic_impact: '',
+  social_ethical_impact: '',
+  target_beneficiaries: '',
+  sustainability_plan: '',
+  limitations: '',
+  risks_assumptions: '',
+  literature_cited: '',
+  other_projects_number: '',
+
+  review_of_literature_file: null,
+  technology_roadmap_file: null,
+  gad_score_file: null,
+  line_item_budget_file: null,
+
+  sites: [
+    {
+      country: '',
+      region: '',
+      province: '',
+      district: '',
+      municipality: '',
+      barangay: ''
+    }
+  ],
+
+  logical_framework: [],
+  personnel_requirements: [],
+  other_projects: [],
+
+  priority_agendas: {
+    agriculture: { selected: false, value: '' },
+    environment: { selected: false, value: '' },
+    health: { selected: false, value: '' }
+  }
+})
+
+const addSite = () => {
+  proposal.value.sites.push({
+    country: '',
+    region: '',
+    province: '',
+    municipality: '',
+    barangay: ''
+  })
+}
+
+const programList = [
+  {
+    key: 'agriculture',
+    label: 'Agriculture',
+    subLabel: 'Program'
+  },
+  {
+    key: 'environment',
+    label: 'Environment',
+    subLabel: 'Program'
+  },
+  {
+    key: 'health',
+    label: 'Health',
+    subLabel: 'Program'
+  }
+]
+
+const removeSite = (index: number) => {
+  proposal.value.sites.splice(index, 1)
+}
+
 const fetchProposal = async () => {
   if (!proposalId.value) return
-  
+
   loading.value = true
   error.value = ''
-  
+
   try {
     const res = await api.get(`/api/proposals/${proposalId.value}`)
     const proposal = res.data
-    
-    // Populate form with existing data
-    formData.value = {
+
+    proposal.value = {
       programTitle: proposal.programTitle || '',
       projectTitle: proposal.projectTitle || '',
       projectLeader: proposal.projectLeader || '',
@@ -314,6 +832,36 @@ const fetchProposal = async () => {
       objectivesGeneral: proposal.objectivesGeneral || '',
       objectivesSpecific: proposal.objectivesSpecific || '',
       methodology: proposal.methodology || '',
+
+      totalBudget: proposal.totalBudget || '',
+      fundingSource: proposal.fundingSource || '',
+      expectedOutputs: proposal.expectedOutputs || '',
+
+      sites:
+        proposal.sites?.length > 0
+          ? proposal.sites
+          : [
+            {
+              country: '',
+              region: '',
+              province: '',
+              municipality: '',
+              barangay: ''
+            }
+          ],
+
+      lineItems:
+        proposal.lineItems?.length > 0
+          ? proposal.lineItems
+          : [
+            {
+              item: '',
+              quantity: '',
+              unitCost: '',
+              totalCost: ''
+            }
+          ],
+
       reviewFileName: proposal.reviewFileName || '',
       roadmapFileName: proposal.roadmapFileName || '',
       gadFileName: proposal.gadFileName || '',
@@ -332,38 +880,41 @@ const submitRevision = async () => {
     error.value = 'No proposal ID provided.'
     return
   }
-  
+
   loading.value = true
   error.value = ''
   successMessage.value = ''
-  
+
   try {
-    // Update proposal with revised data and set status to SUBMITTED
     await api.put(`/api/proposals/${proposalId.value}`, {
-      ...formData.value,
+      ...proposal.value,
       status: 'SUBMITTED'
     })
-    
-    successMessage.value = 'Revision submitted successfully!'
-    
-    // Redirect to revisions page after 2 seconds
+
+    successMessage.value =
+      'Revision submitted successfully!'
+
     setTimeout(() => {
-      window.location.href = '/revisions'
-    }, 2000)
+      router.push('/revisions')
+    }, 1500)
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to submit revision. Please try again.'
+    error.value =
+      'Failed to submit revision. Please try again.'
   } finally {
     loading.value = false
   }
 }
 
 const saveDraft = async () => {
-  await showAlert('Draft saved successfully!', { type: 'success', title: 'Draft Saved' })
+  await showAlert('Draft saved successfully!', {
+    type: 'success',
+    title: 'Draft Saved'
+  })
 }
 
 const goBack = () => {
-  window.history.back()
+  router.back()
 }
 
 onMounted(() => {
@@ -426,7 +977,8 @@ onMounted(() => {
 }
 
 /* ERROR & SUCCESS BANNERS */
-.error-banner, .success-banner {
+.error-banner,
+.success-banner {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -448,7 +1000,8 @@ onMounted(() => {
   color: #166534;
 }
 
-.error-icon, .success-icon {
+.error-icon,
+.success-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -474,7 +1027,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* CONTENT GRID */
@@ -810,6 +1365,409 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+}
+
+/* =========================
+   ADDITIONAL FORM STYLES
+========================= */
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.section-number {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.section-card {
+  padding: 24px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-row.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.form-group {
+  width: 100%;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-short {
+  max-width: 200px;
+}
+
+.sub-section {
+  margin-bottom: 30px;
+}
+
+.sub-section:last-child {
+  margin-bottom: 0;
+}
+
+.field-note {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.char-count {
+  display: block;
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* =========================
+   TABLES
+========================= */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.form-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.form-table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+}
+
+.form-table input,
+.form-table select {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.row-num {
+  text-align: center;
+  font-weight: 600;
+  width: 50px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-add {
+  margin-top: 16px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-add:hover {
+  background: #4338ca;
+}
+
+.btn-outline {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline:hover {
+  background: #f8fafc;
+}
+
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-remove {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-remove:hover {
+  background: #fecaca;
+}
+
+.btn-remove-file {
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* =========================
+   FILE UPLOAD
+========================= */
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-upload.inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.upload-area {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-area:hover {
+  border-color: #4f46e5;
+  background: #f8faff;
+}
+
+.upload-area.small {
+  padding: 14px 18px;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* =========================
+   RADIO CARDS
+========================= */
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radio-card {
+  flex: 1;
+  min-width: 260px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.radio-card.active {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.radio-card input {
+  display: none;
+}
+
+.radio-title {
+  display: block;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.radio-desc {
+  display: block;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.agenda-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.agenda-item.selected {
+  border: 2px solid #4f46e5;
+  background: #eef2ff;
+}
+
+.agenda-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agenda-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.agenda-sub {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.agenda-value input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.agenda-value {
+  margin-top: 16px;
+}
+
+.agenda-value input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+/* =========================
+   BUDGET
+========================= */
+
+.budget-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+
+  .form-row,
+  .form-row.three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .section-card {
+    padding: 18px;
+  }
+
+  .radio-group {
+    flex-direction: column;
+  }
+
+  .agenda-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+
+  .budget-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 </style>

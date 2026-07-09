@@ -2,38 +2,21 @@
   <div class="proposals-content">
     <div class="top-bar">
       <h2>Proposals</h2>
-      <button class="btn-new" @click="showModal = true">
+      <button class="btn-new" @click="openNewProposal">
         + New Proposal
       </button>
     </div>
 
     <!-- MODALS -->
-    <ProponentSubmitProp
-      v-model="showModal"
-      @save="handleSave"
-      @next="goToStep2"
-      @goToStep="handleGoToStep"
-      @update:modelValue="refreshOnClose"
-    />
+    <ProponentSubmitProp ref="step1Ref" v-model="showModal" @save="handleSave" @next="goToStep2"
+      @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
-    <ProponentSubmitProp2
-      v-if="showModal2"
-      :open="showModal2"
-      @close="showModal2 = false; refreshOnClose()"
-      @openPrevious="goBackToStep1"
-      @openCriteria="openCriteriaModal"
-      @submitProposal="goToStep3"
-      @goToStep="handleGoToStep"
-    />
+    <ProponentSubmitProp2 ref="step2Ref" v-if="showModal2" :open="showModal2"
+      @close="showModal2 = false; refreshOnClose()" @openPrevious="goBackToStep1" @openCriteria="openCriteriaModal"
+      @submitProposal="goToStep3" @goToStep="handleGoToStep" />
 
-    <ProponentSubmitProp3
-      v-model="showCriteria"
-      :proposalData="proposalData"
-      @back="goBackToStep2"
-      @savedraft="handleSaveDraft"
-      @goToStep="handleGoToStep"
-      @update:modelValue="refreshOnClose"
-    />
+    <ProponentSubmitProp3 ref="step3Ref" v-model="showCriteria" :proposalData="proposalData" @back="goBackToStep2"
+      @savedraft="handleSaveDraft" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
     <p class="subtitle">
       Manage and track all your proposal submissions
@@ -81,23 +64,19 @@
               {{ proposal.status }}
             </span>
           </td>
-          <td>{{ proposal.createdAt?.substring(0,10) || 'N/A' }}</td>
+          <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
             <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
-            <button v-if="proposal.status === 'DRAFT'" class="btn-delete" @click="deleteProposal(proposal.id)">Delete</button>
+            <button v-if="proposal.status === 'DRAFT'" class="btn-delete"
+              @click="deleteProposal(proposal.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <ConfirmDialog
-    v-if="dialogState.show"
-    v-bind="dialogState"
-    @confirm="dialogState.onConfirm"
-    @cancel="dialogState.onCancel"
-    @close="dialogState.show = false"
-  />
+  <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+    @cancel="dialogState.onCancel" @close="dialogState.show = false" />
 </template>
 
 <script setup>
@@ -125,6 +104,22 @@ const showModal = ref(false)
 const showModal2 = ref(false)
 const showCriteria = ref(false)
 const proposalData = ref({})
+
+const step1Ref = ref(null)
+const step2Ref = ref(null)
+const step3Ref = ref(null)
+
+const resetAllForms = () => {
+  step1Ref.value?.resetForm()
+  step2Ref.value?.resetForm()
+  step3Ref.value?.resetForm()
+  proposalData.value = {}
+}
+
+const openNewProposal = () => {
+  resetAllForms()
+  showModal.value = true
+}
 
 const fetchProposals = async () => {
   loading.value = true
@@ -228,6 +223,7 @@ const openCriteriaModal = () => {
 
 const handleSaveDraft = () => {
   showCriteria.value = false
+  resetAllForms()
   fetchProposals() // Refresh the list
 }
 
@@ -242,15 +238,18 @@ const refreshOnClose = () => {
   padding: 24px;
   background: #ffffff;
 }
+
 .top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .subtitle {
   color: #6b7280;
   margin-bottom: 16px;
 }
+
 .btn-new {
   background: #facc15;
   border: none;
@@ -259,43 +258,75 @@ const refreshOnClose = () => {
   font-weight: 600;
   cursor: pointer;
 }
+
 .filters {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
 }
-.filters input, .filters select {
+
+.filters input,
+.filters select {
   padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
 }
+
 .proposals-table td:first-child {
   font-family: monospace;
   font-weight: 600;
   color: #4b3f72;
 }
+
 .proposals-table th {
   text-align: left;
   padding: 12px;
   background: #4b3f72;
   color: #ffffff;
 }
+
 .proposals-table td {
   padding: 12px;
   border-bottom: 1px solid #e5e7eb;
 }
+
 .status {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
 }
-.pending { background: #fef3c7; color: #92400e; }
-.approved { background: #dcfce7; color: #166534; }
-.revision { background: #e0e7ff; color: #3730a3; }
-.submitted { background: #f3e8ff; color: #6b21a8; }
-.draft { background: #e5e7eb; color: #374151; }
-.rejected { background: #fee2e2; color: #991b1b; }
+
+.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .btn-view {
   background: #60a5fa;
   border: none;
@@ -305,6 +336,7 @@ const refreshOnClose = () => {
   cursor: pointer;
   margin-right: 6px;
 }
+
 .btn-delete {
   background: #ef4444;
   border: none;
@@ -313,8 +345,12 @@ const refreshOnClose = () => {
   border-radius: 6px;
   cursor: pointer;
 }
+
 .btn-delete:hover {
   background: #dc2626;
 }
-.error-text { color: #dc2626; }
+
+.error-text {
+  color: #dc2626;
+}
 </style>
