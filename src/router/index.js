@@ -143,12 +143,12 @@ const routes = [
 
       // ================= OVCAF =================
       { path: 'ovcaf-dash', component: OvcafDashboard },
-      { path: 'ovcaf/validate/:id?', component: OvcafFinancialValidation },
+      { path: 'ovcaf/validate/:id?', name: 'OvcafValidate', component: OvcafFinancialValidation },
       { path: 'ovcaf-notification', component: NotificationPage },
       { path: '/ovcaf/inbox', component: OvcafProposalInbox },
-      { path: '/ovcaf/reports', component: OvcafReports},
-      { path: '/ovcaf/proposals/:id', component: OvcafProposalDetails},
-      { path: 'ovcaf-validate', component: OvcafValidate},
+      { path: '/ovcaf/reports', component: OvcafReports },
+      { path: '/ovcaf/proposals/:id', component: OvcafProposalDetails },
+      { path: 'ovcaf-validate', component: OvcafValidate },
 
       // ================= OVCRIGE =================
       { path: 'review-prop', component: OvcReviewProposal },
@@ -189,10 +189,10 @@ const routes = [
         name: 'ProponentDetiailedProp',
         component: ProponentDetiailedProp
       },
-      { 
-        path: 'proponent-proposal-monitoring', 
+      {
+        path: 'proponent-proposal-monitoring',
         name: 'ProponentProposalMonitoring',
-        component: ProponentProposalMonitoring 
+        component: ProponentProposalMonitoring
       },
 
       // ================= CHANCELLOR =================

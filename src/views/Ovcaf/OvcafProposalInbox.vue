@@ -1,6 +1,6 @@
 <template>
     <div class="ovcaf-shell">
-      <!-- ── Main Area ── -->
+        <!-- ── Main Area ── -->
         <div class="ovcaf-main">
             <header class="ovcaf-topbar">
                 <div>
@@ -68,13 +68,13 @@
                             <thead>
                                 <tr>
                                     <th class="sortable" @click="toggleSort('id')">ID <span class="sort-ind">{{
-                                            sortIndicator('id') }}</span></th>
+                                        sortIndicator('id') }}</span></th>
                                     <th class="sortable" @click="toggleSort('title')">Research Title <span
                                             class="sort-ind">{{ sortIndicator('title') }}</span></th>
                                     <th class="sortable" @click="toggleSort('proponent')">Proponent <span
                                             class="sort-ind">{{ sortIndicator('proponent') }}</span></th>
                                     <th class="sortable" @click="toggleSort('budget')">Budget <span class="sort-ind">{{
-                                            sortIndicator('budget') }}</span></th>
+                                        sortIndicator('budget') }}</span></th>
                                     <th class="sortable" @click="toggleSort('dateReceived')">Date Received <span
                                             class="sort-ind">{{ sortIndicator('dateReceived') }}</span></th>
                                     <th>Status</th>
@@ -130,6 +130,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import api from '@/utils/api';
 
 // ── Shell State ───────────────────────────────────
 const sidebarOpen = ref(false);
@@ -138,28 +139,65 @@ const dropdownRef = ref(null);
 
 // ── Page State ────────────────────────────────────
 const loading = ref(true);
+const error = ref(null);
 const proposals = ref([]);
 
 const filters = reactive({
     search: '',
     status: 'All',
     college: 'All',
-    sortBy: 'dateReceived',
+    sortBy: 'createdAt',
     sortOrder: 'desc',
     page: 1,
     limit: 8
 });
 
-// ── Mock Data ─────────────────────────────────────
-// TODO: Replace mock data with backend API
-const MOCK_PROPOSALS = [];
+// ── Fetch proposals from API ──────────────────────
+const fetchProposals = async () => {
+    try {
+        loading.value = true;
+        error.value = null;
+        const response = await api.get('/api/ovcaf/proposals');
+        // Transform API response to match frontend expectations
+        proposals.value = (response.data || []).map(p => ({
+            id: p.id,
+            title: p.projectTitle || 'Untitled Project',
+            proponent: p.proponentName || 'Unknown',
+            college: p.college || 'Unknown',
+            budget: p.totalBudget || 0,
+            dateReceived: p.createdAt,
+            status: mapStatus(p.status),
+            rawStatus: p.status
+        }));
+    } catch (err) {
+        console.error('Error fetching OVCAF proposals:', err);
+        error.value = 'Failed to load proposals. Please try again.';
+        proposals.value = [];
+    } finally {
+        loading.value = false;
+    }
+};
 
-// ── localStorage helpers ──────────────────────────
-const PROPOSAL_KEY = 'ovcaf_proposals';
-const getAllProposals = () => {
-    const s = localStorage.getItem(PROPOSAL_KEY);
-    if (!s) { localStorage.setItem(PROPOSAL_KEY, JSON.stringify(MOCK_PROPOSALS)); return MOCK_PROPOSALS; }
-    return JSON.parse(s);
+// Map backend status to frontend display status
+const mapStatus = (status) => {
+    if (!status) return 'Pending Validation';
+    switch (status.toUpperCase()) {
+        case 'FOR_OVCAF_APPROVAL':
+            return 'Pending Validation';
+        case 'APPROVED':
+        case 'FOR_OC_APPROVAL':
+            return 'Approved & Endorsed';
+        case 'READY_FOR_RELEASE':
+            return 'Ready for Release';
+        case 'RELEASED':
+            return 'Released';
+        case 'RETURNED':
+            return 'Returned for Revision';
+        case 'REJECTED':
+            return 'Rejected';
+        default:
+            return status;
+    }
 };
 
 // ── Computed: Filtered & Sorted ───────────────────
@@ -167,13 +205,20 @@ const filteredProposals = computed(() => {
     let result = [...proposals.value];
     if (filters.search) {
         const q = filters.search.toLowerCase();
-        result = result.filter(p => p.title.toLowerCase().includes(q) || p.id.toLowerCase().includes(q) || p.proponent.toLowerCase().includes(q));
+        result = result.filter(p =>
+            (p.title || '').toLowerCase().includes(q) ||
+            String(p.id).toLowerCase().includes(q) ||
+            (p.proponent || '').toLowerCase().includes(q)
+        );
     }
     if (filters.status !== 'All') result = result.filter(p => p.status === filters.status);
     if (filters.college !== 'All') result = result.filter(p => p.college === filters.college);
     result.sort((a, b) => {
         let fa = a[filters.sortBy], fb = b[filters.sortBy];
-        if (filters.sortBy === 'dateReceived') { fa = new Date(fa).getTime(); fb = new Date(fb).getTime(); }
+        if (filters.sortBy === 'dateReceived' || filters.sortBy === 'createdAt') {
+            fa = new Date(fa || 0).getTime();
+            fb = new Date(fb || 0).getTime();
+        }
         else if (typeof fa === 'string') { fa = fa.toLowerCase(); fb = fb.toLowerCase(); }
         if (fa < fb) return filters.sortOrder === 'asc' ? -1 : 1;
         if (fa > fb) return filters.sortOrder === 'asc' ? 1 : -1;
@@ -188,12 +233,8 @@ const rangeStart = computed(() => Math.min((filters.page - 1) * filters.limit + 
 const rangeEnd = computed(() => Math.min(filters.page * filters.limit, filteredProposals.value.length));
 
 // ── Lifecycle ─────────────────────────────────────
-// TODO: Replace with backend API call
 onMounted(async () => {
-    loading.value = true;
-    await new Promise(r => setTimeout(r, 300));
-    proposals.value = getAllProposals();
-    loading.value = false;
+    await fetchProposals();
     document.addEventListener('click', handleOutsideClick);
 });
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
@@ -210,31 +251,33 @@ const toggleSort = (field) => {
 };
 
 // ── Helpers ───────────────────────────────────────
-const isPending = (p) => p.status === 'Pending Validation' || p.status === 'Under Validation';
+const isPending = (p) => p.status === 'Pending Validation' || p.status === 'Under Validation' || p.rawStatus === 'FOR_OVCAF_APPROVAL';
 const sortIndicator = (field) => filters.sortBy === field ? (filters.sortOrder === 'asc' ? '▲' : '▼') : '';
 const getCollegeAbbr = (c) => ({ 'College of Engineering and Technology': 'CET', 'College of Science and Mathematics': 'CSM', 'College of Arts and Social Sciences': 'CASS', 'College of Information Technology': 'CIT', 'College of Education': 'COED', 'College of Agriculture': 'COA' }[c] || c);
-const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v);
+const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 const getStatusClass = (s) => {
     if (s === 'Pending Validation' || s === 'Under Validation') return 'badge-pending';
-    if (s === 'Approved & Endorsed') return 'badge-approved';
+    if (s === 'Approved & Endorsed' || s === 'Released' || s === 'Ready for Release') return 'badge-approved';
+    if (s === 'Returned for Revision') return 'badge-returned';
+    if (s === 'Rejected') return 'badge-rejected';
     return 'badge-info';
 };
 </script>
 
 <style scoped>
-
-.ovcaf-main{
-  width:102%;
-}
-.ovcaf-body{
-    padding:24px;
+.ovcaf-main {
+    width: 102%;
 }
 
-.ovcaf-page-title{
-    font-size:1.7rem;
-    font-weight:700;
-    color:#1F2937;
+.ovcaf-body {
+    padding: 24px;
+}
+
+.ovcaf-page-title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #1F2937;
 }
 
 .filters-card {
@@ -256,29 +299,29 @@ const getStatusClass = (s) => {
     align-items: flex-end;
 }
 
-.card{
-    background:white;
-    border-radius:14px;
-    padding:22px;
-    box-shadow:0 2px 8px rgba(0,0,0,.05);
+.card {
+    background: white;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
 }
 
-.form-control{
-    width:100%;
-    height:42px;
+.form-control {
+    width: 100%;
+    height: 42px;
 
-    border:1px solid #D1D5DB;
-    border-radius:8px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
 
-    padding:0 12px;
+    padding: 0 12px;
 
-    font-size:.9rem;
+    font-size: .9rem;
 }
 
-.form-control:focus{
-    outline:none;
-    border-color:#7f1d1d;
-    box-shadow:0 0 0 3px rgba(127,29,29,.15);
+.form-control:focus {
+    outline: none;
+    border-color: #7f1d1d;
+    box-shadow: 0 0 0 3px rgba(127, 29, 29, .15);
 }
 
 @media (max-width: 1200px) {
@@ -293,112 +336,112 @@ const getStatusClass = (s) => {
     }
 }
 
-.search-bar-wrapper{
-    position:relative;
+.search-bar-wrapper {
+    position: relative;
 }
 
-.search-input{
-    padding-left:42px;
+.search-input {
+    padding-left: 42px;
 }
 
-.search-icon{
-    position:absolute;
-    top:50%;
-    left:14px;
-    transform:translateY(-50%);
-    color:#9CA3AF;
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    color: #9CA3AF;
 }
 
-.btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    padding:7px 14px;
-    border-radius:8px;
-    font-size:.82rem;
-    font-weight:600;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 600;
 
-    text-decoration:none;
-    cursor:pointer;
-    transition:.2s;
+    text-decoration: none;
+    cursor: pointer;
+    transition: .2s;
 
-    white-space:nowrap;
+    white-space: nowrap;
 }
 
-.btn-sm{
-    height:34px;
+.btn-sm {
+    height: 34px;
 }
 
-.btn-primary{
-    background:#7f1d1d;
-    color:white;
-    border:none;
+.btn-primary {
+    background: #7f1d1d;
+    color: white;
+    border: none;
 }
 
-.btn-primary:hover{
-    background:#991b1b;
+.btn-primary:hover {
+    background: #991b1b;
 }
 
-.btn-secondary{
-    background:white;
-    border:1px solid #d1d5db;
-    color:#374151;
+.btn-secondary {
+    background: white;
+    border: 1px solid #d1d5db;
+    color: #374151;
 }
 
-.btn-secondary:hover{
-    background:#f3f4f6;
+.btn-secondary:hover {
+    background: #f3f4f6;
 }
 
-.badge{
-    display:inline-block;
-    padding:5px 12px;
-    border-radius:999px;
-    font-size:.75rem;
-    font-weight:700;
+.badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
 }
 
-.badge-pending{
-    background:#FEF3C7;
-    color:#B45309;
+.badge-pending {
+    background: #FEF3C7;
+    color: #B45309;
 }
 
-.badge-approved{
-    background:#DCFCE7;
-    color:#166534;
+.badge-approved {
+    background: #DCFCE7;
+    color: #166534;
 }
 
 
-.table-container{
-    overflow-x:auto;
+.table-container {
+    overflow-x: auto;
 }
 
-.custom-table{
-    width:100%;
-    border-collapse:collapse;
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.custom-table th{
-    background:#F8FAFC;
-    color:#6B7280;
-    font-size:.8rem;
-    text-transform:uppercase;
-    padding:14px;
-    text-align:left;
+.custom-table th {
+    background: #F8FAFC;
+    color: #6B7280;
+    font-size: .8rem;
+    text-transform: uppercase;
+    padding: 14px;
+    text-align: left;
 }
 
-.custom-table td{
-    padding:15px 14px;
-    border-bottom:1px solid #E5E7EB;
+.custom-table td {
+    padding: 15px 14px;
+    border-bottom: 1px solid #E5E7EB;
 }
 
-.custom-table tbody tr:hover{
-    background:#FAFAFA;
+.custom-table tbody tr:hover {
+    background: #FAFAFA;
 }
 
-.badge-info{
-    background:#DBEAFE;
-    color:#1D4ED8;
+.badge-info {
+    background: #DBEAFE;
+    color: #1D4ED8;
 }
 
 .clear-btn {
@@ -432,17 +475,17 @@ const getStatusClass = (s) => {
     opacity: 0.7;
 }
 
-.form-label{
-    display:block;
-    margin-bottom:6px;
-    font-size:.82rem;
-    font-weight:600;
-    color:#6B7280;
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #6B7280;
 }
 
-.actions-cell{
-    display:flex;
-    gap:8px;
+.actions-cell {
+    display: flex;
+    gap: 8px;
 }
 
 .font-mono {

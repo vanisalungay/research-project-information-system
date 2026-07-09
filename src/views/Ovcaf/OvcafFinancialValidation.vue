@@ -164,6 +164,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import api from '@/utils/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -171,6 +172,7 @@ const router = useRouter();
 // ── Page State ────────────────────────────────────
 const loading = ref(true);
 const submitLoading = ref(false);
+const error = ref(null);
 const proposal = ref(null);
 const decision = ref('Approved & Endorsed');
 const remarks = ref('');
@@ -203,36 +205,51 @@ const confirmBtnClass = computed(() => {
     return 'btn-danger';
 });
 const modalMessage = computed(() => {
-    if (decision.value.includes('Approved')) return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and will be forwarded back to RII.`;
-    if (decision.value.includes('Returned')) return `You are about to return "${proposal.value?.title}" for budget revision. RII will be notified with your remarks.`;
+    if (decision.value.includes('Approved')) return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and will be forwarded to OC for final approval.`;
+    if (decision.value.includes('Returned')) return `You are about to return "${proposal.value?.title}" for budget revision. The proponent will be notified with your remarks.`;
     return `You are about to permanently reject "${proposal.value?.title}". This action cannot be undone.`;
 });
 
-// ── Mock Data ─────────────────────────────────────
-// TODO: Replace mock data with backend API
-const MOCK_PROPOSALS = [];
-
-// ── localStorage helpers ──────────────────────────
-const PROPOSAL_KEY = 'ovcaf_proposals';
-const getAllProposals = () => {
-    const s = localStorage.getItem(PROPOSAL_KEY);
-    if (!s) { localStorage.setItem(PROPOSAL_KEY, JSON.stringify(MOCK_PROPOSALS)); return MOCK_PROPOSALS; }
-    return JSON.parse(s);
+// ── Fetch proposal from API ───────────────────────
+const fetchProposal = async () => {
+    try {
+        loading.value = true;
+        error.value = null;
+        const id = route.params.id;
+        const response = await api.get(`/api/ovcaf/proposals/${id}`);
+        const p = response.data;
+        if (p) {
+            proposal.value = {
+                id: p.id,
+                title: p.projectTitle || 'Untitled Project',
+                proponent: p.proponentName || 'Unknown',
+                college: p.college || 'Unknown',
+                budget: p.totalBudget || 0,
+                fundingSource: p.fundingSource || 'Not specified',
+                status: p.status,
+                rawStatus: p.status
+            };
+            // Pre-fill checklist if validation exists
+            if (p.budgetComplete !== undefined) checklist.budgetComplete = p.budgetComplete;
+            if (p.budgetComputationCorrect !== undefined) checklist.budgetComputationCorrect = p.budgetComputationCorrect;
+            if (p.supportingDocsComplete !== undefined) checklist.supportingDocsComplete = p.supportingDocsComplete;
+            if (p.expensesReasonable !== undefined) checklist.expensesReasonable = p.expensesReasonable;
+            if (p.fundingSourceIdentified !== undefined) checklist.fundingSourceIdentified = p.fundingSourceIdentified;
+            if (p.complianceVerified !== undefined) checklist.complianceVerified = p.complianceVerified;
+            if (p.ovcafRemarks) remarks.value = p.ovcafRemarks;
+        }
+    } catch (err) {
+        console.error('Error fetching proposal for validation:', err);
+        error.value = 'Failed to load proposal. Please try again.';
+        proposal.value = null;
+    } finally {
+        loading.value = false;
+    }
 };
-const saveAllProposals = (data) => localStorage.setItem(PROPOSAL_KEY, JSON.stringify(data));
 
 // ── Lifecycle ─────────────────────────────────────
-// TODO: Replace with backend API call
 onMounted(async () => {
-    loading.value = true;
-    await new Promise(r => setTimeout(r, 300));
-    const all = getAllProposals();
-    const id = route.params.id;
-    const p = all.find(x => x.id === id) || null;
-    proposal.value = p;
-    if (p?.validationChecklist) Object.assign(checklist, p.validationChecklist);
-    if (p?.remarks) remarks.value = p.remarks;
-    loading.value = false;
+    await fetchProposal();
     document.addEventListener('click', handleOutsideClick);
 });
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
@@ -255,28 +272,38 @@ const handleSubmit = () => {
     showModal.value = true;
 };
 
-// TODO: Replace with backend API call (approveProposal / returnProposal / rejectProposal)
+// Submit validation decision to backend
 const submitDecision = async () => {
     showModal.value = false;
     submitLoading.value = true;
-    await new Promise(r => setTimeout(r, 600));
 
-    // Update in localStorage
-    const all = getAllProposals();
-    const idx = all.findIndex(p => p.id === proposal.value.id);
-    if (idx !== -1) {
-        all[idx].status = decision.value;
-        all[idx].validationChecklist = { ...checklist };
-        all[idx].remarks = remarks.value;
-        all[idx].history = [
-            ...(all[idx].history || []),
-            { stage: 'OVCAF', action: decision.value, user: user.value.name, date: new Date().toLocaleString('en-PH'), notes: remarks.value }
-        ];
-        saveAllProposals(all);
+    try {
+        // Map frontend decision to backend decision
+        const backendDecision = decision.value === 'Approved & Endorsed' ? 'APPROVED_ENDORSED' :
+            decision.value === 'Returned for Revision' ? 'RETURNED_FOR_REVISION' :
+                'REJECTED';
+
+        const payload = {
+            decision: backendDecision,
+            remarks: remarks.value,
+            budgetComplete: checklist.budgetComplete,
+            budgetComputationCorrect: checklist.budgetComputationCorrect,
+            supportingDocsComplete: checklist.supportingDocsComplete,
+            expensesReasonable: checklist.expensesReasonable,
+            fundingSourceIdentified: checklist.fundingSourceIdentified,
+            complianceVerified: checklist.complianceVerified
+        };
+
+        await api.post(`/api/ovcaf/proposals/${proposal.value.id}/validate`, payload);
+
+        // Navigate back to inbox on success
+        router.push('/ovcaf/inbox');
+    } catch (err) {
+        console.error('Error submitting validation:', err);
+        formError.value = 'Failed to submit validation. Please try again.';
+    } finally {
+        submitLoading.value = false;
     }
-
-    submitLoading.value = false;
-    router.push('/ovcaf/inbox');
 };
 
 const resetForm = () => {
@@ -286,458 +313,456 @@ const resetForm = () => {
     Object.keys(checklist).forEach(k => { checklist[k] = false; });
 };
 
-const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v);
+const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 </script>
 
 <style scoped>
-
-.ovcaf-main{
-    width:100%;
+.ovcaf-main {
+    width: 100%;
 }
 
 /* ---------------- Layout ---------------- */
 
-.action-bar{
-    margin-bottom:1.5rem;
+.action-bar {
+    margin-bottom: 1.5rem;
 }
 
-.validation-layout{
-    display:grid;
-    grid-template-columns:1.1fr 1fr;
-    gap:24px;
+.validation-layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 24px;
 }
 
-@media(max-width:1024px){
-    .validation-layout{
-        grid-template-columns:1fr;
+@media(max-width:1024px) {
+    .validation-layout {
+        grid-template-columns: 1fr;
     }
 }
 
 /* ---------------- Cards ---------------- */
 
-.card{
-    background:#fff;
-    border:1px solid #dde5ec;
-    border-radius:18px;
-    box-shadow:0 10px 14px rgba(15,23,42,.05);
+.card {
+    background: #fff;
+    border: 1px solid #dde5ec;
+    border-radius: 18px;
+    box-shadow: 0 10px 14px rgba(15, 23, 42, .05);
 }
 
-.summary-card{
-    border-left:6px solid #8b0000;
-    padding:12px;
+.summary-card {
+    border-left: 6px solid #8b0000;
+    padding: 12px;
 }
 
-.decision-card{
-    padding:12px;
+.decision-card {
+    padding: 12px;
 }
 
 
 /* ---------------- Summary ---------------- */
 
-.proposal-id{
-    font-family:ui-monospace,monospace;
-    font-size:.95rem;
-    font-weight:700;
-    color:#64748b;
+.proposal-id {
+    font-family: ui-monospace, monospace;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #64748b;
 }
 
-.proposal-title-text{
-    font-size:2rem;
-    font-weight:700;
-    line-height:1.25;
-    color:#0f172a;
-    margin:.5rem 0 1.4rem;
+.proposal-title-text {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #0f172a;
+    margin: .5rem 0 1.4rem;
 }
 
-.meta-chips{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:22px;
-    border-top:1px solid #e5e7eb;
-    padding-top:22px;
+.meta-chips {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 22px;
 }
 
-.chip-label{
-    display:block;
-    font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    font-weight:700;
-    color:#94a3b8;
-    margin-bottom:5px;
+.chip-label {
+    display: block;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 5px;
 }
 
-.chip-value{
-    font-size:1rem;
-    font-weight:500;
-    color:#334155;
+.chip-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #334155;
 }
 
-.primary-text{
-    color:#8b0000;
-    font-weight:700;
+.primary-text {
+    color: #8b0000;
+    font-weight: 700;
 }
 
 /* ---------------- Checklist ---------------- */
 
-.card-title{
-    font-size:1.45rem;
-    font-weight:700;
-    color:#16213d;
-    margin-bottom:8px;
+.card-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #16213d;
+    margin-bottom: 8px;
 }
 
-.checklist-hint{
-    color:#64748b;
-    font-size:.9rem;
-    margin-bottom:22px;
+.checklist-hint {
+    color: #64748b;
+    font-size: .9rem;
+    margin-bottom: 22px;
 }
 
-.checklist-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:16px;
+.checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
 }
 
-@media(max-width:768px){
-    .checklist-grid{
-        grid-template-columns:1fr;
+@media(max-width:768px) {
+    .checklist-grid {
+        grid-template-columns: 1fr;
     }
 }
 
-.checklist-item{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    padding:14px;
-    border:1px solid transparent;
-    border-radius:12px;
-    transition:.25s;
-    cursor:pointer;
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    transition: .25s;
+    cursor: pointer;
 }
 
-.checklist-item:hover{
-    background:#f8fafc;
+.checklist-item:hover {
+    background: #f8fafc;
 }
 
-.checklist-item.checked{
-    background:#eefbf3;
-    border-color:#22c55e;
+.checklist-item.checked {
+    background: #eefbf3;
+    border-color: #22c55e;
 }
 
-.cb-box{
-    width:18px;
-    height:18px;
-    border:2px solid #cbd5e1;
-    border-radius:8px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-weight:700;
-    color:#fff;
-    transition:.25s;
-    flex-shrink:0;
+.cb-box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    color: #fff;
+    transition: .25s;
+    flex-shrink: 0;
 }
 
-.cb-box.filled{
-    background:#22c55e;
-    border-color:#22c55e;
+.cb-box.filled {
+    background: #22c55e;
+    border-color: #22c55e;
 }
 
-.cb-label{
-    font-size:.93rem;
-    color:#475569;
-    line-height:1.5;
+.cb-label {
+    font-size: .93rem;
+    color: #475569;
+    line-height: 1.5;
 }
 
-.all-checked-banner{
-    margin-top:20px;
-    background:#dcfce7;
-    border:1px solid #22c55e33;
-    color:#15803d;
-    padding:14px 18px;
-    border-radius:12px;
-    font-weight:600;
+.all-checked-banner {
+    margin-top: 20px;
+    background: #dcfce7;
+    border: 1px solid #22c55e33;
+    color: #15803d;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: 600;
 }
 
 /* ---------------- Evaluation ---------------- */
 
-.section-label{
+.section-label {
     display: block;
     margin-bottom: 18px;
     font-size: .95rem;
     font-weight: 700;
     color: #16213d;
 
-    line-height:1.9;
-    min-height:48px;  
+    line-height: 1.9;
+    min-height: 48px;
 }
 
-.radio-list{
-    display:flex;
-    flex-direction:column;
-    gap:16px;
+.radio-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
 }
 
-.radio-option{
-    display:flex;
-    gap:16px;
-    align-items:flex-start;
-    padding:18px;
-    border:1px solid #dbe4ee;
-    border-radius:16px;
-    transition:.25s;
-    cursor:pointer;
-    background:#fff;
+.radio-option {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 18px;
+    border: 1px solid #dbe4ee;
+    border-radius: 16px;
+    transition: .25s;
+    cursor: pointer;
+    background: #fff;
 }
 
-.radio-option:hover{
-    transform:translateY(-2px);
-    box-shadow:0 10px 24px rgba(0,0,0,.05);
+.radio-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .05);
 }
 
-.radio-indicator{
-    width:22px;
-    height:22px;
-    border:2px solid #cbd5e1;
-    border-radius:50%;
-    position:relative;
-    flex-shrink:0;
-    margin-top:2px;
+.radio-indicator {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-.radio-option.selected .radio-indicator::after{
-    content:"";
-    position:absolute;
-    inset:4px;
-    border-radius:50%;
+.radio-option.selected .radio-indicator::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
 }
 
-.radio-option.selected.approve{
-    background:#dcfce7;
-    border:2px solid #22c55e;
+.radio-option.selected.approve {
+    background: #dcfce7;
+    border: 2px solid #22c55e;
 }
 
-.radio-option.selected.approve .radio-indicator{
-    border-color:#22c55e;
+.radio-option.selected.approve .radio-indicator {
+    border-color: #22c55e;
 }
 
-.radio-option.selected.approve .radio-indicator::after{
-    background:#22c55e;
+.radio-option.selected.approve .radio-indicator::after {
+    background: #22c55e;
 }
 
-.radio-option.selected.return{
-    background:#fff7ed;
-    border:2px solid #f59e0b;
+.radio-option.selected.return {
+    background: #fff7ed;
+    border: 2px solid #f59e0b;
 }
 
-.radio-option.selected.return .radio-indicator{
-    border-color:#f59e0b;
+.radio-option.selected.return .radio-indicator {
+    border-color: #f59e0b;
 }
 
-.radio-option.selected.return .radio-indicator::after{
-    background:#f59e0b;
+.radio-option.selected.return .radio-indicator::after {
+    background: #f59e0b;
 }
 
-.radio-option.selected.reject{
-    background:#fee2e2;
-    border:2px solid #ef4444;
+.radio-option.selected.reject {
+    background: #fee2e2;
+    border: 2px solid #ef4444;
 }
 
-.radio-option.selected.reject .radio-indicator{
-    border-color:#ef4444;
+.radio-option.selected.reject .radio-indicator {
+    border-color: #ef4444;
 }
 
-.radio-option.selected.reject .radio-indicator::after{
-    background:#ef4444;
+.radio-option.selected.reject .radio-indicator::after {
+    background: #ef4444;
 }
 
-.option-title{
-    display:block;
-    font-size:1rem;
-    font-weight:700;
-    margin-bottom:6px;
+.option-title {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
 }
 
-.approve-title{
-    color:#15803d;
+.approve-title {
+    color: #15803d;
 }
 
-.return-title{
-    color:#d97706;
+.return-title {
+    color: #d97706;
 }
 
-.reject-title{
-    color:#dc2626;
+.reject-title {
+    color: #dc2626;
 }
 
-.option-desc{
-    color:#64748b;
-    font-size:.92rem;
-    line-height:1.6;
+.option-desc {
+    color: #64748b;
+    font-size: .92rem;
+    line-height: 1.6;
 }
 
 /* ---------------- Form ---------------- */
 
-.required-mark{
-    color:#dc2626;
+.required-mark {
+    color: #dc2626;
 }
 
-.form-control{
-    width:100%;
-    padding:15px;
-    border:1px solid #d5dce6;
-    border-radius:12px;
-    font-size:.95rem;
-    color:#334155;
-    transition:.2s;
+.form-control {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #d5dce6;
+    border-radius: 12px;
+    font-size: .95rem;
+    color: #334155;
+    transition: .2s;
 }
 
-.form-control:focus{
-    outline:none;
-    border-color:#8b0000;
-    box-shadow:0 0 0 4px rgba(139,0,0,.08);
+.form-control:focus {
+    outline: none;
+    border-color: #8b0000;
+    box-shadow: 0 0 0 4px rgba(139, 0, 0, .08);
 }
 
-.error-banner{
-    margin-top:18px;
-    background:#fee2e2;
-    color:#dc2626;
-    border:1px solid #fecaca;
-    padding:14px;
-    border-radius:12px;
+.error-banner {
+    margin-top: 18px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 14px;
+    border-radius: 12px;
 }
 
-.form-actions{
-    margin-top:24px;
-    padding-top:20px;
-    border-top:1px solid #e5e7eb;
-    display:flex;
-    justify-content:flex-end;
-    gap:14px;
+.form-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
 }
 
 /* ---------------- Buttons ---------------- */
 
-.btn{
-    border-radius:10px;
-    font-weight:600;
-    transition:.25s;
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .25s;
 }
 
-.btn-secondary{
-    background:#fff;
-    border:1px solid #d5dce6;
-    color:#475569;
-    padding:12px 22px;
+.btn-secondary {
+    background: #fff;
+    border: 1px solid #d5dce6;
+    color: #475569;
+    padding: 12px 22px;
 }
 
-.btn-secondary:hover{
-    background:#f8fafc;
+.btn-secondary:hover {
+    background: #f8fafc;
 }
 
-.btn-primary{
-    background:#8b0000;
-    color:#fff;
-    border:none;
-    padding:12px 24px;
+.btn-primary {
+    background: #8b0000;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
 }
 
-.btn-primary:hover{
-    background:#6d0000;
+.btn-primary:hover {
+    background: #6d0000;
 }
 
 /* ---------------- Modal ---------------- */
 
-.modal-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(15,23,42,.45);
-    backdrop-filter:blur(4px);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:999;
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
 }
 
-.modal-box{
-    width:90%;
-    max-width:500px;
-    padding:26px;
+.modal-box {
+    width: 90%;
+    max-width: 500px;
+    padding: 26px;
 }
 
-.modal-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid #e5e7eb;
-    padding-bottom:14px;
-    margin-bottom:18px;
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
 }
 
-.modal-title{
-    font-size:1.2rem;
-    font-weight:700;
+.modal-title {
+    font-size: 1.2rem;
+    font-weight: 700;
 }
 
-.modal-close-btn{
-    border:none;
-    background:none;
-    font-size:28px;
-    cursor:pointer;
+.modal-close-btn {
+    border: none;
+    background: none;
+    font-size: 28px;
+    cursor: pointer;
 }
 
-.modal-message{
-    color:#475569;
-    line-height:1.6;
+.modal-message {
+    color: #475569;
+    line-height: 1.6;
 }
 
-.modal-actions{
-    display:flex;
-    justify-content:flex-end;
-    gap:12px;
-    margin-top:22px;
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 22px;
 }
 
 .modal-fade-enter-active,
-.modal-fade-leave-active{
-    transition:.2s;
+.modal-fade-leave-active {
+    transition: .2s;
 }
 
 .modal-fade-enter-from,
-.modal-fade-leave-to{
-    opacity:0;
+.modal-fade-leave-to {
+    opacity: 0;
 }
 
 /* ---------------- Utility ---------------- */
 
-.mt-6{
-    margin-top:24px;
+.mt-6 {
+    margin-top: 24px;
 }
 
-.empty-state-box{
-    text-align:center;
-    padding:80px 20px;
+.empty-state-box {
+    text-align: center;
+    padding: 80px 20px;
 }
 
-.empty-title{
-    font-size:1.2rem;
-    font-weight:700;
+.empty-title {
+    font-size: 1.2rem;
+    font-weight: 700;
 }
 
-.empty-desc{
-    color:#64748b;
-    margin-top:8px;
+.empty-desc {
+    color: #64748b;
+    margin-top: 8px;
 }
 
-.sr-only{
-    position:absolute;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-    clip:rect(0,0,0,0);
-    white-space:nowrap;
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
 }
-
 </style>

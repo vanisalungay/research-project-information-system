@@ -47,7 +47,7 @@
         <div class="td">{{ proposal.proponent }}</div>
         <div class="td"><span class="status-badge pending">{{ proposal.status }}</span></div>
         <div class="td actions-cell">
-          <div class="review-btn" @click="$router.push({ name: 'OvcafValidate', params: { id: proposal.id } })">Review</div>
+          <div class="review-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">Review</div>
         </div>
       </div>
     </div>
@@ -72,7 +72,7 @@
         <div class="td">{{ proposal.proponent }}</div>
         <div class="td"><span class="status-badge approved">{{ proposal.status }}</span></div>
         <div class="td actions-cell">
-          <div class="validate-btn" @click="$router.push({ name: 'OvcafValidate', params: { id: proposal.id } })">View</div>
+          <div class="validate-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">View</div>
         </div>
       </div>
     </div>
@@ -254,7 +254,8 @@ onMounted(loadDashboard)
   padding-left: 16px;
 }
 
-.review-btn, .validate-btn {
+.review-btn,
+.validate-btn {
   background: #2452ff;
   color: white !important;
   padding: 6px 16px;
@@ -266,7 +267,8 @@ onMounted(loadDashboard)
   transition: background 0.15s ease;
 }
 
-.review-btn:hover, .validate-btn:hover {
+.review-btn:hover,
+.validate-btn:hover {
   background: #1d40cc;
 }
 
@@ -277,10 +279,12 @@ onMounted(loadDashboard)
   font-size: 11px;
   font-weight: 600;
 }
+
 .status-badge.pending {
   background: #fef3c7;
   color: #92400e;
 }
+
 .status-badge.approved {
   background: #dcfce7;
   color: #166534;
@@ -313,7 +317,9 @@ onMounted(loadDashboard)
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-fade {
@@ -321,7 +327,14 @@ onMounted(loadDashboard)
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

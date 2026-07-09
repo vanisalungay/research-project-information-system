@@ -83,7 +83,7 @@
                                             <tr v-for="(row, idx) in proposal.budgetBreakdown" :key="idx">
                                                 <td><span class="category-tag"
                                                         :class="getCategoryClass(row.category)">{{
-                                                        getCategoryShort(row.category) }}</span></td>
+                                                            getCategoryShort(row.category) }}</span></td>
                                                 <td class="font-medium">{{ row.item }}</td>
                                                 <td class="text-right font-mono">{{ row.quantity }}</td>
                                                 <td>{{ row.unit }}</td>
@@ -175,6 +175,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import api from '@/utils/api';
 
 const route = useRoute();
 
@@ -185,14 +186,17 @@ const dropdownRef = ref(null);
 
 // ── Page State ────────────────────────────────────
 const loading = ref(true);
+const error = ref(null);
 const proposal = ref(null);
 
 // ── Computed ──────────────────────────────────────
 const isPending = computed(() =>
-    proposal.value?.status === 'Pending Validation' || proposal.value?.status === 'Under Validation'
+    proposal.value?.status === 'Pending Validation' ||
+    proposal.value?.status === 'Under Validation' ||
+    proposal.value?.rawStatus === 'FOR_OVCAF_APPROVAL'
 );
 const budgetTotal = computed(() =>
-    (proposal.value?.budgetBreakdown || []).reduce((s, i) => s + i.total, 0)
+    (proposal.value?.budgetBreakdown || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
 );
 
 const checklistLabels = {
@@ -204,27 +208,117 @@ const checklistLabels = {
     complianceVerified: 'Compliance with standard government/university funding guidelines verified'
 };
 
-// ── Mock Data ─────────────────────────────────────
-// TODO: Replace mock data with backend API
-const MOCK_PROPOSALS = [];
+// ── Fetch proposal from API ───────────────────────
+const fetchProposal = async () => {
+    try {
+        loading.value = true;
+        error.value = null;
+        const id = route.params.id;
+        const response = await api.get(`/api/ovcaf/proposals/${id}`);
+        const p = response.data;
+        if (p) {
+            proposal.value = {
+                id: p.id,
+                title: p.projectTitle || 'Untitled Project',
+                proponent: p.proponentName || 'Unknown',
+                college: p.college || 'Unknown',
+                department: p.college || 'Unknown',
+                budget: p.totalBudget || 0,
+                dateReceived: p.createdAt,
+                status: mapStatus(p.status),
+                rawStatus: p.status,
+                abstract: p.executiveSummary || 'No abstract available.',
+                timeline: p.duration || 'Not specified',
+                fundingSource: p.fundingSource || 'Not specified',
+                budgetBreakdown: (p.budgetBreakdown || []).map(b => ({
+                    category: b.agency || 'Other',
+                    item: `${b.agency || 'Item'} - PS: ${b.ps || '0'}, MOOE: ${b.mooe || '0'}, EO: ${b.eo || '0'}`,
+                    quantity: 1,
+                    unit: 'lot',
+                    unitCost: parseFloat(b.total) || 0,
+                    total: parseFloat(b.total) || 0
+                })),
+                documents: [],
+                ocRemarks: p.remarks || null,
+                validationChecklist: {
+                    budgetComplete: p.budgetComplete || false,
+                    budgetComputationCorrect: p.budgetComputationCorrect || false,
+                    supportingDocsComplete: p.supportingDocsComplete || false,
+                    expensesReasonable: p.expensesReasonable || false,
+                    fundingSourceIdentified: p.fundingSourceIdentified || false,
+                    complianceVerified: p.complianceVerified || false
+                },
+                remarks: p.ovcafRemarks || null,
+                history: buildHistory(p)
+            };
+        }
+    } catch (err) {
+        console.error('Error fetching proposal details:', err);
+        error.value = 'Failed to load proposal details. Please try again.';
+        proposal.value = null;
+    } finally {
+        loading.value = false;
+    }
+};
 
-// ── localStorage helpers ──────────────────────────
-const PROPOSAL_KEY = 'ovcaf_proposals';
-const getAllProposals = () => {
-    const s = localStorage.getItem(PROPOSAL_KEY);
-    if (!s) { localStorage.setItem(PROPOSAL_KEY, JSON.stringify(MOCK_PROPOSALS)); return MOCK_PROPOSALS; }
-    return JSON.parse(s);
+// Map backend status to frontend display status
+const mapStatus = (status) => {
+    if (!status) return 'Pending Validation';
+    switch (status.toUpperCase()) {
+        case 'FOR_OVCAF_APPROVAL':
+            return 'Pending Validation';
+        case 'APPROVED':
+        case 'FOR_OC_APPROVAL':
+            return 'Approved & Endorsed';
+        case 'READY_FOR_RELEASE':
+            return 'Ready for Release';
+        case 'RELEASED':
+            return 'Released';
+        case 'RETURNED':
+            return 'Returned for Revision';
+        case 'REJECTED':
+            return 'Rejected';
+        default:
+            return status;
+    }
+};
+
+// Build history from proposal data
+const buildHistory = (p) => {
+    const history = [];
+    if (p.createdAt) {
+        history.push({
+            stage: 'Submission',
+            action: 'Proposal Submitted',
+            user: p.proponentName || 'Proponent',
+            date: new Date(p.createdAt).toLocaleString('en-PH'),
+            notes: null
+        });
+    }
+    if (p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'APPROVED' || p.status === 'FOR_OC_APPROVAL') {
+        history.push({
+            stage: 'OVCAF',
+            action: 'Received for Financial Validation',
+            user: 'System',
+            date: new Date(p.updatedAt || p.createdAt).toLocaleString('en-PH'),
+            notes: null
+        });
+    }
+    if (p.ovcafDecision) {
+        history.push({
+            stage: 'OVCAF',
+            action: p.ovcafDecision,
+            user: 'OVCAF Evaluator',
+            date: new Date(p.updatedAt).toLocaleString('en-PH'),
+            notes: p.ovcafRemarks || null
+        });
+    }
+    return history;
 };
 
 // ── Lifecycle ─────────────────────────────────────
-// TODO: Replace with backend API call
 onMounted(async () => {
-    loading.value = true;
-    await new Promise(r => setTimeout(r, 300));
-    const all = getAllProposals();
-    const id = route.params.id;
-    proposal.value = all.find(p => p.id === id) || null;
-    loading.value = false;
+    await fetchProposal();
     document.addEventListener('click', handleOutsideClick);
 });
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
@@ -234,12 +328,12 @@ const handleOutsideClick = (e) => {
 };
 
 // ── Helpers ───────────────────────────────────────
-const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v);
+const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 const formatDateLong = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 const getStatusClass = (s) => {
     if (!s) return '';
     if (s.includes('Pending') || s.includes('Under')) return 'badge-pending';
-    if (s.includes('Approved')) return 'badge-approved';
+    if (s.includes('Approved') || s.includes('Released')) return 'badge-approved';
     if (s.includes('Returned')) return 'badge-returned';
     if (s.includes('Rejected')) return 'badge-rejected';
     return 'badge-info';
@@ -268,84 +362,84 @@ const getTlClass = (action) => {
 </script>
 
 <style scoped>
-.ovcaf-main{
-    width:100%;
-    max-width:1600px;
-    margin:0 auto;
+.ovcaf-main {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
 }
 
-.ovcaf-body{
-    padding:32px;
+.ovcaf-body {
+    padding: 32px;
 }
 
-.action-bar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:1.5rem;
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
 }
 
-.action-bar .btn{
-    width:auto;
-    flex:none;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+.action-bar .btn {
+    width: auto;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    padding:6px 14px;
-    height:34px;
+    padding: 6px 14px;
+    height: 34px;
 
-    font-size:.78rem;
-    border-radius:8px;
+    font-size: .78rem;
+    border-radius: 8px;
 }
 
-.action-bar .btn-secondary{
+.action-bar .btn-secondary {
     background: #ffffff;
     color: #475569;
     border: 1px solid #cbd5e1;
 }
 
-.action-bar .btn-secondary:hover{
+.action-bar .btn-secondary:hover {
     background: #f8fafc;
     border-color: #94a3b8;
     color: #1e293b;
 }
 
-.action-bar .btn-primary{
+.action-bar .btn-primary {
     background: #0f766e;
     border: 1px solid #0f766e;
     color: white;
 }
 
-.action-bar .btn-primary:hover{
+.action-bar .btn-primary:hover {
     background: #115e59;
     border-color: #115e59;
     transform: translateY(-1px);
 }
 
 
-.card{
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:16px;
-    box-shadow:0 8px 24px rgba(0,0,0,.05);
+.card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .05);
 }
 
-.custom-table{
-    width:100%;
-    border-collapse:collapse;
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.custom-table th{
-    padding:14px 18px;
+.custom-table th {
+    padding: 14px 18px;
 }
 
-.custom-table td{
-    padding:16px 18px;
+.custom-table td {
+    padding: 16px 18px;
 }
 
-.proposal-header-card{
-    padding:28px;
+.proposal-header-card {
+    padding: 28px;
 }
 
 .header-layout {
@@ -390,6 +484,7 @@ const getTlClass = (action) => {
     min-width: 110px;
     height: 34px;
 }
+
 /* Action bar buttons */
 .action-bar .btn {
     height: 36px !important;
@@ -397,8 +492,8 @@ const getTlClass = (action) => {
     padding: 0.45rem 1.2rem !important;
 }
 
-.budget-box{
-    padding:24px;
+.budget-box {
+    padding: 24px;
 }
 
 .title-section {
@@ -464,11 +559,11 @@ const getTlClass = (action) => {
     color: var(--text-secondary);
 }
 
-.details-grid{
-    display:grid;
-    grid-template-columns:2fr 1fr;
-    gap:24px;
-    align-items:start;
+.details-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    align-items: start;
 }
 
 @media (max-width: 1024px) {
@@ -585,8 +680,8 @@ const getTlClass = (action) => {
     gap: 0.75rem;
 }
 
-.document-item{
-    padding:16px 18px;
+.document-item {
+    padding: 16px 18px;
 }
 
 .doc-name {
@@ -678,8 +773,8 @@ const getTlClass = (action) => {
     color: var(--text-secondary);
 }
 
-.timeline-item{
-    padding-bottom:28px;
+.timeline-item {
+    padding-bottom: 28px;
 }
 
 .timeline-item {
@@ -702,9 +797,9 @@ const getTlClass = (action) => {
     background-color: #e2e8f0;
 }
 
-.tl-icon{
-    width:44px;
-    height:44px;
+.tl-icon {
+    width: 44px;
+    height: 44px;
 }
 
 .tl-success {
@@ -727,8 +822,8 @@ const getTlClass = (action) => {
     background-color: var(--color-info-bg);
 }
 
-.tl-content{
-    padding:18px;
+.tl-content {
+    padding: 18px;
 }
 
 .tl-header {

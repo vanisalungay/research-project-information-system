@@ -195,3 +195,29 @@ CREATE TABLE project_reports (
     review_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, APPROVED, RETURNED
     review_comments VARCHAR(1000)
 );
+
+-- 13. OVCAF Validations Table (Financial validation and budget authorization)
+CREATE TABLE ovcaf_validations (
+    id BIGSERIAL PRIMARY KEY,
+    proposal_id BIGINT NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    validated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    validated_at TIMESTAMP,
+    decision VARCHAR(50) NOT NULL, -- APPROVED_ENDORSED, RETURNED_FOR_REVISION, REJECTED
+    remarks TEXT,
+    -- Validation Checklist
+    budget_complete BOOLEAN DEFAULT FALSE,
+    budget_computation_correct BOOLEAN DEFAULT FALSE,
+    supporting_docs_complete BOOLEAN DEFAULT FALSE,
+    expenses_reasonable BOOLEAN DEFAULT FALSE,
+    funding_source_identified BOOLEAN DEFAULT FALSE,
+    compliance_verified BOOLEAN DEFAULT FALSE,
+    -- Budget authorization fields
+    budget_endorsed BOOLEAN DEFAULT FALSE,
+    budget_endorsed_at TIMESTAMP,
+    budget_authorized BOOLEAN DEFAULT FALSE,
+    budget_authorized_at TIMESTAMP,
+    funds_released BOOLEAN DEFAULT FALSE,
+    funds_released_at TIMESTAMP,
+    released_by BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
