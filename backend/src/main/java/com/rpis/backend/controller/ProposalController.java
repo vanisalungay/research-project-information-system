@@ -9,8 +9,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/proposals")
@@ -92,6 +101,77 @@ public class ProposalController {
     public ResponseEntity<Proposal> finalApprove(@PathVariable Long id) {
         Proposal updated = proposalService.updateProposalStatus(id, "APPROVED");
         return ResponseEntity.ok(updated);
+    }
+
+    private static final String SO_UPLOAD_DIR = "uploads/special-orders/";
+
+    /**
+     * Approve proposal with Special Order (SO) document upload.
+     * OC grants final approval, issues SO, and determines budget routing.
+     */
+    @PutMapping("/{id}/approve-with-so")
+    public ResponseEntity<?> approveWithSpecialOrder(
+            @PathVariable Long id,
+            @RequestParam("soNumber") String soNumber,
+            @RequestParam(value = "soFile", required = false) MultipartFile soFile,
+            @RequestParam("needsBudget") Boolean needsBudget,
+            @RequestParam(value = "chancellorNotes", required = false) String chancellorNotes) {
+
+        try {
+            Proposal proposal = proposalService.getProposalById(id);
+
+            // Save SO file if provided
+            if (soFile != null && !soFile.isEmpty()) {
+                Path uploadPath = Paths.get(SO_UPLOAD_DIR);
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+
+                String originalFilename = soFile.getOriginalFilename();
+                String extension = originalFilename != null && originalFilename.contains(".")
+                        ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                        : "";
+                String uniqueFilename = UUID.randomUUID().toString() + "_SO" + extension;
+
+                Path filePath = Paths.get(SO_UPLOAD_DIR, uniqueFilename);
+                Files.write(filePath, soFile.getBytes());
+
+                proposal.setSoFileName(originalFilename);
+                proposal.setSoFilePath(filePath.toString());
+            }
+
+            // Set SO number and metadata
+            proposal.setSoNumber(soNumber);
+            proposal.setSoUploadedAt(LocalDateTime.now());
+
+            // Save chancellor notes if provided
+            if (chancellorNotes != null && !chancellorNotes.isBlank()) {
+                proposal.setRemarks(chancellorNotes);
+            }
+
+            // Route based on budget requirement
+            if (needsBudget) {
+                proposal.setStatus("FOR_OVCAF_APPROVAL");
+            } else {
+                proposal.setStatus("APPROVED");
+            }
+
+            Proposal saved = proposalService.saveProposalDirect(proposal);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("proposal", saved);
+            response.put("message", needsBudget
+                    ? "Proposal approved with SO. Forwarded to Finance Office / OVCAF for budget endorsement."
+                    : "Proposal approved with SO for immediate implementation.");
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to upload SO file: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Approval failed: " + e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}/return-revision")

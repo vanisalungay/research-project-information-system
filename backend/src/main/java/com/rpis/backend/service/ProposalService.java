@@ -230,6 +230,18 @@ public class ProposalService {
         return proposal;
     }
 
+    /**
+     * Save a proposal entity directly (used when fields are set manually on the
+     * entity).
+     * Also dispatches notifications based on the current status.
+     */
+    @Transactional
+    public Proposal saveProposalDirect(Proposal proposal) {
+        proposal = proposalRepository.save(proposal);
+        notifySubscribedRoles(proposal, null);
+        return proposal;
+    }
+
     @Transactional
     public Proposal updateReviewerInfo(Long id, String reviewedBy, String reviewedByPosition) {
         Proposal proposal = getProposalById(id);
@@ -269,12 +281,11 @@ public class ProposalService {
                 case "SUBMITTED":
                     if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(), 
-                            "New proposal submitted for review: \"" + proposal.getProjectTitle() + "\"",
-                            "New Proposal Submitted",
-                            "PROPOSAL_UPDATE",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "New proposal submitted for review: \"" + proposal.getProjectTitle() + "\"",
+                                "New Proposal Submitted",
+                                "PROPOSAL_UPDATE",
+                                proposal.getId());
                     }
                     break;
 
@@ -282,12 +293,11 @@ public class ProposalService {
                 case "ENDORSED":
                     if ("OVCRIGE".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "A proposal has been endorsed to OVCRIGE: \"" + proposal.getProjectTitle() + "\"",
-                            "Proposal Endorsed",
-                            "ENDORSEMENT",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "A proposal has been endorsed to OVCRIGE: \"" + proposal.getProjectTitle() + "\"",
+                                "Proposal Endorsed",
+                                "ENDORSEMENT",
+                                proposal.getId());
                     }
                     break;
 
@@ -295,25 +305,25 @@ public class ProposalService {
                 case "UNDER_REVIEW":
                     if ("REC".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Proposal awaiting REC review and evaluation: \"" + proposal.getProjectTitle() + "\"",
-                            "Review Request",
-                            "REVIEW_REQUEST",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Proposal awaiting REC review and evaluation: \"" + proposal.getProjectTitle() + "\"",
+                                "Review Request",
+                                "REVIEW_REQUEST",
+                                proposal.getId());
                     }
                     break;
 
-                // REC approved & recommended -> notify OVCRIGE to prepare chancellor final approval list
+                // REC approved & recommended -> notify OVCRIGE to prepare chancellor final
+                // approval list
                 case "REC_APPROVED":
                     if ("OVCRIGE".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "REC has evaluated and recommended proposal for approval: \"" + proposal.getProjectTitle() + "\"",
-                            "Proposal Approved by REC",
-                            "APPROVAL",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "REC has evaluated and recommended proposal for approval: \""
+                                        + proposal.getProjectTitle() + "\"",
+                                "Proposal Approved by REC",
+                                "APPROVAL",
+                                proposal.getId());
                     }
                     break;
 
@@ -321,12 +331,12 @@ public class ProposalService {
                 case "FOR_OVCAF_APPROVAL":
                     if ("OVCAF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "A proposal is ready for your review and endorsement: \"" + proposal.getProjectTitle() + "\"",
-                            "Proposal for OVCAF Review",
-                            "ENDORSEMENT",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "A proposal is ready for your review and endorsement: \"" + proposal.getProjectTitle()
+                                        + "\"",
+                                "Proposal for OVCAF Review",
+                                "ENDORSEMENT",
+                                proposal.getId());
                     }
                     break;
 
@@ -334,28 +344,27 @@ public class ProposalService {
                 case "FOR_OC_APPROVAL":
                     if ("OC".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
-                            "Final Approval Required",
-                            "APPROVAL",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
+                                "Final Approval Required",
+                                "APPROVAL",
+                                proposal.getId());
                     }
                     break;
 
                 // REC returned for revision -> notify proponent to revise
                 case "REC_REVISION":
                 case "REVISION":
-                // RPS returned for revision -> notify proponent to revise
+                    // RPS returned for revision -> notify proponent to revise
                 case "RPS_RETURNED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Your proposal \"" + proposal.getProjectTitle() + "\" has been returned for revision. Please check feedback.",
-                            "Revision Required",
-                            "REVISION",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Your proposal \"" + proposal.getProjectTitle()
+                                        + "\" has been returned for revision. Please check feedback.",
+                                "Revision Required",
+                                "REVISION",
+                                proposal.getId());
                     }
                     break;
 
@@ -364,33 +373,33 @@ public class ProposalService {
                 case "REJECTED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected.",
-                            "Proposal Rejected",
-                            "REJECTION",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected.",
+                                "Proposal Rejected",
+                                "REJECTION",
+                                proposal.getId());
                     }
                     break;
 
-                // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to authorize budget
+                // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to
+                // authorize budget
                 case "APPROVED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Congratulations! Your proposal \"" + proposal.getProjectTitle() + "\" has received final approval by the Chancellor.",
-                            "Proposal Approved",
-                            "APPROVAL",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Congratulations! Your proposal \"" + proposal.getProjectTitle()
+                                        + "\" has received final approval by the Chancellor.",
+                                "Proposal Approved",
+                                "APPROVAL",
+                                proposal.getId());
                     } else if ("OVCAF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "A proposal is approved and ready for budget endorsement: \"" + proposal.getProjectTitle() + "\"",
-                            "Budget Endorsement Required",
-                            "FUNDING",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "A proposal is approved and ready for budget endorsement: \""
+                                        + proposal.getProjectTitle() + "\"",
+                                "Budget Endorsement Required",
+                                "FUNDING",
+                                proposal.getId());
                     }
                     break;
 
@@ -398,33 +407,33 @@ public class ProposalService {
                 case "READY_FOR_RELEASE":
                     if ("OVCAF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Budget processing requested for proposal: \"" + proposal.getProjectTitle() + "\"",
-                            "Budget Processing Request",
-                            "FUNDING",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Budget processing requested for proposal: \"" + proposal.getProjectTitle() + "\"",
+                                "Budget Processing Request",
+                                "FUNDING",
+                                proposal.getId());
                     }
                     break;
 
-                // Funds released -> notify proponent & RPS (RII/DARES) to monitor implementation
+                // Funds released -> notify proponent & RPS (RII/DARES) to monitor
+                // implementation
                 case "RELEASED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Implementation funds have been successfully released for your project: \"" + proposal.getProjectTitle() + "\"",
-                            "Funds Released",
-                            "FUNDING",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Implementation funds have been successfully released for your project: \""
+                                        + proposal.getProjectTitle() + "\"",
+                                "Funds Released",
+                                "FUNDING",
+                                proposal.getId());
                     } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Funds released. Ready for implementation monitoring: \"" + proposal.getProjectTitle() + "\"",
-                            "Implementation Monitoring",
-                            "PROPOSAL_UPDATE",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Funds released. Ready for implementation monitoring: \"" + proposal.getProjectTitle()
+                                        + "\"",
+                                "Implementation Monitoring",
+                                "PROPOSAL_UPDATE",
+                                proposal.getId());
                     }
                     break;
 
@@ -432,20 +441,20 @@ public class ProposalService {
                 case "RETURNED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Budget release request for your proposal \"" + proposal.getProjectTitle() + "\" was returned.",
-                            "Budget Request Returned",
-                            "REVISION",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Budget release request for your proposal \"" + proposal.getProjectTitle()
+                                        + "\" was returned.",
+                                "Budget Request Returned",
+                                "REVISION",
+                                proposal.getId());
                     } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
                         notificationService.createNotification(
-                            user.getId(),
-                            "Budget release was returned by Finance Office for proposal: \"" + proposal.getProjectTitle() + "\"",
-                            "Budget Request Returned",
-                            "REVISION",
-                            proposal.getId()
-                        );
+                                user.getId(),
+                                "Budget release was returned by Finance Office for proposal: \""
+                                        + proposal.getProjectTitle() + "\"",
+                                "Budget Request Returned",
+                                "REVISION",
+                                proposal.getId());
                     }
                     break;
             }

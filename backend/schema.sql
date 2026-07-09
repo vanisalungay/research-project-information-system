@@ -66,6 +66,11 @@ CREATE TABLE proposals (
     reviewed_by VARCHAR(255),
     reviewed_by_position VARCHAR(50),
     remarks TEXT,
+    -- Special Order (SO) fields issued by Office of the Chancellor
+    so_number VARCHAR(100),
+    so_file_name VARCHAR(255),
+    so_file_path VARCHAR(500),
+    so_uploaded_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

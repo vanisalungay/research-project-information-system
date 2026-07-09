@@ -68,7 +68,6 @@ import OvcafFinancialValidation from '../views/Ovcaf/OvcafFinancialValidation.vu
 /* OC */
 import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCFinalApproval from '../views/Oc/OCFinalApproval.vue'
-import OCFinalApproval2 from '../views/Oc/OCFinalApproval2.vue'
 import OcDetailedProposal from '../views/Oc/OcDetailedProposal.vue'
 import OCNotifications from '../views/Notifications/OCNotifications.vue'
 
@@ -200,7 +199,6 @@ const routes = [
       { path: 'oc-notification', component: NotificationPage },
       { path: 'oc-detailed', component: OcDetailedProposal },
       { path: 'oc/final-approval/:id', name: 'OCFinalApproval', component: OCFinalApproval },
-      { path: 'oc/final-approval/:id/approved', component: OCFinalApproval2 },
     ],
   },
 

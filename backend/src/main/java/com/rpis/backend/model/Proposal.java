@@ -142,6 +142,19 @@ public class Proposal {
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks;
 
+    // Special Order (SO) fields issued by Office of the Chancellor
+    @Column(name = "so_number")
+    private String soNumber;
+
+    @Column(name = "so_file_name")
+    private String soFileName;
+
+    @Column(name = "so_file_path")
+    private String soFilePath;
+
+    @Column(name = "so_uploaded_at")
+    private LocalDateTime soUploadedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

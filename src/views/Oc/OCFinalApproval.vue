@@ -14,7 +14,8 @@
     <!-- Error -->
     <div v-else-if="error" class="card center">
       <p class="error-text">{{ error }}</p>
-      <button class="btn-dark" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to Dashboard</button>
+      <button class="btn-dark" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to
+        Dashboard</button>
     </div>
 
     <!-- Proposal Content -->
@@ -68,7 +69,7 @@
               <div>
                 <p class="tl-title">RPS / RII DARES</p>
                 <p class="tl-desc">Endorsed</p>
-                <small>{{ proposal.createdAt?.substring(0,10) || 'N/A' }}</small>
+                <small>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</small>
               </div>
             </div>
             <div class="timeline-item done">
@@ -76,7 +77,7 @@
               <div>
                 <p class="tl-title">REC Evaluation</p>
                 <p class="tl-desc">Completed</p>
-                <small>{{ proposal.updatedAt?.substring(0,10) || 'N/A' }}</small>
+                <small>{{ proposal.updatedAt?.substring(0, 10) || 'N/A' }}</small>
               </div>
             </div>
             <div class="timeline-item done">
@@ -84,7 +85,7 @@
               <div>
                 <p class="tl-title">OVCRIGE</p>
                 <p class="tl-desc">Forwarded to OC</p>
-                <small>{{ proposal.updatedAt?.substring(0,10) || 'N/A' }}</small>
+                <small>{{ proposal.updatedAt?.substring(0, 10) || 'N/A' }}</small>
               </div>
             </div>
             <div class="timeline-item current">
@@ -104,30 +105,23 @@
           <div class="budget-options">
             <label class="radio-label" :class="{ selected: needsBudget === true }">
               <input type="radio" v-model="needsBudget" :value="true" />
-              <span><strong>With Budget</strong><br/>Forward to Finance Office / OVCAF for budget endorsement and release</span>
+              <span><strong>With Budget</strong><br />Forward to Finance Office / OVCAF for budget endorsement and
+                release</span>
             </label>
             <label class="radio-label" :class="{ selected: needsBudget === false }">
               <input type="radio" v-model="needsBudget" :value="false" />
-              <span><strong>Without Budget</strong><br/>Proponent proceeds directly with project implementation</span>
+              <span><strong>Without Budget</strong><br />Proponent proceeds directly with project implementation</span>
             </label>
           </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button
-            class="btn-approve"
-            :class="{ disabled: needsBudget === null }"
-            :disabled="actionLoading || needsBudget === null"
-            @click="showConfirm = true"
-          >
+          <button class="btn-approve" :class="{ disabled: needsBudget === null }"
+            :disabled="actionLoading || needsBudget === null" @click="showConfirm = true">
             {{ actionLoading ? 'Processing...' : 'Approve for Implementation' }}
           </button>
-          <button
-            class="btn-return"
-            :disabled="actionLoading"
-            @click="returnToOvcrige"
-          >
+          <button class="btn-return" :disabled="actionLoading" @click="returnToOvcrige">
             {{ actionLoading ? 'Processing...' : 'Return to OVCRIGE' }}
           </button>
         </div>
@@ -137,21 +131,53 @@
 
     <!-- CONFIRMATION MODAL -->
     <div v-if="showConfirm" class="modal-overlay" @click.self="showConfirm = false">
-      <div class="modal">
+      <div class="modal so-modal">
         <div class="modal-header">
-          <span>Confirm Approval</span>
+          <span>Confirm Approval & Issue Special Order</span>
           <span class="close" @click="showConfirm = false">&times;</span>
         </div>
         <div class="modal-body">
           <div class="check-icon">&#10003;</div>
           <h4>Approve This Proposal?</h4>
-          <p v-if="needsBudget">This proposal will be forwarded to the Finance Office / OVCAF for budget endorsement and release.</p>
-          <p v-else>This proposal will be approved for immediate implementation without budget.</p>
+
+          <!-- Special Order Fields -->
+          <div class="so-section">
+            <div class="so-field">
+              <label class="so-label">Special Order (SO) Number <span class="required">*</span></label>
+              <input type="text" v-model="soNumber" class="so-input" placeholder="e.g., SO-2026-001" />
+            </div>
+            <div class="so-field">
+              <label class="so-label">SO Document (PDF/DOC)</label>
+              <div class="file-upload-wrapper">
+                <input type="file" ref="soFileInput" class="so-file-input" accept=".pdf,.doc,.docx"
+                  @change="handleSoFileChange" />
+                <div class="file-display" v-if="soFile">
+                  <span class="file-icon">📄</span>
+                  <span class="file-name">{{ soFile.name }}</span>
+                  <button class="file-remove" @click="removeSoFile">&times;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget Routing Info -->
+          <div class="routing-info" :class="needsBudget ? 'with-budget' : 'no-budget'">
+            <p v-if="needsBudget">
+              <strong>With Budget:</strong> This proposal will be forwarded to the Finance Office / OVCAF for budget
+              endorsement and release.
+            </p>
+            <p v-else>
+              <strong>Without Budget:</strong> This proposal will be approved for immediate implementation.
+            </p>
+          </div>
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" @click="showConfirm = false">Cancel</button>
-          <button class="btn-confirm" @click="confirmApproval">Confirm Approval</button>
+          <button class="btn-confirm" :disabled="!soNumber || soUploading" @click="confirmApproval">
+            {{ soUploading ? 'Uploading & Approving...' : 'Confirm Approval' }}
+          </button>
         </div>
+        <p v-if="!soNumber" class="modal-hint">Please enter the Special Order number to proceed.</p>
       </div>
     </div>
 
@@ -186,6 +212,9 @@ export default {
       actionLoading: false,
       chancellorNotes: '',
       needsBudget: null,
+      soNumber: '',
+      soFile: null,
+      soUploading: false,
     }
   },
   async mounted() {
@@ -211,18 +240,46 @@ export default {
         this.loading = false
       }
     },
+    handleSoFileChange(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.soFile = file
+      }
+    },
+    removeSoFile() {
+      this.soFile = null
+      if (this.$refs.soFileInput) {
+        this.$refs.soFileInput.value = ''
+      }
+    },
     async confirmApproval() {
+      if (!this.soNumber || !this.soNumber.trim()) {
+        return
+      }
       this.showConfirm = false
       this.actionLoading = true
+      this.soUploading = true
       try {
         const proposalId = this.$route.params.id
-        if (this.needsBudget) {
-          await api.put(`/api/proposals/${proposalId}/forward-to-ovcaf`)
-          this.successMessage = 'Proposal approved! Forwarded to OVCAF for budget endorsement and release.'
-        } else {
-          await api.put(`/api/proposals/${proposalId}/final-approve`)
-          this.successMessage = 'Proposal approved for immediate implementation (no budget required).'
+
+        // Build FormData for multipart request
+        const formData = new FormData()
+        formData.append('soNumber', this.soNumber.trim())
+        formData.append('needsBudget', this.needsBudget)
+        if (this.chancellorNotes && this.chancellorNotes.trim()) {
+          formData.append('chancellorNotes', this.chancellorNotes.trim())
         }
+        if (this.soFile) {
+          formData.append('soFile', this.soFile)
+        }
+
+        const res = await api.put(
+          `/api/proposals/${proposalId}/approve-with-so`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        )
+
+        this.successMessage = res.data?.message || 'Proposal approved with Special Order.'
         this.showSuccess = true
       } catch (err) {
         console.error('Approval failed:', err)
@@ -230,6 +287,7 @@ export default {
         this.showSuccess = true
       } finally {
         this.actionLoading = false
+        this.soUploading = false
       }
     },
     async returnToOvcrige() {
@@ -284,14 +342,14 @@ export default {
   color: #475569;
   text-decoration: none;
   transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .back-btn:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
   color: #1e293b;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .back-arrow {
@@ -741,13 +799,165 @@ textarea:focus {
   background: #15803d;
 }
 
+.btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* SO Modal Styles */
+.so-modal {
+  width: 500px;
+}
+
+.so-section {
+  margin: 16px 0;
+  text-align: left;
+}
+
+.so-field {
+  margin-bottom: 14px;
+}
+
+.so-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.so-label .required {
+  color: #dc2626;
+}
+
+.so-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.so-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.file-upload-wrapper {
+  position: relative;
+}
+
+.so-file-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.so-file-input:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.file-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.file-icon {
+  font-size: 16px;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-remove {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.file-remove:hover {
+  color: #991b1b;
+}
+
+.routing-info {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.routing-info.with-budget {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.routing-info.no-budget {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.routing-info p {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.routing-info p strong {
+  color: #1e293b;
+}
+
+.modal-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
