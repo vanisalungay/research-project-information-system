@@ -17,4 +17,8 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     @Query("SELECT p FROM Proposal p WHERE p.status IN :statuses")
     List<Proposal> findByStatusIn(@Param("statuses") List<String> statuses);
+
+    // Find the maximum proposal code to generate the next one
+    @Query("SELECT MAX(p.proposalCode) FROM Proposal p")
+    String findMaxProposalCode();
 }

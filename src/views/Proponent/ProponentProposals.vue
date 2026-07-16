@@ -57,7 +57,7 @@
       </thead>
       <tbody>
         <tr v-for="proposal in filteredProposals" :key="proposal.id">
-          <td>{{ proposal.id }}</td>
+          <td>{{ proposal.documentId || proposal.proposalCode || proposal.id }}</td>
           <td>{{ proposal.projectTitle || proposal.title }}</td>
           <td>
             <span class="status" :class="(proposal.status || '').toLowerCase()">

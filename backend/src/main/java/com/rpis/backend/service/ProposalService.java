@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,46 @@ public class ProposalService {
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+
+    // ========================
+    // PROPOSAL ID AND REVISION FORMAT
+    // ========================
+    // Proposal ID: 3-digit continuous counter (001, 002, 003, ... 139)
+    // Revision number: 2-digit format (00 = initial, 01 = first revision, 02 =
+    // second, etc.)
+    // Document format: MSUN-ORPS-DA-{proposalId}-{year}-REV{revisionNo}
+    // Example: MSUN-ORPS-DA-001-2026-REV00
+
+    /**
+     * Generate the next proposal code (3-digit continuous counter).
+     * This counter never resets across years.
+     */
+    private String generateNextProposalCode() {
+        String maxCode = proposalRepository.findMaxProposalCode();
+        if (maxCode == null || maxCode.isEmpty()) {
+            return "001"; // First proposal
+        }
+        try {
+            int nextNum = Integer.parseInt(maxCode) + 1;
+            return String.format("%03d", nextNum);
+        } catch (NumberFormatException e) {
+            return "001"; // Fallback if parsing fails
+        }
+    }
+
+    /**
+     * Generate the document ID in format:
+     * MSUN-ORPS-DA-{proposalCode}-{year}-REV{revisionNo}
+     * 
+     * @param proposalCode   3-digit proposal code (e.g., "001")
+     * @param revisionNumber revision number (e.g., 0 for initial, 1 for first
+     *                       revision)
+     * @return formatted document ID
+     */
+    private String generateDocumentId(String proposalCode, int revisionNumber) {
+        int year = Year.now().getValue();
+        return String.format("MSUN-ORPS-DA-%s-%d-REV%02d", proposalCode, year, revisionNumber);
+    }
 
     public List<Proposal> getAllProposals() {
         return proposalRepository.findAll();
@@ -47,10 +88,35 @@ public class ProposalService {
     @Transactional
     public Proposal saveProposal(ProposalRequest request, Long proposalId) {
         Proposal proposal;
+        boolean isNewProposal = (proposalId == null);
+        boolean isRevisionResubmission = false;
+
         if (proposalId != null) {
             proposal = getProposalById(proposalId);
+            // Check if this is a revision resubmission (proposal was returned and is now
+            // being resubmitted)
+            if ("RPS_RETURNED".equals(proposal.getStatus()) ||
+                    "REC_REVISION".equals(proposal.getStatus()) ||
+                    "REVISION".equals(proposal.getStatus())) {
+                isRevisionResubmission = true;
+            }
         } else {
             proposal = new Proposal();
+        }
+
+        // Generate proposal code and document ID for new proposals
+        if (isNewProposal) {
+            String proposalCode = generateNextProposalCode();
+            proposal.setProposalCode(proposalCode);
+            proposal.setRevisionNumber(0);
+            proposal.setDocumentId(generateDocumentId(proposalCode, 0));
+        }
+        // Increment revision number and regenerate document ID for revision
+        // resubmissions
+        else if (isRevisionResubmission) {
+            int newRevisionNumber = (proposal.getRevisionNumber() != null ? proposal.getRevisionNumber() : 0) + 1;
+            proposal.setRevisionNumber(newRevisionNumber);
+            proposal.setDocumentId(generateDocumentId(proposal.getProposalCode(), newRevisionNumber));
         }
 
         // Proponent

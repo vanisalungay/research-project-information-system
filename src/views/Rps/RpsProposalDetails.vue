@@ -610,8 +610,25 @@
             </div>
           </div>
 
-          <!-- Reviewer Accountability -->
-          <div class="sidebar-card accountability-card">
+          <!-- Review Information (Display only - shows who reviewed the proposal) -->
+          <div v-if="proposal.reviewedBy" class="sidebar-card review-info-card">
+            <h3>Review Information</h3>
+            <div class="review-info-list">
+              <div class="review-info-item">
+                <span class="review-info-label">Reviewed By:</span>
+                <span class="review-info-value">{{ proposal.reviewedBy }}</span>
+              </div>
+              <div class="review-info-item">
+                <span class="review-info-label">Position:</span>
+                <span class="review-info-value reviewer-position">
+                  {{ formatReviewerPosition(proposal.reviewedByPosition) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviewer Accountability (Input - for new reviewers) -->
+          <div v-if="!proposal.reviewedBy" class="sidebar-card accountability-card">
             <h3>Reviewer Accountability</h3>
             <div class="reviewer-info">
               <div class="info-item">
@@ -748,6 +765,15 @@ const formatDate = (dateString) => {
     month: 'short',
     day: 'numeric'
   })
+}
+
+const formatReviewerPosition = (position) => {
+  if (!position) return 'N/A'
+  const positionMap = {
+    'RPS_STAFF': 'RPS Staff',
+    'RPS_DIRECTOR': 'RPS Director'
+  }
+  return positionMap[position] || position
 }
 </script>
 
@@ -1465,6 +1491,49 @@ const formatDate = (dateString) => {
   color: #94a3b8;
   font-style: italic;
   font-size: 14px;
+}
+
+/* REVIEW INFO CARD */
+.review-info-card {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.review-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.review-info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.reviewer-position {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+  width: fit-content;
 }
 
 /* RESPONSIVE */

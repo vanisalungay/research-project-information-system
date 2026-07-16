@@ -11,7 +11,7 @@
         </button>
         <div class="header-info">
           <h1>Submit Revision</h1>
-          <p class="subtitle">Proposal #{{ proposalId }}</p>
+          <p class="subtitle">{{ documentId || 'Proposal #' + proposalId }}</p>
         </div>
       </div>
     </header>
@@ -641,9 +641,15 @@
 
             <div class="info-list">
               <div class="info-item">
-                <span class="info-label">Proposal ID</span>
+                <span class="info-label">Document ID</span>
+                <span class="info-value document-id">
+                  {{ documentId || 'Pending' }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Revision Number</span>
                 <span class="info-value">
-                  #{{ proposalId }}
+                  REV{{ String(revisionNumber).padStart(2, '0') }}
                 </span>
               </div>
 
@@ -697,9 +703,11 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import { useUserDataStore } from '@/stores/userData'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserDataStore()
 
 const { dialogState, showAlert } = useDialog()
 
@@ -708,6 +716,8 @@ const proposalId = computed(() => route.params.id as string | undefined)
 const loading = ref(false)
 const error = ref('')
 const successMessage = ref('')
+const documentId = ref('')
+const revisionNumber = ref(0)
 
 
 
@@ -810,62 +820,110 @@ const fetchProposal = async () => {
 
   try {
     const res = await api.get(`/api/proposals/${proposalId.value}`)
-    const proposal = res.data
+    const data = res.data
 
+    // Set document ID and revision number from API response
+    documentId.value = data.documentId || ''
+    revisionNumber.value = data.revisionNumber || 0
+
+    // Map API response (camelCase) to form model (snake_case)
     proposal.value = {
-      programTitle: proposal.programTitle || '',
-      projectTitle: proposal.projectTitle || '',
-      projectLeader: proposal.projectLeader || '',
-      duration: proposal.duration || '',
-      startDate: proposal.startDate || '',
-      endDate: proposal.endDate || '',
-      college: proposal.college || '',
-      address: proposal.address || '',
-      cooperatingAgencies: proposal.cooperatingAgencies || '',
-      researchType: proposal.researchType || '',
-      innovationGoals: proposal.innovationGoals || '',
-      sectorRelevance: proposal.sectorRelevance || '',
-      sdg: proposal.sdg || '',
-      executiveSummary: proposal.executiveSummary || '',
-      rationale: proposal.rationale || '',
-      framework: proposal.framework || '',
-      objectivesGeneral: proposal.objectivesGeneral || '',
-      objectivesSpecific: proposal.objectivesSpecific || '',
-      methodology: proposal.methodology || '',
+      program_title: data.programTitle || '',
+      project_title: data.projectTitle || '',
+      project_leader: data.projectLeader || '',
+      project_leader_sex: data.projectLeaderSex || '',
+      duration: data.duration || '',
+      start_date: data.startDate || '',
+      end_date: data.endDate || '',
+      department: data.college || '',
+      address: data.address || '',
+      cooperating_agencies: data.cooperatingAgencies || '',
+      research_type: data.researchType || '',
+      innovation_goals: data.innovationGoals || '',
+      sector_relevance: data.sectorRelevance || '',
+      sustainable_development_goals: data.sdg || '',
+      executive_summary: data.executiveSummary || '',
+      rationale: data.rationale || '',
+      theoretical_framework: data.framework || '',
+      general_objective: data.objectivesGeneral || '',
+      specific_objectives: data.objectivesSpecific || '',
+      methodology: data.methodology || '',
+      expected_outputs: data.outputs || '',
+      potential_outcomes: data.outcomes || '',
+      economic_impact: data.impactEconomic || '',
+      social_ethical_impact: data.impactSocial || '',
+      target_beneficiaries: data.beneficiaries || '',
+      sustainability_plan: data.sustainability || '',
+      limitations: data.limitationsText || '',
+      risks_assumptions: data.risks || '',
+      literature_cited: data.referencesText || '',
+      other_projects_number: data.otherProjectsNumber || '',
 
-      totalBudget: proposal.totalBudget || '',
-      fundingSource: proposal.fundingSource || '',
-      expectedOutputs: proposal.expectedOutputs || '',
+      review_of_literature_file: data.reviewFileName ? { name: data.reviewFileName } : null,
+      technology_roadmap_file: data.roadmapFileName ? { name: data.roadmapFileName } : null,
+      gad_score_file: data.gadFileName ? { name: data.gadFileName } : null,
+      line_item_budget_file: data.beneficiariesFileName ? { name: data.beneficiariesFileName } : null,
 
       sites:
-        proposal.sites?.length > 0
-          ? proposal.sites
+        data.sites?.length > 0
+          ? data.sites.map(s => ({
+            country: s.country || '',
+            region: s.region || '',
+            province: s.province || '',
+            district: s.district || '',
+            municipality: s.municipality || '',
+            barangay: s.barangay || ''
+          }))
           : [
             {
               country: '',
               region: '',
               province: '',
+              district: '',
               municipality: '',
               barangay: ''
             }
           ],
 
-      lineItems:
-        proposal.lineItems?.length > 0
-          ? proposal.lineItems
-          : [
-            {
-              item: '',
-              quantity: '',
-              unitCost: '',
-              totalCost: ''
-            }
-          ],
+      logical_framework:
+        data.logFrames?.length > 0
+          ? data.logFrames.map(lf => ({
+            outcome_indicator: lf.outcome || '',
+            output_indicator: lf.output || ''
+          }))
+          : [],
 
-      reviewFileName: proposal.reviewFileName || '',
-      roadmapFileName: proposal.roadmapFileName || '',
-      gadFileName: proposal.gadFileName || '',
-      beneficiariesFileName: proposal.beneficiariesFileName || ''
+      personnel_requirements:
+        data.personnel?.length > 0
+          ? data.personnel.map(p => ({
+            position: p.position || '',
+            effort: p.time || '',
+            responsibilities: p.responsibilities || ''
+          }))
+          : [],
+
+      other_projects:
+        data.otherProjects?.length > 0
+          ? data.otherProjects.map(op => ({
+            project_title: op.title || '',
+            funding_agency: op.agency || '',
+            involvement: op.involvement || ''
+          }))
+          : [],
+
+      priority_agendas: {
+        agriculture: { selected: false, value: '' },
+        environment: { selected: false, value: '' },
+        health: { selected: false, value: '' },
+        ...(data.priorityAgendas
+          ? Object.fromEntries(
+            data.priorityAgendas.map(pa => [
+              pa.agenda,
+              { selected: pa.selected || false, value: pa.value || '' }
+            ])
+          )
+          : {})
+      }
     }
   } catch (err) {
     console.error(err)
@@ -881,26 +939,90 @@ const submitRevision = async () => {
     return
   }
 
+  const proponentId = userStore.user?.id
+  if (!proponentId) {
+    error.value = 'User not logged in.'
+    return
+  }
+
   loading.value = true
   error.value = ''
   successMessage.value = ''
 
-  try {
-    await api.put(`/api/proposals/${proposalId.value}`, {
-      ...proposal.value,
-      status: 'SUBMITTED'
-    })
+  const data = proposal.value
 
-    successMessage.value =
-      'Revision submitted successfully!'
+  // Build payload matching ProposalRequest DTO (camelCase)
+  const payload = {
+    proponentId,
+    programTitle: data.program_title || '',
+    projectTitle: data.project_title || '',
+    projectLeader: data.project_leader || '',
+    duration: data.duration || '',
+    startDate: data.start_date || '',
+    endDate: data.end_date || '',
+    college: data.department || '',
+    address: data.address || '',
+    cooperatingAgencies: data.cooperating_agencies || '',
+    researchType: data.research_type || '',
+    innovationGoals: data.innovation_goals || '',
+    sectorRelevance: data.sector_relevance || '',
+    sdg: data.sustainable_development_goals || '',
+    executiveSummary: data.executive_summary || '',
+    rationale: data.rationale || '',
+    framework: data.theoretical_framework || '',
+    objectivesGeneral: data.general_objective || '',
+    objectivesSpecific: data.specific_objectives || '',
+    methodology: data.methodology || '',
+    outputs: data.expected_outputs || '',
+    outcomes: data.potential_outcomes || '',
+    impactEconomic: data.economic_impact || '',
+    impactSocial: data.social_ethical_impact || '',
+    beneficiaries: data.target_beneficiaries || '',
+    sustainability: data.sustainability_plan || '',
+    risks: data.risks_assumptions || '',
+    otherProjectsNumber: data.other_projects_number || '',
+    status: 'SUBMITTED',
+    sites: (data.sites || []).map(s => ({
+      country: s.country || '',
+      region: s.region || '',
+      province: s.province || '',
+      district: s.district || '',
+      municipality: s.municipality || '',
+      barangay: s.barangay || ''
+    })),
+    priorityAgenda: Object.fromEntries(
+      Object.entries(data.priority_agendas || {}).map(([key, val]) => [
+        key,
+        { selected: val.selected || false, value: val.value || '' }
+      ])
+    ),
+    logFrame: (data.logical_framework || []).map(lf => ({
+      outcome: lf.outcome_indicator || '',
+      output: lf.output_indicator || ''
+    })),
+    personnel: (data.personnel_requirements || []).map(p => ({
+      position: p.position || '',
+      time: p.effort || '',
+      responsibilities: p.responsibilities || ''
+    })),
+    otherProjects: (data.other_projects || []).map(op => ({
+      title: op.project_title || '',
+      agency: op.funding_agency || '',
+      involvement: op.involvement || ''
+    }))
+  }
+
+  try {
+    await api.put(`/api/proposals/${proposalId.value}`, payload)
+
+    successMessage.value = 'Revision submitted successfully!'
 
     setTimeout(() => {
       router.push('/revisions')
     }, 1500)
   } catch (err) {
     console.error(err)
-    error.value =
-      'Failed to submit revision. Please try again.'
+    error.value = 'Failed to submit revision. Please try again.'
   } finally {
     loading.value = false
   }

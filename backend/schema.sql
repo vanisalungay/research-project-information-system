@@ -27,6 +27,10 @@ CREATE TABLE users (
 CREATE TABLE proposals (
     id BIGSERIAL PRIMARY KEY,
     proponent_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    -- Proposal ID and Revision tracking
+    proposal_code VARCHAR(10) UNIQUE,     -- 3-digit continuous counter: '001', '002', etc.
+    revision_number INT DEFAULT 0,        -- 0 = initial submission, 1 = first revision, etc.
+    document_id VARCHAR(100) UNIQUE,      -- Full format: MSUN-ORPS-DA-001-2026-REV00
     program_title VARCHAR(255),
     project_title VARCHAR(255) NOT NULL,
     project_leader VARCHAR(255),

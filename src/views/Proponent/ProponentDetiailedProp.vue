@@ -12,7 +12,10 @@
         <div class="header-info">
           <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
           <div class="header-meta">
-            <span class="proposal-id">ID: {{ proposal.id }}</span>
+            <span class="document-id">{{ proposal.documentId || proposal.proposalCode || 'ID: ' + proposal.id }}</span>
+            <span v-if="proposal.revisionNumber !== undefined" class="revision-badge">
+              REV{{ String(proposal.revisionNumber).padStart(2, '0') }}
+            </span>
             <span class="status-badge" :class="(proposal.status || '').toLowerCase()">
               {{ proposal.status || 'DRAFT' }}
             </span>
@@ -574,6 +577,23 @@
             </div>
           </div>
 
+          <!-- Review Information Card (shows who reviewed the proposal) -->
+          <div v-if="proposal.reviewedBy" class="sidebar-card review-info-card">
+            <h3>Review Information</h3>
+            <div class="review-info-list">
+              <div class="review-info-item">
+                <span class="review-info-label">Reviewed By:</span>
+                <span class="review-info-value">{{ proposal.reviewedBy }}</span>
+              </div>
+              <div class="review-info-item">
+                <span class="review-info-label">Position:</span>
+                <span class="review-info-value reviewer-position-badge">
+                  {{ formatReviewerPosition(proposal.reviewedByPosition) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- Documents Card -->
           <div class="sidebar-card">
             <h3>Documents</h3>
@@ -665,6 +685,15 @@ const printProposal = () => {
 const editDraft = () => {
   router.push({ path: '/proposals', query: { edit: proposal.value.id } })
 }
+
+const formatReviewerPosition = (position) => {
+  if (!position) return 'N/A'
+  const positionMap = {
+    'RPS_STAFF': 'RPS Staff',
+    'RPS_DIRECTOR': 'RPS Director'
+  }
+  return positionMap[position] || position
+}
 </script>
 
 <style scoped>
@@ -732,6 +761,22 @@ const editDraft = () => {
   font-size: 13px;
   color: #64748b;
   font-family: monospace;
+}
+
+.document-id {
+  font-size: 13px;
+  color: #4b3f72;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.revision-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
 .status-badge {
@@ -1280,6 +1325,49 @@ const editDraft = () => {
   color: #94a3b8;
   font-style: italic;
   font-size: 14px;
+}
+
+/* REVIEW INFO CARD */
+.review-info-card {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.review-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.review-info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.reviewer-position-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+  width: fit-content;
 }
 
 /* RESPONSIVE */

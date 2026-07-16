@@ -24,6 +24,7 @@
     <table v-else class="proposals-table">
       <thead>
         <tr>
+          <th>Document ID</th>
           <th>Proposal Title</th>
           <th>Proponent</th>
           <th>Date Submitted</th>
@@ -33,12 +34,13 @@
       </thead>
       <tbody>
         <tr v-for="proposal in filteredProposals" :key="proposal.id">
+          <td class="document-id">{{ proposal.documentId || proposal.proposalCode || 'N/A' }}</td>
           <td>
             <strong>{{ proposal.projectTitle || proposal.title }}</strong>
             <div class="subtext">{{ proposal.programTitle || 'N/A' }}</div>
           </td>
           <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
-          <td>{{ proposal.createdAt?.substring(0,10) || 'N/A' }}</td>
+          <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
             <span :class="['status', (proposal.status || '').toLowerCase()]">
               {{ proposal.status }}
@@ -122,10 +124,12 @@ export default {
   width: 100%;
   max-width: 100%;
 }
+
 .subtitle {
   color: #666;
   margin-bottom: 24px;
 }
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -133,6 +137,7 @@ export default {
   margin-bottom: 24px;
   width: 100%;
 }
+
 .search {
   flex: 1;
   min-width: 280px;
@@ -140,36 +145,60 @@ export default {
   border-radius: 6px;
   border: 1px solid #ccc;
 }
-.status-select, .filter-btn {
+
+.status-select,
+.filter-btn {
   padding: 10px 22px;
   border-radius: 20px;
   border: 1px solid #ccc;
   background: white;
   min-width: 150px;
 }
+
 .proposals-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
-.proposals-table th, .proposals-table td {
+
+.proposals-table th,
+.proposals-table td {
   padding: 12px;
   border-bottom: 1px solid #eee;
   word-wrap: break-word;
 }
+
 .subtext {
   font-size: 12px;
   color: #777;
 }
+
 .status {
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
 }
-.submitted { background-color: #ffe2a8; color: #8a5b00; }
-.revision { background-color: #d6e4ff; color: #2a4dbf; }
-.endorsed { background-color: #d9f5e5; color: #1e7f4f; }
-.rejected { background-color: #ffd6d6; color: #a10000; }
+
+.submitted {
+  background-color: #ffe2a8;
+  color: #8a5b00;
+}
+
+.revision {
+  background-color: #d6e4ff;
+  color: #2a4dbf;
+}
+
+.endorsed {
+  background-color: #d9f5e5;
+  color: #1e7f4f;
+}
+
+.rejected {
+  background-color: #ffd6d6;
+  color: #a10000;
+}
+
 .review-btn {
   background-color: #5da9ff;
   color: white;
@@ -178,8 +207,16 @@ export default {
   border-radius: 6px;
   cursor: pointer;
 }
+
 .empty {
   text-align: center;
   color: #777;
+}
+
+.document-id {
+  font-family: monospace;
+  font-weight: 600;
+  color: #4b3f72;
+  font-size: 12px;
 }
 </style>

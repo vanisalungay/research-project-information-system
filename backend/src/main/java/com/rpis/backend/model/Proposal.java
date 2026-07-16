@@ -24,6 +24,16 @@ public class Proposal {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Proposal ID and Revision tracking
+    @Column(name = "proposal_code", unique = true)
+    private String proposalCode; // 3-digit continuous counter: '001', '002', etc.
+
+    @Column(name = "revision_number")
+    private Integer revisionNumber = 0; // 0 = initial submission, 1 = first revision, etc.
+
+    @Column(name = "document_id", unique = true)
+    private String documentId; // Full format: MSUN-ORPS-DA-001-2026-REV00
+
     @ManyToOne
     @JoinColumn(name = "proponent_id")
     private User proponent;
