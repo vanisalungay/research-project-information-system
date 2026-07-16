@@ -20,6 +20,13 @@
         </div>
       </div>
       <div class="header-actions">
+        <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft" @click="editDraft">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Edit Draft
+        </button>
         <button class="btn-secondary" @click="printProposal">Print</button>
       </div>
     </header>
@@ -597,10 +604,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 
 const route = useRoute()
+const router = useRouter()
 const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
@@ -652,6 +660,10 @@ const downloadFile = (fileName) => {
 
 const printProposal = () => {
   window.print()
+}
+
+const editDraft = () => {
+  router.push({ path: '/proposals', query: { edit: proposal.value.id } })
 }
 </script>
 
@@ -779,6 +791,25 @@ const printProposal = () => {
 
 .btn-secondary:hover {
   background: #f1f5f9;
+}
+
+.btn-edit-draft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #facc15;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-edit-draft:hover {
+  background: #eab308;
 }
 
 .btn-primary {

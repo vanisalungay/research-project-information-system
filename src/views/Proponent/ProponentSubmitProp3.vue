@@ -30,8 +30,19 @@
         </div>
       </div>
 
+      <!-- VALIDATION ERROR BANNER -->
+      <div v-if="validationErrors.length > 0" class="validation-banner" ref="errorBannerRef">
+        <div class="banner-icon">⚠</div>
+        <div class="banner-content">
+          <strong>Proposal is incomplete. Please go back and fill in the missing fields.</strong>
+          <ul>
+            <li v-for="(err, i) in validationErrors" :key="i">{{ err }}</li>
+          </ul>
+        </div>
+      </div>
+
       <!-- BODY -->
-      <div class="modal-body">
+      <div class="modal-body" ref="modalBodyRef">
         <!-- Loading State -->
         <div v-if="submitting" class="loading-state">
           <div class="spinner"></div>
@@ -170,7 +181,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -189,6 +200,8 @@ const emit = defineEmits(['update:modelValue', 'back', 'savedraft', 'goToStep'])
 
 const userStore = useUserDataStore()
 
+const modalBodyRef = ref(null)
+const errorBannerRef = ref(null)
 const confirmed = ref(false)
 const submitting = ref(false)
 const submitted = ref(false)
@@ -211,6 +224,88 @@ const goBack = () => {
   emit('back')
 }
 
+// ===== FINAL COMPLETENESS GUARD =====
+const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
+
+const validationErrors = computed(() => {
+  const errs = []
+  const d = props.proposalData || {}
+
+  // Step 1 fields
+  if (isBlank(d.program_title)) errs.push('Program Title is missing.')
+  if (isBlank(d.project_title)) errs.push('Project Title is missing.')
+  if (isBlank(d.project_leader)) errs.push('Project Leader is missing.')
+  if (isBlank(d.project_leader_sex)) errs.push('Sex is not selected.')
+  if (isBlank(d.duration)) errs.push('Duration is missing.')
+  if (isBlank(d.start_date)) errs.push('Start Date is missing.')
+  if (isBlank(d.end_date)) errs.push('End Date is missing.')
+  if (isBlank(d.department)) errs.push('Department is missing.')
+  if (isBlank(d.address)) errs.push('Address / Contact is missing.')
+  if (isBlank(d.cooperating_agencies)) errs.push('Cooperating Agencies is missing.')
+
+  // Sites
+  if (!d.sites || !d.sites.length) {
+    errs.push('No site of implementation provided.')
+  } else {
+    const siteFields = ['country', 'region', 'province', 'district', 'municipality', 'barangay']
+    if (d.sites.some(s => siteFields.some(f => isBlank(s[f])))) {
+      errs.push('Site of Implementation has incomplete fields.')
+    }
+  }
+
+  if (isBlank(d.research_type)) errs.push('Research Type is not selected.')
+
+  // Priority Agenda
+  const agendas = d.priority_agendas || {}
+  const selectedAgendas = Object.entries(agendas).filter(([, v]) => v.selected)
+  if (selectedAgendas.length === 0) {
+    errs.push('No Priority Agenda selected.')
+  } else if (selectedAgendas.some(([, v]) => isBlank(v.value))) {
+    errs.push('Priority Agenda details are incomplete.')
+  }
+
+  if (isBlank(d.innovation_goals)) errs.push('Innovation Goals is missing.')
+  if (isBlank(d.sector_relevance)) errs.push('Sector Relevance is missing.')
+  if (isBlank(d.sustainable_development_goals)) errs.push('SDG is missing.')
+  if (isBlank(d.executive_summary)) errs.push('Executive Summary is missing.')
+  if (isBlank(d.rationale)) errs.push('Rationale is missing.')
+  if (isBlank(d.theoretical_framework)) errs.push('Theoretical Framework is missing.')
+  if (isBlank(d.general_objective)) errs.push('General Objective is missing.')
+  if (isBlank(d.specific_objectives)) errs.push('Specific Objectives is missing.')
+  if (!d.review_of_literature_file) errs.push('Review of Literature file is missing.')
+  if (isBlank(d.methodology)) errs.push('Methodology is missing.')
+  if (isBlank(d.expected_outputs)) errs.push('Expected Outputs is missing.')
+  if (isBlank(d.potential_outcomes)) errs.push('Potential Outcomes is missing.')
+  if (isBlank(d.economic_impact)) errs.push('Economic Impact is missing.')
+  if (isBlank(d.social_ethical_impact)) errs.push('Social / Ethical Impact is missing.')
+  if (isBlank(d.target_beneficiaries)) errs.push('Target Beneficiaries is missing.')
+  if (isBlank(d.sustainability_plan)) errs.push('Sustainability Plan is missing.')
+  if (!d.gad_score_file) errs.push('GAD Score file is missing.')
+  if (isBlank(d.limitations)) errs.push('Limitations is missing.')
+  if (isBlank(d.risks_assumptions)) errs.push('Risk Management Plan is missing.')
+
+  // Logical Framework
+  if (!d.logical_framework || !d.logical_framework.length) {
+    errs.push('Logical Framework is missing.')
+  } else if (d.logical_framework.some(r => isBlank(r.outcome_indicator) || isBlank(r.output_indicator))) {
+    errs.push('Logical Framework has incomplete rows.')
+  }
+
+  if (isBlank(d.literature_cited)) errs.push('Literature Cited is missing.')
+
+  // Personnel
+  if (!d.personnel_requirements || !d.personnel_requirements.length) {
+    errs.push('Personnel Requirements is missing.')
+  } else if (d.personnel_requirements.some(r => isBlank(r.position) || isBlank(r.effort) || isBlank(r.responsibilities))) {
+    errs.push('Personnel Requirements has incomplete rows.')
+  }
+
+  if (!d.line_item_budget_file) errs.push('Line-Item Budget file is missing.')
+  if (isBlank(d.other_projects_number)) errs.push('Number of Other Projects is missing.')
+
+  return errs
+})
+
 const saveAsDraftLocal = async () => {
   submitting.value = true
   submitMessage.value = 'Saving draft...'
@@ -228,6 +323,15 @@ const saveAsDraftLocal = async () => {
 
 const submitProposal = async () => {
   if (!confirmed.value) return
+
+  // Final completeness check
+  if (validationErrors.value.length > 0) {
+    await showAlert(
+      `Your proposal has ${validationErrors.value.length} missing field(s). Please go back and complete all sections before submitting.`,
+      { type: 'warning', title: 'Incomplete Proposal' }
+    )
+    return
+  }
 
   submitting.value = true
   submitMessage.value = 'Submitting proposal...'
@@ -787,6 +891,49 @@ const saveOrUpdateProposal = async (status) => {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* ===== VALIDATION BANNER ===== */
+.validation-banner {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.banner-icon {
+  font-size: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-content strong {
+  display: block;
+  font-size: 14px;
+  color: #991b1b;
+  margin-bottom: 6px;
+}
+
+.banner-content ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.banner-content li {
+  font-size: 12px;
+  color: #b91c1c;
+  margin-bottom: 2px;
+  line-height: 1.4;
 }
 
 /* ===== SCROLLBAR ===== */

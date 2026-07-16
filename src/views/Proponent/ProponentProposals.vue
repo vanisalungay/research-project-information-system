@@ -13,7 +13,7 @@
 
     <ProponentSubmitProp2 ref="step2Ref" v-if="showModal2" :open="showModal2"
       @close="showModal2 = false; refreshOnClose()" @openPrevious="goBackToStep1" @openCriteria="openCriteriaModal"
-      @submitProposal="goToStep3" @goToStep="handleGoToStep" />
+      @submitProposal="handleStep2Submit" @goToStep="handleGoToStep" />
 
     <ProponentSubmitProp3 ref="step3Ref" v-model="showCriteria" :proposalData="proposalData" @back="goBackToStep2"
       @savedraft="handleSaveDraft" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
@@ -80,8 +80,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -93,6 +93,7 @@ import ProponentSubmitProp2 from './ProponentSubmitProp2.vue'
 import ProponentSubmitProp3 from './ProponentSubmitProp3.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const proposals = ref([])
 const loading = ref(false)
@@ -136,7 +137,38 @@ const fetchProposals = async () => {
   }
 }
 
-onMounted(fetchProposals)
+onMounted(async () => {
+  await fetchProposals()
+  // Check if we're editing a draft (from the Edit Draft button on detail page)
+  const editId = route.query.edit
+  if (editId) {
+    await openDraftForEdit(editId)
+  }
+})
+
+const openDraftForEdit = async (id) => {
+  try {
+    const res = await api.get(`/api/proposals/${id}`)
+    const proposalData = res.data
+    if (proposalData.status !== 'DRAFT') {
+      await showAlert('Only draft proposals can be edited.', { type: 'warning', title: 'Cannot Edit' })
+      // Clean up the URL
+      router.replace({ path: '/proposals' })
+      return
+    }
+    // Open the modal and load the proposal data
+    resetAllForms()
+    await nextTick()
+    step1Ref.value?.loadProposal(proposalData)
+    showModal.value = true
+    // Clean up the URL so refreshing doesn't re-open the modal
+    router.replace({ path: '/proposals' })
+  } catch (err) {
+    console.error(err)
+    await showAlert('Failed to load proposal for editing.', { type: 'error', title: 'Load Failed' })
+    router.replace({ path: '/proposals' })
+  }
+}
 
 const filteredProposals = computed(() => {
   return proposals.value.filter(p => {
@@ -206,7 +238,15 @@ const goBackToStep1 = () => {
   showModal.value = true
 }
 
-const goToStep3 = () => {
+const handleStep2Submit = (certificationData) => {
+  // Store certification data alongside proposal data
+  if (certificationData) {
+    proposalData.value = {
+      ...proposalData.value,
+      certification: certificationData.certification,
+      signatureFiles: certificationData.signatureFiles
+    }
+  }
   showModal2.value = false
   showCriteria.value = true
 }

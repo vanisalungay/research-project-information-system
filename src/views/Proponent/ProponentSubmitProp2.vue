@@ -39,8 +39,19 @@
           </div>
         </div>
 
+        <!-- VALIDATION ERROR BANNER -->
+        <div v-if="showValidation && errorList.length > 0" class="validation-banner" ref="errorBannerRef">
+          <div class="banner-icon">⚠</div>
+          <div class="banner-content">
+            <strong>Please complete all required certification fields.</strong>
+            <ul>
+              <li v-for="(err, i) in errorList" :key="i">{{ err }}</li>
+            </ul>
+          </div>
+        </div>
+
         <!-- BODY -->
-        <div class="modal-body">
+        <div class="modal-body" ref="modalBodyRef">
           <!-- Certification Statement -->
           <section class="form-section">
             <div class="section-header">
@@ -73,23 +84,31 @@
             </div>
             <div class="section-card">
               <div class="form-row">
-                <div class="form-group">
-                  <label>Full Name</label>
-                  <input type="text" placeholder="Enter full name of proponent" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_name }">
+                  <label>Full Name <span class="req">*</span></label>
+                  <input type="text" v-model="certification.submitted_name"
+                    placeholder="Enter full name of proponent" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_name">{{
+                    errors.submitted_name }}</span>
                 </div>
-                <div class="form-group">
-                  <label>Designation / Title</label>
-                  <input type="text" placeholder="e.g. Faculty, College of Engineering" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_designation }">
+                  <label>Designation / Title <span class="req">*</span></label>
+                  <input type="text" v-model="certification.submitted_designation"
+                    placeholder="e.g. Faculty, College of Engineering" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_designation">{{
+                    errors.submitted_designation }}</span>
                 </div>
               </div>
               <div class="form-row">
-                <div class="form-group">
-                  <label>Date</label>
-                  <input type="date" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_date }">
+                  <label>Date <span class="req">*</span></label>
+                  <input type="date" v-model="certification.submitted_date" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_date">{{
+                    errors.submitted_date }}</span>
                 </div>
               </div>
-              <div class="form-group">
-                <label>Signature</label>
+              <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_signature }">
+                <label>Signature <span class="req">*</span></label>
                 <div class="upload-area" @click="triggerUpload('submitted')">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -97,10 +116,13 @@
                     <line x1="12" y1="18" x2="12" y2="12" />
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
-                  <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image' }}</span>
+                  <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image'
+                  }}</span>
                 </div>
                 <input type="file" ref="submittedFile" @change="handleFile('submitted', $event)" hidden
                   accept="image/*,.pdf" />
+                <span class="field-error" v-if="showValidation && errors.submitted_signature">{{
+                  errors.submitted_signature }}</span>
               </div>
               <div v-if="uploadedFiles.submitted" class="file-info">
                 <span>📄 {{ uploadedFiles.submitted.name }}</span>
@@ -118,23 +140,30 @@
             </div>
             <div class="section-card">
               <div class="form-row">
-                <div class="form-group">
-                  <label>Full Name of Endorser</label>
-                  <input type="text" placeholder="Enter name of department chair or dean" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_name }">
+                  <label>Full Name of Endorser <span class="req">*</span></label>
+                  <input type="text" v-model="certification.endorsed_name"
+                    placeholder="Enter name of department chair or dean" />
+                  <span class="field-error" v-if="showValidation && errors.endorsed_name">{{
+                    errors.endorsed_name }}</span>
                 </div>
-                <div class="form-group">
-                  <label>Designation / Title</label>
-                  <input type="text" placeholder="e.g. Department Chair" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_designation }">
+                  <label>Designation / Title <span class="req">*</span></label>
+                  <input type="text" v-model="certification.endorsed_designation" placeholder="e.g. Department Chair" />
+                  <span class="field-error" v-if="showValidation && errors.endorsed_designation">{{
+                    errors.endorsed_designation }}</span>
                 </div>
               </div>
               <div class="form-row">
-                <div class="form-group">
-                  <label>Date</label>
-                  <input type="date" />
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_date }">
+                  <label>Date <span class="req">*</span></label>
+                  <input type="date" v-model="certification.endorsed_date" />
+                  <span class="field-error" v-if="showValidation && errors.endorsed_date">{{
+                    errors.endorsed_date }}</span>
                 </div>
               </div>
-              <div class="form-group">
-                <label>Signature</label>
+              <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_signature }">
+                <label>Signature <span class="req">*</span></label>
                 <div class="upload-area" @click="triggerUpload('endorsed')">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -142,10 +171,13 @@
                     <line x1="12" y1="18" x2="12" y2="12" />
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
-                  <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image' }}</span>
+                  <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image'
+                  }}</span>
                 </div>
                 <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
                   accept="image/*,.pdf" />
+                <span class="field-error" v-if="showValidation && errors.endorsed_signature">{{
+                  errors.endorsed_signature }}</span>
               </div>
               <div v-if="uploadedFiles.endorsed" class="file-info">
                 <span>📄 {{ uploadedFiles.endorsed.name }}</span>
@@ -193,10 +225,24 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, nextTick } from 'vue'
 
 defineProps({ open: Boolean, modalId: String })
 const emit = defineEmits(['close', 'openPrevious', 'openCriteria', 'submitProposal', 'goToStep'])
+
+const modalBodyRef = ref(null)
+const errorBannerRef = ref(null)
+const showValidation = ref(false)
+const errors = reactive({})
+
+const certification = reactive({
+  submitted_name: '',
+  submitted_designation: '',
+  submitted_date: '',
+  endorsed_name: '',
+  endorsed_designation: '',
+  endorsed_date: ''
+})
 
 const close = () => emit('close')
 const downloadForm = () => console.log('Download form clicked')
@@ -218,13 +264,71 @@ const handleFile = (type, event) => {
 const resetForm = () => {
   uploadedFiles.submitted = null
   uploadedFiles.endorsed = null
+  certification.submitted_name = ''
+  certification.submitted_designation = ''
+  certification.submitted_date = ''
+  certification.endorsed_name = ''
+  certification.endorsed_designation = ''
+  certification.endorsed_date = ''
+  showValidation.value = false
+  Object.keys(errors).forEach(key => delete errors[key])
 }
 
 defineExpose({ resetForm })
 
+// ===== VALIDATION =====
+const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
+
+const validateStep2 = () => {
+  Object.keys(errors).forEach(key => delete errors[key])
+
+  // Submitted By
+  if (isBlank(certification.submitted_name)) errors.submitted_name = 'Full Name (Submitted By) is required.'
+  if (isBlank(certification.submitted_designation)) errors.submitted_designation = 'Designation (Submitted By) is required.'
+  if (isBlank(certification.submitted_date)) errors.submitted_date = 'Date (Submitted By) is required.'
+  if (!uploadedFiles.submitted) errors.submitted_signature = 'Signature file (Submitted By) is required.'
+
+  // Endorsed By
+  if (isBlank(certification.endorsed_name)) errors.endorsed_name = 'Full Name (Endorsed By) is required.'
+  if (isBlank(certification.endorsed_designation)) errors.endorsed_designation = 'Designation (Endorsed By) is required.'
+  if (isBlank(certification.endorsed_date)) errors.endorsed_date = 'Date (Endorsed By) is required.'
+  if (!uploadedFiles.endorsed) errors.endorsed_signature = 'Signature file (Endorsed By) is required.'
+
+  return Object.keys(errors).length === 0
+}
+
+const errorList = computed(() => {
+  return Object.values(errors)
+})
+
 const goBack = () => emit('openPrevious', modalId)
 const saveDraft = () => emit('close')
-const submitForm = () => emit('submitProposal')
+
+const submitForm = async () => {
+  showValidation.value = true
+  const isValid = validateStep2()
+  if (!isValid) {
+    await nextTick()
+    if (errorBannerRef.value) {
+      errorBannerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (modalBodyRef.value) {
+      const firstError = modalBodyRef.value.querySelector('.has-error')
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+    return
+  }
+  // Pass certification data along with the submit event
+  emit('submitProposal', {
+    certification: { ...certification },
+    signatureFiles: {
+      submitted: uploadedFiles.submitted,
+      endorsed: uploadedFiles.endorsed
+    }
+  })
+}
+
 const viewCriteria = () => emit('openCriteria')
 </script>
 
@@ -407,6 +511,49 @@ const viewCriteria = () => emit('openCriteria')
   background: #10b981;
 }
 
+/* ===== VALIDATION BANNER ===== */
+.validation-banner {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.banner-icon {
+  font-size: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-content strong {
+  display: block;
+  font-size: 14px;
+  color: #991b1b;
+  margin-bottom: 6px;
+}
+
+.banner-content ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.banner-content li {
+  font-size: 12px;
+  color: #b91c1c;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
 /* ===== BODY ===== */
 .modal-body {
   padding: 24px 28px;
@@ -489,6 +636,34 @@ const viewCriteria = () => emit('openCriteria')
 
 .section-card:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== VALIDATION ERROR STYLES ===== */
+.req {
+  color: #dc2626;
+  font-weight: 400;
+}
+
+.has-error input,
+.has-error select,
+.has-error textarea {
+  border-color: #dc2626 !important;
+  background: #fef2f2;
+}
+
+.has-error input:focus,
+.has-error select:focus,
+.has-error textarea:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  border-color: #dc2626 !important;
+}
+
+.field-error {
+  display: block;
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 /* ===== FORM ELEMENTS ===== */
