@@ -207,7 +207,7 @@ export default {
   background: #f3f4f6;
   padding: 32px 40px;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
   width: 135%;
 }
 

@@ -235,7 +235,7 @@ const closeSuccess = () => {
 
 <style scoped>
 .page {
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
   background: #f4f6fb;
   min-height: 100vh;
   width: 500%;

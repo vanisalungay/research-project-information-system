@@ -119,104 +119,157 @@ export default {
 
 <style scoped>
 .page {
-  padding: 32px;
-  font-family: Arial, sans-serif;
+  padding: var(--space-7);
+  font-family: 'Inter', sans-serif;
   width: 100%;
   max-width: 100%;
 }
 
 .subtitle {
-  color: #666;
-  margin-bottom: 24px;
+  color: var(--color-text-soft);
+  margin-bottom: var(--space-6);
+  font-size: var(--fs-sm);
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
   width: 100%;
 }
 
 .search {
   flex: 1;
   min-width: 280px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  background: var(--color-background);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.12);
 }
 
 .status-select,
 .filter-btn {
-  padding: 10px 22px;
+  padding: var(--space-2) var(--space-5);
   border-radius: 20px;
-  border: 1px solid #ccc;
-  background: white;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+  font-family: inherit;
   min-width: 150px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.status-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.12);
 }
 
 .proposals-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .proposals-table th,
 .proposals-table td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
   word-wrap: break-word;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.proposals-table th {
+  background: var(--color-background-soft);
+  color: var(--color-text-soft);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.proposals-table tr:last-child td {
+  border-bottom: none;
 }
 
 .subtext {
-  font-size: 12px;
-  color: #777;
+  font-size: var(--fs-xs);
+  color: var(--color-text-soft);
+  margin-top: 2px;
 }
 
 .status {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  display: inline-block;
 }
 
 .submitted {
-  background-color: #ffe2a8;
-  color: #8a5b00;
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #b45309;
 }
 
 .revision {
-  background-color: #d6e4ff;
-  color: #2a4dbf;
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
 }
 
 .endorsed {
-  background-color: #d9f5e5;
-  color: #1e7f4f;
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #047857;
 }
 
 .rejected {
-  background-color: #ffd6d6;
-  color: #a10000;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
 }
 
 .review-btn {
-  background-color: #5da9ff;
-  color: white;
+  background: var(--color-primary);
+  color: #ffffff;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.review-btn:hover {
+  background: var(--color-primary-hover);
 }
 
 .empty {
   text-align: center;
-  color: #777;
+  color: var(--color-text-soft);
+  padding: var(--space-7);
 }
 
 .document-id {
-  font-family: monospace;
+  font-family: 'Inter', monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: #4b3f72;
-  font-size: 12px;
+  color: var(--color-brand-navy);
+  font-size: var(--fs-xs);
 }
 </style>

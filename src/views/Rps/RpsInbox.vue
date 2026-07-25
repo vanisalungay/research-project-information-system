@@ -186,7 +186,7 @@ export default {
     width:500%;
     max-width:135%;
     padding:24px;
-    font-family:Arial, sans-serif;
+    font-family: 'Inter', sans-serif;
     background:#f7f8fc;
     box-sizing:border-box;
 }

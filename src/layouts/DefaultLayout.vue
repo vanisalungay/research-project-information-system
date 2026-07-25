@@ -46,6 +46,6 @@ header {
 
 .content {
   overflow-y: auto;
-  padding: 20px;
+  padding: 32px;
 }
 </style>

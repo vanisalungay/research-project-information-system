@@ -364,7 +364,7 @@ export default {
 <style scoped>
 .page {
   padding: 30px;
-  font-family: 'Poppins', 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: #f8fafc;
   min-height: 100vh;
   color: #1e293b;

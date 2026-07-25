@@ -31,6 +31,47 @@
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
+  --color-text-soft: #64748b;
+  --color-text-muted: #94a3b8;
+
+  /* Semantic color tokens */
+  --color-primary: #2452ff;
+  --color-primary-hover: #1d40cc;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Brand palette */
+  --color-brand-navy: #262342;
+  --color-brand-yellow: #ffd803;
+
+  /* Card surface */
+  --color-card-background: #ffffff;
+
+  /* Type scale */
+  --fs-xs: 0.75rem;   /* 12px — labels, metadata */
+  --fs-sm: 0.875rem;  /* 14px — body small, table cells */
+  --fs-base: 1rem;    /* 16px — body text */
+  --fs-lg: 1.125rem;  /* 18px — subheadings */
+  --fs-xl: 1.5rem;    /* 24px — page titles */
+  --fs-2xl: 2rem;     /* 32px — hero text */
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
 
   --section-gap: 160px;
   color-scheme: light dark;
@@ -52,8 +93,9 @@ body {
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family: Poppins, sans-serif;
-  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
