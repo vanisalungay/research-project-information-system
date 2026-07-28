@@ -283,7 +283,9 @@ export default {
         this.showSuccess = true
       } catch (err) {
         console.error('Approval failed:', err)
-        this.successMessage = 'An error occurred. Please ensure the backend server is running and try again.'
+        // Show actual error from backend if available
+        const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error occurred'
+        this.successMessage = `Approval failed: ${errorMsg}`
         this.showSuccess = true
       } finally {
         this.actionLoading = false
@@ -299,7 +301,9 @@ export default {
         this.showSuccess = true
       } catch (err) {
         console.error('Return failed:', err)
-        this.successMessage = 'An error occurred. Please ensure the backend server is running and try again.'
+        // Show actual error from backend if available
+        const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error occurred'
+        this.successMessage = `Return failed: ${errorMsg}`
         this.showSuccess = true
       } finally {
         this.actionLoading = false

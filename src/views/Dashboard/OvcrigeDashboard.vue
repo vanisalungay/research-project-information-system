@@ -165,7 +165,7 @@ const loading = ref(true)
 const loadDashboard = async () => {
   try {
     // Fetch proposals relevant to OVCRIGE workflow
-    const proposalResponse = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
+    const proposalResponse = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
 
     proposals.value = proposalResponse.data
 
