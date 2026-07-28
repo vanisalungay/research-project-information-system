@@ -12,48 +12,48 @@
       <button class="btn-download" @click="goToDetailed">View detailed Proposal</button>
     </div>
 
-  <!-- PROPOSAL INFO -->
-<div class="info-grid">
-  <div>
-    <label>Title</label>
-    <p>{{ proposal.title || '-' }}</p>
-  </div>
+    <!-- PROPOSAL INFO -->
+    <div class="info-grid">
+      <div>
+        <label>Title</label>
+        <p>{{ proposal.title || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Proponent</label>
-    <p>{{ proposal.proponent?.name || '-' }}</p>
-  </div>
+      <div>
+        <label>Proponent</label>
+        <p>{{ proposal.proponent?.name || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Department / Office</label>
-    <p>{{ proposal.proponent?.departmentOffice || '-' }}</p>
-  </div>
+      <div>
+        <label>Department / Office</label>
+        <p>{{ proposal.proponent?.departmentOffice || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Date Submitted</label>
-    <p>{{ proposal.dateSubmitted || '-' }}</p>
-  </div>
+      <div>
+        <label>Date Submitted</label>
+        <p>{{ proposal.dateSubmitted || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Status</label>
-    <p>{{ proposal.status || '-' }}</p>
-  </div>
+      <div>
+        <label>Status</label>
+        <p>{{ proposal.status || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Research Category</label>
-    <p>{{ proposal.researchCategory || '-' }}</p>
-  </div>
+      <div>
+        <label>Research Category</label>
+        <p>{{ proposal.researchCategory || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Funding Source</label>
-    <p>{{ proposal.fundingSource || '-' }}</p>
-  </div>
+      <div>
+        <label>Funding Source</label>
+        <p>{{ proposal.fundingSource || '-' }}</p>
+      </div>
 
-  <div>
-    <label>Requested Budget</label>
-    <p>₱{{ proposal.requestedBudget?.toLocaleString() || '0' }}</p>
-  </div>
-</div>
+      <div>
+        <label>Requested Budget</label>
+        <p>₱{{ proposal.requestedBudget?.toLocaleString() || '0' }}</p>
+      </div>
+    </div>
 
     <!-- SCORING GUIDE -->
     <h3 class="section-title">Scoring Guide</h3>
@@ -319,13 +319,8 @@
       </div>
     </div>
 
-    <ConfirmDialog
-      v-if="dialogState.show"
-      v-bind="dialogState"
-      @confirm="dialogState.onConfirm"
-      @cancel="dialogState.onCancel"
-      @close="dialogState.show = false"
-    />
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
@@ -412,11 +407,11 @@ const confirmApproval = async () => {
 }
 
 const goToReturn = () => {
-  router.push({ name: 'RecReturn4Revision', params: { id: proposal.value.id } })
+  router.push({ name: 'RecReturn4RevisionWithId', params: { id: proposal.value.id } })
 }
 
 const goToReject = () => {
-  router.push({ name: 'RecRejectProposal', params: { id: proposal.value.id } })
+  router.push({ name: 'RecRejectProposalWithId', params: { id: proposal.value.id } })
 }
 
 const goToDetailed = () => {

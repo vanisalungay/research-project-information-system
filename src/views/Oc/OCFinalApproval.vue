@@ -103,14 +103,24 @@
           <h3>Budget Requirement</h3>
           <p class="budget-desc">Determine whether this project requires budget funding.</p>
           <div class="budget-options">
-            <label class="radio-label" :class="{ selected: needsBudget === true }">
-              <input type="radio" v-model="needsBudget" :value="true" />
-              <span><strong>With Budget</strong><br />Forward to Finance Office / OVCAF for budget endorsement and
-                release</span>
+            <label class="budget-option" :class="{ selected: needsBudget === true }">
+              <div class="budget-radio">
+                <input type="radio" v-model="needsBudget" :value="true" />
+              </div>
+              <div class="budget-content">
+                <span class="budget-title">With Budget</span>
+                <span class="budget-description">Forward to Finance Office / OVCAF for budget endorsement and
+                  release</span>
+              </div>
             </label>
-            <label class="radio-label" :class="{ selected: needsBudget === false }">
-              <input type="radio" v-model="needsBudget" :value="false" />
-              <span><strong>Without Budget</strong><br />Proponent proceeds directly with project implementation</span>
+            <label class="budget-option" :class="{ selected: needsBudget === false }">
+              <div class="budget-radio">
+                <input type="radio" v-model="needsBudget" :value="false" />
+              </div>
+              <div class="budget-content">
+                <span class="budget-title">Without Budget</span>
+                <span class="budget-description">Proponent proceeds directly with project implementation</span>
+              </div>
             </label>
           </div>
         </div>
@@ -557,44 +567,64 @@ textarea:focus {
 .budget-options {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.radio-label {
+.budget-option {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px 18px;
   border: 2px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.radio-label:hover {
+.budget-option:hover {
   border-color: #93c5fd;
+  background: #f8fafc;
 }
 
-.radio-label.selected {
+.budget-option.selected {
   border-color: #3b82f6;
   background: #eff6ff;
 }
 
-.radio-label input[type="radio"] {
-  margin-top: 2px;
+.budget-radio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.budget-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
   accent-color: #3b82f6;
+  cursor: pointer;
 }
 
-.radio-label span {
-  font-size: 13px;
-  color: #475569;
-  line-height: 1.5;
+.budget-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
 }
 
-.radio-label span strong {
-  color: #1e293b;
+.budget-title {
   font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.budget-description {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
 }
 
 /* Action Buttons */

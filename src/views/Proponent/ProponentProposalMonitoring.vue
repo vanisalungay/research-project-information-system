@@ -45,26 +45,26 @@
       <div class="filters-row">
         <div class="filter-group">
           <label>Search</label>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Search by title or ID..."
-            class="form-input"
-          />
+          <input v-model="searchQuery" type="text" placeholder="Search by title or ID..." class="form-input" />
         </div>
         <div class="filter-group">
           <label>Filter by Status</label>
           <select v-model="statusFilter" class="form-select">
             <option value="">All Statuses</option>
             <option value="DRAFT">Draft</option>
-            <option value="RPS_REVIEW">RPS Review</option>
-            <option value="RPS_RETURNED">Returned for Revision</option>
-            <option value="OVCRIGE_COORDINATION">OVCRIGE Coordination</option>
-            <option value="REC_EVALUATION">REC Evaluation</option>
-            <option value="CHANCELLOR_REVIEW">Chancellor Review</option>
-            <option value="FINANCE_AUTHORIZATION">Finance Authorization</option>
-            <option value="IMPLEMENTATION">Implementation</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="ENDORSED">RPS Endorsed</option>
+            <option value="UNDER_REVIEW">Under REC Review</option>
+            <option value="REC_APPROVED">REC Approved</option>
+            <option value="FOR_OVCAF_APPROVAL">OVCAF Review</option>
+            <option value="FOR_OC_APPROVAL">Chancellor Review</option>
+            <option value="APPROVED">Approved</option>
+            <option value="RELEASED">Funds Released</option>
             <option value="COMPLETED">Completed</option>
+            <option value="RPS_RETURNED">Returned by RPS</option>
+            <option value="REC_REVISION">Returned by REC</option>
+            <option value="RETURNED">Returned by OVCAF</option>
+            <option value="REJECTED">Rejected</option>
           </select>
         </div>
         <div class="filter-group btn-group">
@@ -87,11 +87,7 @@
 
     <!-- Proposals List -->
     <div v-else-if="filteredProposals.length > 0" class="proposals-list">
-      <div 
-        v-for="proposal in filteredProposals" 
-        :key="proposal.id" 
-        class="proposal-card"
-      >
+      <div v-for="proposal in filteredProposals" :key="proposal.id" class="proposal-card">
         <!-- Card Header -->
         <div class="card-header">
           <div class="header-left">
@@ -120,11 +116,8 @@
               <span class="timeline-progress">{{ getProgressPercentage(proposal.status) }}% Complete</span>
             </div>
             <div class="timeline">
-              <div 
-                v-for="(stage, index) in stages" 
-                :key="stage.key"
-                :class="['timeline-step', getStageClass(proposal.status, stage.key, index)]"
-              >
+              <div v-for="(stage, index) in stages" :key="stage.key"
+                :class="['timeline-step', getStageClass(proposal.status, stage.key, index)]">
                 <div class="step-indicator">
                   <div class="step-dot">
                     <span v-if="isStageComplete(proposal.status, stage.key, index)" class="check-icon">✓</span>
@@ -141,10 +134,7 @@
           <!-- Progress Bar -->
           <div class="progress-bar-container">
             <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                :style="{ width: getProgressPercentage(proposal.status) + '%' }"
-              ></div>
+              <div class="progress-fill" :style="{ width: getProgressPercentage(proposal.status) + '%' }"></div>
             </div>
           </div>
         </div>
@@ -154,18 +144,10 @@
           <button class="btn-view" @click="viewDetails(proposal.id)">
             📄 View Details
           </button>
-          <button 
-            v-if="proposal.status === 'IMPLEMENTATION'" 
-            class="btn-upload"
-            @click="openUploadModal(proposal.id)"
-          >
+          <button v-if="proposal.status === 'IMPLEMENTATION'" class="btn-upload" @click="openUploadModal(proposal.id)">
             📤 Upload Reports
           </button>
-          <button 
-            v-if="proposal.status === 'RPS_RETURNED'" 
-            class="btn-revise"
-            @click="submitRevision(proposal.id)"
-          >
+          <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise" @click="submitRevision(proposal.id)">
             ✏️ Submit Revision
           </button>
         </div>
@@ -192,7 +174,7 @@
         </div>
         <div class="modal-body">
           <p class="modal-subtitle">Upload quarterly progress and financial reports for your project</p>
-          
+
           <!-- Quarterly Progress Report -->
           <div class="upload-section">
             <h3>📊 Quarterly Progress Report</h3>
@@ -207,13 +189,7 @@
                 <button class="remove-file" @click.stop="quarterlyReport = null">✕</button>
               </div>
             </div>
-            <input 
-              ref="quarterlyFile" 
-              type="file" 
-              accept=".pdf,.doc,.docx" 
-              @change="handleQuarterlyFile" 
-              hidden 
-            />
+            <input ref="quarterlyFile" type="file" accept=".pdf,.doc,.docx" @change="handleQuarterlyFile" hidden />
           </div>
 
           <!-- Financial Report -->
@@ -230,13 +206,8 @@
                 <button class="remove-file" @click.stop="financialReport = null">✕</button>
               </div>
             </div>
-            <input 
-              ref="financialFile" 
-              type="file" 
-              accept=".pdf,.doc,.docx,.xls,.xlsx" 
-              @change="handleFinancialFile" 
-              hidden 
-            />
+            <input ref="financialFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" @change="handleFinancialFile"
+              hidden />
           </div>
 
           <!-- Report Period -->
@@ -255,21 +226,13 @@
           <!-- Remarks -->
           <div class="form-group">
             <label>Remarks (Optional)</label>
-            <textarea 
-              v-model="reportRemarks" 
-              placeholder="Add any notes or remarks about this report submission..."
-              rows="3"
-              class="form-textarea"
-            ></textarea>
+            <textarea v-model="reportRemarks" placeholder="Add any notes or remarks about this report submission..."
+              rows="3" class="form-textarea"></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" @click="closeUploadModal">Cancel</button>
-          <button 
-            class="btn-primary" 
-            @click="submitReports"
-            :disabled="!quarterlyReport && !financialReport"
-          >
+          <button class="btn-primary" @click="submitReports" :disabled="!quarterlyReport && !financialReport">
             {{ uploading ? 'Uploading...' : 'Submit Reports' }}
           </button>
         </div>
@@ -281,13 +244,8 @@
       {{ successMessage }}
     </div>
 
-    <ConfirmDialog
-      v-if="dialogState.show"
-      v-bind="dialogState"
-      @confirm="dialogState.onConfirm"
-      @cancel="dialogState.onCancel"
-      @close="dialogState.show = false"
-    />
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
@@ -302,18 +260,22 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 
-// State machine stages as per .clinerules
+// State machine stages matching actual backend statuses
 const stages = [
   { key: 'DRAFT', label: 'Draft' },
-  { key: 'RPS_REVIEW', label: 'RPS Review' },
-  { key: 'RPS_RETURNED', label: 'Returned' },
-  { key: 'OVCRIGE_COORDINATION', label: 'OVCRIGE' },
-  { key: 'REC_EVALUATION', label: 'REC Evaluation' },
-  { key: 'CHANCELLOR_REVIEW', label: 'Chancellor' },
-  { key: 'FINANCE_AUTHORIZATION', label: 'Finance' },
-  { key: 'IMPLEMENTATION', label: 'Implementation' },
+  { key: 'SUBMITTED', label: 'Submitted' },
+  { key: 'ENDORSED', label: 'RPS Endorsed' },
+  { key: 'UNDER_REVIEW', label: 'REC Review' },
+  { key: 'REC_APPROVED', label: 'REC Approved' },
+  { key: 'FOR_OVCAF_APPROVAL', label: 'OVCAF' },
+  { key: 'FOR_OC_APPROVAL', label: 'Chancellor' },
+  { key: 'APPROVED', label: 'Approved' },
+  { key: 'RELEASED', label: 'Funds Released' },
   { key: 'COMPLETED', label: 'Completed' }
 ]
+
+// Terminal/negative statuses that should show special state
+const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
 
 // Data
 const proposals = ref([])
@@ -338,35 +300,35 @@ const successMessage = ref('')
 // Computed
 const totalProposals = computed(() => proposals.value.length)
 
-const inProgressCount = computed(() => 
-  proposals.value.filter(p => 
-    ['RPS_REVIEW', 'OVCRIGE_COORDINATION', 'REC_EVALUATION', 'CHANCELLOR_REVIEW', 'FINANCE_AUTHORIZATION'].includes(p.status)
+const inProgressCount = computed(() =>
+  proposals.value.filter(p =>
+    ['SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL'].includes(p.status)
   ).length
 )
 
-const approvedCount = computed(() => 
-  proposals.value.filter(p => p.status === 'COMPLETED').length
+const approvedCount = computed(() =>
+  proposals.value.filter(p => ['APPROVED', 'RELEASED', 'COMPLETED'].includes(p.status)).length
 )
 
-const implementationCount = computed(() => 
-  proposals.value.filter(p => p.status === 'IMPLEMENTATION').length
+const implementationCount = computed(() =>
+  proposals.value.filter(p => p.status === 'RELEASED').length
 )
 
 const filteredProposals = computed(() => {
   let result = [...proposals.value]
-  
+
   if (searchQuery.value) {
     const term = searchQuery.value.toLowerCase()
-    result = result.filter(p => 
+    result = result.filter(p =>
       (p.projectTitle || '').toLowerCase().includes(term) ||
       String(p.id).includes(term)
     )
   }
-  
+
   if (statusFilter.value) {
     result = result.filter(p => p.status === statusFilter.value)
   }
-  
+
   return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
@@ -374,20 +336,20 @@ const filteredProposals = computed(() => {
 const fetchProposals = async () => {
   loading.value = true
   error.value = null
-  
+
   try {
     const stored = localStorage.getItem('user_data')
     if (!stored) {
       error.value = 'Please log in to view your proposals.'
       return
     }
-    
+
     const user = JSON.parse(atob(stored))
     const res = await api.get('/api/proposals')
     const allProposals = res.data || []
-    
+
     // Filter to only show current proponent's proposals
-    proposals.value = allProposals.filter(p => 
+    proposals.value = allProposals.filter(p =>
       (p.proponent && p.proponent.id === user.id) ||
       (p.projectLeader && p.projectLeader.toLowerCase().includes((user.name || '').toLowerCase()))
     )
@@ -404,14 +366,14 @@ const getStageIndex = (status) => {
 }
 
 const isStageComplete = (status, stageKey, index) => {
-  const currentIndex = getStageIndex(status)
-  if (currentIndex === -1) return false
-  
-  // Special handling for RPS_RETURNED - it's a "backwards" state
-  if (status === 'RPS_RETURNED') {
+  // Terminal/rejected statuses: only show DRAFT as complete
+  if (terminalStatuses.includes(status)) {
     return stageKey === 'DRAFT'
   }
-  
+
+  const currentIndex = getStageIndex(status)
+  if (currentIndex === -1) return false
+
   return index < currentIndex
 }
 
@@ -420,13 +382,21 @@ const isStageCurrent = (status, stageKey) => {
 }
 
 const getStageClass = (status, stageKey, index) => {
+  // Terminal/rejected statuses show as "returned" on the first step
+  if (terminalStatuses.includes(status)) {
+    if (stageKey === 'DRAFT') return 'returned'
+    return 'pending'
+  }
+
   if (isStageComplete(status, stageKey, index)) return 'complete'
   if (isStageCurrent(status, stageKey)) return 'current'
-  if (status === 'RPS_RETURNED' && stageKey === 'RPS_RETURNED') return 'returned'
   return 'pending'
 }
 
 const getProgressPercentage = (status) => {
+  // Terminal/rejected statuses show 0% progress (they are not progressing)
+  if (terminalStatuses.includes(status)) return 0
+
   const index = getStageIndex(status)
   if (index === -1) return 0
   return Math.round(((index + 1) / stages.length) * 100)
@@ -435,14 +405,20 @@ const getProgressPercentage = (status) => {
 const getStatusClass = (status) => {
   const classMap = {
     'DRAFT': 'status-draft',
-    'RPS_REVIEW': 'status-review',
+    'SUBMITTED': 'status-submitted',
+    'ENDORSED': 'status-endorsed',
+    'UNDER_REVIEW': 'status-review',
+    'REC_APPROVED': 'status-rec-approved',
+    'FOR_OVCAF_APPROVAL': 'status-ovcaf',
+    'FOR_OC_APPROVAL': 'status-chancellor',
+    'APPROVED': 'status-approved',
+    'RELEASED': 'status-released',
+    'COMPLETED': 'status-completed',
     'RPS_RETURNED': 'status-returned',
-    'OVCRIGE_COORDINATION': 'status-coordination',
-    'REC_EVALUATION': 'status-evaluation',
-    'CHANCELLOR_REVIEW': 'status-chancellor',
-    'FINANCE_AUTHORIZATION': 'status-finance',
-    'IMPLEMENTATION': 'status-implementation',
-    'COMPLETED': 'status-completed'
+    'REC_REVISION': 'status-returned',
+    'RETURNED': 'status-returned',
+    'REJECTED': 'status-rejected',
+    'REC_REJECTED': 'status-rejected'
   }
   return classMap[status] || 'status-default'
 }
@@ -501,35 +477,35 @@ const submitReports = async () => {
     await showAlert('Please select at least one file to upload.', { type: 'warning', title: 'No Files Selected' })
     return
   }
-  
+
   if (!reportPeriod.value) {
     await showAlert('Please select a report period.', { type: 'warning', title: 'Period Required' })
     return
   }
-  
+
   uploading.value = true
-  
+
   try {
     const formData = new FormData()
     formData.append('proposalId', selectedProposalId.value)
     formData.append('period', reportPeriod.value)
     formData.append('remarks', reportRemarks.value)
-    
+
     if (quarterlyReport.value) {
       formData.append('quarterlyReport', quarterlyReport.value)
     }
     if (financialReport.value) {
       formData.append('financialReport', financialReport.value)
     }
-    
+
     await api.post('/api/reports/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    
+
     showSuccess.value = true
     successMessage.value = 'Reports uploaded successfully!'
     closeUploadModal()
-    
+
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)
@@ -539,7 +515,7 @@ const submitReports = async () => {
     showSuccess.value = true
     successMessage.value = 'Reports submitted! (Backend endpoint pending)'
     closeUploadModal()
-    
+
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)
@@ -604,10 +580,21 @@ onMounted(fetchProposals)
   font-size: 24px;
 }
 
-.stat-icon.blue { background: #dbeafe; }
-.stat-icon.yellow { background: #fef3c7; }
-.stat-icon.green { background: #dcfce7; }
-.stat-icon.purple { background: #ede9fe; }
+.stat-icon.blue {
+  background: #dbeafe;
+}
+
+.stat-icon.yellow {
+  background: #fef3c7;
+}
+
+.stat-icon.green {
+  background: #dcfce7;
+}
+
+.stat-icon.purple {
+  background: #ede9fe;
+}
 
 .stat-info {
   display: flex;
@@ -718,7 +705,9 @@ onMounted(fetchProposals)
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state p {
@@ -779,16 +768,70 @@ onMounted(fetchProposals)
   text-transform: uppercase;
 }
 
-.status-draft { background: #e5e7eb; color: #374151; }
-.status-review { background: #dbeafe; color: #1e40af; }
-.status-returned { background: #fee2e2; color: #991b1b; }
-.status-coordination { background: #e0e7ff; color: #3730a3; }
-.status-evaluation { background: #ede9fe; color: #6d28d9; }
-.status-chancellor { background: #fef3c7; color: #92400e; }
-.status-finance { background: #fed7aa; color: #9a3412; }
-.status-implementation { background: #dcfce7; color: #166534; }
-.status-completed { background: #86efac; color: #14532d; }
-.status-default { background: #f1f5f9; color: #64748b; }
+.status-draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-endorsed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-review {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-rec-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-ovcaf {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.status-chancellor {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-released {
+  background: #86efac;
+  color: #14532d;
+}
+
+.status-returned {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-rejected {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+
+.status-completed {
+  background: #86efac;
+  color: #14532d;
+}
+
+.status-default {
+  background: #f1f5f9;
+  color: #64748b;
+}
 
 .card-body {
   padding: 20px;
@@ -899,8 +942,13 @@ onMounted(fetchProposals)
   color: #64748b;
 }
 
-.check-icon { font-size: 14px; }
-.current-icon { font-size: 8px; }
+.check-icon {
+  font-size: 14px;
+}
+
+.current-icon {
+  font-size: 8px;
+}
 
 /* Progress Bar */
 .progress-bar-container {
@@ -1193,6 +1241,7 @@ onMounted(fetchProposals)
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -1204,16 +1253,16 @@ onMounted(fetchProposals)
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .timeline {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .timeline-step {
     flex: 0 0 calc(33.333% - 8px);
   }
-  
+
   .step-line {
     display: none;
   }
@@ -1223,16 +1272,16 @@ onMounted(fetchProposals)
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .filters-row {
     flex-direction: column;
   }
-  
+
   .proposal-meta {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .card-actions {
     flex-wrap: wrap;
   }

@@ -9,37 +9,37 @@
     <div class="layout">
       <!-- LEFT SIDE -->
       <div class="left" v-if="!error">
-       <!-- PROPOSAL INFORMATION -->
-<section class="card">
-  <h3>Proposal Information</h3>
+        <!-- PROPOSAL INFORMATION -->
+        <section class="card">
+          <h3>Proposal Information</h3>
 
-  <div class="info-grid">
-    <div>
-      <label>Proposal Title</label>
-      <p>{{ proposal.title || '-' }}</p>
-    </div>
+          <div class="info-grid">
+            <div>
+              <label>Proposal Title</label>
+              <p>{{ proposal.title || '-' }}</p>
+            </div>
 
-    <div>
-      <label>Proponent</label>
-      <p>{{ proposal.proponent || '-' }}</p>
-    </div>
+            <div>
+              <label>Proponent</label>
+              <p>{{ proposal.proponent || '-' }}</p>
+            </div>
 
-    <div>
-      <label>Department</label>
-      <p>{{ proposal.department || '-' }}</p>
-    </div>
+            <div>
+              <label>Department</label>
+              <p>{{ proposal.department || '-' }}</p>
+            </div>
 
-    <div>
-      <label>Date Submitted</label>
-      <p>{{ proposal.dateSubmitted ? new Date(proposal.dateSubmitted).toLocaleDateString() : '-' }}</p>
-    </div>
+            <div>
+              <label>Date Submitted</label>
+              <p>{{ proposal.dateSubmitted ? new Date(proposal.dateSubmitted).toLocaleDateString() : '-' }}</p>
+            </div>
 
-    <div>
-      <label>Status</label>
-      <span class="status">{{ proposal.status || '-' }}</span>
-    </div>
-  </div>
-</section>
+            <div>
+              <label>Status</label>
+              <span class="status">{{ proposal.status || '-' }}</span>
+            </div>
+          </div>
+        </section>
 
         <!-- SET DEADLINE -->
         <section class="card">
@@ -56,21 +56,14 @@
           <h3>Revision Comments</h3>
 
           <label class="label">Comments to Proponent</label>
-          <textarea
-            v-model="revisionComment"
-            placeholder="List the specific issues that need to be addressed..."
-          ></textarea>
+          <textarea v-model="revisionComment"
+            placeholder="List the specific issues that need to be addressed..."></textarea>
 
           <p class="quick-title">Quick Templates (click to apply)</p>
 
           <div class="quick-templates">
-            <button
-              v-for="(template, index) in quickTemplates"
-              :key="index"
-              type="button"
-              class="template-btn"
-              @click="applyTemplate(template)"
-            >
+            <button v-for="(template, index) in quickTemplates" :key="index" type="button" class="template-btn"
+              @click="applyTemplate(template)">
               {{ template }}
             </button>
           </div>
@@ -90,13 +83,7 @@
 
             <button class="select" @click="filePicker.click()">Select Files</button>
 
-            <input
-              type="file"
-              ref="filePicker"
-              multiple
-              style="display: none"
-              @change="handleFiles"
-            />
+            <input type="file" ref="filePicker" multiple style="display: none" @change="handleFiles" />
           </div>
         </section>
       </div>
@@ -265,7 +252,7 @@ const confirmReturn = async () => {
     loading.value = true
     // Update proposal status to REVISION
     await api.put(`/api/proposals/${proposal.value.id}/return-revision`)
-    
+
     showConfirmModal.value = false
     showSuccessMessage.value = true
 
@@ -292,112 +279,173 @@ const goBack = () => {
 
 <style>
 .page-wrapper {
-  padding: 25px;
+  padding: 25px 32px;
   background: #f6f7fb;
+  min-height: 100vh;
 }
 
 /* HEADER */
+.page-header {
+  margin-bottom: 20px;
+}
+
 .page-header h2 {
-  margin-bottom: 5px;
+  margin: 0 0 4px 0;
+  font-size: 22px;
+  color: #1f2937;
 }
 
 .subtitle {
-  color: #666;
+  color: #6b7280;
   font-size: 14px;
+  margin: 0;
 }
 
 /* LAYOUT */
 .layout {
   display: grid;
-  grid-template-columns: 3fr 1.2fr;
-  gap: 20px;
-  margin-top: 20px;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
 }
 
 /* CARDS */
 .card {
   background: white;
-  padding: 18px;
+  padding: 20px 22px;
   border-radius: 10px;
-  margin-bottom: 15px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 18px;
+}
+
+.card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 14px 0;
 }
 
 /* PROPOSAL INFO */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 14px 20px;
 }
 
 .info-grid label {
   font-size: 12px;
-  color: #777;
+  color: #6b7280;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 2px;
 }
 
 .info-grid p {
-  margin: 4px 0 0;
+  margin: 0;
   font-weight: 500;
+  font-size: 14px;
+  color: #1f2937;
 }
 
 .status {
-  background: #fff8d6;
-  color: #9a7b00;
-  padding: 4px 10px;
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 /* DEADLINE */
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
 input[type='date'] {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  color: #1f2937;
 }
 
 .note {
   font-size: 12px;
-  color: #555;
+  color: #6b7280;
   margin-top: 8px;
+  line-height: 1.5;
 }
 
 /* UPLOAD */
 .upload-box {
-  border: 2px dashed #cbd5e1;
-  padding: 25px;
+  border: 2px dashed #d1d5db;
+  padding: 28px;
   text-align: center;
   border-radius: 10px;
-  background: #fafafa;
+  background: #f9fafb;
+}
+
+.upload-box p {
+  margin: 4px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.upload-box small {
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 .upload-icon {
-  font-size: 24px;
+  font-size: 28px;
   margin-bottom: 8px;
 }
 
 .select {
-  margin-top: 10px;
-  padding: 6px 12px;
-  background: #e6f0ff;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #eff6ff;
   border: none;
-  color: #2452ff;
+  color: #2563eb;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.select:hover {
+  background: #dbeafe;
 }
 
 /* CHECKLIST */
 .checklist {
   list-style: none;
-  padding: 5px;
-  margin: 0;
+  padding: 0;
+  margin: 0 0 16px 0;
 }
 
 .checklist li {
   display: flex;
   align-items: center;
-  gap: 2px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 12px;
   font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.checklist input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #2563eb;
 }
 
 /* REVISION COMMENTS */
@@ -550,5 +598,44 @@ textarea:focus {
   border-radius: 8px;
   font-weight: bold;
   animation: fadeInOut 2s ease;
+}
+
+/* ERROR STATE */
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  margin-top: 24px;
+}
+
+.error-state p {
+  color: #dc2626;
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  padding: 10px 24px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+/* HINT TEXT */
+.hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  line-height: 1.5;
 }
 </style>

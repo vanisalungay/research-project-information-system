@@ -205,7 +205,7 @@ const confirmBtnClass = computed(() => {
     return 'btn-danger';
 });
 const modalMessage = computed(() => {
-    if (decision.value.includes('Approved')) return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and will be forwarded to OC for final approval.`;
+    if (decision.value.includes('Approved')) return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and the proposal will be approved for implementation with or without funding.`;
     if (decision.value.includes('Returned')) return `You are about to return "${proposal.value?.title}" for budget revision. The proponent will be notified with your remarks.`;
     return `You are about to permanently reject "${proposal.value?.title}". This action cannot be undone.`;
 });

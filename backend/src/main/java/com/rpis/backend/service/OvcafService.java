@@ -100,10 +100,11 @@ public class OvcafService {
         // Update proposal status based on decision
         switch (request.getDecision()) {
             case "APPROVED_ENDORSED":
-                // Budget endorsed, ready for OC approval or direct implementation
+                // Budget endorsed, proposal is now approved for implementation
+                // (no longer loops back to OC - OVCAF approval is final for budget matters)
                 validation.setBudgetEndorsed(true);
                 validation.setBudgetEndorsedAt(LocalDateTime.now());
-                proposal.setStatus("FOR_OC_APPROVAL");
+                proposal.setStatus("APPROVED");
                 break;
             case "RETURNED_FOR_REVISION":
                 proposal.setStatus("RETURNED");
@@ -125,7 +126,8 @@ public class OvcafService {
     }
 
     /**
-     * Endorse budget - forward to OC for final approval
+     * Endorse budget - mark proposal as approved for implementation
+     * (OVCAF approval is final - no longer loops back to OC)
      */
     @Transactional
     public Proposal endorseBudget(Long proposalId, Long endorsedById) {
@@ -148,12 +150,24 @@ public class OvcafService {
         }
         validationRepository.save(validation);
 
-        proposal.setStatus("FOR_OC_APPROVAL");
+        // Set status to APPROVED - OVCAF endorsement is final, no loop back to OC
+        proposal.setStatus("APPROVED");
         Proposal saved = proposalRepository.save(proposal);
 
-        // Notify OC
-        notifyRole("OC", saved, "A proposal has been endorsed by OVCAF and requires your final approval: \""
-                + saved.getProjectTitle() + "\"", "Budget Endorsed", "ENDORSEMENT");
+        // Notify proponent that their proposal is approved for implementation
+        if (saved.getProponent() != null) {
+            notificationService.createNotification(
+                    saved.getProponent().getId(),
+                    "Your proposal \"" + saved.getProjectTitle()
+                            + "\" has been approved by OVCAF and is ready for implementation.",
+                    "Proposal Approved for Implementation",
+                    "APPROVAL",
+                    saved.getId());
+        }
+        // Notify RPS for monitoring
+        notifyRole("RPS_ADMIN", saved,
+                "Proposal approved by OVCAF for implementation: \"" + saved.getProjectTitle() + "\"",
+                "Implementation Approval", "PROPOSAL_UPDATE");
 
         return saved;
     }
@@ -388,9 +402,20 @@ public class OvcafService {
     private void sendValidationNotifications(Proposal proposal, String decision) {
         switch (decision) {
             case "APPROVED_ENDORSED":
-                notifyRole("OC", proposal,
-                        "A proposal has been endorsed by OVCAF: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Endorsed", "ENDORSEMENT");
+                // Notify proponent that proposal is approved for implementation
+                if (proposal.getProponent() != null) {
+                    notificationService.createNotification(
+                            proposal.getProponent().getId(),
+                            "Your proposal \"" + proposal.getProjectTitle()
+                                    + "\" has been approved by OVCAF and is ready for implementation.",
+                            "Proposal Approved for Implementation",
+                            "APPROVAL",
+                            proposal.getId());
+                }
+                // Notify RPS for implementation monitoring
+                notifyRole("RPS_ADMIN", proposal,
+                        "Proposal approved by OVCAF for implementation: \"" + proposal.getProjectTitle() + "\"",
+                        "Implementation Approval", "PROPOSAL_UPDATE");
                 break;
             case "RETURNED_FOR_REVISION":
                 if (proposal.getProponent() != null) {

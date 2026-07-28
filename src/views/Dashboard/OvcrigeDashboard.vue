@@ -165,7 +165,15 @@ const loading = ref(true)
 const loadDashboard = async () => {
   try {
     // Fetch proposals relevant to OVCRIGE workflow
-    const proposalResponse = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
+    // Use proper params serialization for array parameters
+    const proposalResponse = await api.get('/api/proposals', {
+      params: {
+        statusIn: ['SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+      },
+      paramsSerializer: {
+        indexes: null // array format: statusIn=a&statusIn=b&statusIn=c
+      }
+    })
 
     proposals.value = proposalResponse.data
 
@@ -209,7 +217,7 @@ const goToNotifications = () => {
 }
 
 const goToEndorsed = () => {
-  router.push('/endorsed-proposals')
+  router.push('/submit-proposals')
 }
 
 const goToReview = id => {

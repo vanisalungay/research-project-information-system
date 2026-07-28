@@ -25,7 +25,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ProjectReportRepository reportRepository;
-    
+
     private static final String UPLOAD_DIR = "uploads/reports/";
 
     /**
@@ -38,7 +38,7 @@ public class ReportController {
             @RequestParam(value = "remarks", required = false) String remarks,
             @RequestParam(value = "quarterlyReport", required = false) MultipartFile quarterlyReport,
             @RequestParam(value = "financialReport", required = false) MultipartFile financialReport) {
-        
+
         try {
             // Ensure upload directory exists
             Path uploadPath = Paths.get(UPLOAD_DIR);
@@ -47,27 +47,27 @@ public class ReportController {
             }
 
             Map<String, Object> response = new HashMap<>();
-            
+
             // Save Quarterly Progress Report
             if (quarterlyReport != null && !quarterlyReport.isEmpty()) {
-                ProjectReport quarterly = saveReport(proposalId, "QUARTERLY_PROGRESS", period, 
+                ProjectReport quarterly = saveReport(proposalId, "QUARTERLY_PROGRESS", period,
                         quarterlyReport, remarks);
                 response.put("quarterlyReportId", quarterly.getId());
             }
-            
+
             // Save Financial Report
             if (financialReport != null && !financialReport.isEmpty()) {
-                ProjectReport financial = saveReport(proposalId, "FINANCIAL", period, 
+                ProjectReport financial = saveReport(proposalId, "FINANCIAL", period,
                         financialReport, remarks);
                 response.put("financialReportId", financial.getId());
             }
-            
+
             response.put("message", "Reports uploaded successfully");
             response.put("proposalId", proposalId);
             response.put("period", period);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload reports: " + e.getMessage()));
@@ -87,7 +87,7 @@ public class ReportController {
      */
     @GetMapping("/proposal/{proposalId}/type/{reportType}")
     public ResponseEntity<List<ProjectReport>> getReportsByType(
-            @PathVariable Long proposalId, 
+            @PathVariable Long proposalId,
             @PathVariable String reportType) {
         return ResponseEntity.ok(reportRepository.findByProposalIdAndReportType(proposalId, reportType));
     }
@@ -109,7 +109,7 @@ public class ReportController {
             @RequestParam Long reviewerId,
             @RequestParam String status, // APPROVED or RETURNED
             @RequestParam(required = false) String comments) {
-        
+
         return reportRepository.findById(reportId)
                 .map(report -> {
                     report.setReviewedBy(reviewerId);
@@ -138,18 +138,18 @@ public class ReportController {
      */
     private ProjectReport saveReport(Long proposalId, String reportType, String period,
             MultipartFile file, String remarks) throws IOException {
-        
+
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null && originalFilename.contains(".") 
-                ? originalFilename.substring(originalFilename.lastIndexOf(".")) 
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
                 : "";
         String uniqueFilename = UUID.randomUUID().toString() + "_" + reportType.toLowerCase() + extension;
-        
+
         // Save file
         Path filePath = Paths.get(UPLOAD_DIR, uniqueFilename);
         Files.write(filePath, file.getBytes());
-        
+
         // Create report record
         ProjectReport report = new ProjectReport();
         report.setProposalId(proposalId);
@@ -158,7 +158,7 @@ public class ReportController {
         report.setFileName(originalFilename);
         report.setFilePath(filePath.toString());
         report.setRemarks(remarks);
-        
+
         return reportRepository.save(report);
     }
 }
