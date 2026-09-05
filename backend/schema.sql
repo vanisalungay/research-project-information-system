@@ -230,3 +230,16 @@ CREATE TABLE ovcaf_validations (
     released_by BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 14. Application Cycles Table (submission windows for new proposals)
+CREATE TABLE application_cycles (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT', -- DRAFT | ACTIVE | CLOSED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_cycle_dates CHECK (end_date >= start_date),
+    CONSTRAINT chk_cycle_status CHECK (status IN ('DRAFT', 'ACTIVE', 'CLOSED'))
+);
