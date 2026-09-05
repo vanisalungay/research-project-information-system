@@ -129,6 +129,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import { downloadProposalDocument } from '@/utils/documentExport'
 
 const route = useRoute()
 
@@ -239,12 +240,7 @@ const confirmReject = async () => {
 }
 
 const downloadProject = () => {
-  const link = document.createElement('a')
-  link.href = `/files/project-proposal.pdf`
-  link.download = 'project-proposal.pdf'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  downloadProposalDocument(proposal.value)
 }
 </script>
 

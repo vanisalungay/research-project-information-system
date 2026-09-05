@@ -40,6 +40,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/error").permitAll()
 
+                        // Uploaded document downloads (Special Orders, attachments)
+                        .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+
                         // Administrative endpoints (RPS_ADMIN & RPS_STAFF)
                         .requestMatchers("/api/users/pending", "/api/users/*/approve", "/api/users/*/reject", "/api/users/admin/create").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("RPS_ADMIN", "RPS_STAFF")

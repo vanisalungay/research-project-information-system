@@ -226,6 +226,14 @@
 
 <script setup>
 import { reactive, ref, computed, nextTick } from 'vue'
+import {
+  buildStandaloneHtml,
+  printDocument,
+  formatText,
+  section,
+  signatureBlock,
+  readFileAsDataUrl
+} from '@/utils/documentExport'
 
 defineProps({ open: Boolean, modalId: String })
 const emit = defineEmits(['close', 'openPrevious', 'openCriteria', 'submitProposal', 'goToStep'])
@@ -245,7 +253,58 @@ const certification = reactive({
 })
 
 const close = () => emit('close')
-const downloadForm = () => console.log('Download form clicked')
+
+const downloadForm = async () => {
+  const submittedSignature = await readFileAsDataUrl(uploadedFiles.submitted)
+  const endorsedSignature = await readFileAsDataUrl(uploadedFiles.endorsed)
+
+  const certStatement =
+    'I hereby certify that the foregoing statements are true and accurate, and that I have no ' +
+    'outstanding financial or technical obligations to the Office of the Vice Chancellor for ' +
+    'Research, Innovation, and Global Engagement or MSU at Naawan. Furthermore, I certify that ' +
+    'the programs and projects under my supervision comply with the prescribed limits set ' +
+    'forth in the IRIDE Agenda Guidelines. I understand that any intentional omission or ' +
+    'false statement will be grounds for disapproval and cancellation of the project.'
+
+  const body = [
+    section({
+      number: '01',
+      title: 'Certification Statement',
+      body: `<div class="text">${formatText(certStatement)}</div>`
+    }),
+    section({
+      number: '02',
+      title: 'Submitted By',
+      body: signatureBlock({
+        label: 'Proponent Signature',
+        name: certification.submitted_name,
+        designation: certification.submitted_designation,
+        date: certification.submitted_date,
+        imageUrl: submittedSignature
+      })
+    }),
+    section({
+      number: '03',
+      title: 'Endorsed By',
+      sub: '(Department Chair / Dean)',
+      body: signatureBlock({
+        label: 'Endorser Signature',
+        name: certification.endorsed_name,
+        designation: certification.endorsed_designation,
+        date: certification.endorsed_date,
+        imageUrl: endorsedSignature
+      })
+    })
+  ].join('')
+
+  const html = buildStandaloneHtml({
+    title: 'Certification & Endorsement',
+    subtitle: 'Research Project Proposal',
+    body
+  })
+
+  printDocument({ title: 'Certification & Endorsement', html })
+}
 
 const uploadedFiles = reactive({ submitted: null, endorsed: null })
 const submittedFile = ref(null)

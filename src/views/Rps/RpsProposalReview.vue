@@ -410,6 +410,8 @@
 <script>
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { downloadProposalDocument } from '@/utils/documentExport'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 export default {
   name: 'RpsProposalReview',
@@ -595,16 +597,10 @@ export default {
       }
     },
     async downloadProposal() {
-      await this._showAlert('Download feature coming soon.', { type: 'info', title: 'Coming Soon' })
+      downloadProposalDocument(this.proposal)
     },
     downloadFile(fileName) {
-      if (!fileName) return
-      const link = document.createElement('a')
-      link.href = `http://localhost:8081/uploads/${fileName}`
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      downloadUploadedFile(fileName)
     },
   },
 }

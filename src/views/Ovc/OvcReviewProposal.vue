@@ -743,6 +743,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -855,13 +856,7 @@ const rejectProposal = async () => {
 }
 
 const downloadFile = (fileName) => {
-  if (!fileName) return
-  const link = document.createElement('a')
-  link.href = `http://localhost:8081/uploads/${fileName}`
-  link.download = fileName
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  downloadUploadedFile(fileName)
 }
 
 const downloadAll = () => {

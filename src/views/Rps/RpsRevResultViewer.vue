@@ -678,6 +678,7 @@
 
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 export default {
   name: "RpsProposalDetails",
@@ -767,17 +768,11 @@ export default {
       await this._showAlert("Download Proposal PDF", { type: 'info', title: 'Download' });
     },
     viewAttachment(filePath){
-
-      window.open("http://localhost:8080/uploads/"+filePath,
-      "_blank"
-      )
+      window.open(`http://localhost:8081/api/files?path=${encodeURIComponent(filePath)}`, "_blank")
     },
 
     downloadAttachment(filePath){
-    const link=document.createElement("a");
-    link.href="http://localhost:8080/uploads/"+filePath;
-    link.download="";
-    link.click();
+      downloadUploadedFile(filePath)
     },
 
     async saveDraft() {

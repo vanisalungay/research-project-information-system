@@ -1,0 +1,77 @@
+/* ============================================================
+   Global print guard (safety net)
+
+   Ensures that any direct print action (browser Ctrl+P or a stray
+   window.print()) never includes the website chrome: navigation,
+   sidebar, header, buttons, menus, page controls, or background
+   design. Document actions instead use the standalone document
+   exporter (src/utils/documentExport.js), but this guard protects
+   every page/role regardless of implementation.
+   ============================================================ */
+
+@media print {
+  html,
+  body,
+  #app {
+    background: #fff !important;
+  }
+
+  /* Hide the application shell and all interactive chrome. */
+  header,
+  nav,
+  aside,
+  .app-layout header,
+  .app-layout .sidebar,
+  .sidebar,
+  .nav-menu,
+  .page-header,
+  .header-actions,
+  .top-bar,
+  .breadcrumb,
+  .progress-bar,
+  .modal-backdrop,
+  .modal-overlay,
+  .no-print,
+  button,
+  a.btn,
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-outline,
+  .btn-download,
+  .btn-print,
+  .download-btn,
+  .download-btn-sm,
+  .back-btn,
+  .close-btn,
+  .btn-view,
+  .btn-delete,
+  .btn-new,
+  .btn-action,
+  .btn-icon {
+    display: none !important;
+  }
+
+  /* Let the content area flow across a full A4 page instead of being clipped. */
+  .app-layout {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .app-layout .content,
+  main.content,
+  .content {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm 15mm;
+  }
+}

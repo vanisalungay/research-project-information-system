@@ -781,6 +781,16 @@ import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import {
+  buildStandaloneHtml,
+  printDocument,
+  escapeHtml,
+  field,
+  textBlock,
+  fileField,
+  tableBlock,
+  section
+} from '@/utils/documentExport'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -1065,11 +1075,229 @@ const handleFileUpload = (type, event) => {
 }
 
 const downloadForm = () => {
-  const data = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(proposal, null, 2))
-  const a = document.createElement('a')
-  a.href = data
-  a.download = 'research-proposal.json'
-  a.click()
+  const html = buildStandaloneHtml({
+    title: 'Research Proposal Form',
+    subtitle: proposal.project_title || 'Project Proposal',
+    body: proposalDocumentBody()
+  })
+  printDocument({ title: 'Research Proposal Form', html })
+}
+
+const proposalDocumentBody = () => {
+  return [...proposalSectionsA(), ...proposalSectionsB()].join('')
+}
+
+const proposalSectionsA = () => {
+  const p = proposal
+
+  const researchTypeLabel =
+    p.research_type === 'Basic'
+      ? 'Basic Research'
+      : p.research_type === 'Applied'
+        ? 'Applied Research'
+        : p.research_type
+
+  const agendaBody = programList
+    .filter((prog) => p.priority_agendas && p.priority_agendas[prog.key] && p.priority_agendas[prog.key].selected)
+    .map((prog) => {
+      const item = p.priority_agendas[prog.key]
+      return field(`${prog.label} (${prog.subLabel})`, item.value || '')
+    })
+    .join('')
+
+  const sixPsBody = sixPsList
+    .filter((ps) => p.expected_outputs && p.expected_outputs[ps.key] && p.expected_outputs[ps.key].selected)
+    .map((ps) => field(ps.label, p.expected_outputs[ps.key].value || ''))
+    .join('')
+
+  const sitesRows = (p.sites || []).map((s) => [
+    s.country,
+    s.region,
+    s.province,
+    s.district,
+    s.municipality,
+    s.barangay
+  ])
+
+  return [
+    section({
+      number: '01',
+      title: 'Project Profile',
+      body: `<div class="row">
+          ${field('Program Title', p.program_title)}
+          ${field('Project Title', p.project_title)}
+          ${field('Project Leader', p.project_leader)}
+          ${field('Sex', p.project_leader_sex)}
+          ${field('Duration (months)', p.duration)}
+          ${field('Start Date', p.start_date)}
+          ${field('End Date', p.end_date)}
+          ${field('Implementing College / Department', p.department)}
+        </div>
+        ${textBlock('Address / Contact', p.address)}`
+    }),
+    section({
+      number: '02',
+      title: 'Cooperating Agencies',
+      body: textBlock('Name/s and Address/es', p.cooperating_agencies)
+    }),
+    section({
+      number: '03',
+      title: 'Sites of Implementation',
+      body: tableBlock(
+        ['Country', 'Region', 'Province', 'District', 'Municipality', 'Barangay'],
+        sitesRows
+      )
+    }),
+    section({
+      number: '04',
+      title: 'Type of Research',
+      body: field('Type of Research', researchTypeLabel)
+    }),
+    section({
+      number: '05',
+      title: 'Priority Agenda',
+      sub: '(based on MSUN RIIDE 2025–2028)',
+      body: agendaBody || textBlock('Priority Agenda', '')
+    }),
+    section({
+      number: '06',
+      title: 'Innovation Goals',
+      body: textBlock('Innovation Goals', p.innovation_goals)
+    }),
+    section({
+      number: '07',
+      title: 'Sector Relevance',
+      body: textBlock('Sector Relevance', p.sector_relevance)
+    }),
+    section({
+      number: '08',
+      title: 'Sustainable Development Goals (SDG)',
+      body: textBlock('Sustainable Development Goals', p.sustainable_development_goals)
+    }),
+    section({
+      number: '09',
+      title: 'Executive Summary',
+      body: textBlock('Executive Summary', p.executive_summary)
+    }),
+    section({
+      number: '10',
+      title: 'Introduction',
+      body: `${textBlock('10.1 Rationale / Significance', p.rationale)}
+        ${textBlock('10.2 Scientific Basis / Theoretical Framework', p.theoretical_framework)}
+        ${textBlock('10.3 General Objective', p.general_objective)}
+        ${textBlock('10.4 Specific Objectives', p.specific_objectives)}`
+    }),
+    section({
+      number: '11',
+      title: 'Review of Literature',
+      body: textBlock('Review of Literature', p.review_of_literature)
+    }),
+    section({
+      number: '12',
+      title: 'Methodology',
+      body: textBlock('Methodology', p.methodology)
+    }),
+    section({
+      number: '13',
+      title: 'Technology Roadmap',
+      body: fileField('Technology Roadmap', p.technology_roadmap_file)
+    }),
+    section({
+      number: '14',
+      title: 'Expected Outputs (6Ps)',
+      body: sixPsBody || textBlock('Expected Outputs', '')
+    })
+  ]
+}
+
+const proposalSectionsB = () => {
+  const p = proposal
+
+  const logFrameRows = (p.logical_framework || []).map((r) => [r.outcome_indicator, r.output_indicator])
+  const personnelRows = (p.personnel_requirements || []).map((r) => [r.position, r.effort, r.responsibilities])
+  const otherProjectsRows = (p.other_projects || []).map((r) => [
+    r.project_title,
+    r.funding_agency,
+    r.involvement
+  ])
+
+  const supportFiles = (p.supporting_documents || [])
+    .map((f) => `<li>${escapeHtml(f.name || '')}</li>`)
+    .join('')
+
+  return [
+    section({
+      number: '15',
+      title: 'Potential Outcomes',
+      body: textBlock('Potential Outcomes', p.potential_outcomes)
+    }),
+    section({
+      number: '16',
+      title: 'Potential Impacts (2Is)',
+      body: `${textBlock('a. Economic Impact', p.economic_impact)}
+        ${textBlock('b. Social / Ethical Impact', p.social_ethical_impact)}`
+    }),
+    section({
+      number: '17',
+      title: 'Target Beneficiaries',
+      body: textBlock('Target Beneficiaries', p.target_beneficiaries)
+    }),
+    section({
+      number: '18',
+      title: 'Sustainability Plan',
+      body: textBlock('Sustainability Plan', p.sustainability_plan)
+    }),
+    section({
+      number: '19',
+      title: 'Gender and Development (GAD) Score',
+      body: fileField('GAD Score Document', p.gad_score_file)
+    }),
+    section({
+      number: '20',
+      title: 'Limitations of the Project',
+      body: textBlock('Limitations', p.limitations)
+    }),
+    section({
+      number: '21',
+      title: 'Risk Management Plan',
+      body: textBlock('Risks & Assumptions', p.risks_assumptions)
+    }),
+    section({
+      number: '22',
+      title: 'Logical Framework',
+      sub: 'Outcome and Output Indicators',
+      body: tableBlock(['Outcome Indicators', 'Output Indicators / Physical Target'], logFrameRows)
+    }),
+    section({
+      number: '23',
+      title: 'Literature Cited',
+      body: textBlock('Literature Cited', p.literature_cited)
+    }),
+    section({
+      number: '24',
+      title: 'Personnel Requirement',
+      body: tableBlock(['Position', '% Time Devoted', 'Responsibilities'], personnelRows)
+    }),
+    section({
+      number: '25',
+      title: 'Line-Item Budget Requirement',
+      body: fileField('Line-Item Budget File', p.line_item_budget_file)
+    }),
+    section({
+      number: '26',
+      title: 'Other Ongoing Projects',
+      sub: 'Being handled by the Project Leader',
+      body: `${field('Number of other projects', p.other_projects_number)}
+        ${tableBlock(['Title', 'Funding Agency', 'Involvement'], otherProjectsRows)}`
+    }),
+    section({
+      number: '27',
+      title: 'Other Supporting Documents',
+      body: supportFiles
+        ? `<ul class="file-list">${supportFiles}</ul>`
+        : textBlock('Supporting Documents', '')
+    })
+  ]
 }
 
 // ===== VALIDATION =====

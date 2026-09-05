@@ -626,6 +626,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/utils/documentExport'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 const route = useRoute()
 const router = useRouter()
@@ -669,17 +671,17 @@ const formatDate = (dateString) => {
 }
 
 const downloadFile = (fileName) => {
-  if (!fileName) return
-  const link = document.createElement('a')
-  link.href = `http://localhost:8081/uploads/${fileName}`
-  link.download = fileName
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  downloadUploadedFile(fileName)
 }
 
 const printProposal = () => {
-  window.print()
+  const p = proposal.value
+  const html = buildStandaloneHtml({
+    title: 'Research Proposal Form',
+    subtitle: p.projectTitle || 'Project Proposal',
+    body: buildProposalDocument(p)
+  })
+  printDocument({ title: 'Research Proposal Form', html })
 }
 
 const editDraft = () => {
