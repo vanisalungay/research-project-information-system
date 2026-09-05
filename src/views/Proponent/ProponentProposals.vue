@@ -2,8 +2,8 @@
   <div class="proposals-content">
     <div class="top-bar">
       <h2>Proposals</h2>
-      <button class="btn-new" @click="openNewProposal">
-        + New Proposal
+      <button class="btn-new" :disabled="checkingCycle" @click="openNewProposal">
+        {{ checkingCycle ? 'Checking...' : '+ New Proposal' }}
       </button>
     </div>
 
@@ -117,9 +117,35 @@ const resetAllForms = () => {
   proposalData.value = {}
 }
 
-const openNewProposal = () => {
-  resetAllForms()
-  showModal.value = true
+const checkingCycle = ref(false)
+
+// Pre-check gatekeeper: a new proposal can only be started while an
+// Application Cycle is ACTIVE and today falls within its date range.
+const openNewProposal = async () => {
+  if (checkingCycle.value) return
+  checkingCycle.value = true
+  try {
+    // Success path: an active application cycle exists -> open the form
+    await api.get('/api/application-cycles/active')
+    resetAllForms()
+    showModal.value = true
+  } catch (err) {
+    console.error('Application cycle pre-check failed:', err)
+    if (err.response && err.response.status === 404) {
+      // Error path: no active application cycle (or it has expired)
+      await showAlert(
+        'Submissions are currently closed. There is no active application cycle at this time.',
+        { type: 'error', title: 'Submissions Closed' }
+      )
+    } else {
+      await showAlert(
+        'Unable to verify the application cycle status. Please check your connection and try again.',
+        { type: 'error', title: 'Verification Failed' }
+      )
+    }
+  } finally {
+    checkingCycle.value = false
+  }
 }
 
 const fetchProposals = async () => {
@@ -297,6 +323,11 @@ const refreshOnClose = () => {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.btn-new:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .filters {

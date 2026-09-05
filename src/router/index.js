@@ -27,6 +27,7 @@ import ProfileInformation from '../views/Shared/ProfileInformation.vue'
 /* Admin */
 import UserAccounts from '@/views/Admin/UserAccounts.vue'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
+import ApplicationCycles from '@/views/Admin/ApplicationCycles.vue'
 
 /* OVCRIGE */
 import OvcReviewProposal from '../views/Ovc/OvcReviewProposal.vue'
@@ -107,6 +108,7 @@ const routes = [
 
       { path: '/user-accounts', name: 'UserAccounts', component: UserAccounts },
       { path: '/create-user-modal', name: 'CreateUserModal', component: CreateUserModal },
+      { path: '/application-cycles', name: 'ApplicationCycles', component: ApplicationCycles },
 
       // ================= RPS =================
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
