@@ -82,8 +82,8 @@ const allNavItems = [
   },
   {
     iconKey: 'calendar',
-    text: 'Application Cycles',
-    path: '/application-cycles',
+    text: 'Proposal Announcements',
+    path: '/proposal-announcements',
     roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
     section: 'main',
   },

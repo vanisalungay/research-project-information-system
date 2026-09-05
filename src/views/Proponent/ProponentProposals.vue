@@ -2,8 +2,8 @@
   <div class="proposals-content">
     <div class="top-bar">
       <h2>Proposals</h2>
-      <button class="btn-new" :disabled="checkingCycle" @click="openNewProposal">
-        {{ checkingCycle ? 'Checking...' : '+ New Proposal' }}
+      <button class="btn-new" :disabled="checkingAnnouncement" @click="openNewProposal">
+        {{ checkingAnnouncement ? 'Checking...' : '+ New Proposal' }}
       </button>
     </div>
 
@@ -117,34 +117,34 @@ const resetAllForms = () => {
   proposalData.value = {}
 }
 
-const checkingCycle = ref(false)
+const checkingAnnouncement = ref(false)
 
-// Pre-check gatekeeper: a new proposal can only be started while an
-// Application Cycle is ACTIVE and today falls within its date range.
+// Pre-check gatekeeper: a new proposal can only be started while a
+// Proposal Announcement is ACTIVE and today falls within its date range.
 const openNewProposal = async () => {
-  if (checkingCycle.value) return
-  checkingCycle.value = true
+  if (checkingAnnouncement.value) return
+  checkingAnnouncement.value = true
   try {
-    // Success path: an active application cycle exists -> open the form
-    await api.get('/api/application-cycles/active')
+    // Success path: an active proposal announcement exists -> open the form
+    await api.get('/api/proposal-announcements/active')
     resetAllForms()
     showModal.value = true
   } catch (err) {
-    console.error('Application cycle pre-check failed:', err)
+    console.error('Proposal announcement pre-check failed:', err)
     if (err.response && err.response.status === 404) {
-      // Error path: no active application cycle (or it has expired)
+      // Error path: no active proposal announcement (or it has expired)
       await showAlert(
-        'Submissions are currently closed. There is no active application cycle at this time.',
+        'Submissions are currently closed. There is no active proposal announcement at this time.',
         { type: 'error', title: 'Submissions Closed' }
       )
     } else {
       await showAlert(
-        'Unable to verify the application cycle status. Please check your connection and try again.',
+        'Unable to verify the proposal announcement status. Please check your connection and try again.',
         { type: 'error', title: 'Verification Failed' }
       )
     }
   } finally {
-    checkingCycle.value = false
+    checkingAnnouncement.value = false
   }
 }
 

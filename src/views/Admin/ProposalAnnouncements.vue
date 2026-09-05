@@ -2,37 +2,37 @@
   <div class="page">
     <div class="header">
       <div>
-        <h2>Application Cycles</h2>
+        <h2>Proposal Announcements</h2>
         <p class="subtitle">Manage the submission windows during which proponents can submit new proposals.</p>
       </div>
-      <button class="create-btn" @click="openCreateModal">+ Create Cycle</button>
+      <button class="create-btn" @click="openCreateModal">+ Create Announcement</button>
     </div>
 
     <!-- Current submission window banner -->
-    <div v-if="activeCycle" class="banner banner-open">
-      <strong>Submissions are OPEN:</strong>&nbsp;{{ activeCycle.name }}
-      ({{ formatDate(activeCycle.startDate) }} – {{ formatDate(activeCycle.endDate) }})
+    <div v-if="activeAnnouncement" class="banner banner-open">
+      <strong>Submissions are OPEN:</strong>&nbsp;{{ activeAnnouncement.name }}
+      ({{ formatDate(activeAnnouncement.startDate) }} – {{ formatDate(activeAnnouncement.endDate) }})
     </div>
     <div v-else-if="!loading && !error" class="banner banner-closed">
-      <strong>Submissions are CLOSED.</strong>&nbsp;There is no active application cycle at this time.
+      <strong>Submissions are CLOSED.</strong>&nbsp;There is no active proposal announcement at this time.
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
-      <p>Loading application cycles...</p>
+      <p>Loading proposal announcements...</p>
     </div>
 
     <!-- Error -->
     <div v-else-if="error" class="loading-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="loadCycles">Retry</button>
+      <button class="retry-btn" @click="loadAnnouncements">Retry</button>
     </div>
 
     <!-- Table -->
     <table v-else>
       <thead>
         <tr>
-          <th>Cycle Name</th>
+          <th>Announcement Name</th>
           <th>Start Date</th>
           <th>End Date</th>
           <th>Status</th>
@@ -41,28 +41,28 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="cycle in cycles" :key="cycle.id">
-          <td class="cycle-name">{{ cycle.name }}</td>
-          <td>{{ formatDate(cycle.startDate) }}</td>
-          <td>{{ formatDate(cycle.endDate) }}</td>
+        <tr v-for="announcement in announcements" :key="announcement.id">
+          <td class="announcement-name">{{ announcement.name }}</td>
+          <td>{{ formatDate(announcement.startDate) }}</td>
+          <td>{{ formatDate(announcement.endDate) }}</td>
           <td>
-            <span class="status-badge" :class="statusClass(cycle.status)">{{ cycle.status }}</span>
+            <span class="status-badge" :class="statusClass(announcement.status)">{{ announcement.status }}</span>
           </td>
           <td>
-            <span class="window-hint" :class="windowClass(cycle)">{{ windowLabel(cycle) }}</span>
+            <span class="window-hint" :class="windowClass(announcement)">{{ windowLabel(announcement) }}</span>
           </td>
           <td class="actions-cell">
-            <button v-if="cycle.status !== 'ACTIVE'" class="activate-btn" @click="activateCycleAction(cycle)">
+            <button v-if="announcement.status !== 'ACTIVE'" class="activate-btn" @click="activateAnnouncementAction(announcement)">
               Activate
             </button>
-            <button class="edit-btn" @click="openEditModal(cycle)">Edit</button>
-            <button v-if="cycle.status !== 'ACTIVE'" class="delete-btn" @click="deleteCycleAction(cycle)">
+            <button class="edit-btn" @click="openEditModal(announcement)">Edit</button>
+            <button v-if="announcement.status !== 'ACTIVE'" class="delete-btn" @click="deleteAnnouncementAction(announcement)">
               Delete
             </button>
           </td>
         </tr>
-        <tr v-if="cycles.length === 0">
-          <td colspan="6" class="empty">No application cycles yet. Create one to open proposal submissions.</td>
+        <tr v-if="announcements.length === 0">
+          <td colspan="6" class="empty">No proposal announcements yet. Create one to open proposal submissions.</td>
         </tr>
       </tbody>
     </table>
@@ -70,10 +70,10 @@
     <!-- Create / Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
-        <h3>{{ isEditing ? 'Edit Application Cycle' : 'Create Application Cycle' }}</h3>
+        <h3>{{ isEditing ? 'Edit Proposal Announcement' : 'Create Proposal Announcement' }}</h3>
 
         <div class="form-group">
-          <label>Cycle Name</label>
+          <label>Announcement Name</label>
           <input v-model="form.name" type="text" class="form-input"
             placeholder="e.g., FY 2026 - 1st Call for Proposals" />
         </div>
@@ -105,8 +105,8 @@
 
         <div class="modal-actions">
           <button class="cancel-btn" @click="closeModal" :disabled="saving">Cancel</button>
-          <button class="confirm-btn" @click="saveCycle" :disabled="saving">
-            {{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Cycle') }}
+          <button class="confirm-btn" @click="saveAnnouncement" :disabled="saving">
+            {{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Announcement') }}
           </button>
         </div>
       </div>
@@ -125,7 +125,7 @@ import { useDialog } from '@/composables/useDialog'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
-const cycles = ref([])
+const announcements = ref([])
 const loading = ref(false)
 const error = ref(null)
 
@@ -156,12 +156,12 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function isActiveNow(cycle) {
+function isActiveNow(announcement) {
   const today = localTodayISO()
-  return cycle.status === 'ACTIVE' && cycle.startDate <= today && today <= cycle.endDate
+  return announcement.status === 'ACTIVE' && announcement.startDate <= today && today <= announcement.endDate
 }
 
-const activeCycle = computed(() => cycles.value.find(isActiveNow) || null)
+const activeAnnouncement = computed(() => announcements.value.find(isActiveNow) || null)
 
 function statusClass(status) {
   return {
@@ -171,19 +171,19 @@ function statusClass(status) {
   }[status] || ''
 }
 
-function windowLabel(cycle) {
+function windowLabel(announcement) {
   const today = localTodayISO()
-  if (cycle.endDate < today) return 'Expired'
-  if (isActiveNow(cycle)) return 'Accepting submissions'
-  if (cycle.status === 'ACTIVE' && cycle.startDate > today) return `Opens ${formatDate(cycle.startDate)}`
+  if (announcement.endDate < today) return 'Expired'
+  if (isActiveNow(announcement)) return 'Accepting submissions'
+  if (announcement.status === 'ACTIVE' && announcement.startDate > today) return `Opens ${formatDate(announcement.startDate)}`
   return '—'
 }
 
-function windowClass(cycle) {
+function windowClass(announcement) {
   const today = localTodayISO()
-  if (isActiveNow(cycle)) return 'window-open'
-  if (cycle.endDate < today) return 'window-expired'
-  if (cycle.status === 'ACTIVE' && cycle.startDate > today) return 'window-upcoming'
+  if (isActiveNow(announcement)) return 'window-open'
+  if (announcement.endDate < today) return 'window-expired'
+  if (announcement.status === 'ACTIVE' && announcement.startDate > today) return 'window-upcoming'
   return ''
 }
 
@@ -196,22 +196,22 @@ function extractErrorMessage(err, fallback) {
 
 // ===== LOAD =====
 
-async function loadCycles() {
+async function loadAnnouncements() {
   loading.value = true
   error.value = null
   try {
-    const res = await api.get('/api/application-cycles')
-    cycles.value = Array.isArray(res.data) ? res.data : []
+    const res = await api.get('/api/proposal-announcements')
+    announcements.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
     console.error(err)
-    error.value = extractErrorMessage(err, 'Failed to load application cycles.')
-    cycles.value = []
+    error.value = extractErrorMessage(err, 'Failed to load proposal announcements.')
+    announcements.value = []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(loadCycles)
+onMounted(loadAnnouncements)
 
 // ===== CREATE / EDIT =====
 
@@ -223,14 +223,14 @@ function openCreateModal() {
   showModal.value = true
 }
 
-function openEditModal(cycle) {
+function openEditModal(announcement) {
   isEditing.value = true
-  editingId.value = cycle.id
+  editingId.value = announcement.id
   form.value = {
-    name: cycle.name,
-    startDate: cycle.startDate,
-    endDate: cycle.endDate,
-    status: cycle.status,
+    name: announcement.name,
+    startDate: announcement.startDate,
+    endDate: announcement.endDate,
+    status: announcement.status,
   }
   formError.value = null
   showModal.value = true
@@ -241,10 +241,10 @@ function closeModal() {
   formError.value = null
 }
 
-async function saveCycle() {
+async function saveAnnouncement() {
   // Client-side validation (backend re-validates everything)
   if (!form.value.name.trim()) {
-    formError.value = 'Cycle name is required.'
+    formError.value = 'Announcement name is required.'
     return
   }
   if (!form.value.startDate || !form.value.endDate) {
@@ -267,23 +267,23 @@ async function saveCycle() {
     }
 
     if (isEditing.value) {
-      await api.put(`/api/application-cycles/${editingId.value}`, payload)
+      await api.put(`/api/proposal-announcements/${editingId.value}`, payload)
     } else {
-      await api.post('/api/application-cycles', payload)
+      await api.post('/api/proposal-announcements', payload)
     }
 
     const becameActive = payload.status === 'ACTIVE'
     closeModal()
-    await loadCycles()
+    await loadAnnouncements()
     await showAlert(
       becameActive
-        ? 'Application cycle saved and activated. All proponents have been notified.'
-        : 'Application cycle saved successfully.',
-      { type: 'success', title: isEditing.value ? 'Cycle Updated' : 'Cycle Created' }
+        ? 'Proposal announcement saved and activated. All proponents have been notified.'
+        : 'Proposal announcement saved successfully.',
+      { type: 'success', title: isEditing.value ? 'Announcement Updated' : 'Announcement Created' }
     )
   } catch (err) {
     console.error(err)
-    formError.value = extractErrorMessage(err, 'Failed to save the application cycle. Please try again.')
+    formError.value = extractErrorMessage(err, 'Failed to save the proposal announcement. Please try again.')
   } finally {
     saving.value = false
   }
@@ -291,23 +291,23 @@ async function saveCycle() {
 
 // ===== ACTIVATE =====
 
-async function activateCycleAction(cycle) {
+async function activateAnnouncementAction(announcement) {
   const confirmed = await showConfirm(
-    `Activate "${cycle.name}" (${formatDate(cycle.startDate)} – ${formatDate(cycle.endDate)})? All proponents will be notified that submissions are open.`,
-    { title: 'Activate Cycle', type: 'warning', confirmText: 'Activate' }
+    `Activate "${announcement.name}" (${formatDate(announcement.startDate)} – ${formatDate(announcement.endDate)})? All proponents will be notified that submissions are open.`,
+    { title: 'Activate Announcement', type: 'warning', confirmText: 'Activate' }
   )
   if (!confirmed) return
 
   try {
-    await api.put(`/api/application-cycles/${cycle.id}/activate`)
-    await loadCycles()
-    await showAlert('Application cycle activated. All proponents have been notified.', {
+    await api.put(`/api/proposal-announcements/${announcement.id}/activate`)
+    await loadAnnouncements()
+    await showAlert('Proposal announcement activated. All proponents have been notified.', {
       type: 'success',
-      title: 'Cycle Activated',
+      title: 'Announcement Activated',
     })
   } catch (err) {
     console.error(err)
-    await showAlert(extractErrorMessage(err, 'Failed to activate the cycle.'), {
+    await showAlert(extractErrorMessage(err, 'Failed to activate the announcement.'), {
       type: 'error',
       title: 'Activation Failed',
     })
@@ -316,20 +316,20 @@ async function activateCycleAction(cycle) {
 
 // ===== DELETE =====
 
-async function deleteCycleAction(cycle) {
+async function deleteAnnouncementAction(announcement) {
   const confirmed = await showConfirm(
-    `Are you sure you want to delete "${cycle.name}"? This action cannot be undone.`,
-    { title: 'Delete Cycle', type: 'danger', confirmText: 'Delete' }
+    `Are you sure you want to delete "${announcement.name}"? This action cannot be undone.`,
+    { title: 'Delete Announcement', type: 'danger', confirmText: 'Delete' }
   )
   if (!confirmed) return
 
   try {
-    await api.delete(`/api/application-cycles/${cycle.id}`)
-    await loadCycles()
-    await showAlert('Application cycle deleted.', { type: 'success', title: 'Cycle Deleted' })
+    await api.delete(`/api/proposal-announcements/${announcement.id}`)
+    await loadAnnouncements()
+    await showAlert('Proposal announcement deleted.', { type: 'success', title: 'Announcement Deleted' })
   } catch (err) {
     console.error(err)
-    await showAlert(extractErrorMessage(err, 'Failed to delete the cycle.'), {
+    await showAlert(extractErrorMessage(err, 'Failed to delete the announcement.'), {
       type: 'error',
       title: 'Delete Failed',
     })
@@ -450,7 +450,7 @@ td {
   padding: 30px;
 }
 
-.cycle-name {
+.announcement-name {
   font-weight: 600;
 }
 

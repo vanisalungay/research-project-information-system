@@ -5,10 +5,10 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * Request payload for creating/updating an Application Cycle.
+ * Request payload for creating/updating a Proposal Announcement.
  */
 @Data
-public class ApplicationCycleRequest {
+public class ProposalAnnouncementRequest {
     private String name;
     private LocalDate startDate;
     private LocalDate endDate;

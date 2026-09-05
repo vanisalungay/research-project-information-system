@@ -1,6 +1,6 @@
 package com.rpis.backend.repository;
 
-import com.rpis.backend.model.ApplicationCycle;
+import com.rpis.backend.model.ProposalAnnouncement;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ApplicationCycleRepository extends JpaRepository<ApplicationCycle, Long> {
+public interface ProposalAnnouncementRepository extends JpaRepository<ProposalAnnouncement, Long> {
 
-    List<ApplicationCycle> findByStatus(String status);
+    List<ProposalAnnouncement> findByStatus(String status);
 
     boolean existsByNameIgnoreCase(String name);
 
@@ -21,20 +21,20 @@ public interface ApplicationCycleRepository extends JpaRepository<ApplicationCyc
      * Overlap detection. Two date ranges overlap when
      * existing.startDate <= new.endDate AND existing.endDate >= new.startDate.
      */
-    List<ApplicationCycle> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
+    List<ProposalAnnouncement> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
             LocalDate endDate, LocalDate startDate);
 
     /**
-     * Same overlap detection but excluding a given cycle (used on updates so a
-     * cycle does not conflict with its own existing range).
+     * Same overlap detection but excluding a given announcement (used on updates so an
+     * announcement does not conflict with its own existing range).
      */
-    List<ApplicationCycle> findByIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+    List<ProposalAnnouncement> findByIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long id, LocalDate endDate, LocalDate startDate);
 
     /**
-     * The cycle currently accepting submissions: status is ACTIVE and today falls
+     * The announcement currently accepting submissions: status is ACTIVE and today falls
      * within [startDate, endDate] (inclusive on both ends).
      */
-    Optional<ApplicationCycle> findFirstByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateDesc(
+    Optional<ProposalAnnouncement> findFirstByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateDesc(
             String status, LocalDate endDate, LocalDate startDate);
 }

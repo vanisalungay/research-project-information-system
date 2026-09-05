@@ -11,15 +11,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Application Cycle: defines the date window (start date to end date) during
+ * Proposal Announcement: defines the date window (start date to end date) during
  * which proponents are allowed to submit new proposals.
  */
 @Entity
-@Table(name = "application_cycles")
+@Table(name = "proposal_announcements")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApplicationCycle {
+public class ProposalAnnouncement {
 
     public static final String STATUS_DRAFT = "DRAFT";
     public static final String STATUS_ACTIVE = "ACTIVE";

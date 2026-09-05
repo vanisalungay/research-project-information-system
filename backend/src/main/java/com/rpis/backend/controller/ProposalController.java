@@ -219,7 +219,7 @@ public class ProposalController {
         return ResponseEntity.noContent().build();
     }
 
-    // Maps Application Cycle gatekeeper rejections (closed submissions window) to
+    // Maps Proposal Announcement gatekeeper rejections (closed submissions window) to
     // a readable 403 response instead of a generic 500 error.
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleSubmissionsClosed(IllegalStateException ex) {

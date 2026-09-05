@@ -1,8 +1,8 @@
 package com.rpis.backend.controller;
 
-import com.rpis.backend.dto.ApplicationCycleRequest;
-import com.rpis.backend.model.ApplicationCycle;
-import com.rpis.backend.service.ApplicationCycleService;
+import com.rpis.backend.dto.ProposalAnnouncementRequest;
+import com.rpis.backend.model.ProposalAnnouncement;
+import com.rpis.backend.service.ProposalAnnouncementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,61 +13,61 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
-@RequestMapping("/api/application-cycles")
+@RequestMapping("/api/proposal-announcements")
 @RequiredArgsConstructor
-public class ApplicationCycleController {
+public class ProposalAnnouncementController {
 
-    private final ApplicationCycleService cycleService;
+    private final ProposalAnnouncementService announcementService;
 
     // ==================== READ ====================
 
     @GetMapping
-    public ResponseEntity<List<ApplicationCycle>> getAllCycles() {
-        return ResponseEntity.ok(cycleService.getAllCycles());
+    public ResponseEntity<List<ProposalAnnouncement>> getAllAnnouncements() {
+        return ResponseEntity.ok(announcementService.getAllAnnouncements());
     }
 
     /**
-     * Proponent pre-check gatekeeper endpoint: returns the cycle currently
+     * Proponent pre-check gatekeeper endpoint: returns the announcement currently
      * accepting submissions (status ACTIVE and today within its date range).
-     * Responds 404 when no cycle is active.
+     * Responds 404 when no announcement is active.
      */
     @GetMapping("/active")
-    public ResponseEntity<ApplicationCycle> getActiveCycle() {
-        return ResponseEntity.ok(cycleService.getActiveCycle());
+    public ResponseEntity<ProposalAnnouncement> getActiveAnnouncement() {
+        return ResponseEntity.ok(announcementService.getActiveAnnouncement());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApplicationCycle> getCycleById(@PathVariable Long id) {
-        return ResponseEntity.ok(cycleService.getCycleById(id));
+    public ResponseEntity<ProposalAnnouncement> getAnnouncementById(@PathVariable Long id) {
+        return ResponseEntity.ok(announcementService.getAnnouncementById(id));
     }
 
     // ==================== CREATE / UPDATE / DELETE ====================
 
     @PostMapping
-    public ResponseEntity<ApplicationCycle> createCycle(@RequestBody ApplicationCycleRequest request) {
-        ApplicationCycle created = cycleService.createCycle(request);
+    public ResponseEntity<ProposalAnnouncement> createAnnouncement(@RequestBody ProposalAnnouncementRequest request) {
+        ProposalAnnouncement created = announcementService.createAnnouncement(request);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApplicationCycle> updateCycle(
+    public ResponseEntity<ProposalAnnouncement> updateAnnouncement(
             @PathVariable Long id,
-            @RequestBody ApplicationCycleRequest request) {
-        return ResponseEntity.ok(cycleService.updateCycle(id, request));
+            @RequestBody ProposalAnnouncementRequest request) {
+        return ResponseEntity.ok(announcementService.updateAnnouncement(id, request));
     }
 
     /**
-     * Explicit activation action: sets the cycle to ACTIVE and notifies all
+     * Explicit activation action: sets the announcement to ACTIVE and notifies all
      * proponents.
      */
     @PutMapping("/{id}/activate")
-    public ResponseEntity<ApplicationCycle> activateCycle(@PathVariable Long id) {
-        return ResponseEntity.ok(cycleService.activateCycle(id));
+    public ResponseEntity<ProposalAnnouncement> activateAnnouncement(@PathVariable Long id) {
+        return ResponseEntity.ok(announcementService.activateAnnouncement(id));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCycle(@PathVariable Long id) {
-        cycleService.deleteCycle(id);
+    public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long id) {
+        announcementService.deleteAnnouncement(id);
         return ResponseEntity.noContent().build();
     }
 

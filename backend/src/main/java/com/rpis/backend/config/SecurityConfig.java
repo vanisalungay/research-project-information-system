@@ -44,12 +44,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/pending", "/api/users/*/approve", "/api/users/*/reject", "/api/users/admin/create").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
-                        // Application Cycle gatekeeper endpoint: any authenticated user
+                        // Proposal Announcement gatekeeper endpoint: any authenticated user
                         // (proponents pre-check before opening the New Proposal form)
-                        .requestMatchers(HttpMethod.GET, "/api/application-cycles/active").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/active").authenticated()
 
-                        // Application Cycle management (RPS_ADMIN & RPS_STAFF only)
-                        .requestMatchers("/api/application-cycles/**").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+                        // Proposal Announcement management (RPS_ADMIN & RPS_STAFF only)
+                        .requestMatchers("/api/proposal-announcements/**").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
                         // All other API requests require authentication
                         .anyRequest().authenticated()

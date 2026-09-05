@@ -21,7 +21,7 @@ public class ProposalService {
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    private final ApplicationCycleService applicationCycleService;
+    private final ProposalAnnouncementService proposalAnnouncementService;
 
     // ========================
     // PROPOSAL ID AND REVISION FORMAT
@@ -105,16 +105,16 @@ public class ProposalService {
             proposal = new Proposal();
         }
 
-        // Application Cycle gatekeeper (server-side enforcement): new proposals and
-        // final submissions are only accepted while an application cycle is active.
+        // Proposal Announcement gatekeeper (server-side enforcement): new proposals and
+        // final submissions are only accepted while a proposal announcement is active.
         // Revision resubmissions belong to the review lifecycle of an already
-        // submitted proposal and remain allowed outside an active cycle.
+        // submitted proposal and remain allowed outside an active announcement.
         boolean isSubmission = request.getStatus() != null
                 && "SUBMITTED".equalsIgnoreCase(request.getStatus());
         if ((isNewProposal || isSubmission) && !isRevisionResubmission
-                && !applicationCycleService.hasActiveCycle()) {
+                && !proposalAnnouncementService.hasActiveAnnouncement()) {
             throw new IllegalStateException(
-                    "Submissions are currently closed. There is no active application cycle at this time.");
+                    "Submissions are currently closed. There is no active proposal announcement at this time.");
         }
 
         // Generate proposal code and document ID for new proposals
