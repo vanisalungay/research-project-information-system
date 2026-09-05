@@ -136,7 +136,7 @@ const errorMessage = ref('')
 
 const roles = [
   { name: 'Proponent', desc: 'Faculty Submitter', value: UserRole.PROPONENT, next: '/proponent-dashboard' },
-  { name: 'RPS Staff', desc: 'Technical & Admin Services', value: UserRole.RPS_STAFF, next: '/proponent-dashboard' },
+  { name: 'ORPS', desc: 'Technical & Admin Services', value: UserRole.RPS_STAFF, next: '/proponent-dashboard' },
   { name: 'OVCRIGE', desc: 'Research Vice Chancellor', value: UserRole.OVCRIGE, next: '/proponent-dashboard'  },
   { name: 'REC', desc: 'Evaluation Committee', value: UserRole.REC, next: '/proponent-dashboard'  },
   { name: 'OVCAF', desc: 'Finance Vice Chancellor', value: UserRole.OVCAF, next: '/proponent-dashboard'  },

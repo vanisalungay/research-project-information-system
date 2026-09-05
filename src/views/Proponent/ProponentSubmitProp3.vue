@@ -227,12 +227,31 @@ const goBack = () => {
 // ===== FINAL COMPLETENESS GUARD =====
 const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
 
+const sixPsList = [
+  { key: 'publications', label: 'Publications' },
+  { key: 'patents', label: 'Patents/IP' },
+  { key: 'products', label: 'Products' },
+  { key: 'people_services', label: 'People Services' },
+  { key: 'partnerships', label: 'Partnerships' },
+  { key: 'policy', label: 'Policy' },
+]
+
+const serializeSixPs = (expectedOutputs) => {
+  const lines = []
+  sixPsList.forEach((p) => {
+    const item = expectedOutputs && expectedOutputs[p.key]
+    if (item && item.selected && item.value && item.value.trim() !== '') {
+      lines.push(`${p.label}: ${item.value.trim()}`)
+    }
+  })
+  return lines.join('\n')
+}
+
 const validationErrors = computed(() => {
   const errs = []
   const d = props.proposalData || {}
 
   // Step 1 fields
-  if (isBlank(d.program_title)) errs.push('Program Title is missing.')
   if (isBlank(d.project_title)) errs.push('Project Title is missing.')
   if (isBlank(d.project_leader)) errs.push('Project Leader is missing.')
   if (isBlank(d.project_leader_sex)) errs.push('Sex is not selected.')
@@ -272,9 +291,15 @@ const validationErrors = computed(() => {
   if (isBlank(d.theoretical_framework)) errs.push('Theoretical Framework is missing.')
   if (isBlank(d.general_objective)) errs.push('General Objective is missing.')
   if (isBlank(d.specific_objectives)) errs.push('Specific Objectives is missing.')
-  if (!d.review_of_literature_file) errs.push('Review of Literature file is missing.')
+  if (isBlank(d.review_of_literature)) errs.push('Review of Literature is missing.')
   if (isBlank(d.methodology)) errs.push('Methodology is missing.')
-  if (isBlank(d.expected_outputs)) errs.push('Expected Outputs is missing.')
+  const outputs = d.expected_outputs || {}
+  const selectedOutputs = Object.entries(outputs).filter(([, v]) => v.selected)
+  if (selectedOutputs.length === 0) {
+    errs.push('No Expected Output (6P) selected.')
+  } else if (selectedOutputs.some(([, v]) => isBlank(v.value))) {
+    errs.push('Expected Output (6P) details are incomplete.')
+  }
   if (isBlank(d.potential_outcomes)) errs.push('Potential Outcomes is missing.')
   if (isBlank(d.economic_impact)) errs.push('Economic Impact is missing.')
   if (isBlank(d.social_ethical_impact)) errs.push('Social / Ethical Impact is missing.')
@@ -301,7 +326,6 @@ const validationErrors = computed(() => {
   }
 
   if (!d.line_item_budget_file) errs.push('Line-Item Budget file is missing.')
-  if (isBlank(d.other_projects_number)) errs.push('Number of Other Projects is missing.')
 
   return errs
 })
@@ -377,7 +401,7 @@ const saveOrUpdateProposal = async (status) => {
     objectivesGeneral: data.general_objective || '',
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
-    outputs: data.expected_outputs || '',
+    outputs: serializeSixPs(data.expected_outputs),
     outcomes: data.potential_outcomes || '',
     impactEconomic: data.economic_impact || '',
     impactSocial: data.social_ethical_impact || '',

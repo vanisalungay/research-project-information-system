@@ -62,7 +62,7 @@
           <div class="section-card">
             <div class="form-row">
               <div class="form-group" :class="{ 'has-error': showValidation && errors.program_title }">
-                <label>Program Title <span class="req">*</span></label>
+                <label>Program Title</label>
                 <input v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
                 <span class="field-error" v-if="showValidation && errors.program_title">{{ errors.program_title
                 }}</span>
@@ -87,6 +87,7 @@
                   <option value="">Select Sex</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
+                  <option value="Other">Prefer not to say</option>
                 </select>
                 <span class="field-error" v-if="showValidation && errors.project_leader_sex">{{
                   errors.project_leader_sex }}</span>
@@ -111,8 +112,29 @@
             </div>
             <div class="form-group" :class="{ 'has-error': showValidation && errors.department }">
               <label>Implementing College / Department <span class="req">*</span></label>
-              <input v-model="proposal.department" placeholder="e.g. College of Engineering" />
-              <span class="field-error" v-if="showValidation && errors.department">{{ errors.department }}</span>
+
+              <select v-model="proposal.department">
+                <option value="">Select College / Department</option>
+                <option value="College of Fisheries and Marine Sciences (CFMS)">
+                  College of Fisheries and Marine Sciences (CFMS)
+                </option>
+                <option value="College of Environment and Life Sciences (CELS)">
+                  College of Environment and Life Sciences (CELS)
+                </option>
+                <option value="College of Education and Social Sciences (CESS)">
+                  College of Education and Social Sciences (CESS)
+                </option>
+                <option value="College of Business and Information Technology (CBIT)">
+                  College of Business and Information Technology (CBIT)
+                </option>
+                <option value="Integrated Development School (IDS)">
+                  Integrated Development School (IDS)
+                </option>
+              </select>
+
+              <span class="field-error" v-if="showValidation && errors.department">
+                {{ errors.department }}
+              </span>
             </div>
             <div class="form-group" :class="{ 'has-error': showValidation && errors.address }">
               <label>Address / Contact <span class="req">*</span></label>
@@ -340,33 +362,24 @@
         </section>
 
         <!-- 11. Review of Literature -->
-        <section class="form-section" ref="section_review_of_literature">
-          <div class="section-header">
-            <span class="section-number">11</span>
-            <h3>Review of Literature</h3>
+      <section class="form-section" ref="section_review_of_literature">
+        <div class="section-header">
+          <span class="section-number">11</span>
+          <h3>Review of Literature</h3>
+        </div>
+        <div class="section-card">
+          <div class="form-group" :class="{ 'has-error': showValidation && errors.review_of_literature }">
+            <textarea
+              v-model="proposal.review_of_literature"
+              placeholder="Enter your review of literature..."
+              rows="5"
+            ></textarea>
+            <span class="field-error" v-if="showValidation && errors.review_of_literature">
+              {{ errors.review_of_literature }}
+            </span>
           </div>
-          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.review_of_literature_file }">
-            <div class="file-upload">
-              <div class="upload-area" @click="$refs.litFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="12" y1="18" x2="12" y2="12" />
-                  <line x1="9" y1="15" x2="15" y2="15" />
-                </svg>
-                <span>Click to upload literature review file</span>
-                <span class="upload-hint">PDF, DOC, DOCX accepted</span>
-              </div>
-              <input ref="litFile" type="file" @change="handleFileUpload('review_of_literature', $event)" hidden />
-              <div v-if="proposal.review_of_literature_file" class="file-info">
-                <span>📄 {{ proposal.review_of_literature_file.name }}</span>
-                <button class="btn-remove-file" @click="proposal.review_of_literature_file = null">✕</button>
-              </div>
-            </div>
-            <span class="field-error" v-if="showValidation && errors.review_of_literature_file">{{
-              errors.review_of_literature_file }}</span>
-          </div>
-        </section>
+        </div>
+      </section>
 
         <!-- 12. Methodology -->
         <section class="form-section" ref="section_methodology">
@@ -416,12 +429,23 @@
             <span class="section-number">14</span>
             <h3>Expected Outputs (6Ps)</h3>
           </div>
-          <div class="section-card">
-            <div class="form-group" :class="{ 'has-error': showValidation && errors.expected_outputs }">
-              <textarea v-model="proposal.expected_outputs" placeholder="List expected outputs..." rows="4"></textarea>
-              <span class="field-error" v-if="showValidation && errors.expected_outputs">{{ errors.expected_outputs
-              }}</span>
+          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.expected_outputs }">
+            <div class="agenda-grid">
+              <div v-for="p in sixPsList" :key="p.key" class="agenda-item"
+                :class="{ selected: proposal.expected_outputs[p.key].selected }">
+                <label class="agenda-checkbox">
+                  <input type="checkbox" v-model="proposal.expected_outputs[p.key].selected" />
+                  <span class="checkmark"></span>
+                  <span class="agenda-label">{{ p.label }}</span>
+                </label>
+                <div class="sixp-value" v-if="proposal.expected_outputs[p.key].selected">
+                  <textarea v-model="proposal.expected_outputs[p.key].value" :placeholder="p.placeholder"
+                    rows="3"></textarea>
+                </div>
+              </div>
             </div>
+            <span class="field-error" v-if="showValidation && errors.expected_outputs">{{ errors.expected_outputs
+            }}</span>
           </div>
         </section>
 
@@ -682,7 +706,7 @@
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.other_projects_number }">
-              <label>Number of other projects: <span class="req">*</span></label>
+              <label>Number of other projects:</label>
               <input v-model="proposal.other_projects_number" placeholder="e.g. 2" class="input-short" />
               <span class="field-error" v-if="showValidation && errors.other_projects_number">{{
                 errors.other_projects_number }}</span>
@@ -790,7 +814,7 @@ const sectionRefs = {
   theoretical_framework: 'section_introduction',
   general_objective: 'section_introduction',
   specific_objectives: 'section_introduction',
-  review_of_literature_file: 'section_review_of_literature',
+  review_of_literature: 'section_review_of_literature',
   methodology: 'section_methodology',
   expected_outputs: 'section_expected_outputs',
   potential_outcomes: 'section_potential_outcomes',
@@ -841,7 +865,14 @@ const getInitialProposal = () => ({
   general_objective: '',
   specific_objectives: '',
   methodology: '',
-  expected_outputs: '',
+  expected_outputs: {
+    publications: { selected: false, value: '' },
+    patents: { selected: false, value: '' },
+    products: { selected: false, value: '' },
+    people_services: { selected: false, value: '' },
+    partnerships: { selected: false, value: '' },
+    policy: { selected: false, value: '' }
+  },
   potential_outcomes: '',
   economic_impact: '',
   social_ethical_impact: '',
@@ -849,7 +880,7 @@ const getInitialProposal = () => ({
   sustainability_plan: '',
   limitations: '',
   risks_assumptions: '',
-  review_of_literature_file: null,
+  review_of_literature: '',
   technology_roadmap_file: null,
   gad_score_file: null,
   line_item_budget_file: null,
@@ -894,7 +925,7 @@ const loadProposal = (data) => {
   proposal.general_objective = data.objectivesGeneral || ''
   proposal.specific_objectives = data.objectivesSpecific || ''
   proposal.methodology = data.methodology || ''
-  proposal.expected_outputs = data.outputs || ''
+  proposal.expected_outputs = parseSixPs(data.outputs)
   proposal.potential_outcomes = data.outcomes || ''
   proposal.economic_impact = data.impactEconomic || ''
   proposal.social_ethical_impact = data.impactSocial || ''
@@ -966,6 +997,46 @@ const programList = [
   { key: 'tanglaw', label: 'TANGLAW Program', subLabel: 'Sector' },
 ]
 
+const sixPsList = [
+  { key: 'publications', label: 'Publications', placeholder: 'Describe the expected publication/output...' },
+  { key: 'patents', label: 'Patents/IP', placeholder: 'Describe the expected patent or intellectual property...' },
+  { key: 'products', label: 'Products', placeholder: 'Describe the expected product...' },
+  { key: 'people_services', label: 'People Services', placeholder: 'Describe the expected people service...' },
+  { key: 'partnerships', label: 'Partnerships', placeholder: 'Describe the expected partnership...' },
+  { key: 'policy', label: 'Policy', placeholder: 'Describe the expected policy output...' },
+]
+
+const serializeSixPs = (expectedOutputs) => {
+  const lines = []
+  sixPsList.forEach((p) => {
+    const item = expectedOutputs && expectedOutputs[p.key]
+    if (item && item.selected && item.value && item.value.trim() !== '') {
+      lines.push(`${p.label}: ${item.value.trim()}`)
+    }
+  })
+  return lines.join('\n')
+}
+
+const parseSixPs = (raw) => {
+  const result = {}
+  sixPsList.forEach((p) => { result[p.key] = { selected: false, value: '' } })
+  if (!raw || typeof raw !== 'string' || raw.trim() === '') return result
+
+  const lines = raw.split(/\r?\n/)
+  let currentKey = null
+  lines.forEach((line) => {
+    const found = sixPsList.find((p) => line.startsWith(p.label + ':'))
+    if (found) {
+      currentKey = found.key
+      result[currentKey].selected = true
+      result[currentKey].value = line.slice(found.label.length + 1).trim()
+    } else if (currentKey && line.trim() !== '') {
+      result[currentKey].value += (result[currentKey].value ? '\n' : '') + line.trim()
+    }
+  })
+  return result
+}
+
 const close = () => emit('update:modelValue', false)
 const addSite = () => proposal.sites.push({ country: '', region: '', province: '', district: '', municipality: '', barangay: '' })
 const removeSite = (index) => proposal.sites.splice(index, 1)
@@ -985,7 +1056,6 @@ const handleFileUpload = (type, event) => {
   const file = event.target.files[0]
   if (!file) return
   const map = {
-    review_of_literature: 'review_of_literature_file',
     technology: 'technology_roadmap_file',
     gad: 'gad_score_file',
     budget: 'line_item_budget_file'
@@ -1010,7 +1080,6 @@ const validateStep1 = () => {
   Object.keys(errors).forEach(key => delete errors[key])
 
   // 01 - Project Profile
-  if (isBlank(proposal.program_title)) errors.program_title = 'Program Title is required.'
   if (isBlank(proposal.project_title)) errors.project_title = 'Project Title is required.'
   if (isBlank(proposal.project_leader)) errors.project_leader = 'Project Leader is required.'
   if (isBlank(proposal.project_leader_sex)) errors.project_leader_sex = 'Please select a sex.'
@@ -1059,13 +1128,19 @@ const validateStep1 = () => {
   if (isBlank(proposal.specific_objectives)) errors.specific_objectives = 'Specific Objectives is required.'
 
   // 11 - Review of Literature
-  if (!proposal.review_of_literature_file) errors.review_of_literature_file = 'Review of Literature file is required.'
+if (isBlank(proposal.review_of_literature)) errors.review_of_literature = 'Review of Literature is required.'
 
   // 12 - Methodology
   if (isBlank(proposal.methodology)) errors.methodology = 'Methodology is required.'
 
   // 14-16 - Outputs, Outcomes, Impacts
-  if (isBlank(proposal.expected_outputs)) errors.expected_outputs = 'Expected Outputs is required.'
+  const selectedOutputs = Object.entries(proposal.expected_outputs).filter(([, v]) => v.selected)
+  if (selectedOutputs.length === 0) {
+    errors.expected_outputs = 'Please select at least one Expected Output (6P).'
+  } else {
+    const hasEmptyValue = selectedOutputs.some(([, v]) => isBlank(v.value))
+    if (hasEmptyValue) errors.expected_outputs = 'Please fill in the details for each selected Expected Output (6P).'
+  }
   if (isBlank(proposal.potential_outcomes)) errors.potential_outcomes = 'Potential Outcomes is required.'
   if (isBlank(proposal.economic_impact)) errors.economic_impact = 'Economic Impact is required.'
   if (isBlank(proposal.social_ethical_impact)) errors.social_ethical_impact = 'Social / Ethical Impact is required.'
@@ -1107,8 +1182,7 @@ const validateStep1 = () => {
   // 25 - Budget
   if (!proposal.line_item_budget_file) errors.line_item_budget_file = 'Line-Item Budget file is required.'
 
-  // 26 - Other Projects
-  if (isBlank(proposal.other_projects_number)) errors.other_projects_number = 'Number of other projects is required.'
+  
 
   return Object.keys(errors).length === 0
 }
@@ -1213,7 +1287,7 @@ const mapFormToDTO = (data, proponentId, status) => {
     objectivesGeneral: data.general_objective || '',
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
-    outputs: data.expected_outputs || '',
+    outputs: serializeSixPs(data.expected_outputs),
     outcomes: data.potential_outcomes || '',
     impactEconomic: data.economic_impact || '',
     impactSocial: data.social_ethical_impact || '',
@@ -1906,6 +1980,30 @@ select {
 .agenda-value input:focus {
   outline: none;
   border-bottom-color: #4f46e5;
+}
+
+/* ===== EXPECTED OUTPUTS (6Ps) ===== */
+.sixp-value {
+  margin-top: 10px;
+  margin-left: 30px;
+}
+
+.sixp-value textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.sixp-value textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
 }
 
 /* ===== FILE UPLOAD ===== */
