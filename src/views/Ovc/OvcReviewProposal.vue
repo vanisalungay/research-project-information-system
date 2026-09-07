@@ -1131,7 +1131,7 @@ const formatReviewerPosition = (position) => {
 
 .card-header h2 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
@@ -1197,9 +1197,9 @@ const formatReviewerPosition = (position) => {
 
 .data-table th {
   background: #f8fafc;
-  color: #475569;
+  color: #1e293b;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   text-align: left;

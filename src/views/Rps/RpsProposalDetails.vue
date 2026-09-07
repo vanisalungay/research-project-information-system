@@ -664,6 +664,8 @@
           </div>
         </aside>
       </div>
+
+      <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
     </template>
 
     <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
@@ -676,6 +678,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
 import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/utils/documentExport'
 import { downloadUploadedFile } from '@/utils/fileDownload'
@@ -996,7 +999,7 @@ const formatReviewerPosition = (position) => {
 
 .card-header h2 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
@@ -1193,8 +1196,8 @@ const formatReviewerPosition = (position) => {
 .data-table th {
   padding: 10px 12px;
   text-align: left;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 700;
+  color: #1e293b;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }

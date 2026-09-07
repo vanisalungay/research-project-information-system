@@ -112,6 +112,8 @@
       </div>
     </div>
 
+    <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
+
     <ConfirmDialog
       v-if="dialogState.show"
       v-bind="dialogState"
@@ -128,6 +130,7 @@ import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
 
 const { dialogState, showAlert, showConfirm } = useDialog()

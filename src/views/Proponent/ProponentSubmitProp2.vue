@@ -635,15 +635,15 @@ const viewCriteria = () => emit('openCriteria')
 .section-number {
   font-size: 13px;
   font-weight: 700;
-  color: #4f46e5;
-  background: #eef2ff;
+  color: #ffffff;
+  background: #4f46e5;
   padding: 2px 8px;
   border-radius: 4px;
 }
 
 .section-header h3 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
 }

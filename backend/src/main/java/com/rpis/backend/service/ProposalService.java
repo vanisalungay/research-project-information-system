@@ -22,6 +22,7 @@ public class ProposalService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ProposalAnnouncementService proposalAnnouncementService;
+    private final ProposalVersionService proposalVersionService;
 
     // ========================
     // PROPOSAL ID AND REVISION FORMAT
@@ -91,15 +92,18 @@ public class ProposalService {
         Proposal proposal;
         boolean isNewProposal = (proposalId == null);
         boolean isRevisionResubmission = false;
+        String revisionRemarks = null;
 
         if (proposalId != null) {
             proposal = getProposalById(proposalId);
             // Check if this is a revision resubmission (proposal was returned and is now
             // being resubmitted)
-            if ("RPS_RETURNED".equals(proposal.getStatus()) ||
-                    "REC_REVISION".equals(proposal.getStatus()) ||
-                    "REVISION".equals(proposal.getStatus())) {
+            if (proposalVersionService.isRevisionStatus(proposal.getStatus())) {
                 isRevisionResubmission = true;
+                // Preserve the reviewer's return remarks before the row is overwritten, and
+                // snapshot the previous submission so it is never lost from history.
+                revisionRemarks = proposal.getRemarks();
+                proposalVersionService.ensureBaseline(proposal);
             }
         } else {
             proposal = new Proposal();
@@ -288,6 +292,12 @@ public class ProposalService {
 
         // Save again to cascade save child collections
         proposal = proposalRepository.save(proposal);
+
+        // Record this submission in the immutable version history (original submission
+        // or a revision). Previous versions are preserved and never overwritten.
+        if (proposalVersionService.isSubmissionStatus(proposal.getStatus())) {
+            proposalVersionService.recordSubmission(proposal, isRevisionResubmission, revisionRemarks);
+        }
 
         // Send system notification for submissions
         notifySubscribedRoles(

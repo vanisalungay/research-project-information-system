@@ -1,10 +1,12 @@
 package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.ProposalRequest;
+import com.rpis.backend.dto.ProposalVersionResponse;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
 import com.rpis.backend.service.ProposalReviewService;
 import com.rpis.backend.service.ProposalService;
+import com.rpis.backend.service.ProposalVersionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ public class ProposalController {
 
     private final ProposalService proposalService;
     private final ProposalReviewService reviewService;
+    private final ProposalVersionService proposalVersionService;
 
     @GetMapping
     public ResponseEntity<List<Proposal>> getProposals(
@@ -47,6 +50,20 @@ public class ProposalController {
     @GetMapping("/{id}")
     public ResponseEntity<Proposal> getProposalById(@PathVariable Long id) {
         return ResponseEntity.ok(proposalService.getProposalById(id));
+    }
+
+    // ========== SUBMISSION & REVISION HISTORY ==========
+
+    @GetMapping("/{id}/versions")
+    public ResponseEntity<List<ProposalVersionResponse>> getProposalVersions(@PathVariable Long id) {
+        return ResponseEntity.ok(proposalVersionService.getVersions(id));
+    }
+
+    @GetMapping("/{id}/versions/{versionNumber}")
+    public ResponseEntity<ProposalVersionResponse> getProposalVersion(
+            @PathVariable Long id,
+            @PathVariable Integer versionNumber) {
+        return ResponseEntity.ok(proposalVersionService.getVersion(id, versionNumber));
     }
 
     @PostMapping

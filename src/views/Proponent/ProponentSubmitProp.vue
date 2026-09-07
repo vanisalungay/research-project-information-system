@@ -1794,15 +1794,15 @@ const mapFormToDTO = (data, proponentId, status) => {
 .section-number {
   font-size: 13px;
   font-weight: 700;
-  color: #4f46e5;
-  background: #eef2ff;
+  color: #ffffff;
+  background: #4f46e5;
   padding: 2px 8px;
   border-radius: 4px;
 }
 
 .section-header h3 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
@@ -1980,8 +1980,8 @@ select {
 
 .form-table th {
   background: #f8fafc;
-  color: #475569;
-  font-weight: 600;
+  color: #1e293b;
+  font-weight: 700;
   padding: 10px 12px;
   text-align: left;
   border-bottom: 2px solid #e2e8f0;
