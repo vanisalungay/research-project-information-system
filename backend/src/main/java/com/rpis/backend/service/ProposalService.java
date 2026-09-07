@@ -9,10 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -104,6 +106,14 @@ public class ProposalService {
                 // snapshot the previous submission so it is never lost from history.
                 revisionRemarks = proposal.getRemarks();
                 proposalVersionService.ensureBaseline(proposal);
+
+                // Enforce the RPS-set revision deadline: the Proponent cannot submit the
+                // revised proposal after the deadline.
+                if (proposal.getRevisionDeadline() != null
+                        && LocalDateTime.now().isAfter(proposal.getRevisionDeadline())) {
+                    throw new IllegalStateException(
+                            "The revision deadline has passed. Please contact RPS for an extension.");
+                }
             }
         } else {
             proposal = new Proposal();
@@ -307,10 +317,19 @@ public class ProposalService {
         return proposal;
     }
 
+    /** Statuses that must only be set through the RPS revision workflow. */
+    private static final Set<String> REVISION_STATUSES = Set.of(
+            "RPS_RETURNED", "REVISION", "REC_REVISION", "PENDING_REVISION", "RETURNED_TO_RPS");
+
     @Transactional
     public Proposal updateProposalStatus(Long id, String status) {
+        String upper = status != null ? status.toUpperCase() : null;
+        if (upper != null && REVISION_STATUSES.contains(upper)) {
+            throw new IllegalStateException(
+                    "Revision statuses can only be set through the RPS revision workflow.");
+        }
         Proposal proposal = getProposalById(id);
-        proposal.setStatus(status.toUpperCase());
+        proposal.setStatus(upper);
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
@@ -340,16 +359,98 @@ public class ProposalService {
     }
 
     @Transactional
-    public Proposal returnForRevision(Long id, String remarks) {
+    public Proposal returnForRevision(Long id, String remarks, String returnedByOffice,
+                                      Long returnedByUserId, String returnedByName) {
         Proposal proposal = getProposalById(id);
-        proposal.setStatus("RPS_RETURNED");
+        // A return from a reviewing office goes to RPS first, never directly to the
+        // Proponent. RPS is the only party that can forward the request and set the
+        // revision deadline.
+        proposal.setStatus("RETURNED_TO_RPS");
         proposal.setRemarks(remarks);
+        proposal.setReturnRemarks(remarks);
+        proposal.setReturnedByOffice(returnedByOffice);
+        proposal.setReturnedByUserId(returnedByUserId);
+        proposal.setReturnedByName(returnedByName);
+        proposal.setReturnedAt(LocalDateTime.now());
+        // Reset any previous forward/deadline metadata so a fresh return restarts the flow.
+        proposal.setRevisionDeadline(null);
+        proposal.setRevisionForwardedAt(null);
+        proposal.setRevisionForwardedByName(null);
+        proposal.setRevisionForwardedByUserId(null);
+        proposal.setRevisionNotes(null);
         proposal = proposalRepository.save(proposal);
 
-        // Notify proponent about the revision request
+        // Notify RPS to review and forward the revision request.
         notifySubscribedRoles(proposal, null);
 
         return proposal;
+    }
+
+    /**
+     * RPS-only action: set the revision deadline and forward the revision request to
+     * the Proponent. Also used when RPS itself returns a proposal during its own
+     * review (RPS is the forwarder, so it records remarks + deadline in one step).
+     */
+    @Transactional
+    public Proposal forwardRevisionToProponent(Long id, String deadline, String notes,
+                                               Long forwardedByUserId, String forwardedByName,
+                                               String remarks) {
+        Proposal proposal = getProposalById(id);
+        LocalDateTime deadlineLdt = parseDeadline(deadline);
+
+        // If no office return was recorded yet (RPS returning directly), capture the
+        // remarks + attribution here so the record is complete.
+        if (proposal.getReturnRemarks() == null || proposal.getReturnRemarks().isBlank()) {
+            proposal.setReturnRemarks(remarks);
+            proposal.setReturnedByOffice("RPS");
+            proposal.setReturnedByUserId(forwardedByUserId);
+            proposal.setReturnedByName(forwardedByName);
+            if (proposal.getReturnedAt() == null) {
+                proposal.setReturnedAt(LocalDateTime.now());
+            }
+        }
+
+        proposal.setStatus("RPS_RETURNED");
+        proposal.setRevisionDeadline(deadlineLdt);
+        proposal.setRevisionForwardedAt(LocalDateTime.now());
+        proposal.setRevisionForwardedByUserId(forwardedByUserId);
+        proposal.setRevisionForwardedByName(forwardedByName);
+        proposal.setRevisionNotes(notes);
+
+        // Keep the proponent-facing remarks in sync with the office's original remarks so
+        // the revision history continues to capture them.
+        proposal.setRemarks(proposal.getReturnRemarks());
+
+        proposal = proposalRepository.save(proposal);
+
+        // Notify the Proponent of the revision request + deadline.
+        if (proposal.getProponent() != null) {
+            notificationService.createNotification(
+                    proposal.getProponent().getId(),
+                    "Your proposal \"" + proposal.getProjectTitle()
+                            + "\" has been returned for revision. Deadline: "
+                            + (deadlineLdt != null ? deadlineLdt.toLocalDate().toString() : "—"),
+                    "Revision Required",
+                    "REVISION",
+                    proposal.getId());
+        }
+
+        return proposal;
+    }
+
+    private LocalDateTime parseDeadline(String deadline) {
+        if (deadline == null || deadline.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(deadline);
+        } catch (DateTimeParseException e) {
+            try {
+                return LocalDate.parse(deadline).atTime(23, 59, 59);
+            } catch (DateTimeParseException e2) {
+                return null;
+            }
+        }
     }
 
     @Transactional
@@ -437,6 +538,19 @@ public class ProposalService {
                                 "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
                                 "Final Approval Required",
                                 "APPROVAL",
+                                proposal.getId());
+                    }
+                    break;
+
+                // Returned by a reviewing office -> notify RPS to review and forward.
+                case "RETURNED_TO_RPS":
+                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
+                        notificationService.createNotification(
+                                user.getId(),
+                                "A proposal was returned for revision and awaits your review and forwarding: \""
+                                        + proposal.getProjectTitle() + "\"",
+                                "Revision Request Received",
+                                "REVISION",
                                 proposal.getId());
                     }
                     break;

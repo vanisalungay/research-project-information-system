@@ -41,14 +41,10 @@
           </div>
         </section>
 
-        <!-- SET DEADLINE -->
+        <!-- SET DEADLINE (handled by RPS) -->
         <section class="card">
-          <h3>Set Revision Deadline</h3>
-
-          <label>Deadline for Resubmission</label>
-          <input type="date" v-model="revisionDate" />
-
-          <p class="note">The proponent will be notified and must resubmit before this deadline.</p>
+          <h3>Revision Deadline</h3>
+          <p class="note">The revision deadline will be set by RPS when they forward this request to the proponent.</p>
         </section>
 
         <!-- REVISION COMMENTS -->
@@ -99,7 +95,7 @@
             </li>
             <li>
               <input type="checkbox" v-model="checklist[1]" />
-              Revision deadline has been set
+              Revision remarks are clear and specific
             </li>
             <li>
               <input type="checkbox" v-model="checklist[2]" />
@@ -153,12 +149,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserDataStore()
 
 const revisionComment = ref('')
-const revisionDate = ref('')
 const checklist = ref([false, false, false, false])
 
 const showConfirmModal = ref(false)
@@ -233,7 +230,6 @@ const applyTemplate = (text: string) => {
 const isFormValid = computed(() => {
   return (
     revisionComment.value.trim() !== '' &&
-    revisionDate.value !== '' &&
     checklist.value.every((c) => c === true)
   )
 })
@@ -250,8 +246,13 @@ const goReturnRevision = () => {
 const confirmReturn = async () => {
   try {
     loading.value = true
-    // Update proposal status to REVISION
-    await api.put(`/api/proposals/${proposal.value.id}/return-revision`)
+    // Return the proposal to RPS first (not directly to the proponent).
+    await api.put(`/api/proposals/${proposal.value.id}/return-revision`, {
+      returnedById: userStore.user?.id || null,
+      returnedByName: userStore.user?.name || null,
+      returnedByOffice: 'REC',
+      remarks: revisionComment.value.trim()
+    })
 
     showConfirmModal.value = false
     showSuccessMessage.value = true

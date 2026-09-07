@@ -817,20 +817,9 @@ const forwardToOc = async () => {
   }
 }
 
-const returnForRevision = async () => {
-  actionLoading.value = true
-  try {
-    const proposalId = route.params.id
-    await api.put(`/api/proposals/${proposalId}/return-revision`)
-    successMessage.value = 'Proposal has been returned to the proponent for revision.'
-    showSuccess.value = true
-    proposal.value.status = 'REVISION'
-  } catch (err) {
-    errorMessage.value = 'Failed to return proposal. Please try again.'
-    showError.value = true
-  } finally {
-    actionLoading.value = false
-  }
+const returnForRevision = () => {
+  const proposalId = route.params.id
+  router.push({ name: 'OvcReturn4Revision', params: { id: proposalId } })
 }
 
 const rejectProposal = async () => {

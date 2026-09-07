@@ -165,6 +165,45 @@ public class Proposal {
     @Column(name = "so_uploaded_at")
     private LocalDateTime soUploadedAt;
 
+    // ===== Return-for-Revision routing metadata =====
+    // Captured when an authorized reviewing office returns the proposal for
+    // revision. The return is routed to RPS first, never directly to the Proponent.
+
+    @Column(name = "returned_by_office")
+    private String returnedByOffice;
+
+    @Column(name = "returned_by_name")
+    private String returnedByName;
+
+    @Column(name = "returned_by_user_id")
+    private Long returnedByUserId;
+
+    @Column(name = "returned_at")
+    private LocalDateTime returnedAt;
+
+    // The original revision remarks from the reviewing office (immutable; never
+    // overwritten by RPS when it forwards the request).
+    @Column(name = "return_remarks", columnDefinition = "TEXT")
+    private String returnRemarks;
+
+    // Set only by RPS when forwarding the revision request to the Proponent.
+    @Column(name = "revision_deadline")
+    private LocalDateTime revisionDeadline;
+
+    @Column(name = "revision_forwarded_at")
+    private LocalDateTime revisionForwardedAt;
+
+    @Column(name = "revision_forwarded_by_name")
+    private String revisionForwardedByName;
+
+    @Column(name = "revision_forwarded_by_user_id")
+    private Long revisionForwardedByUserId;
+
+    // Optional RPS note appended when forwarding (kept separate so the original
+    // office remarks are never replaced).
+    @Column(name = "revision_notes", columnDefinition = "TEXT")
+    private String revisionNotes;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

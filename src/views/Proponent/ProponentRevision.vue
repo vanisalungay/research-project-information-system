@@ -33,17 +33,22 @@
           <h3>{{ revision.title }}</h3>
           <span class="revision-tag">Revision Required</span>
           <p class="proposal-id">ID: {{ revision.code }}</p>
+          <p v-if="revision.returnedBy" class="proposal-id">Returned by: {{ revision.returnedBy }}</p>
         </div>
 
         <div class="deadline">
           <p>Revision Deadline</p>
-          <span>{{ revision.deadline }}</span>
+          <span :class="{ overdue: revision.overdue }">{{ revision.deadline }}</span>
         </div>
       </div>
 
       <div class="comments-box">
         <strong>Reviewer Comments:</strong>
         <p>{{ revision.comment }}</p>
+        <div v-if="revision.rpsNote" class="rps-note">
+          <strong>RPS Note:</strong>
+          <p>{{ revision.rpsNote }}</p>
+        </div>
       </div>
 
       <div class="card-actions">
@@ -84,6 +89,18 @@ const error = ref<string | null>(null)
  * Expected:
  * GET /api/revisions
  */
+function formatDeadline(value) {
+  if (!value) return 'No deadline set'
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleString()
+}
+
+function isOverdue(value) {
+  if (!value) return false
+  const d = new Date(value)
+  return !isNaN(d.getTime()) && d.getTime() < Date.now()
+}
+
 async function fetchRevisions() {
   loading.value = true
   error.value = null
@@ -100,15 +117,19 @@ async function fetchRevisions() {
         const isMine = (p.proponent && p.proponent.id === user.id) || 
                        (p.projectLeader && p.projectLeader.toLowerCase().includes((user.name || '').toLowerCase()))
                        
-        const isRevision = p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED'
+        // Only RPS-forwarded revision requests should appear in the proponent's queue.
+        const isRevision = p.status === 'RPS_RETURNED'
         
         return isMine && isRevision
       }).map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Proposal',
         code: p.id,
-        comment: p.remarks || 'No specific comments provided. Please review your proposal and make necessary revisions.',
-        deadline: 'Pending Action',
+        returnedBy: p.returnedByOffice || null,
+        comment: p.returnRemarks || p.remarks || 'No specific comments provided. Please review your proposal and make necessary revisions.',
+        rpsNote: p.revisionNotes || null,
+        deadline: p.revisionDeadline ? formatDeadline(p.revisionDeadline) : 'No deadline set',
+        overdue: isOverdue(p.revisionDeadline),
         status: p.status
       }))
     } else {
@@ -216,6 +237,17 @@ onMounted(() => {
   display: block;
   color: #ff9800;
   font-weight: bold;
+}
+
+.deadline span.overdue {
+  color: #dc2626;
+}
+
+.rps-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  color: #4f46e5;
 }
 
 /* COMMENTS */

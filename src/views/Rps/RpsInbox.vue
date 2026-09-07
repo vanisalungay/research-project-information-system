@@ -125,6 +125,7 @@ export default {
         { key: "review", label: "Under Review", count: this.proposals.filter(p => p.status === "UNDER_REVIEW").length },
         { key: "draft", label: "Draft", count: this.proposals.filter(p => p.status === "DRAFT").length },
         { key: "returned", label: "Returned", count: this.proposals.filter(p => p.status === "REVISION" || p.status === "PENDING_REVISION").length },
+        { key: "rps", label: "RPS Review", count: this.proposals.filter(p => p.status === "RETURNED_TO_RPS").length },
       ];
     },
     filteredProposals() {
@@ -137,6 +138,8 @@ export default {
         result = result.filter(p => p.status === "DRAFT");
       } else if (this.activeTab === "returned") {
         result = result.filter(p => p.status === "REVISION" || p.status === "PENDING_REVISION");
+      } else if (this.activeTab === "rps") {
+        result = result.filter(p => p.status === "RETURNED_TO_RPS");
       }
       if (this.search.trim() !== "") {
         const keyword = this.search.toLowerCase();
@@ -153,7 +156,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=UNDER_REVIEW&statusIn=DRAFT&statusIn=REVISION&statusIn=PENDING_REVISION&statusIn=ENDORSED');
+        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=UNDER_REVIEW&statusIn=DRAFT&statusIn=REVISION&statusIn=PENDING_REVISION&statusIn=ENDORSED&statusIn=RETURNED_TO_RPS');
         this.proposals = Array.isArray(res.data) ? res.data : [];
       } catch (err) {
         console.error(err);
@@ -170,6 +173,8 @@ export default {
         this.$router.push({ name: "ProposalReview", params: { id: proposal.id } });
       } else if (proposal.status === "REVISION" || proposal.status === "PENDING_REVISION" || proposal.status === "REJECTED") {
         this.$router.push({ name: "ReviewResultViewer", params: { id: proposal.id } });
+      } else if (proposal.status === "RETURNED_TO_RPS") {
+        this.$router.push({ name: "RpsForwardRevision", params: { id: proposal.id } });
       } else {
         this.$router.push({ name: "ProposalDetails", params: { id: proposal.id } });
       }

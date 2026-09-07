@@ -56,6 +56,8 @@ import RpsProposalMonitoringDetails from '../views/Rps/RpsProposalMonitoringDeta
 import RpsProposalMonitoring from '@/views/Rps/RpsProposalMonitoring.vue'
 import RpsAdminNotification from '../views/Notifications/RpsAdminNotification.vue'
 import RpsStaffNotification from '../views/Notifications/RpsStaffNotification.vue'
+import RpsRevisionRequests from '@/views/Rps/RpsRevisionRequests.vue'
+import RpsForwardRevision from '@/views/Rps/RpsForwardRevision.vue'
 
 /* OVCAF */
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
@@ -139,6 +141,8 @@ const routes = [
       { path: 'rps-return4rev', component: RpsReturn4Rev },
       { path: 'rps-subproposal', component: RpsSubmittedProposals },
       { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
+      { path: 'rps-revision-requests', name: 'RpsRevisionRequests', component: RpsRevisionRequests },
+      { path: 'rps-forward-revision/:id', name: 'RpsForwardRevision', component: RpsForwardRevision },
 
       { path: 'fundviewprop', component: FundViewProp },
 

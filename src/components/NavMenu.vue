@@ -118,6 +118,13 @@ const allNavItems = [
     section: 'main',
   },
   {
+    iconKey: 'revisions',
+    text: 'Revision Requests',
+    path: '/rps-revision-requests',
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    section: 'main',
+  },
+  {
     iconKey: 'endorse',
     text: 'Endorsed Proposals',
     path: '/rpsendorsed-prop',

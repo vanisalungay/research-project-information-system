@@ -76,6 +76,17 @@ CREATE TABLE proposals (
     so_file_name VARCHAR(255),
     so_file_path VARCHAR(500),
     so_uploaded_at TIMESTAMP,
+    -- Return-for-Revision routing metadata
+    returned_by_office VARCHAR(50),
+    returned_by_name VARCHAR(255),
+    returned_by_user_id BIGINT,
+    returned_at TIMESTAMP,
+    return_remarks TEXT,
+    revision_deadline TIMESTAMP,
+    revision_forwarded_at TIMESTAMP,
+    revision_forwarded_by_name VARCHAR(255),
+    revision_forwarded_by_user_id BIGINT,
+    revision_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

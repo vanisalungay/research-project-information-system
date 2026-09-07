@@ -1,7 +1,9 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.dto.ForwardRevisionRequest;
 import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.dto.ProposalVersionResponse;
+import com.rpis.backend.dto.ReturnRevisionRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
 import com.rpis.backend.service.ProposalReviewService;
@@ -194,8 +196,30 @@ public class ProposalController {
     @PutMapping("/{id}/return-revision")
     public ResponseEntity<Proposal> returnForRevision(
             @PathVariable Long id,
-            @RequestParam(required = false) String remarks) {
-        Proposal updated = proposalService.returnForRevision(id, remarks);
+            @RequestBody(required = false) ReturnRevisionRequest request) {
+        String remarks = request != null ? request.getRemarks() : null;
+        String office = request != null ? request.getReturnedByOffice() : null;
+        Long userId = request != null ? request.getReturnedById() : null;
+        String userName = request != null ? request.getReturnedByName() : null;
+        Proposal updated = proposalService.returnForRevision(id, remarks, office, userId, userName);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * RPS-only: set the revision deadline and forward the revision request to the
+     * Proponent. Enforced at the HTTP layer via SecurityConfig as well.
+     */
+    @PutMapping("/{id}/forward-revision")
+    public ResponseEntity<Proposal> forwardRevisionToProponent(
+            @PathVariable Long id,
+            @RequestBody(required = false) ForwardRevisionRequest request) {
+        Proposal updated = proposalService.forwardRevisionToProponent(
+                id,
+                request != null ? request.getDeadline() : null,
+                request != null ? request.getNotes() : null,
+                request != null ? request.getForwardedById() : null,
+                request != null ? request.getForwardedByName() : null,
+                request != null ? request.getRemarks() : null);
         return ResponseEntity.ok(updated);
     }
 

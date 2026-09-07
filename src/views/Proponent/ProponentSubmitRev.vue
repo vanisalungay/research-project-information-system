@@ -16,6 +16,12 @@
       </div>
     </header>
 
+    <!-- REVISION DEADLINE -->
+    <div v-if="revisionDeadline" class="deadline-banner" :style="deadlineStyle">
+      <strong>Revision Deadline:</strong> {{ formatDeadline(revisionDeadline) }}
+      <span v-if="isPastDeadline"> (deadline passed)</span>
+    </div>
+
     <!-- ERROR MESSAGE -->
     <div v-if="error" class="error-banner">
       <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -718,6 +724,26 @@ const error = ref('')
 const successMessage = ref('')
 const documentId = ref('')
 const revisionNumber = ref(0)
+const revisionDeadline = ref<string | null>(null)
+const isPastDeadline = computed(() => {
+  if (!revisionDeadline.value) return false
+  const d = new Date(revisionDeadline.value)
+  return !isNaN(d.getTime()) && d.getTime() < Date.now()
+})
+
+function formatDeadline(value: string | null) {
+  if (!value) return '—'
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleString()
+}
+
+const deadlineStyle = computed(() => {
+  const base = 'padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:14px;'
+  if (isPastDeadline.value) {
+    return base + 'background:#fde8e8;border-left:4px solid #dc2626;color:#991b1b;'
+  }
+  return base + 'background:#fffbeb;border-left:4px solid #f59e0b;color:#92400e;'
+})
 
 
 
@@ -825,6 +851,7 @@ const fetchProposal = async () => {
     // Set document ID and revision number from API response
     documentId.value = data.documentId || ''
     revisionNumber.value = data.revisionNumber || 0
+    revisionDeadline.value = data.revisionDeadline || null
 
     // Map API response (camelCase) to form model (snake_case)
     proposal.value = {
@@ -936,6 +963,11 @@ const fetchProposal = async () => {
 const submitRevision = async () => {
   if (!proposalId.value) {
     error.value = 'No proposal ID provided.'
+    return
+  }
+
+  if (isPastDeadline.value) {
+    error.value = 'The revision deadline has passed. Please contact RPS for an extension.'
     return
   }
 

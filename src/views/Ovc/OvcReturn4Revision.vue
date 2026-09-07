@@ -16,39 +16,35 @@
   <div class="info-grid">
     <div>
       <label>Proposal Title</label>
-      <p></p>
+      <p>{{ proposal.projectTitle || '—' }}</p>
     </div>
 
     <div>
       <label>Proponent</label>
-      <p></p>
+      <p>{{ proposal.projectLeader || proposal.proponent?.name || '—' }}</p>
     </div>
 
     <div>
       <label>Department</label>
-      <p></p>
+      <p>{{ proposal.college || '—' }}</p>
     </div>
 
     <div>
       <label>Date Submitted</label>
-      <p></p>
+      <p>{{ proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : '—' }}</p>
     </div>
 
     <div>
       <label>Status</label>
-      <span class="status"></span>
+      <span class="status">{{ proposal.status || '—' }}</span>
     </div>
   </div>
 </section>
 
-        <!-- SET DEADLINE -->
+        <!-- SET DEADLINE (handled by RPS) -->
         <section class="card">
-          <h3>Set Revision Deadline</h3>
-
-          <label>Deadline for Resubmission</label>
-          <input type="date" v-model="revisionDate" />
-
-          <p class="note">The proponent will be notified and must resubmit before this deadline.</p>
+          <h3>Revision Deadline</h3>
+          <p class="note">The revision deadline will be set by RPS when they forward this request to the proponent.</p>
         </section>
 
         <!-- REVISION COMMENTS -->
@@ -104,7 +100,7 @@
             </li>
             <li>
               <input type="checkbox" v-model="checklist[1]" />
-              Revision deadline has been set
+              Revision remarks are clear and specific
             </li>
             <li>
               <input type="checkbox" v-model="checklist[2]" />
@@ -121,7 +117,7 @@
           <button class="btn cancel">Cancel</button>
 
           <div class="info-box">
-            The proponent will receive a notification with your comments and the revision deadline.
+            Your remarks will be sent to RPS, who will set the deadline and forward the request to the proponent.
           </div>
         </section>
       </div>
@@ -144,22 +140,33 @@
     </div>
 
     <!-- ERROR MESSAGE -->
-    <div v-if="showError" class="error-toast">
-      ⚠ Please complete all required fields before continuing.
+    <div v-if="showError || loadError" class="error-toast">
+      ⚠ {{ loadError || 'Please complete all required fields before continuing.' }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '@/utils/api'
+import { useUserDataStore } from '@/stores/userData'
+
+const router = useRouter()
+const route = useRoute()
+const userStore = useUserDataStore()
+
+const proposal = ref({})
+const loading = ref(false)
+const loadError = ref('')
 
 const revisionComment = ref('')
-const revisionDate = ref('')
 const checklist = ref([false, false, false, false])
 
 const showConfirmModal = ref(false)
 const showSuccessMessage = ref(false)
 const showError = ref(false)
+const submitting = ref(false)
 
 const quickTemplates = [
   'Budget allocation requires more detailed breakdown.',
@@ -181,7 +188,6 @@ const applyTemplate = (text) => {
 const isFormValid = computed(() => {
   return (
     revisionComment.value.trim() !== '' &&
-    revisionDate.value !== '' &&
     checklist.value.every((c) => c === true)
   )
 })
@@ -195,18 +201,49 @@ const goReturnRevision = () => {
   showConfirmModal.value = true
 }
 
-const confirmReturn = () => {
-  showConfirmModal.value = false
-  showSuccessMessage.value = true
-
-  setTimeout(() => {
-    showSuccessMessage.value = false
-  }, 2000)
+const confirmReturn = async () => {
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    await api.put(`/api/proposals/${proposal.value.id}/return-revision`, {
+      returnedById: userStore.user?.id || null,
+      returnedByName: userStore.user?.name || null,
+      returnedByOffice: 'OVCRIGE',
+      remarks: revisionComment.value.trim()
+    })
+    showConfirmModal.value = false
+    showSuccessMessage.value = true
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      router.push('/review-prop')
+    }, 2000)
+  } catch (err) {
+    console.error(err)
+    showConfirmModal.value = false
+    loadError.value = 'Failed to return proposal for revision.'
+  } finally {
+    submitting.value = false
+  }
 }
 
 const cancelReturn = () => {
   showConfirmModal.value = false
 }
+
+onMounted(async () => {
+  const id = route.params.id || route.query.id
+  if (!id) return
+  loading.value = true
+  try {
+    const res = await api.get(`/api/proposals/${id}`)
+    proposal.value = res.data
+  } catch (err) {
+    console.error(err)
+    loadError.value = 'Failed to load proposal.'
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style>

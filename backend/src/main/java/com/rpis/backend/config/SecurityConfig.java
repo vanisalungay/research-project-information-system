@@ -54,6 +54,13 @@ public class SecurityConfig {
                         // Proposal Announcement management (RPS_ADMIN & RPS_STAFF only)
                         .requestMatchers("/api/proposal-announcements/**").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
+                        // Return-for-Revision: authorized reviewing offices return to RPS first;
+                        // only RPS can forward the revision request and set the deadline.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-revision")
+                            .hasAnyRole("REC", "OVCRIGE", "RPS_ADMIN", "RPS_STAFF")
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
+                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+
                         // All other API requests require authentication
                         .anyRequest().authenticated()
                 )

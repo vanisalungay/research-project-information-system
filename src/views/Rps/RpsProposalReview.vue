@@ -368,6 +368,12 @@
             <textarea v-model="remarks" rows="5" placeholder="Enter your review remarks or comments..."></textarea>
           </div>
 
+          <div class="review-section">
+            <h4>Revision Deadline</h4>
+            <input type="date" v-model="revisionDeadline" class="reviewer-input" />
+            <small style="color:#6b7280;">Required when returning for revision. RPS sets the proponent's resubmission deadline.</small>
+          </div>
+
           <div class="review-actions">
             <button class="approve-btn" @click="endorseProposal" :disabled="actionLoading || !canPerformAction">
               {{ actionLoading ? 'Processing...' : '✓ Endorse to OVCRIGE' }}
@@ -422,6 +428,7 @@ export default {
       loading: true,
       error: null,
       remarks: '',
+      revisionDeadline: '',
       reviewerName: '',
       reviewerPosition: '',
       isCertified: false,
@@ -545,7 +552,11 @@ export default {
         await this._showAlert('Please provide remarks before returning for revision.', { type: 'warning', title: 'Remarks Required' })
         return
       }
-      const confirmed = await this._showConfirm('Return this proposal for revision?', {
+      if (!this.revisionDeadline) {
+        await this._showAlert('Please set the revision deadline before returning for revision.', { type: 'warning', title: 'Deadline Required' })
+        return
+      }
+      const confirmed = await this._showConfirm('Return this proposal for revision and forward the request to the proponent?', {
         title: 'Return for Revision',
         type: 'warning',
         confirmText: 'Return'
@@ -555,10 +566,25 @@ export default {
       try {
         // Save reviewer identity first
         await this.saveReviewerInfo()
-        await api.put(`/api/proposals/${this.$route.params.id}/return-revision`, null, {
-          params: { remarks: this.remarks.trim() }
+        let currentUserId = null
+        let currentUserName = this.reviewerName.trim() || null
+        try {
+          const stored = localStorage.getItem('user_data')
+          if (stored) {
+            const parsed = JSON.parse(atob(stored))
+            currentUserId = parsed && parsed.id ? parsed.id : null
+            if (!currentUserName && parsed && parsed.name) currentUserName = parsed.name
+          }
+        } catch (e) { /* ignore */ }
+        // RPS is the forwarder: set the deadline and forward to the proponent.
+        await api.put(`/api/proposals/${this.$route.params.id}/forward-revision`, {
+          forwardedById: currentUserId,
+          forwardedByName: currentUserName,
+          deadline: this.revisionDeadline,
+          notes: null,
+          remarks: this.remarks.trim()
         })
-        this.successMessage = 'Proposal returned to proponent for revision.'
+        this.successMessage = 'Proposal returned and forwarded to the proponent for revision.'
         this.showSuccess = true
         this.proposal.status = 'RPS_RETURNED'
       } catch (err) {

@@ -88,7 +88,7 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=REVISION')
+        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=REVISION&statusIn=RETURNED_TO_RPS')
         this.proposals = Array.isArray(res.data) ? res.data : []
       } catch (err) {
         console.error(err)
@@ -102,6 +102,8 @@ export default {
       if (proposal.status === 'SUBMITTED') {
         // SUBMITTED proposals go to the review page with endorse/return/reject actions
         this.$router.push({ name: 'ProposalReview', params: { id: proposal.id } })
+      } else if (proposal.status === 'RETURNED_TO_RPS') {
+        this.$router.push({ name: 'RpsForwardRevision', params: { id: proposal.id } })
       } else if (proposal.status === 'REVISION' || proposal.status === 'RPS_RETURNED') {
         // Returned proposals go to the review viewer
         this.$router.push({ name: 'ReviewResultViewer', params: { id: proposal.id } })
