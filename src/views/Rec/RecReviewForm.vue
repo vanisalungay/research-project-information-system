@@ -623,6 +623,7 @@ const closeSuccessMessage = () => {
 
 .btn-cancel {
   background: #ccc;
+  color: #1f2937;
   padding: 8px 16px;
   border-radius: 6px;
   border: none;

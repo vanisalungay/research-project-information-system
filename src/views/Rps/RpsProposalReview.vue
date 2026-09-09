@@ -137,7 +137,7 @@
         <!-- 8. SDG -->
         <div class="section-block">
           <h3>(8) Sustainable Development Goals (SDG)</h3>
-          <p class="text-content">{{ proposal.sdg || 'Not provided' }}</p>
+          <SdgChecklist :value="proposal.sdg" />
         </div>
 
         <!-- 9. Executive Summary -->
@@ -418,10 +418,11 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { downloadProposalDocument } from '@/utils/documentExport'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import SdgChecklist from '@/components/SdgChecklist.vue'
 
 export default {
   name: 'RpsProposalReview',
-  components: { ConfirmDialog },
+  components: { ConfirmDialog, SdgChecklist },
   data() {
     return {
       proposal: {},

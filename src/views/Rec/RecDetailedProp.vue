@@ -122,7 +122,7 @@
       <!-- 8. SDG -->
       <section class="content-section">
         <h2>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
-        <p>{{ proposal.sdg || '-' }}</p>
+        <SdgChecklist :value="proposal.sdg" />
       </section>
 
       <!-- 9. Executive Summary -->
@@ -271,6 +271,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import SdgChecklist from '@/components/SdgChecklist.vue'
 
 const route = useRoute()
 
@@ -293,7 +294,7 @@ const proposal = ref < any > ({
   priorityAgendas: {},
   innovationGoals: '',
   sectorRelevance: '',
-  sdg: '',
+  sdg: [],
   executiveSummary: '',
   rationale: '',
   framework: '',
@@ -354,7 +355,7 @@ onMounted(async () => {
       priorityAgendas: data.priorityAgendas || {},
       innovationGoals: data.innovationGoals || '',
       sectorRelevance: data.sectorRelevance || '',
-      sdg: data.sdg || '',
+      sdg: data.sdg || [],
       executiveSummary: data.executiveSummary || '',
       rationale: data.rationale || '',
       framework: data.framework || '',

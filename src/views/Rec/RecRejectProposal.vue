@@ -348,8 +348,7 @@ textarea {
 
 .cancel-btn {
   background: white;
-
-  background: transparent;
+  color: #1f2937;
   border: 1px solid #ccc;
   width: 100%;
   padding: 12px;

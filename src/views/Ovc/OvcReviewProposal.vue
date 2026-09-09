@@ -223,7 +223,7 @@
               <h2>Sustainable Development Goals</h2>
             </div>
             <div class="card-body">
-              <p class="text-content">{{ proposal.sdg || 'Not provided' }}</p>
+              <SdgChecklist :value="proposal.sdg" />
             </div>
           </section>
 
@@ -744,6 +744,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import SdgChecklist from '@/components/SdgChecklist.vue'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -1400,17 +1401,20 @@ const formatReviewerPosition = (position) => {
 
 .quick-info-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .info-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #1e293b;
 }

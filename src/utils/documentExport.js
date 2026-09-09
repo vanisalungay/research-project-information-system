@@ -5,6 +5,8 @@
  * browser's "Save as PDF") that mirrors the structure/layout of the form.
  */
 
+import { SDG_OPTIONS, sdgToSet } from '@/utils/sdg'
+
 /** Escape a value so it can be safely embedded in generated HTML. */
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -230,6 +232,30 @@ const PRINT_STYLES = `
   .file-list { margin: 6px 0 0; padding-left: 18px; color: #1e293b; }
   .file-list li { margin: 2px 0; }
 
+  .sdg-print-list {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 18px;
+  }
+  .sdg-print-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #475569;
+    break-inside: avoid;
+  }
+  .sdg-print-list .check {
+    flex: 0 0 16px;
+    text-align: center;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+  .sdg-print-list li.selected { color: #0f172a; font-weight: 600; }
+  .sdg-print-list li.selected .check { color: #16a34a; }
+
   .signature-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -416,6 +442,24 @@ function parseLabeledLines(text) {
  * (camelCase fields and nested entity lists). Returns HTML for the form
  * sections so the downloaded/printed file mirrors the on-screen form.
  */
+/**
+ * Render the SDG section as a full 17-item checklist with only the selected
+ * goals checked. Accepts an array (new format) or a legacy free-form string.
+ */
+export function sdgChecklistHtml(value) {
+  const selected = sdgToSet(value)
+  const items = SDG_OPTIONS.map(
+    (goal) =>
+      `<li class="${selected.has(goal) ? 'selected' : ''}">` +
+      `<span class="check">${selected.has(goal) ? '☑' : '☐'}</span>` +
+      `<span>${escapeHtml(goal)}</span></li>`
+  ).join('')
+  return `<div class="field full">
+    <span class="label">Sustainable Development Goals</span>
+    <ul class="sdg-print-list">${items}</ul>
+  </div>`
+}
+
 export function buildProposalDocument(p = {}) {
   const researchTypeLabel =
     p.researchType === 'Basic'
@@ -495,7 +539,7 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '08',
       title: 'Sustainable Development Goals (SDG)',
-      body: textBlock('Sustainable Development Goals', p.sdg)
+      body: sdgChecklistHtml(p.sdg)
     }),
     section({
       number: '09',

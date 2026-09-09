@@ -165,7 +165,7 @@ public class ProposalService {
         proposal.setResearchType(request.getResearchType());
         proposal.setInnovationGoals(request.getInnovationGoals());
         proposal.setSectorRelevance(request.getSectorRelevance());
-        proposal.setSdg(request.getSdg());
+        proposal.setSdg(request.getSdg() != null ? request.getSdg() : List.of());
         proposal.setExecutiveSummary(request.getExecutiveSummary());
         proposal.setRationale(request.getRationale());
         proposal.setFramework(request.getFramework());

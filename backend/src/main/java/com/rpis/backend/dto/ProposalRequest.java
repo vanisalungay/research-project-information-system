@@ -23,7 +23,7 @@ public class ProposalRequest {
     private Map<String, PriorityAgendaDTO> priorityAgenda;
     private String innovationGoals;
     private String sectorRelevance;
-    private String sdg;
+    private List<String> sdg;
     private String executiveSummary;
     private String rationale;
     private String framework;

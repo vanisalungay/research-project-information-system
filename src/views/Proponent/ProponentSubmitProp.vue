@@ -296,8 +296,13 @@
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.sustainable_development_goals }">
-              <textarea v-model="proposal.sustainable_development_goals" placeholder="List applicable SDGs addressed..."
-                rows="4"></textarea>
+              <label>Select all applicable SDGs</label>
+              <div class="sdg-checkbox-list">
+                <label v-for="goal in SDG_OPTIONS" :key="goal" class="sdg-checkbox">
+                  <input type="checkbox" :value="goal" v-model="proposal.sustainable_development_goals" />
+                  <span>{{ goal }}</span>
+                </label>
+              </div>
               <span class="field-error" v-if="showValidation && errors.sustainable_development_goals">{{
                 errors.sustainable_development_goals }}</span>
             </div>
@@ -789,8 +794,10 @@ import {
   textBlock,
   fileField,
   tableBlock,
-  section
+  section,
+  sdgChecklistHtml
 } from '@/utils/documentExport'
+import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -868,7 +875,7 @@ const getInitialProposal = () => ({
   },
   innovation_goals: '',
   sector_relevance: '',
-  sustainable_development_goals: '',
+  sustainable_development_goals: [],
   executive_summary: '',
   rationale: '',
   theoretical_framework: '',
@@ -928,7 +935,7 @@ const loadProposal = (data) => {
   proposal.research_type = data.researchType || ''
   proposal.innovation_goals = data.innovationGoals || ''
   proposal.sector_relevance = data.sectorRelevance || ''
-  proposal.sustainable_development_goals = data.sdg || ''
+  proposal.sustainable_development_goals = sdgToList(data.sdg)
   proposal.executive_summary = data.executiveSummary || ''
   proposal.rationale = data.rationale || ''
   proposal.theoretical_framework = data.framework || ''
@@ -1172,7 +1179,7 @@ const proposalSectionsA = () => {
     section({
       number: '08',
       title: 'Sustainable Development Goals (SDG)',
-      body: textBlock('Sustainable Development Goals', p.sustainable_development_goals)
+      body: sdgChecklistHtml(p.sustainable_development_goals)
     }),
     section({
       number: '09',
@@ -1346,7 +1353,7 @@ const validateStep1 = () => {
   // 06-09 - Text sections
   if (isBlank(proposal.innovation_goals)) errors.innovation_goals = 'Innovation Goals is required.'
   if (isBlank(proposal.sector_relevance)) errors.sector_relevance = 'Sector Relevance is required.'
-  if (isBlank(proposal.sustainable_development_goals)) errors.sustainable_development_goals = 'SDG is required.'
+  if (!Array.isArray(proposal.sustainable_development_goals) || proposal.sustainable_development_goals.length === 0) errors.sustainable_development_goals = 'Please select at least one SDG.'
   if (isBlank(proposal.executive_summary)) errors.executive_summary = 'Executive Summary is required.'
 
   // 10 - Introduction
@@ -1508,7 +1515,7 @@ const mapFormToDTO = (data, proponentId, status) => {
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
-    sdg: data.sustainable_development_goals || '',
+    sdg: data.sustainable_development_goals || [],
     executiveSummary: data.executive_summary || '',
     rationale: data.rationale || '',
     framework: data.theoretical_framework || '',
@@ -1855,6 +1862,47 @@ const mapFormToDTO = (data, proponentId, status) => {
   color: #dc2626;
   margin-top: 4px;
   font-weight: 500;
+}
+
+.sdg-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin-top: 6px;
+}
+
+.sdg-checkbox-list .sdg-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #475569;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.sdg-checkbox-list .sdg-checkbox:hover {
+  background: #f8fafc;
+}
+
+.sdg-checkbox-list .sdg-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  accent-color: #4f46e5;
+  cursor: pointer;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 /* ===== FORM ELEMENTS ===== */

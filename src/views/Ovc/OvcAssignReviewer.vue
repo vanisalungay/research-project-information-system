@@ -182,6 +182,7 @@ function confirmEndorsement() {
 
 .cancel-btn {
   background: #ddd;
+  color: #1f2937;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;

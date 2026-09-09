@@ -103,11 +103,7 @@
             </div>
             <div class="section-card">
               <div class="files-summary">
-                <div class="file-row" :class="{ attached: proposalData.review_of_literature_file }">
-                  <span class="file-name">Review of Literature</span>
-                  <span class="file-status">{{ proposalData.review_of_literature_file ? '✓ Attached' : '— Not attached'
-                    }}</span>
-                </div>
+                
                 <div class="file-row" :class="{ attached: proposalData.technology_roadmap_file }">
                   <span class="file-name">Technology Roadmap</span>
                   <span class="file-status">{{ proposalData.technology_roadmap_file ? '✓ Attached' : '— Not attached'
@@ -285,7 +281,7 @@ const validationErrors = computed(() => {
 
   if (isBlank(d.innovation_goals)) errs.push('Innovation Goals is missing.')
   if (isBlank(d.sector_relevance)) errs.push('Sector Relevance is missing.')
-  if (isBlank(d.sustainable_development_goals)) errs.push('SDG is missing.')
+  if (!Array.isArray(d.sustainable_development_goals) || d.sustainable_development_goals.length === 0) errs.push('SDG is missing.')
   if (isBlank(d.executive_summary)) errs.push('Executive Summary is missing.')
   if (isBlank(d.rationale)) errs.push('Rationale is missing.')
   if (isBlank(d.theoretical_framework)) errs.push('Theoretical Framework is missing.')
@@ -394,7 +390,7 @@ const saveOrUpdateProposal = async (status) => {
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
-    sdg: data.sustainable_development_goals || '',
+    sdg: data.sustainable_development_goals || [],
     executiveSummary: data.executive_summary || '',
     rationale: data.rationale || '',
     framework: data.theoretical_framework || '',

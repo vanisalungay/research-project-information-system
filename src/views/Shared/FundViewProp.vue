@@ -535,6 +535,7 @@ label {
 
 .secondary {
   background: #ffd803;
+  color: #1f2937;
   border: none;
   padding: 10px;
   width: 100%;

@@ -248,8 +248,15 @@
                 <h3>Sustainable Development Goals (SDG)</h3>
               </div>
               <div class="section-card">
-                <textarea v-model="proposal.sustainable_development_goals"
-                  placeholder="List applicable SDGs addressed..." rows="4"></textarea>
+                <div class="form-group">
+                  <label>Select all applicable SDGs</label>
+                  <div class="sdg-checkbox-list">
+                    <label v-for="goal in SDG_OPTIONS" :key="goal" class="sdg-checkbox">
+                      <input type="checkbox" :value="goal" v-model="proposal.sustainable_development_goals" />
+                      <span>{{ goal }}</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -710,6 +717,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
+import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 
 const route = useRoute()
 const router = useRouter()
@@ -761,7 +769,7 @@ const proposal = ref({
   research_type: '',
   innovation_goals: '',
   sector_relevance: '',
-  sustainable_development_goals: '',
+  sustainable_development_goals: [] as string[],
   executive_summary: '',
   rationale: '',
   theoretical_framework: '',
@@ -868,7 +876,7 @@ const fetchProposal = async () => {
       research_type: data.researchType || '',
       innovation_goals: data.innovationGoals || '',
       sector_relevance: data.sectorRelevance || '',
-      sustainable_development_goals: data.sdg || '',
+      sustainable_development_goals: sdgToList(data.sdg),
       executive_summary: data.executiveSummary || '',
       rationale: data.rationale || '',
       theoretical_framework: data.framework || '',
@@ -998,7 +1006,7 @@ const submitRevision = async () => {
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
-    sdg: data.sustainable_development_goals || '',
+    sdg: data.sustainable_development_goals || [],
     executiveSummary: data.executive_summary || '',
     rationale: data.rationale || '',
     framework: data.theoretical_framework || '',
@@ -1325,6 +1333,47 @@ onMounted(() => {
 .form-group textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.sdg-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin-top: 6px;
+}
+
+.sdg-checkbox-list .sdg-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #475569;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.sdg-checkbox-list .sdg-checkbox:hover {
+  background: #f8fafc;
+}
+
+.sdg-checkbox-list .sdg-checkbox input {
+  width: 16px !important;
+  height: 16px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none !important;
+  accent-color: #4f46e5;
+  cursor: pointer;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 /* SIDEBAR */

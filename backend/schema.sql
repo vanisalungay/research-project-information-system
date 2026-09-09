@@ -44,7 +44,7 @@ CREATE TABLE proposals (
     research_type VARCHAR(50),
     innovation_goals TEXT,
     sector_relevance TEXT,
-    sdg TEXT,
+    sdg TEXT,                              -- JSON array of selected SDG names
     executive_summary TEXT,
     rationale TEXT,
     framework TEXT,

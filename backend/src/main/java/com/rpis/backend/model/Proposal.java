@@ -73,7 +73,8 @@ public class Proposal {
     private String sectorRelevance;
 
     @Column(columnDefinition = "TEXT")
-    private String sdg;
+    @Convert(converter = SdgListConverter.class)
+    private List<String> sdg = new ArrayList<>();
 
     @Column(name = "executive_summary", columnDefinition = "TEXT")
     private String executiveSummary;

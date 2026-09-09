@@ -213,6 +213,7 @@ input {
 
 .cancel-btn {
   background: #f7d900;
+  color: #1f2937;
   padding: 8px 16px;
   border-radius: 6px;
   border: none;

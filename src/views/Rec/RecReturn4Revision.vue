@@ -513,11 +513,13 @@ textarea:focus {
 
 .primary {
   background: #ffd803;
+  color: #1f2937;
 }
 
 .cancel {
   background: white;
   border: 1px solid #ccc;
+  color: #1f2937;
 }
 
 /* INFO BOX */

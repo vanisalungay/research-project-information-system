@@ -283,6 +283,7 @@ function sectionRows(section) {
 
 function displayValue(value) {
   if (value === null || value === undefined || value === '') return 'Not provided'
+  if (Array.isArray(value)) return value.length ? value.join(', ') : 'Not provided'
   return value
 }
 

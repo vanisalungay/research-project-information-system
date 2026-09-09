@@ -211,7 +211,7 @@
               <h2>Sustainable Development Goals</h2>
             </div>
             <div class="card-body">
-              <p class="text-content">{{ proposal.sdg || 'Not provided' }}</p>
+              <SdgChecklist :value="proposal.sdg" />
             </div>
           </section>
 
@@ -682,6 +682,7 @@ import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
 import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/utils/documentExport'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import SdgChecklist from '@/components/SdgChecklist.vue'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
