@@ -21,4 +21,9 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
     // Find the maximum proposal code to generate the next one
     @Query("SELECT MAX(p.proposalCode) FROM Proposal p")
     String findMaxProposalCode();
+
+    // Approved-for-implementation projects that already have an issued Special
+    // Order (SO) — these are the only projects eligible for Quarterly Progress Reports.
+    @Query("SELECT p FROM Proposal p WHERE p.soNumber IS NOT NULL AND p.soNumber <> '' AND p.status IN :statuses ORDER BY p.updatedAt DESC")
+    List<Proposal> findEligibleForQuarterlyReport(@Param("statuses") List<String> statuses);
 }

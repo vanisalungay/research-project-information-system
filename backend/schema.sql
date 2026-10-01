@@ -1,6 +1,7 @@
 -- PostgreSQL Database Schema for Research Project Information System (RPIS)
 
 -- Drop tables if they exist to start fresh (useful for development/testing)
+DROP TABLE IF EXISTS quarterly_progress_reports CASCADE;
 DROP TABLE IF EXISTS project_reports CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS proposal_reviews CASCADE;
@@ -76,6 +77,7 @@ CREATE TABLE proposals (
     so_file_name VARCHAR(255),
     so_file_path VARCHAR(500),
     so_uploaded_at TIMESTAMP,
+    needs_budget BOOLEAN,                    -- Whether the proposal requires OVCAF funding step
     -- Return-for-Revision routing metadata
     returned_by_office VARCHAR(50),
     returned_by_name VARCHAR(255),
@@ -272,4 +274,32 @@ CREATE TABLE proposal_versions (
     is_current BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_proposal_versions UNIQUE (proposal_id, version_number)
+);
+
+-- 16. Quarterly Progress Reports Table (implementation-phase reporting for
+-- approved, SO-issued projects)
+CREATE TABLE quarterly_progress_reports (
+    id BIGSERIAL PRIMARY KEY,
+    proposal_id BIGINT NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    period VARCHAR(10) NOT NULL, -- Q1, Q2, Q3, Q4
+    year INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT', -- DRAFT, SUBMITTED
+    project_title VARCHAR(255),
+    project_leader VARCHAR(255),
+    leader_gender VARCHAR(20),
+    base_station TEXT,
+    sites_of_implementation TEXT,
+    project_duration VARCHAR(50),
+    project_start_date DATE,
+    project_end_date DATE,
+    catch_up_plan TEXT,
+    problems_concerns TEXT,
+    suggested_solutions TEXT,
+    objectives_json TEXT,
+    outputs_json TEXT,
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    submitted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    submitted_at TIMESTAMP
 );

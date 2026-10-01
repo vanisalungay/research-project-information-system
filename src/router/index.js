@@ -95,6 +95,9 @@ import ProponentPropDetails from '../views/Proponent/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/Proponent/ProponentDetiailedProp.vue'
 import ProponentNotifications from '../views/Notifications/ProponentNotifications.vue'
 import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
+import ProponentQuarterlyReports from '@/views/Proponent/ProponentQuarterlyReports.vue'
+import ProponentQuarterlyReportForm from '@/views/Proponent/ProponentQuarterlyReportForm.vue'
+import QuarterlyReportsMaster from '@/components/QuarterlyReportsMaster.vue'
 
 const routes = [
   {
@@ -143,6 +146,7 @@ const routes = [
       { path: 'rpsendorsed-prop', component: RpsEndorsedPro },
       { path: 'rps-revision-requests', name: 'RpsRevisionRequests', component: RpsRevisionRequests },
       { path: 'rps-forward-revision/:id', name: 'RpsForwardRevision', component: RpsForwardRevision },
+      { path: 'rps-quarterly-reports', name: 'RpsQuarterlyReports', component: QuarterlyReportsMaster },
 
       { path: 'fundviewprop', component: FundViewProp },
 
@@ -160,6 +164,7 @@ const routes = [
       { path: 'review-prop/:id', name: 'OvcReviewProposal', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
       { path: 'endorsed-proposals', component: OvcEndorsedProposal },
+      { path: 'ovc-quarterly-reports', name: 'OvcQuarterlyReports', component: QuarterlyReportsMaster },
       { path: 'assign-reviewer', component: OvcAssignReviewer },
       { path: 'assign-reviewer/:id', name: 'OvcAssignReviewer', component: OvcAssignReviewer },
       { path: 'notifications', component: NotificationPage },
@@ -198,6 +203,21 @@ const routes = [
         path: 'proponent-proposal-monitoring',
         name: 'ProponentProposalMonitoring',
         component: ProponentProposalMonitoring
+      },
+      {
+        path: 'quarterly-reports/:proposalId',
+        name: 'ProponentQuarterlyReports',
+        component: ProponentQuarterlyReports
+      },
+      {
+        path: 'quarterly-reports/:proposalId/new',
+        name: 'ProponentQuarterlyReportNew',
+        component: ProponentQuarterlyReportForm
+      },
+      {
+        path: 'quarterly-reports/:proposalId/edit/:reportId',
+        name: 'ProponentQuarterlyReportEdit',
+        component: ProponentQuarterlyReportForm
       },
 
       // ================= CHANCELLOR =================

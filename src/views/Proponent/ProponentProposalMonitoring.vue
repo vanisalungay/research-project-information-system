@@ -113,18 +113,20 @@
           <div class="timeline-container">
             <div class="timeline-header">
               <span class="timeline-title">Progress Timeline</span>
-              <span class="timeline-progress">{{ getProgressPercentage(proposal.status) }}% Complete</span>
+              <span class="timeline-progress">{{ getProgressPercentage(proposal) }}% Complete</span>
             </div>
             <div class="timeline">
-              <div v-for="(stage, index) in stages" :key="stage.key"
-                :class="['timeline-step', getStageClass(proposal.status, stage.key, index)]">
-                <div class="step-indicator">
-                  <div class="step-dot">
-                    <span v-if="isStageComplete(proposal.status, stage.key, index)" class="check-icon">✓</span>
-                    <span v-else-if="isStageCurrent(proposal.status, stage.key)" class="current-icon">●</span>
-                    <span v-else class="step-number">{{ index + 1 }}</span>
-                  </div>
-                  <div v-if="index < stages.length - 1" class="step-line"></div>
+              <div class="timeline-connector" aria-hidden="true">
+                <div class="timeline-track"></div>
+                <div class="timeline-track-fill" :style="{ width: getTimelineFill(proposal) + '%' }"></div>
+              </div>
+
+              <div v-for="(stage, index) in getStagesFor(proposal)" :key="stage.key"
+                :class="['timeline-step', getStageClass(proposal, stage.key, index)]">
+                <div class="step-dot">
+                  <span v-if="isStageComplete(proposal, stage.key, index)" class="check-icon">✓</span>
+                  <span v-else-if="isStageCurrent(proposal.status, stage.key)" class="current-icon">●</span>
+                  <span v-else class="step-number">{{ index + 1 }}</span>
                 </div>
                 <div class="step-label">{{ stage.label }}</div>
               </div>
@@ -134,7 +136,7 @@
           <!-- Progress Bar -->
           <div class="progress-bar-container">
             <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: getProgressPercentage(proposal.status) + '%' }"></div>
+              <div class="progress-fill" :style="{ width: getProgressPercentage(proposal) + '%' }"></div>
             </div>
           </div>
         </div>
@@ -144,8 +146,8 @@
           <button class="btn-view" @click="viewDetails(proposal.id)">
             📄 View Details
           </button>
-          <button v-if="proposal.status === 'IMPLEMENTATION'" class="btn-upload" @click="openUploadModal(proposal.id)">
-            📤 Upload Reports
+          <button v-if="isEligibleForReports(proposal)" class="btn-upload" @click="openQuarterlyReports(proposal.id)">
+            📝 Quarterly Report
           </button>
           <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise" @click="submitRevision(proposal.id)">
             ✏️ Submit Revision
@@ -260,22 +262,36 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 
 const router = useRouter()
 
-// State machine stages matching actual backend statuses
-const stages = [
+// Approval stages. OVCAF is only part of the workflow for proposals that
+// require budget; proposals without budget skip it and reach 100% at APPROVED.
+const BASE_STAGES = [
   { key: 'DRAFT', label: 'Draft' },
   { key: 'SUBMITTED', label: 'Submitted' },
   { key: 'ENDORSED', label: 'RPS Endorsed' },
   { key: 'UNDER_REVIEW', label: 'REC Review' },
   { key: 'REC_APPROVED', label: 'REC Approved' },
-  { key: 'FOR_OVCAF_APPROVAL', label: 'OVCAF' },
-  { key: 'FOR_OC_APPROVAL', label: 'Chancellor' },
-  { key: 'APPROVED', label: 'Approved' },
-  { key: 'RELEASED', label: 'Funds Released' },
-  { key: 'COMPLETED', label: 'Completed' }
+  { key: 'FOR_OC_APPROVAL', label: 'Chancellor' }
 ]
+
+const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: 'OVCAF' }
+const APPROVED_STAGE = { key: 'APPROVED', label: 'Approved' }
+
+// Statuses that are already past the 100% approval milestone.
+const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']
 
 // Terminal/negative statuses that should show special state
 const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
+
+// Build the approval timeline for a proposal based on its budget requirement.
+// A proposal without budget (needsBudget === false) does not include OVCAF.
+const getStagesFor = (proposal) => {
+  const stages = [...BASE_STAGES]
+  if (!proposal || proposal.needsBudget !== false) {
+    stages.push(OVCAF_STAGE)
+  }
+  stages.push(APPROVED_STAGE)
+  return stages
+}
 
 // Data
 const proposals = ref([])
@@ -361,17 +377,22 @@ const fetchProposals = async () => {
   }
 }
 
-const getStageIndex = (status) => {
-  return stages.findIndex(s => s.key === status)
+const getStageIndex = (proposal, status) => {
+  return getStagesFor(proposal).findIndex(s => s.key === status)
 }
 
-const isStageComplete = (status, stageKey, index) => {
+const isStageComplete = (proposal, stageKey, index) => {
+  const status = proposal.status
+
   // Terminal/rejected statuses: only show DRAFT as complete
   if (terminalStatuses.includes(status)) {
     return stageKey === 'DRAFT'
   }
 
-  const currentIndex = getStageIndex(status)
+  // Post-approval statuses have completed the whole approval workflow
+  if (POST_APPROVAL_STATUSES.includes(status)) return true
+
+  const currentIndex = getStageIndex(proposal, status)
   if (currentIndex === -1) return false
 
   return index < currentIndex
@@ -381,25 +402,50 @@ const isStageCurrent = (status, stageKey) => {
   return status === stageKey
 }
 
-const getStageClass = (status, stageKey, index) => {
+const getStageClass = (proposal, stageKey, index) => {
+  const status = proposal.status
+
   // Terminal/rejected statuses show as "returned" on the first step
   if (terminalStatuses.includes(status)) {
     if (stageKey === 'DRAFT') return 'returned'
     return 'pending'
   }
 
-  if (isStageComplete(status, stageKey, index)) return 'complete'
+  if (isStageComplete(proposal, stageKey, index)) return 'complete'
   if (isStageCurrent(status, stageKey)) return 'current'
   return 'pending'
 }
 
-const getProgressPercentage = (status) => {
+const getProgressPercentage = (proposal) => {
+  const status = proposal.status
+
   // Terminal/rejected statuses show 0% progress (they are not progressing)
   if (terminalStatuses.includes(status)) return 0
 
-  const index = getStageIndex(status)
+  // Post-approval statuses have passed the 100% approval milestone
+  if (POST_APPROVAL_STATUSES.includes(status)) return 100
+
+  const stages = getStagesFor(proposal)
+  const index = stages.findIndex(s => s.key === status)
   if (index === -1) return 0
   return Math.round(((index + 1) / stages.length) * 100)
+}
+
+// Width of the green connector line as a percentage of the track. The line
+// reaches the current stage's dot, so the timeline fills edge-to-edge at 100%.
+const getTimelineFill = (proposal) => {
+  const status = proposal.status
+
+  if (terminalStatuses.includes(status)) return 0
+  if (POST_APPROVAL_STATUSES.includes(status)) return 100
+
+  const stages = getStagesFor(proposal)
+  const index = stages.findIndex(s => s.key === status)
+  if (index === -1) return 0
+
+  const totalSegments = stages.length - 1
+  if (totalSegments <= 0) return 100
+  return Math.round((index / totalSegments) * 100)
 }
 
 const getStatusClass = (status) => {
@@ -444,6 +490,17 @@ const clearFilters = () => {
 
 const viewDetails = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })
+}
+
+const isEligibleForReports = (proposal) => {
+  if (!proposal) return false
+  const hasSo = proposal.soNumber && proposal.soNumber.trim() !== ''
+  const approved = proposal.status === 'APPROVED' || proposal.status === 'RELEASED'
+  return hasSo && approved
+}
+
+const openQuarterlyReports = (id) => {
+  router.push(`/quarterly-reports/${id}`)
 }
 
 const submitRevision = (id) => {
@@ -872,21 +929,46 @@ onMounted(fetchProposals)
 .timeline {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   position: relative;
+  padding-bottom: 24px;
+}
+
+.timeline-connector {
+  position: absolute;
+  top: 13px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  z-index: 0;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-track-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: #22c55e;
+  border-radius: 1px;
+  transition: width 0.3s ease;
 }
 
 .timeline-step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
+  flex: 0 0 28px;
   position: relative;
-}
-
-.step-indicator {
-  display: flex;
-  align-items: center;
-  width: 100%;
+  z-index: 1;
 }
 
 .step-dot {
@@ -899,31 +981,36 @@ onMounted(fetchProposals)
   font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
-  z-index: 1;
-}
-
-.step-line {
-  flex: 1;
-  height: 2px;
-  background: #e2e8f0;
 }
 
 .step-label {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 10px;
   color: #64748b;
-  margin-top: 6px;
   text-align: center;
   white-space: nowrap;
+}
+
+.timeline-step:first-child .step-label {
+  left: 0;
+  transform: none;
+  text-align: left;
+}
+
+.timeline-step:last-child .step-label {
+  left: auto;
+  right: 0;
+  transform: none;
+  text-align: right;
 }
 
 /* Timeline States */
 .timeline-step.complete .step-dot {
   background: #22c55e;
   color: white;
-}
-
-.timeline-step.complete .step-line {
-  background: #22c55e;
 }
 
 .timeline-step.current .step-dot {
@@ -1256,15 +1343,27 @@ onMounted(fetchProposals)
 
   .timeline {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
+    padding-bottom: 0;
+  }
+
+  .timeline-connector {
+    display: none;
   }
 
   .timeline-step {
     flex: 0 0 calc(33.333% - 8px);
   }
 
-  .step-line {
-    display: none;
+  .step-label,
+  .timeline-step:first-child .step-label,
+  .timeline-step:last-child .step-label {
+    position: static;
+    transform: none;
+    left: auto;
+    right: auto;
+    margin-top: 6px;
+    text-align: center;
   }
 }
 

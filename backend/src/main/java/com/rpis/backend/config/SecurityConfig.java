@@ -61,6 +61,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
                             .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
+                        // Quarterly Progress Reports (implementation-phase reporting)
+                        .requestMatchers(HttpMethod.POST, "/api/quarterly-reports").hasRole("PROPONENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/quarterly-reports/*").hasRole("PROPONENT")
+                        .requestMatchers(HttpMethod.GET, "/api/quarterly-reports/**").hasAnyRole("PROPONENT", "RPS_ADMIN", "RPS_STAFF", "OVCRIGE")
+
                         // All other API requests require authentication
                         .anyRequest().authenticated()
                 )

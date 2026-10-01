@@ -162,6 +162,7 @@ public class ProposalController {
             // Set SO number and metadata
             proposal.setSoNumber(soNumber);
             proposal.setSoUploadedAt(LocalDateTime.now());
+            proposal.setNeedsBudget(needsBudget);
 
             // Save chancellor notes if provided
             if (chancellorNotes != null && !chancellorNotes.isBlank()) {

@@ -166,6 +166,12 @@ public class Proposal {
     @Column(name = "so_uploaded_at")
     private LocalDateTime soUploadedAt;
 
+    // Budget requirement determined by the Office of the Chancellor during final
+    // approval. When true the proposal must go through the OVCAF funding step;
+    // when false it is approved for immediate implementation (no OVCAF step).
+    @Column(name = "needs_budget")
+    private Boolean needsBudget;
+
     // ===== Return-for-Revision routing metadata =====
     // Captured when an authorized reviewing office returns the proposal for
     // revision. The return is routed to RPS first, never directly to the Proponent.

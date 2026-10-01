@@ -2,11 +2,7 @@
   <nav class="sidebar-nav">
     <!-- Main Navigation Items -->
     <ul class="nav-list">
-      <li
-        v-for="item in mainNavItems"
-        :key="item.path"
-        :class="{ active: isSelected(item.path) }"
-      >
+      <li v-for="item in mainNavItems" :key="item.path" :class="{ active: isSelected(item.path) }">
         <router-link :to="item.path" class="nav-link">
           <span class="nav-icon" v-html="getIcon(item.iconKey)"></span>
           <span class="nav-text">{{ item.text }}</span>
@@ -20,11 +16,7 @@
         <span class="divider-label">Account</span>
       </div>
       <ul class="nav-list">
-        <li
-          v-for="item in bottomNavItems"
-          :key="item.path"
-          :class="{ active: isSelected(item.path) }"
-        >
+        <li v-for="item in bottomNavItems" :key="item.path" :class="{ active: isSelected(item.path) }">
           <router-link :to="item.path" class="nav-link">
             <span class="nav-icon" v-html="getIcon(item.iconKey)"></span>
             <span class="nav-text">{{ item.text }}</span>
@@ -72,6 +64,14 @@ const allNavItems = [
     section: 'main',
   },
 
+  {
+    iconKey: 'proposals',
+    text: 'Submitted Proposals',
+    path: '/rps-subproposal',
+    roles: [UserRole.RPS_STAFF],
+    section: 'main',
+  },
+
   // RPS ADMIN
   {
     iconKey: 'users',
@@ -110,13 +110,7 @@ const allNavItems = [
     roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
-  {
-    iconKey: 'proposals',
-    text: 'Submitted Proposals',
-    path: '/rps-subproposal',
-    roles: [UserRole.RPS_STAFF],
-    section: 'main',
-  },
+
   {
     iconKey: 'revisions',
     text: 'Revision Requests',
@@ -145,8 +139,23 @@ const allNavItems = [
     roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
+  {
+    iconKey: 'monitoring',
+    text: 'Quarterly Reports',
+    path: '/rps-quarterly-reports',
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    section: 'main',
+  },
 
   // PROPONENT
+  {
+    iconKey: 'proposals',
+    text: 'Projects',
+    path: '/proposals',
+    roles: [UserRole.PROPONENT],
+    section: 'main',
+  },
+
   {
     iconKey: 'notification',
     text: 'Notifications',
@@ -161,13 +170,7 @@ const allNavItems = [
     roles: [UserRole.PROPONENT],
     section: 'main',
   },
-  {
-    iconKey: 'proposals',
-    text: 'Proposals',
-    path: '/proposals',
-    roles: [UserRole.PROPONENT],
-    section: 'main',
-  },
+
   {
     iconKey: 'evalCriteria',
     text: 'Evaluation Criteria',
@@ -188,6 +191,13 @@ const allNavItems = [
     iconKey: 'endorse',
     text: 'Endorsed Proposals',
     path: '/endorsed-proposals',
+    roles: [UserRole.OVCRIGE],
+    section: 'main',
+  },
+  {
+    iconKey: 'monitoring',
+    text: 'Quarterly Reports',
+    path: '/ovc-quarterly-reports',
     roles: [UserRole.OVCRIGE],
     section: 'main',
   },
@@ -367,5 +377,4 @@ li.active .nav-link {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 </style>

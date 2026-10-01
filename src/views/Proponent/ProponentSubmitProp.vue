@@ -321,7 +321,7 @@
               <span class="field-error" v-if="showValidation && errors.executive_summary">{{ errors.executive_summary
               }}</span>
             </div>
-            <span class="char-count">{{ proposal.executive_summary.length }} / ~1400 chars</span>
+            <span class="char-count">{{ proposal.executive_summary.length }}/200 words</span>
           </div>
         </section>
 
