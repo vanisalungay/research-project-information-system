@@ -26,7 +26,7 @@
                         <div class="left-col">
                             <!-- Proposal Summary -->
                             <div class="card summary-card">
-                                <span class="proposal-id font-mono">{{ proposal.id }}</span>
+                                <span class="proposal-id font-mono">{{ proposal.documentId || '—' }}</span>
                                 <h3 class="proposal-title-text">{{ proposal.title }}</h3>
                                 <div class="meta-chips">
                                     <div><span class="chip-label">Proponent</span><span class="chip-value">{{
@@ -221,6 +221,7 @@ const fetchProposal = async () => {
         if (p) {
             proposal.value = {
                 id: p.id,
+                documentId: p.documentId || '',
                 title: p.projectTitle || 'Untitled Project',
                 proponent: p.proponentName || 'Unknown',
                 college: p.college || 'Unknown',

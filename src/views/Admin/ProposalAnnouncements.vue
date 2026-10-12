@@ -56,7 +56,7 @@
               Activate
             </button>
             <button class="edit-btn" @click="openEditModal(announcement)">Edit</button>
-            <button v-if="announcement.status !== 'ACTIVE'" class="delete-btn" @click="deleteAnnouncementAction(announcement)">
+            <button v-if="canDelete(announcement)" class="delete-btn" @click="deleteAnnouncementAction(announcement)">
               Delete
             </button>
           </td>
@@ -137,7 +137,7 @@ const formError = ref(null)
 const form = ref(emptyForm())
 
 function emptyForm() {
-  return { name: '', startDate: '', endDate: '', status: 'DRAFT' }
+  return { name: '', startDate: '', endDate: '', status: 'ACTIVE' }
 }
 
 // ===== HELPERS =====
@@ -162,6 +162,12 @@ function isActiveNow(announcement) {
 }
 
 const activeAnnouncement = computed(() => announcements.value.find(isActiveNow) || null)
+
+// An announcement can be deleted only when it is not active and no proponent has
+// submitted a proposal under it.
+function canDelete(announcement) {
+  return announcement.status !== 'ACTIVE' && !announcement.hasSubmittedProposals
+}
 
 function statusClass(status) {
   return {

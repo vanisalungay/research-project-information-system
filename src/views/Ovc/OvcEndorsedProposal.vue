@@ -8,6 +8,7 @@
       <table>
         <thead>
           <tr>
+            <th>Proposal ID</th>
             <th>Project Title</th>
             <th>Program</th>
             <th>Project Leader</th>
@@ -18,6 +19,7 @@
         </thead>
         <tbody>
           <tr v-for="proposal in filteredProposals" :key="proposal.id">
+            <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
             <td>{{ proposal.projectTitle }}</td>
             <td>{{ proposal.programTitle }}</td>
             <td>{{ proposal.projectLeader }}</td>
@@ -30,7 +32,7 @@
             </td>
           </tr>
           <tr v-if="filteredProposals.length===0">
-            <td colspan="6" style="text-align:center">No proposals found.</td>
+            <td colspan="7" style="text-align:center">No proposals found.</td>
           </tr>
         </tbody>
       </table>

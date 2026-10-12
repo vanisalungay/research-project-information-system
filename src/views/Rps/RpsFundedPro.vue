@@ -29,7 +29,7 @@
 
                     <tr v-for="proposal in filteredProposals" :key="proposal.id">
 
-                        <td>{{ proposal.code }}</td>
+                        <td>{{ proposal.documentId || proposal.code || '—' }}</td>
                         <td>{{ proposal.title }}</td>
                         <td>{{ proposal.leader }}</td>
                         <td>₱ {{ proposal.budget }}</td>

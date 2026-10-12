@@ -1,277 +1,201 @@
 <template>
-  <div class="page">
-    <!-- Header -->
-    <h2>Submitted Proposals</h2>
-    <p class="subtitle">Review and manage all proposals forwarded to RPS</p>
-
-    <!-- Controls -->
-    <div class="controls">
-      <input type="text" v-model="search" placeholder="Search proposals by title or category..." class="search" />
-      <select v-model="selectedStatus" class="status-select">
-        <option value="">All Status</option>
-        <option value="SUBMITTED">Pending</option>
-        <option value="REVISION">Revision</option>
-        <option value="ENDORSED">Endorsed</option>
-        <option value="REJECTED">Rejected</option>
-      </select>
+  <div class="rps-hub">
+    <!-- PAGE HEADING -->
+    <div class="hub-header">
+      <h1 class="hub-title">{{ activeMeta.title }}</h1>
+      <p class="hub-subtitle">{{ activeMeta.description }}</p>
     </div>
 
-    <!-- Loading -->
-    <p v-if="loading" style="padding:20px;">Loading proposals...</p>
-    <p v-else-if="error" style="padding:20px;color:#dc2626;">{{ error }}</p>
+    <!-- CATEGORY BUTTONS -->
+    <div class="category-tabs" role="tablist" aria-label="Proposal categories">
+      <button
+        type="button"
+        role="tab"
+        class="category-btn"
+        :class="{ active: activeCategory === 'all' }"
+        :aria-selected="activeCategory === 'all'"
+        @click="activeCategory = 'all'"
+      >
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>All Submitted</span>
+      </button>
 
-    <!-- Table -->
-    <table v-else class="proposals-table">
-      <thead>
-        <tr>
-          <th>Document ID</th>
-          <th>Proposal Title</th>
-          <th>Proponent</th>
-          <th>Date Submitted</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="proposal in filteredProposals" :key="proposal.id">
-          <td class="document-id">{{ proposal.documentId || proposal.proposalCode || 'N/A' }}</td>
-          <td>
-            <strong>{{ proposal.projectTitle || proposal.title }}</strong>
-            <div class="subtext">{{ proposal.programTitle || 'N/A' }}</div>
-          </td>
-          <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
-          <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
-          <td>
-            <span :class="['status', (proposal.status || '').toLowerCase()]">
-              {{ proposal.status }}
-            </span>
-          </td>
-          <td>
-            <button class="review-btn" @click="viewProposal(proposal)">Review</button>
-          </td>
-        </tr>
-        <tr v-if="filteredProposals.length === 0">
-          <td colspan="5" class="empty">No proposals found.</td>
-        </tr>
-      </tbody>
-    </table>
+      <button
+        type="button"
+        role="tab"
+        class="category-btn"
+        :class="{ active: activeCategory === 'revision' }"
+        :aria-selected="activeCategory === 'revision'"
+        @click="activeCategory = 'revision'"
+      >
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        <span>Revision Requests</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="category-btn"
+        :class="{ active: activeCategory === 'endorsed' }"
+        :aria-selected="activeCategory === 'endorsed'"
+        @click="activeCategory = 'endorsed'"
+      >
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>Endorsed Proposals</span>
+      </button>
+    </div>
+
+    <!-- ACTIVE CATEGORY CONTENT -->
+    <div class="hub-body">
+      <KeepAlive>
+        <component :is="activePanel" />
+      </KeepAlive>
+    </div>
   </div>
 </template>
 
-<script>
-import api from '@/utils/api'
+<script setup>
+import { ref, computed } from 'vue'
+import RpsSubmittedProposalsPanel from './RpsSubmittedProposalsPanel.vue'
+import RpsRevisionRequestsPanel from './RpsRevisionRequestsPanel.vue'
+import RpsEndorsedProPanel from './RpsEndorsedProPanel.vue'
 
-export default {
-  name: 'SubmittedProposals',
-  data() {
-    return {
-      search: '',
-      selectedStatus: '',
-      proposals: [],
-      loading: false,
-      error: null,
-    }
+// Category buttons only switch which existing view is displayed. They never
+// trigger proposal status changes or workflow operations.
+const panels = {
+  all: RpsSubmittedProposalsPanel,
+  revision: RpsRevisionRequestsPanel,
+  endorsed: RpsEndorsedProPanel,
+}
+
+const activeCategory = ref('all')
+
+const activePanel = computed(() => panels[activeCategory.value] || panels.all)
+
+// Heading + description for each category, driven by the same selected-category
+// state used by the category buttons and the content switcher.
+const categoryMeta = {
+  all: {
+    title: 'Submitted Proposals',
+    description: 'Review and manage all proposals forwarded to RPS.',
   },
-  computed: {
-    filteredProposals() {
-      return this.proposals.filter((p) => {
-        const matchesSearch = this.search === '' ||
-          (p.projectTitle || p.title || '').toLowerCase().includes(this.search.toLowerCase()) ||
-          (p.programTitle || '').toLowerCase().includes(this.search.toLowerCase())
-        const matchesStatus = this.selectedStatus === '' || p.status === this.selectedStatus
-        return matchesSearch && matchesStatus
-      })
-    },
+  revision: {
+    title: 'Revision Requests',
+    description: 'Review and manage proposals returned for revision.',
   },
-  methods: {
-    async fetchProposals() {
-      this.loading = true
-      this.error = null
-      try {
-        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=REVISION&statusIn=RETURNED_TO_RPS')
-        this.proposals = Array.isArray(res.data) ? res.data : []
-      } catch (err) {
-        console.error(err)
-        this.error = 'Failed to load proposals.'
-        this.proposals = []
-      } finally {
-        this.loading = false
-      }
-    },
-    viewProposal(proposal) {
-      if (proposal.status === 'SUBMITTED') {
-        // SUBMITTED proposals go to the review page with endorse/return/reject actions
-        this.$router.push({ name: 'ProposalReview', params: { id: proposal.id } })
-      } else if (proposal.status === 'RETURNED_TO_RPS') {
-        this.$router.push({ name: 'RpsForwardRevision', params: { id: proposal.id } })
-      } else if (proposal.status === 'REVISION' || proposal.status === 'RPS_RETURNED') {
-        // Returned proposals go to the review viewer
-        this.$router.push({ name: 'ReviewResultViewer', params: { id: proposal.id } })
-      } else {
-        // All other statuses go to the details viewer
-        this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
-      }
-    },
-  },
-  mounted() {
-    this.fetchProposals()
+  endorsed: {
+    title: 'Endorsed Proposals',
+    description: 'Review and manage proposals endorsed through the existing RPS process.',
   },
 }
+
+const activeMeta = computed(() => categoryMeta[activeCategory.value] || categoryMeta.all)
 </script>
 
 <style scoped>
-.page {
-  padding: var(--space-7);
-  font-family: 'Inter', sans-serif;
+.rps-hub {
   width: 100%;
   max-width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 14px 16px 24px;
+  background: #f3f4f6;
+  font-family: 'Inter', sans-serif;
 }
 
-.subtitle {
-  color: var(--color-text-soft);
-  margin-bottom: var(--space-6);
-  font-size: var(--fs-sm);
+/* HEADING */
+.hub-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #20234f;
+  line-height: 1.2;
 }
 
-.controls {
+.hub-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #78809a;
+  line-height: 1.4;
+}
+
+/* CATEGORY BUTTONS */
+.category-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
-  width: 100%;
+  gap: 9px;
+  margin-top: 14px;
 }
 
-.search {
-  flex: 1;
-  min-width: 280px;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  font-size: var(--fs-sm);
+.category-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e3e6ef;
+  background: #ffffff;
+  color: #25245b;
   font-family: inherit;
-  background: var(--color-background);
-  color: var(--color-text);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.search:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.12);
-}
-
-.status-select,
-.filter-btn {
-  padding: var(--space-2) var(--space-5);
-  border-radius: 20px;
-  border: 1px solid var(--color-border);
-  background: var(--color-card-background);
-  color: var(--color-text);
-  font-size: var(--fs-sm);
-  font-family: inherit;
-  min-width: 150px;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.status-select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.12);
-}
-
-.proposals-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.proposals-table th,
-.proposals-table td {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  word-wrap: break-word;
-  font-size: var(--fs-sm);
-  text-align: left;
-}
-
-.proposals-table th {
-  background: var(--color-background-soft);
-  color: var(--color-text-soft);
-  font-weight: 600;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.proposals-table tr:last-child td {
-  border-bottom: none;
-}
-
-.subtext {
-  font-size: var(--fs-xs);
-  color: var(--color-text-soft);
-  margin-top: 2px;
-}
-
-.status {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  display: inline-block;
-}
-
-.submitted {
-  background-color: rgba(245, 158, 11, 0.12);
-  color: #b45309;
-}
-
-.revision {
-  background-color: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-}
-
-.endorsed {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-.rejected {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-}
-
-.review-btn {
-  background: var(--color-primary);
-  color: #ffffff;
-  border: none;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.review-btn:hover {
-  background: var(--color-primary-hover);
+.category-btn:hover {
+  border-color: #25245b;
 }
 
-.empty {
-  text-align: center;
-  color: var(--color-text-soft);
-  padding: var(--space-7);
+.category-btn:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
 }
 
-.document-id {
-  font-family: 'Inter', monospace;
-  font-variant-numeric: tabular-nums;
+.category-btn.active {
+  background: #25245b;
+  border-color: #25245b;
+  color: #ffd400;
   font-weight: 600;
-  color: var(--color-brand-navy);
-  font-size: var(--fs-xs);
+}
+
+.cat-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* BODY */
+.hub-body {
+  margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .hub-title {
+    font-size: 19px;
+  }
+
+  .category-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .category-btn {
+    flex-shrink: 0;
+  }
 }
 </style>

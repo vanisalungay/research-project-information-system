@@ -133,7 +133,7 @@
     <!-- PART II -->
     <h3 class="section-title">II. Evaluation Criteria</h3>
 
-    <table class="evaluation-table">
+    <table class="evaluation-table" @input="clampScore" @change="clampScore">
       <thead>
         <tr>
           <th>Criteria</th>
@@ -417,6 +417,23 @@ const goToReject = () => {
 const goToDetailed = () => {
   const proposalId = proposal.value.id || route.params.id
   router.push({ path: '/rec-prop', query: { id: proposalId } })
+}
+
+// Clamp raw scores to the allowed 1–5 range (integers only).
+const clampScore = (event) => {
+  const el = event.target
+  if (!el || !el.classList || !el.classList.contains('rate-input')) return
+  const raw = el.value
+  if (raw === '') return
+  let val = Number(raw)
+  if (isNaN(val)) {
+    el.value = ''
+    return
+  }
+  val = Math.round(val)
+  if (val < 1) val = 1
+  if (val > 5) val = 5
+  el.value = val
 }
 
 const closeSuccessMessage = () => {

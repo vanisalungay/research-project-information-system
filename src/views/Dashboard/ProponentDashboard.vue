@@ -35,13 +35,11 @@
       </div>
     </section>
 
-    <!-- SEARCH -->
-    <div class="search-container">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search your proposals by title, ID, or status..."
-      />
+    <!-- CREATE NEW PROPOSAL -->
+    <div class="dashboard-actions">
+      <button class="btn-new" @click="goToProposals">
+        CREATE NEW PROPOSAL
+      </button>
     </div>
 
     <!-- REVISION DEADLINE -->
@@ -76,10 +74,9 @@
       </div>
 
       <div class="deadline-right">
-        <div class="deadline-info">
-          <span>Deadline</span>
-          <strong>{{ revisionDeadline.daysLeft }} days left</strong>
-        </div>
+        <strong class="deadline-days">
+          {{ revisionDeadline.daysLeft }} days left
+        </strong>
 
         <button
           class="submit-btn"
@@ -120,14 +117,11 @@
     </section>
 
     <!-- RECENTLY SUBMITTED -->
-    <section class="grid">
+    <section class="grid proposal-panel">
       <div class="panel">
         <div class="panel-header">
-          <div>
-            Recently Submitted Proposals
-            <span class="count-badge">
-              {{ recentProposals.length }}
-            </span>
+          <div class="panel-title">
+            Recent Proposals
           </div>
 
           <a
@@ -177,19 +171,16 @@
       </div>
     </section>
 
-    <!-- REVIEWER FEEDBACK -->
-    <section class="grid">
+    <!-- PROPOSAL MONITORING -->
+    <section class="grid proposal-panel">
       <div class="panel">
         <div class="panel-header">
-          <div>
-            Reviewer Feedback
-            <span class="count-badge yellow">
-              {{ feedbacks.length }}
-            </span>
+          <div class="panel-title">
+            Proposal Monitoring
           </div>
 
           <a
-            @click="goToFeedback"
+            @click="goToMonitoring"
             style="cursor: pointer"
           >
             View All
@@ -198,29 +189,36 @@
 
         <!-- Empty State -->
         <div
-          v-if="feedbacks.length === 0"
-          class="feedback-item"
+          v-if="monitoringProposals.length === 0"
+          class="panel-item"
         >
           <div>
-            <div>No reviewer feedback yet.</div>
-            <small>Feedback from reviewers will appear here.</small>
+            <div class="item-title">No proposals to monitor yet.</div>
+            <div class="item-meta">Your proposal progress will appear here.</div>
           </div>
         </div>
 
-        <!-- Feedback List -->
+        <!-- Proposal List -->
         <div
-          v-for="feedback in feedbacks"
-          :key="feedback.id"
-          class="feedback-item"
+          v-for="proposal in monitoringProposals"
+          :key="proposal.id"
+          class="panel-item"
         >
-          <span
-            class="dot"
-            :class="getFeedbackColor(feedback.type)"
-          ></span>
-
           <div>
-            <div>{{ feedback.message }}</div>
-            <small>{{ feedback.time }}</small>
+            <div class="item-title">{{ proposal.title }}</div>
+            <div class="item-meta">{{ proposal.proposalId }} • {{ proposal.dateSubmitted }}</div>
+          </div>
+
+          <div class="monitoring-status">
+            <span
+              class="status"
+              :class="proposal.statusClass"
+            >
+              {{ proposal.status }}
+            </span>
+            <span class="monitoring-progress">
+              {{ proposal.progress }}% Complete
+            </span>
           </div>
         </div>
       </div>
@@ -248,20 +246,63 @@ const statistics = ref({
   approvedProposals: 0
 })
 
-// Search
-const search = ref('')
-
 // Revision deadline
 const revisionDeadline = ref(null)
 
 // Recently submitted proposals
 const recentProposals = ref([])
 
-// Reviewer feedback
-const feedbacks = ref([])
+// Proposal monitoring
+const monitoringProposals = ref([])
+
+// Statuses that mean a proposal has been returned to the proponent and needs revision.
+const REVISION_STATUSES = ['RPS_RETURNED', 'REC_REVISION', 'REVISION']
+
+// Statuses excluded from the Recent Proposals list (finalized + drafts).
+const RECENT_EXCLUDED_STATUSES = ['REJECTED', 'REC_REJECTED', 'COMPLETED', 'APPROVED', 'DRAFT']
+
+// Statuses excluded from Proposal Monitoring (drafts + rejected).
+const MONITORING_EXCLUDED_STATUSES = ['DRAFT', 'REJECTED', 'REC_REJECTED']
+
+// Mirror the Proposal Monitoring page's progress calculation.
+function getProgressPercentage(p) {
+  const status = p.status
+  const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
+  if (terminalStatuses.includes(status)) return 0
+  if (status === 'RELEASED' || status === 'COMPLETED') return 100
+
+  const stages = ['DRAFT', 'SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OC_APPROVAL']
+  if (!p || p.needsBudget !== false) stages.push('FOR_OVCAF_APPROVAL')
+  stages.push('APPROVED')
+
+  const index = stages.findIndex(s => s === status)
+  if (index === -1) return 0
+  return Math.round(((index + 1) / stages.length) * 100)
+}
+
+// Map a raw proposal into the shape used by the dashboard panels.
+function mapProposalItem(p) {
+  return {
+    id: p.id,
+    title: p.projectTitle || 'Untitled Research Project',
+    proposalId: p.documentId || p.proposalCode || '—',
+    dateSubmitted: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A',
+    status: p.status,
+    statusClass: (p.status || '').toLowerCase(),
+    progress: getProgressPercentage(p)
+  }
+}
 
 // Loading
 const loading = ref(false)
+
+// Compute whole days remaining until the revision deadline.
+function computeDaysLeft(deadlineValue) {
+  if (!deadlineValue) return 0
+  const deadline = new Date(deadlineValue)
+  if (isNaN(deadline.getTime())) return 0
+  return Math.max(0, Math.floor((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+}
 
 // Fetch dashboard data
 async function fetchDashboard() {
@@ -294,46 +335,63 @@ async function fetchDashboard() {
       ).length
 
       statistics.value.pendingRevisions = myProposals.filter(p => 
-        p.status === 'REVISION' || p.status === 'REC_REVISION'
+        REVISION_STATUSES.includes(p.status)
       ).length
 
       statistics.value.approvedProposals = myProposals.filter(p => 
         p.status === 'APPROVED' || p.status === 'RELEASED'
       ).length
 
-      // Map recent proposals
-      recentProposals.value = myProposals.slice(0, 5).map(p => {
-        let statText = 'Under Review'
-        let statClass = 'under-review'
-        if (p.status === 'APPROVED' || p.status === 'RELEASED') {
-          statText = 'Approved'
-          statClass = 'approved'
-        } else if (p.status === 'REVISION' || p.status === 'REC_REVISION') {
-          statText = 'Revision Required'
-          statClass = 'revision'
-        } else if (p.status === 'REJECTED') {
-          statText = 'Rejected'
-          statClass = 'rejected'
-        }
+      // Sort owned proposals newest-first (same ordering as My Projects).
+      const sortedProposals = myProposals
+        .slice()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-        return {
-          id: p.id,
-          title: p.projectTitle || 'Untitled Research Project',
-          proposalId: 'PROP-' + p.id,
-          dateSubmitted: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A',
-          status: statText,
-          statusClass: statClass
-        }
+      // Map recent proposals (newest first), excluding finalized/draft statuses.
+      recentProposals.value = sortedProposals
+        .filter(p => !RECENT_EXCLUDED_STATUSES.includes(p.status))
+        .slice(0, 5)
+        .map(mapProposalItem)
+
+      // Proposal monitoring: exclude draft/rejected, then show first five (newest first).
+      monitoringProposals.value = sortedProposals
+        .filter(p => !MONITORING_EXCLUDED_STATUSES.includes(p.status))
+        .slice(0, 5)
+        .map(mapProposalItem)
+
+      // Extract pending revisions that still have an active revision deadline for
+      // the deadline banner. Proposals whose deadline has already passed, or whose
+      // displayed day count has reached zero, are excluded so the banner always
+      // highlights the next upcoming deadline.
+      const nowTs = Date.now()
+      const revisionItems = myProposals.filter(p => {
+        if (!REVISION_STATUSES.includes(p.status)) return false
+        const deadlineTime = p.revisionDeadline ? new Date(p.revisionDeadline).getTime() : NaN
+        if (isNaN(deadlineTime) || deadlineTime <= nowTs) return false
+        return computeDaysLeft(p.revisionDeadline) > 0
       })
-
-      // Extract pending revisions for deadline banner
-      const revisionItems = myProposals.filter(p => p.status === 'REVISION' || p.status === 'REC_REVISION')
       if (revisionItems.length > 0) {
+        // Sort pending revisions by deadline (ascending) so the nearest/closest
+        // upcoming deadline is displayed first. Missing/invalid deadlines sort last.
+        const sortedRevisions = revisionItems
+          .slice()
+          .sort((a, b) => {
+            const aTime = new Date(a.revisionDeadline).getTime()
+            const bTime = new Date(b.revisionDeadline).getTime()
+            const aValid = !isNaN(aTime)
+            const bValid = !isNaN(bTime)
+            if (!aValid && !bValid) return 0
+            if (!aValid) return 1
+            if (!bValid) return -1
+            return aTime - bTime
+          })
+
+        const nearest = sortedRevisions[0]
         revisionDeadline.value = {
           pendingCount: revisionItems.length,
-          title: revisionItems[0].projectTitle || 'Project Revision Required',
-          proposalId: 'PROP-' + revisionItems[0].id,
-          daysLeft: 7
+          title: nearest.projectTitle || 'Project Revision Required',
+          proposalId: nearest.documentId || nearest.proposalCode || '—',
+          daysLeft: computeDaysLeft(nearest.revisionDeadline)
         }
       } else {
         revisionDeadline.value = null
@@ -367,21 +425,8 @@ function goToProposals() {
   router.push('/proposals')
 }
 
-function goToFeedback() {
-  router.push('/proponent-feedback')
-}
-
-function getFeedbackColor(type) {
-  switch (type) {
-    case 'revision':
-      return 'yellow'
-
-    case 'approved':
-      return 'green'
-
-    default:
-      return 'yellow'
-  }
+function goToMonitoring() {
+  router.push('/proponent-proposal-monitoring')
 }
 
 function getStatusClass(status) {
@@ -436,7 +481,6 @@ function getStatusClass(status) {
 }
 
 .welcome-section,
-.search-container,
 .deadline-card,
 .grid {
   width: 100%;
@@ -500,23 +544,28 @@ function getStatusClass(status) {
   background: rgba(40, 167, 69, 0.25);
 }
 
-/* SEARCH */
-.search-container {
+/* CREATE NEW PROPOSAL BUTTON */
+.dashboard-actions {
+  display: flex;
+  justify-content: flex-end;
   margin: 1.25rem 0;
 }
 
-.search-container input {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  font-size: 0.875rem;
+.btn-new {
+  background: #facc15;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #1f2937;
+  white-space: nowrap;
 }
 
 /* DEADLINE */
 .deadline-card {
   background: #fffbe6;
-  border: 2px solid #ffd200;
+  border: 1px solid #ffd200;
   border-radius: 0.875rem;
   padding: 1rem 1.25rem;
   display: flex;
@@ -528,78 +577,87 @@ function getStatusClass(status) {
 
 .deadline-left {
   display: flex;
-  gap: 1rem;
+  gap: 0.875rem;
   align-items: center;
-  flex: 1 1 250px;
+  flex: 1 1 260px;
 }
 
 .deadline-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: #ffd200;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: #fef3c7;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   flex-shrink: 0;
 }
 
 .deadline-icon svg {
-  width: 50%;
-  height: 50%;
-}
-
-.deadline-info {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
+  width: 55%;
+  height: 55%;
 }
 
 .deadline-title {
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-weight: 700;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .pill {
-  background: #ffd200;
+  background: #fef3c7;
+  color: #92400e;
   padding: 0.125rem 0.625rem;
-  border-radius: 1rem;
+  border-radius: 999px;
   font-size: 0.75rem;
-  margin-left: 0.375rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  white-space: nowrap;
 }
 
 .proposal-name {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   margin-top: 0.375rem;
 }
 
 .proposal-id {
   font-size: 0.75rem;
   color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-top: 0.125rem;
 }
 
 .deadline-right {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  flex: 1 1 150px;
-  justify-content: flex-end;
+  gap: 0.875rem;
+  flex-shrink: 0;
 }
 
-.deadline-info span {
-  display: block;
-  font-size: 0.75rem;
-  color: #6b7280;
+.deadline-days {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #b45309;
+  white-space: nowrap;
 }
 
 .submit-btn {
   background: #ffd200;
   border: none;
-  padding: 0.625rem 1.125rem;
-  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
   font-weight: 600;
+  color: #1f2937;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .deadline-right {
+    width: 100%;
+  }
 }
 
 /* GRID */
@@ -629,6 +687,11 @@ function getStatusClass(status) {
   font-size: 0.75rem;
   color: #6b7280;
   cursor: pointer;
+}
+
+.panel-title {
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .count-badge {
@@ -689,6 +752,57 @@ function getStatusClass(status) {
   background: #fef3c7;
   color: black;
   font-weight: lighter;
+}
+
+/* Proposal status badges - match My Projects */
+.proposal-panel .status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.proposal-panel .status.draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.proposal-panel .status.submitted {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.proposal-panel .status.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.proposal-panel .status.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.proposal-panel .status.revision {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.proposal-panel .status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.monitoring-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.monitoring-progress {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* FEEDBACK */

@@ -41,6 +41,14 @@ public class ProposalAnnouncement {
     @Column(nullable = false)
     private String status = STATUS_DRAFT;
 
+    /**
+     * Computed (not persisted) flag set when loading the announcement list:
+     * true when at least one proponent has already submitted a proposal under this
+     * announcement. Used by the RPS Staff UI to disable the Delete action.
+     */
+    @Transient
+    private Boolean hasSubmittedProposals;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

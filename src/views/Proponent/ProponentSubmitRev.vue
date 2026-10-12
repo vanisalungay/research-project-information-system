@@ -11,7 +11,7 @@
         </button>
         <div class="header-info">
           <h1>Submit Revision</h1>
-          <p class="subtitle">{{ documentId || 'Proposal #' + proposalId }}</p>
+          <p class="subtitle">{{ documentId || '—' }}</p>
         </div>
       </div>
     </header>
@@ -20,6 +20,16 @@
     <div v-if="revisionDeadline" class="deadline-banner" :style="deadlineStyle">
       <strong>Revision Deadline:</strong> {{ formatDeadline(revisionDeadline) }}
       <span v-if="isPastDeadline"> (deadline passed)</span>
+    </div>
+
+    <!-- DEADLINE PASSED NOTICE -->
+    <div v-if="isPastDeadline" class="error-banner">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>The revision deadline has passed. Revision submission is no longer available.</span>
     </div>
 
     <!-- ERROR MESSAGE -->
@@ -82,6 +92,7 @@
                       <option value="">Select Sex</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
+                      <option value="Other">Prefer not to say</option>
                     </select>
                   </div>
                 </div>
@@ -268,7 +279,7 @@
               <div class="section-card">
                 <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5"
                   class="word-limit"></textarea>
-                <span class="char-count">{{ proposal.executive_summary?.length || 0 }} / ~1400 chars</span>
+                <span class="char-count">{{ executiveWordCount }} / 200 words</span>
               </div>
             </section>
 
@@ -322,7 +333,7 @@
                   </div>
                   <input ref="litFile" type="file" @change="handleFileUpload('review_of_literature', $event)" hidden />
                   <div v-if="proposal.review_of_literature_file" class="file-info">
-                    <span>📄 {{ proposal.review_of_literature_file.name }}</span>
+                    <span>{{ proposal.review_of_literature_file.name }}</span>
                     <button class="btn-remove-file" @click="proposal.review_of_literature_file = null">✕</button>
                   </div>
                 </div>
@@ -361,7 +372,7 @@
                   </div>
                   <input ref="techFile" type="file" @change="handleFileUpload('technology', $event)" hidden />
                   <div v-if="proposal.technology_roadmap_file" class="file-info">
-                    <span>📄 {{ proposal.technology_roadmap_file.name }}</span>
+                    <span>{{ proposal.technology_roadmap_file.name }}</span>
                     <button class="btn-remove-file" @click="proposal.technology_roadmap_file = null">✕</button>
                   </div>
                 </div>
@@ -451,7 +462,7 @@
                   </div>
                   <input ref="gadFile" type="file" @change="handleFileUpload('gad', $event)" hidden />
                   <div v-if="proposal.gad_score_file" class="file-info">
-                    <span>📄 {{ proposal.gad_score_file.name }}</span>
+                    <span>{{ proposal.gad_score_file.name }}</span>
                     <button class="btn-remove-file" @click="proposal.gad_score_file = null">✕</button>
                   </div>
                 </div>
@@ -590,7 +601,7 @@
                   </div>
                 </div>
                 <div v-if="proposal.line_item_budget_file" class="file-info">
-                  <span>📄 {{ proposal.line_item_budget_file.name }}</span>
+                  <span>{{ proposal.line_item_budget_file.name }}</span>
                   <button class="btn-remove-file" @click="proposal.line_item_budget_file = null">✕</button>
                 </div>
               </div>
@@ -694,10 +705,10 @@
             </button>
 
             <button class="btn-action btn-draft" @click="saveDraft">
-              💾 Save Draft
+              Save Draft
             </button>
 
-            <button class="btn-action btn-submit" @click="submitRevision" :disabled="loading">
+            <button class="btn-action btn-submit" @click="submitRevision" :disabled="loading || isPastDeadline">
               {{ loading ? 'Submitting...' : '✓ Submit Revision' }}
             </button>
           </div>
@@ -808,9 +819,11 @@ const proposal = ref({
   other_projects: [],
 
   priority_agendas: {
-    agriculture: { selected: false, value: '' },
-    environment: { selected: false, value: '' },
-    health: { selected: false, value: '' }
+    dagat: { selected: false, value: '' },
+    punla: { selected: false, value: '' },
+    kalikasan: { selected: false, value: '' },
+    negosyo: { selected: false, value: '' },
+    tanglaw: { selected: false, value: '' }
   }
 })
 
@@ -826,25 +839,52 @@ const addSite = () => {
 
 const programList = [
   {
-    key: 'agriculture',
-    label: 'Agriculture',
-    subLabel: 'Program'
+    key: 'dagat',
+    label: 'DAGAT Program',
+    subLabel: 'Commodity'
   },
   {
-    key: 'environment',
-    label: 'Environment',
-    subLabel: 'Program'
+    key: 'punla',
+    label: 'PUNLA Program',
+    subLabel: 'Priority Topic'
   },
   {
-    key: 'health',
-    label: 'Health',
-    subLabel: 'Program'
+    key: 'kalikasan',
+    label: 'KALIKASAN Program',
+    subLabel: 'Sector'
+  },
+  {
+    key: 'negosyo',
+    label: 'NEGOSYO Program',
+    subLabel: 'Sector'
+  },
+  {
+    key: 'tanglaw',
+    label: 'TANGLAW Program',
+    subLabel: 'Sector'
   }
 ]
 
 const removeSite = (index: number) => {
   proposal.value.sites.splice(index, 1)
 }
+
+const handleFileUpload = (type, event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  const map = {
+    review_of_literature: 'review_of_literature_file',
+    technology: 'technology_roadmap_file',
+    gad: 'gad_score_file',
+    budget: 'line_item_budget_file'
+  }
+  if (map[type]) proposal.value[map[type]] = file
+}
+
+const executiveWordCount = computed(() => {
+  const text = (proposal.value.executive_summary || '').trim()
+  return text ? text.split(/\s+/).length : 0
+})
 
 const fetchProposal = async () => {
   if (!proposalId.value) return
@@ -947,13 +987,15 @@ const fetchProposal = async () => {
           : [],
 
       priority_agendas: {
-        agriculture: { selected: false, value: '' },
-        environment: { selected: false, value: '' },
-        health: { selected: false, value: '' },
-        ...(data.priorityAgendas
+        dagat: { selected: false, value: '' },
+        punla: { selected: false, value: '' },
+        kalikasan: { selected: false, value: '' },
+        negosyo: { selected: false, value: '' },
+        tanglaw: { selected: false, value: '' },
+        ...(Array.isArray(data.priorityAgendas)
           ? Object.fromEntries(
             data.priorityAgendas.map(pa => [
-              pa.agenda,
+              pa.agendaKey || pa.agenda,
               { selected: pa.selected || false, value: pa.value || '' }
             ])
           )
@@ -975,7 +1017,12 @@ const submitRevision = async () => {
   }
 
   if (isPastDeadline.value) {
-    error.value = 'The revision deadline has passed. Please contact RPS for an extension.'
+    error.value = 'The revision deadline has passed. Revision submission is no longer available.'
+    return
+  }
+
+  if (executiveWordCount.value > 200) {
+    error.value = 'Executive Summary must not exceed 200 words.'
     return
   }
 
@@ -1003,6 +1050,10 @@ const submitRevision = async () => {
     college: data.department || '',
     address: data.address || '',
     cooperatingAgencies: data.cooperating_agencies || '',
+    reviewFileName: data.review_of_literature_file?.name || '',
+    roadmapFileName: data.technology_roadmap_file?.name || '',
+    gadFileName: data.gad_score_file?.name || '',
+    beneficiariesFileName: data.line_item_budget_file?.name || '',
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
@@ -1876,27 +1927,71 @@ onMounted(() => {
 
 .agenda-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 
 .agenda-item {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 18px;
+  padding: 16px 18px;
   background: #fff;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.agenda-item:hover {
+  border-color: #c7d2fe;
+  background: #fafbff;
 }
 
 .agenda-item.selected {
-  border: 2px solid #4f46e5;
+  border-color: #4f46e5;
   background: #eef2ff;
+  box-shadow: 0 0 0 1px #4f46e5;
 }
 
 .agenda-checkbox {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+}
+
+.agenda-checkbox input {
+  display: none;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.checkmark::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  margin-top: -2px;
+  transition: transform 0.15s;
+}
+
+.agenda-checkbox input:checked + .checkmark {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.agenda-checkbox input:checked + .checkmark::after {
+  transform: rotate(45deg) scale(1);
 }
 
 .agenda-label {
@@ -1910,6 +2005,11 @@ onMounted(() => {
   margin-bottom: 8px;
   color: #64748b;
   font-size: 13px;
+  font-weight: 500;
+}
+
+.agenda-value {
+  margin-top: 14px;
 }
 
 .agenda-value input {
@@ -1918,17 +2018,7 @@ onMounted(() => {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #fff;
-}
-
-.agenda-value {
-  margin-top: 16px;
-}
-
-.agenda-value input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  font-size: 14px;
 }
 
 /* =========================

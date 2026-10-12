@@ -10,32 +10,40 @@
 
     <!-- Stats Cards -->
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon blue">📋</div>
+      <div class="stat-card total">
         <div class="stat-info">
-          <span class="stat-value">{{ totalProposals }}</span>
           <span class="stat-label">Total Proposals</span>
+          <span class="stat-value">{{ totalProposals }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon yellow">⏳</div>
+      <div class="stat-card progress">
         <div class="stat-info">
-          <span class="stat-value">{{ inProgressCount }}</span>
           <span class="stat-label">In Progress</span>
+          <span class="stat-value">{{ inProgressCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon green">✅</div>
+      <div class="stat-card approved">
         <div class="stat-info">
-          <span class="stat-value">{{ approvedCount }}</span>
           <span class="stat-label">Approved</span>
+          <span class="stat-value">{{ approvedCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon purple">🚀</div>
+      <div class="stat-card implementation">
         <div class="stat-info">
-          <span class="stat-value">{{ implementationCount }}</span>
           <span class="stat-label">Implementation</span>
+          <span class="stat-value">{{ implementationCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
         </div>
       </div>
     </div>
@@ -91,8 +99,8 @@
         <!-- Card Header -->
         <div class="card-header">
           <div class="header-left">
-            <span class="proposal-id">#{{ proposal.id }}</span>
             <h3 class="proposal-title">{{ proposal.projectTitle || 'Untitled Project' }}</h3>
+            <span class="proposal-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</span>
           </div>
           <div class="header-right">
             <span :class="['status-badge', getStatusClass(proposal.status)]">
@@ -144,13 +152,13 @@
         <!-- Card Actions -->
         <div class="card-actions">
           <button class="btn-view" @click="viewDetails(proposal.id)">
-            📄 View Details
+            View Details
           </button>
           <button v-if="isEligibleForReports(proposal)" class="btn-upload" @click="openQuarterlyReports(proposal.id)">
-            📝 Quarterly Report
+            Quarterly Report
           </button>
           <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise" @click="submitRevision(proposal.id)">
-            ✏️ Submit Revision
+            Submit Revision
           </button>
         </div>
       </div>
@@ -158,7 +166,7 @@
 
     <!-- Empty State -->
     <div v-else class="empty-state">
-      <div class="empty-icon">📂</div>
+      <div class="empty-icon"></div>
       <h3>No Proposals Found</h3>
       <p v-if="searchQuery || statusFilter">Try adjusting your search or filter criteria.</p>
       <p v-else>You haven't submitted any proposals yet. Start by creating a new proposal.</p>
@@ -179,15 +187,15 @@
 
           <!-- Quarterly Progress Report -->
           <div class="upload-section">
-            <h3>📊 Quarterly Progress Report</h3>
+            <h3>Quarterly Progress Report</h3>
             <p class="upload-desc">Upload your quarterly progress report (PDF, DOC, DOCX)</p>
             <div class="upload-area" @click="$refs.quarterlyFile.click()">
               <div v-if="!quarterlyReport" class="upload-placeholder">
-                <span class="upload-icon">📁</span>
+                <span class="upload-icon"></span>
                 <span>Click to select file</span>
               </div>
               <div v-else class="file-selected">
-                <span>📄 {{ quarterlyReport.name }}</span>
+                <span>{{ quarterlyReport.name }}</span>
                 <button class="remove-file" @click.stop="quarterlyReport = null">✕</button>
               </div>
             </div>
@@ -196,15 +204,15 @@
 
           <!-- Financial Report -->
           <div class="upload-section">
-            <h3>💰 Financial Report</h3>
+            <h3>Financial Report</h3>
             <p class="upload-desc">Upload your financial report (PDF, DOC, DOCX, XLS, XLSX)</p>
             <div class="upload-area" @click="$refs.financialFile.click()">
               <div v-if="!financialReport" class="upload-placeholder">
-                <span class="upload-icon">📁</span>
+                <span class="upload-icon"></span>
                 <span>Click to select file</span>
               </div>
               <div v-else class="file-selected">
-                <span>📄 {{ financialReport.name }}</span>
+                <span>{{ financialReport.name }}</span>
                 <button class="remove-file" @click.stop="financialReport = null">✕</button>
               </div>
             </div>
@@ -279,6 +287,10 @@ const APPROVED_STAGE = { key: 'APPROVED', label: 'Approved' }
 // Statuses that are already past the 100% approval milestone.
 const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']
 
+// Statuses that indicate a project is approved for implementation and currently
+// pending or in progress for implementation.
+const IMPLEMENTATION_STATUSES = ['APPROVED', 'RELEASED']
+
 // Terminal/negative statuses that should show special state
 const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
 
@@ -327,7 +339,7 @@ const approvedCount = computed(() =>
 )
 
 const implementationCount = computed(() =>
-  proposals.value.filter(p => p.status === 'RELEASED').length
+  proposals.value.filter(p => IMPLEMENTATION_STATUSES.includes(p.status)).length
 )
 
 const filteredProposals = computed(() => {
@@ -612,7 +624,7 @@ onMounted(fetchProposals)
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -621,52 +633,84 @@ onMounted(fetchProposals)
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 16px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
+/* Left accent colors */
+.stat-card.total {
+  border-left: 4px solid #475569;
 }
 
-.stat-icon.blue {
-  background: #dbeafe;
+.stat-card.progress {
+  border-left: 4px solid #f59e0b;
 }
 
-.stat-icon.yellow {
-  background: #fef3c7;
+.stat-card.approved {
+  border-left: 4px solid #22c55e;
 }
 
-.stat-icon.green {
-  background: #dcfce7;
-}
-
-.stat-icon.purple {
-  background: #ede9fe;
+.stat-card.implementation {
+  border-left: 4px solid #4f46e5;
 }
 
 .stat-info {
   display: flex;
   flex-direction: column;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0f172a;
+  gap: 4px;
 }
 
 .stat-label {
   font-size: 12px;
+  font-weight: 500;
   color: #64748b;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Icon treatments */
+.stat-card.total .stat-icon {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.stat-card.progress .stat-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.stat-card.approved .stat-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stat-card.implementation .stat-icon {
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 /* Filters */
@@ -789,30 +833,28 @@ onMounted(fetchProposals)
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 16px 20px;
-  background: #f8fafc;
+  background: white;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .header-left {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .proposal-id {
   font-family: monospace;
   font-size: 12px;
   color: #64748b;
-  background: #e2e8f0;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
 .proposal-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
@@ -896,6 +938,7 @@ onMounted(fetchProposals)
 
 .proposal-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 24px;
   margin-bottom: 20px;
   font-size: 13px;
@@ -904,6 +947,10 @@ onMounted(fetchProposals)
 
 /* Timeline */
 .timeline-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
   margin-bottom: 20px;
 }
 
@@ -915,9 +962,11 @@ onMounted(fetchProposals)
 }
 
 .timeline-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .timeline-progress {
@@ -969,6 +1018,7 @@ onMounted(fetchProposals)
   flex: 0 0 28px;
   position: relative;
   z-index: 1;
+  background: none;
 }
 
 .step-dot {

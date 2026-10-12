@@ -15,7 +15,7 @@
           <div class="summary-info">
             <div class="title-row">
               <span class="category-badge">{{ proposal.program }}</span>
-              <span class="id-text">Proposal ID: #{{ proposal.code }}</span>
+              <span class="id-text">Proposal ID: {{ proposal.documentId || proposal.code || '—' }}</span>
             </div>
             <h3 class="proposal-title">{{ proposal.title }}</h3>
             

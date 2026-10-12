@@ -12,7 +12,7 @@
         <div class="header-info">
           <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
           <div class="header-meta">
-            <span class="document-id">{{ proposal.documentId || proposal.proposalCode || 'ID: ' + proposal.id }}</span>
+            <span class="document-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</span>
             <span v-if="proposal.revisionNumber !== undefined" class="revision-badge">
               REV{{ String(proposal.revisionNumber).padStart(2, '0') }}
             </span>

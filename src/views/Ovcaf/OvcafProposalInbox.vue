@@ -83,7 +83,7 @@
                             </thead>
                             <tbody>
                                 <tr v-for="p in paginatedProposals" :key="p.id" class="proposal-row">
-                                    <td class="font-mono font-semibold">{{ p.id }}</td>
+                                    <td class="font-mono font-semibold">{{ p.documentId || '—' }}</td>
                                     <td>
                                         <div class="title-cell" :title="p.title">{{ p.title }}</div>
                                     </td>
@@ -161,6 +161,7 @@ const fetchProposals = async () => {
         // Transform API response to match frontend expectations
         proposals.value = (response.data || []).map(p => ({
             id: p.id,
+            documentId: p.documentId || '',
             title: p.projectTitle || 'Untitled Project',
             proponent: p.proponentName || 'Unknown',
             college: p.college || 'Unknown',

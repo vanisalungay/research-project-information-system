@@ -4,7 +4,7 @@
       <!-- Proposal Information -->
       <div class="card">
         <h2 class="title"> {{ proposal.project_title }}</h2>
-        <p class="subtitle"> Proposal ID: {{ proposal.proposal_id }} </p>
+        <p class="subtitle"> Proposal ID: {{ proposal.proposal_id || '—' }} </p>
 
         <div class="info-grid">
           <div>
@@ -297,7 +297,7 @@ async function fetchProposal() {
     // Map backend data to frontend format
     proposal.value = {
       id: data.id,
-      proposal_id: data.id,
+      proposal_id: data.documentId || '',
       program_title: data.programTitle || '',
       project_title: data.projectTitle || '',
       project_leader: data.projectLeader || '',

@@ -57,7 +57,7 @@
             class="clickable-row"
             @click="openProposal(proposal)"
           >
-            <td>#{{ proposal.id }}</td>
+            <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
             <td>{{ proposal.projectTitle || 'Untitled' }}</td>
             <td>{{ proposal.projectLeader || proposal.proponent?.name || 'N/A' }}</td>
             <td>{{ proposal.college || 'N/A' }}</td>

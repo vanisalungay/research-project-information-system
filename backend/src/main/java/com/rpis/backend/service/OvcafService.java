@@ -324,6 +324,7 @@ public class OvcafService {
     private OvcafProposalResponse mapToResponse(Proposal proposal) {
         OvcafProposalResponse response = new OvcafProposalResponse();
         response.setId(proposal.getId());
+        response.setDocumentId(proposal.getDocumentId());
         response.setProjectTitle(proposal.getProjectTitle());
         response.setProjectLeader(proposal.getProjectLeader());
         response.setCollege(proposal.getCollege());

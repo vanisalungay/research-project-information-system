@@ -42,6 +42,20 @@ public class QuarterlyProgressReport {
     @Column(name = "status", nullable = false)
     private String status = "DRAFT"; // DRAFT, SUBMITTED
 
+    /**
+     * Reporting-stage document this row represents.
+     * <ul>
+     *   <li>{@code QUARTERLY_PROGRESS} - reporting stages 1-3 (Quarterly Progress
+     *       Report plus Project Workplan).</li>
+     *   <li>{@code TERMINAL_REPORT} - the final (fourth) reporting stage (Terminal
+     *       Report only).</li>
+     * </ul>
+     * Rows created before this column existed have a null value and are treated as
+     * {@code QUARTERLY_PROGRESS} so existing records keep working unchanged.
+     */
+    @Column(name = "report_type")
+    private String reportType = "QUARTERLY_PROGRESS";
+
     // ===== Header fields (mirrors the official form) =====
     @Column(name = "project_title")
     private String projectTitle;
@@ -102,4 +116,30 @@ public class QuarterlyProgressReport {
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
+
+    // ===== Uploaded documents (implementation-phase reporting) =====
+    // Reporting stages 1-3 require a completed Project Workplan (ORPS format)
+    // alongside the quarterly progress report. The terminal stage requires a
+    // completed Terminal Report (ORPS format) instead. Only the stored file
+    // metadata lives here; the bytes use the existing uploads/reports convention.
+    @Column(name = "workplan_file_name")
+    private String workplanFileName;
+
+    @Column(name = "workplan_file_path")
+    private String workplanFilePath;
+
+    @Column(name = "terminal_report_file_name")
+    private String terminalReportFileName;
+
+    @Column(name = "terminal_report_file_path")
+    private String terminalReportFilePath;
+
+    // ===== Interactive Project Workplan (reporting stages 1-3) =====
+    // Structured equivalent of the "MSUN Internally Funded Project Workplan"
+    // form (objectives + monthly target activities/accomplishments + remarks +
+    // "As of" date), stored as JSON. Legacy uploaded workplan files remain in
+    // workplan_file_name / workplan_file_path and are preserved.
+    @Column(name = "workplan_json", columnDefinition = "TEXT")
+    @Convert(converter = WorkplanDataConverter.class)
+    private WorkplanData workplan;
 }

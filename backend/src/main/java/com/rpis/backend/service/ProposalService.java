@@ -26,6 +26,13 @@ public class ProposalService {
     private final ProposalAnnouncementService proposalAnnouncementService;
     private final ProposalVersionService proposalVersionService;
 
+    /**
+     * Internally funded MSUN projects are fixed at a 12-month duration. The RPIS
+     * only handles internally funded proposals, so this applies to every new
+     * proposal and to drafts that are still being prepared.
+     */
+    public static final String INTERNALLY_FUNDED_DURATION_MONTHS = "12";
+
     // ========================
     // PROPOSAL ID AND REVISION FORMAT
     // ========================
@@ -112,7 +119,7 @@ public class ProposalService {
                 if (proposal.getRevisionDeadline() != null
                         && LocalDateTime.now().isAfter(proposal.getRevisionDeadline())) {
                     throw new IllegalStateException(
-                            "The revision deadline has passed. Please contact RPS for an extension.");
+                            "The revision deadline has passed. Revision submission is no longer available.");
                 }
             }
         } else {
@@ -125,10 +132,19 @@ public class ProposalService {
         // submitted proposal and remain allowed outside an active announcement.
         boolean isSubmission = request.getStatus() != null
                 && "SUBMITTED".equalsIgnoreCase(request.getStatus());
-        if ((isNewProposal || isSubmission) && !isRevisionResubmission
-                && !proposalAnnouncementService.hasActiveAnnouncement()) {
-            throw new IllegalStateException(
-                    "Submissions are currently closed. There is no active proposal announcement at this time.");
+        ProposalAnnouncement activeAnnouncement = null;
+        if ((isNewProposal || isSubmission) && !isRevisionResubmission) {
+            activeAnnouncement = proposalAnnouncementService.getActiveAnnouncementOrNull();
+            if (activeAnnouncement == null) {
+                throw new IllegalStateException(
+                        "Submissions are currently closed. There is no active proposal announcement at this time.");
+            }
+        }
+
+        // Associate the proposal with the active submission window so RPS can later
+        // enforce that announcements with submitted proposals cannot be deleted.
+        if (activeAnnouncement != null) {
+            proposal.setProposalAnnouncementId(activeAnnouncement.getId());
         }
 
         // Generate proposal code and document ID for new proposals
@@ -158,7 +174,15 @@ public class ProposalService {
         proposal.setProgramTitle(request.getProgramTitle());
         proposal.setProjectTitle(request.getProjectTitle());
         proposal.setProjectLeader(request.getProjectLeader());
-        proposal.setDuration(request.getDuration());
+        // Enforce the fixed 12-month duration for internally funded proposals.
+        // This is enforced server-side (not only by a disabled frontend field) so a
+        // modified API request cannot persist any other value on a new proposal or
+        // on a draft that is still being prepared. Proposals already in the review
+        // lifecycle (e.g. revision resubmissions) keep their existing duration.
+        boolean applyFixedDuration = isNewProposal
+                || proposal.getStatus() == null
+                || "DRAFT".equalsIgnoreCase(proposal.getStatus());
+        proposal.setDuration(applyFixedDuration ? INTERNALLY_FUNDED_DURATION_MONTHS : request.getDuration());
         proposal.setCollege(request.getCollege());
         proposal.setAddress(request.getAddress());
         proposal.setCooperatingAgencies(request.getCooperatingAgencies());

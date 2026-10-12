@@ -5,7 +5,7 @@
         <div class="header-title">
             <div>
                 <h2>Proposal Review Result</h2>
-                <p>{{ proposal.code }}</p>
+                <p>{{ proposal.documentId || proposal.code || '—' }}</p>
             </div>
 
             <span

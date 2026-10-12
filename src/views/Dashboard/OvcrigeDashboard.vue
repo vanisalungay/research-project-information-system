@@ -54,6 +54,7 @@
           <table>
             <thead>
               <tr>
+                <th>Proposal ID</th>
                 <th>Title</th>
                 <th>Proponent</th>
                 <th>Submitted</th>
@@ -64,21 +65,22 @@
 
             <tbody>
               <tr v-if="loading">
-                <td colspan="5" style="text-align:center">
+                <td colspan="6" style="text-align:center">
                   Loading...
                 </td>
               </tr>
 
               <tr v-else-if="proposals.length === 0">
-                <td colspan="5" style="text-align:center">
+                <td colspan="6" style="text-align:center">
                   No proposals found.
                 </td>
               </tr>
 
               <tr v-for="proposal in proposals.slice(0, 5)" :key="proposal.id">
+                <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
                 <td>{{ proposal.projectTitle }}</td>
                 <td>
-                  {{ proposal.proponent?.name || '-' }}
+                  {{ proposal.projectLeader || proposal.proponent?.name || '-' }}
                 </td>
                 <td>
                   {{ proposal.createdAt?.substring(0, 10) }}

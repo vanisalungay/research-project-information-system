@@ -12,6 +12,7 @@ import java.util.List;
 public class OvcafProposalResponse {
 
     private Long id;
+    private String documentId;
     private String projectTitle;
     private String projectLeader;
     private String proponentName;

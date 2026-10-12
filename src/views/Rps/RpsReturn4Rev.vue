@@ -28,7 +28,7 @@
             </div>
             <div>
               <span class="label">Proposal ID</span>
-              <p>#{{ proposalObj.id || '41' }}</p>
+              <p>{{ proposalObj.documentId || proposalObj.code || '—' }}</p>
             </div>
           </div>
         </div>

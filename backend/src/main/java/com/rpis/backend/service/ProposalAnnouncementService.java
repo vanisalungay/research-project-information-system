@@ -4,6 +4,7 @@ import com.rpis.backend.dto.ProposalAnnouncementRequest;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
+import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,14 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ProposalAnnouncementService {
 
     private final ProposalAnnouncementRepository announcementRepository;
+    private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
@@ -27,7 +31,17 @@ public class ProposalAnnouncementService {
     // ==================== READ ====================
 
     public List<ProposalAnnouncement> getAllAnnouncements() {
-        return announcementRepository.findAll();
+        List<ProposalAnnouncement> announcements = announcementRepository.findAll();
+
+        Set<Long> announcementIdsWithSubmissions = new HashSet<>(
+                proposalRepository.findAnnouncementIdsWithSubmittedProposals());
+
+        for (ProposalAnnouncement announcement : announcements) {
+            announcement.setHasSubmittedProposals(
+                    announcementIdsWithSubmissions.contains(announcement.getId()));
+        }
+
+        return announcements;
     }
 
     public ProposalAnnouncement getAnnouncementById(Long id) {
@@ -58,6 +72,19 @@ public class ProposalAnnouncementService {
                 .isPresent();
     }
 
+    /**
+     * Returns the announcement currently accepting submissions, or {@code null} when
+     * there is no active announcement. Used by the proposal save flow so the proposal
+     * can be associated with the active submission window.
+     */
+    public ProposalAnnouncement getActiveAnnouncementOrNull() {
+        LocalDate today = LocalDate.now();
+        return announcementRepository
+                .findFirstByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateDesc(
+                        ProposalAnnouncement.STATUS_ACTIVE, today, today)
+                .orElse(null);
+    }
+
     // ==================== CREATE ====================
 
     @Transactional
@@ -76,7 +103,12 @@ public class ProposalAnnouncementService {
         announcement.setName(name);
         announcement.setStartDate(request.getStartDate());
         announcement.setEndDate(request.getEndDate());
-        announcement.setStatus(normalizeStatus(request.getStatus()));
+        // Newly created announcements default to ACTIVE so RPS Staff do not need to
+        // manually select Active when opening a new submission window.
+        String status = (request.getStatus() == null || request.getStatus().trim().isEmpty())
+                ? ProposalAnnouncement.STATUS_ACTIVE
+                : normalizeStatus(request.getStatus());
+        announcement.setStatus(status);
 
         ProposalAnnouncement saved = announcementRepository.save(announcement);
 
@@ -160,7 +192,16 @@ public class ProposalAnnouncementService {
                     "Active proposal announcements cannot be deleted. Close the announcement first.");
         }
 
+        if (hasSubmittedProposals(id)) {
+            throw new IllegalArgumentException(
+                    "This proposal announcement cannot be deleted because one or more proponents have already submitted proposals under it.");
+        }
+
         announcementRepository.delete(announcement);
+    }
+
+    private boolean hasSubmittedProposals(Long announcementId) {
+        return proposalRepository.findAnnouncementIdsWithSubmittedProposals().contains(announcementId);
     }
 
     // ==================== VALIDATION ====================

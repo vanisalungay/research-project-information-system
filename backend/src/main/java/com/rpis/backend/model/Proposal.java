@@ -38,6 +38,12 @@ public class Proposal {
     @JoinColumn(name = "proponent_id")
     private User proponent;
 
+    // The Proposal Announcement (submission window) this proposal was created /
+    // submitted under. Used to enforce that announcements with submitted proposals
+    // cannot be deleted.
+    @Column(name = "proposal_announcement_id")
+    private Long proposalAnnouncementId;
+
     @Column(name = "program_title")
     private String programTitle;
 

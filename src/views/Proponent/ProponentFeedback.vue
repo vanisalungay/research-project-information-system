@@ -41,7 +41,7 @@
             <h3>{{ proposal.project_title }}</h3>
 
             <span class="proposal-id">
-              ID: {{ proposal.proposal_id }}
+              ID: {{ proposal.documentId || proposal.proposal_id || '—' }}
             </span>
 
             <span

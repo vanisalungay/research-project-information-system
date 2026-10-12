@@ -16,6 +16,13 @@
             </svg>
             Download Form
           </button>
+          <button class="btn-download" @click="showEvalCriteria = true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            Evaluation Criteria
+          </button>
           <button class="close-btn" @click="close">✕</button>
         </div>
       </header>
@@ -65,13 +72,13 @@
                 <label>Program Title</label>
                 <input v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
                 <span class="field-error" v-if="showValidation && errors.program_title">{{ errors.program_title
-                }}</span>
+                  }}</span>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.project_title }">
                 <label>Project Title <span class="req">*</span></label>
                 <input v-model="proposal.project_title" placeholder="e.g. Community-Based Water Filtration System" />
                 <span class="field-error" v-if="showValidation && errors.project_title">{{ errors.project_title
-                }}</span>
+                  }}</span>
               </div>
             </div>
             <div class="form-row">
@@ -79,7 +86,7 @@
                 <label>Project Leader <span class="req">*</span></label>
                 <input v-model="proposal.project_leader" placeholder="Full name of project leader" />
                 <span class="field-error" v-if="showValidation && errors.project_leader">{{ errors.project_leader
-                }}</span>
+                  }}</span>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.project_leader_sex }">
                 <label>Sex <span class="req">*</span></label>
@@ -94,10 +101,10 @@
               </div>
             </div>
             <div class="form-row three-col">
-              <div class="form-group" :class="{ 'has-error': showValidation && errors.duration }">
+              <div class="form-group">
                 <label>Duration (months) <span class="req">*</span></label>
-                <input v-model="proposal.duration" placeholder="e.g. 12" />
-                <span class="field-error" v-if="showValidation && errors.duration">{{ errors.duration }}</span>
+                <input v-model="proposal.duration" readonly />
+                <small style="color: #64748b;">Fixed at 12 months for internally funded MSUN projects.</small>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.start_date }">
                 <label>Start Date <span class="req">*</span></label>
@@ -254,7 +261,7 @@
               </div>
             </div>
             <span class="field-error" v-if="showValidation && errors.priority_agendas">{{ errors.priority_agendas
-            }}</span>
+              }}</span>
           </div>
         </section>
 
@@ -269,7 +276,7 @@
               <textarea v-model="proposal.innovation_goals"
                 placeholder="Describe the innovation goals of this project..." rows="4"></textarea>
               <span class="field-error" v-if="showValidation && errors.innovation_goals">{{ errors.innovation_goals
-              }}</span>
+                }}</span>
             </div>
           </div>
         </section>
@@ -284,7 +291,7 @@
               <textarea v-model="proposal.sector_relevance" placeholder="Public Health, Environment, Agriculture, etc."
                 rows="4"></textarea>
               <span class="field-error" v-if="showValidation && errors.sector_relevance">{{ errors.sector_relevance
-              }}</span>
+                }}</span>
             </div>
           </div>
         </section>
@@ -319,7 +326,7 @@
               <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5"
                 class="word-limit"></textarea>
               <span class="field-error" v-if="showValidation && errors.executive_summary">{{ errors.executive_summary
-              }}</span>
+                }}</span>
             </div>
             <span class="char-count">{{ proposal.executive_summary.length }}/200 words</span>
           </div>
@@ -354,7 +361,7 @@
                 <label>General Objective: <span class="req">*</span></label>
                 <textarea v-model="proposal.general_objective" rows="3"></textarea>
                 <span class="field-error" v-if="showValidation && errors.general_objective">{{ errors.general_objective
-                }}</span>
+                  }}</span>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.specific_objectives }">
                 <label>Specific Objectives: <span class="req">*</span></label>
@@ -367,24 +374,21 @@
         </section>
 
         <!-- 11. Review of Literature -->
-      <section class="form-section" ref="section_review_of_literature">
-        <div class="section-header">
-          <span class="section-number">11</span>
-          <h3>Review of Literature</h3>
-        </div>
-        <div class="section-card">
-          <div class="form-group" :class="{ 'has-error': showValidation && errors.review_of_literature }">
-            <textarea
-              v-model="proposal.review_of_literature"
-              placeholder="Enter your review of literature..."
-              rows="5"
-            ></textarea>
-            <span class="field-error" v-if="showValidation && errors.review_of_literature">
-              {{ errors.review_of_literature }}
-            </span>
+        <section class="form-section" ref="section_review_of_literature">
+          <div class="section-header">
+            <span class="section-number">11</span>
+            <h3>Review of Literature</h3>
           </div>
-        </div>
-      </section>
+          <div class="section-card">
+            <div class="form-group" :class="{ 'has-error': showValidation && errors.review_of_literature }">
+              <textarea v-model="proposal.review_of_literature" placeholder="Enter your review of literature..."
+                rows="5"></textarea>
+              <span class="field-error" v-if="showValidation && errors.review_of_literature">
+                {{ errors.review_of_literature }}
+              </span>
+            </div>
+          </div>
+        </section>
 
         <!-- 12. Methodology -->
         <section class="form-section" ref="section_methodology">
@@ -450,7 +454,7 @@
               </div>
             </div>
             <span class="field-error" v-if="showValidation && errors.expected_outputs">{{ errors.expected_outputs
-            }}</span>
+              }}</span>
           </div>
         </section>
 
@@ -464,7 +468,7 @@
               <textarea v-model="proposal.potential_outcomes" placeholder="Describe potential outcomes..."
                 rows="4"></textarea>
               <span class="field-error" v-if="showValidation && errors.potential_outcomes">{{ errors.potential_outcomes
-              }}</span>
+                }}</span>
             </div>
           </div>
         </section>
@@ -479,7 +483,7 @@
               <label>a. Economic Impact: <span class="req">*</span></label>
               <textarea v-model="proposal.economic_impact" rows="3"></textarea>
               <span class="field-error" v-if="showValidation && errors.economic_impact">{{ errors.economic_impact
-              }}</span>
+                }}</span>
             </div>
             <div class="form-group" :class="{ 'has-error': showValidation && errors.social_ethical_impact }">
               <label>b. Social / Ethical Impact: <span class="req">*</span></label>
@@ -575,7 +579,7 @@
               <textarea v-model="proposal.risks_assumptions"
                 placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
               <span class="field-error" v-if="showValidation && errors.risks_assumptions">{{ errors.risks_assumptions
-              }}</span>
+                }}</span>
             </div>
           </div>
         </section>
@@ -608,7 +612,7 @@
               </table>
             </div>
             <span class="field-error" v-if="showValidation && errors.logical_framework">{{ errors.logical_framework
-            }}</span>
+              }}</span>
             <button class="btn-add" @click="addTableRow('logical_framework')">+ Add Row</button>
           </div>
         </section>
@@ -624,7 +628,7 @@
               <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..."
                 rows="5"></textarea>
               <span class="field-error" v-if="showValidation && errors.literature_cited">{{ errors.literature_cited
-              }}</span>
+                }}</span>
             </div>
           </div>
         </section>
@@ -776,6 +780,22 @@
     </div>
   </div>
 
+  <div v-if="showEvalCriteria" class="eval-criteria-backdrop" @click.self="showEvalCriteria = false">
+    <div class="modal-container eval-criteria-modal">
+      <header class="modal-header">
+        <div class="header-left">
+          <h2>Evaluation Criteria</h2>
+        </div>
+        <div class="header-actions">
+          <button class="close-btn" @click="showEvalCriteria = false">✕</button>
+        </div>
+      </header>
+      <div class="modal-body">
+        <ProponentEvalCriteria />
+      </div>
+    </div>
+  </div>
+
   <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
     @cancel="dialogState.onCancel" @close="dialogState.show = false" />
 </template>
@@ -785,6 +805,7 @@ import { reactive, ref, computed, nextTick } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
 import {
   buildStandaloneHtml,
@@ -807,6 +828,7 @@ const emit = defineEmits(['update:modelValue', 'save', 'next'])
 const modalBodyRef = ref(null)
 const errorBannerRef = ref(null)
 const showValidation = ref(false)
+const showEvalCriteria = ref(false)
 const errors = reactive({})
 
 const sectionRefs = {
@@ -857,7 +879,7 @@ const getInitialProposal = () => ({
   project_title: '',
   project_leader: '',
   project_leader_sex: '',
-  duration: '',
+  duration: '12',
   start_date: '',
   end_date: '',
   department: '',
@@ -926,7 +948,8 @@ const loadProposal = (data) => {
   proposal.project_title = data.projectTitle || ''
   proposal.project_leader = data.projectLeader || ''
   proposal.project_leader_sex = data.projectLeaderSex || ''
-  proposal.duration = data.duration || ''
+  // Internally funded proposals always have a fixed 12-month duration.
+  proposal.duration = '12'
   proposal.start_date = data.startDate || ''
   proposal.end_date = data.endDate || ''
   proposal.department = data.college || ''
@@ -1363,7 +1386,7 @@ const validateStep1 = () => {
   if (isBlank(proposal.specific_objectives)) errors.specific_objectives = 'Specific Objectives is required.'
 
   // 11 - Review of Literature
-if (isBlank(proposal.review_of_literature)) errors.review_of_literature = 'Review of Literature is required.'
+  if (isBlank(proposal.review_of_literature)) errors.review_of_literature = 'Review of Literature is required.'
 
   // 12 - Methodology
   if (isBlank(proposal.methodology)) errors.methodology = 'Methodology is required.'
@@ -1417,7 +1440,7 @@ if (isBlank(proposal.review_of_literature)) errors.review_of_literature = 'Revie
   // 25 - Budget
   if (!proposal.line_item_budget_file) errors.line_item_budget_file = 'Line-Item Budget file is required.'
 
-  
+
 
   return Object.keys(errors).length === 0
 }
@@ -2427,5 +2450,22 @@ select {
 
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ===== EVALUATION CRITERIA MODAL ===== */
+.eval-criteria-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.eval-criteria-modal {
+  max-width: 850px;
 }
 </style>

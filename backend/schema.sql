@@ -29,6 +29,7 @@ CREATE TABLE users (
 CREATE TABLE proposals (
     id BIGSERIAL PRIMARY KEY,
     proponent_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    proposal_announcement_id BIGINT,          -- announcement (submission window) this proposal was submitted under
     -- Proposal ID and Revision tracking
     proposal_code VARCHAR(10) UNIQUE,     -- 3-digit continuous counter: '001', '002', etc.
     revision_number INT DEFAULT 0,        -- 0 = initial submission, 1 = first revision, etc.
@@ -281,9 +282,10 @@ CREATE TABLE proposal_versions (
 CREATE TABLE quarterly_progress_reports (
     id BIGSERIAL PRIMARY KEY,
     proposal_id BIGINT NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
-    period VARCHAR(10) NOT NULL, -- Q1, Q2, Q3, Q4
+    period VARCHAR(10) NOT NULL, -- Q1, Q2, Q3, Q4, TERMINAL
     year INT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT', -- DRAFT, SUBMITTED
+    report_type VARCHAR(30) NOT NULL DEFAULT 'QUARTERLY_PROGRESS', -- QUARTERLY_PROGRESS | TERMINAL_REPORT
     project_title VARCHAR(255),
     project_leader VARCHAR(255),
     leader_gender VARCHAR(20),
@@ -301,5 +303,15 @@ CREATE TABLE quarterly_progress_reports (
     submitted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    submitted_at TIMESTAMP
+    submitted_at TIMESTAMP,
+    -- Reporting-stage documents (stages 1-3 require a Project Workplan; the final
+    -- stage requires a Terminal Report). Stored under the uploads/reports convention.
+    workplan_file_name VARCHAR(255),
+    workplan_file_path VARCHAR(500),
+    terminal_report_file_name VARCHAR(255),
+    terminal_report_file_path VARCHAR(500),
+    -- Structured interactive Project Workplan (stages 1-3): objectives with
+    -- monthly target activities/accomplishments, totals, remarks, "As of" date.
+    -- Legacy uploaded workplan files above are preserved for old reports.
+    workplan_json TEXT
 );

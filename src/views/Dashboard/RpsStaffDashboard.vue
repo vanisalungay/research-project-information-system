@@ -1,197 +1,238 @@
 <template>
-  <div class="dashboard-container animate-fade">
-    
-    <!-- Dashboard Header -->
+  <div class="dashboard-container">
+    <!-- DASHBOARD HEADER -->
     <div class="dashboard-header">
       <div class="header-text">
         <h2>RPS Overview</h2>
-        <p>Administrative and publication services research management panel.</p>
+        <p>Administrative and publication services monitoring panel.</p>
       </div>
-      <button class="refresh-btn" @click="loadDashboardData" :disabled="isLoading">
-        <svg class="refresh-icon" :class="{ spinning: isLoading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l5.67-5.67" stroke-linecap="round" stroke-linejoin="round"/>
+      <button class="refresh-btn" @click="refreshDashboard" :disabled="isRefreshing">
+        <svg class="refresh-icon" :class="{ spinning: isRefreshing }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l5.67-5.67"></path>
         </svg>
-        <span>{{ isLoading ? 'Refreshing...' : 'Refresh Data' }}</span>
+        <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh Data' }}</span>
       </button>
     </div>
 
-    <!-- Quick Stats Row Grid -->
-    <div class="stats-row">
-      
-      <div class="stat-card blue-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Total Proposals</span>
-          <h3 class="stat-value">{{ totalProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper blue">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card green-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Endorsed Proposals</span>
-          <h3 class="stat-value">{{ endorsedProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper green">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card yellow-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Pending RPS Review</span>
-          <h3 class="stat-value">{{ pendingReview }}</h3>
-        </div>
-        <div class="stat-icon-wrapper yellow">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card red-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Failed / Returned</span>
-          <h3 class="stat-value">{{ failedProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper red">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Main Content Panel Split -->
-    <div class="dashboard-body">
-      
-      <!-- Left Panel: Recent Database Activities -->
-      <div class="main-panel">
-        <div class="panel-header">
-          <h3>RECENT SUBMISSIONS</h3>
-          <span class="panel-badge">LIVE TRACKING</span>
-        </div>
-
-        <div v-if="isLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Compiling research metrics...</p>
-        </div>
-
-        <div v-else-if="activities.length > 0" class="activity-list">
-          <div
-            v-for="item in activities"
-            :key="item.id"
-            :class="['activity-card', item.borderClass]"
-          >
-            <div class="activity-details">
-              <div class="activity-text">
-                <h4>{{ item.title }}</h4>
-                <p>{{ item.description }}</p>
-              </div>
-              <span :class="['status-badge', item.badgeClass]">
-                {{ item.status }}
-              </span>
-            </div>
-            <div class="activity-footer">
-              <button class="review-btn" @click="$router.push(`/proposal/${item.id}`)">
-                Manage Details
-              </button>
-            </div>
+    <!-- PROPOSAL ANNOUNCEMENTS -->
+    <section class="announcements-section">
+      <div class="announcements-panel">
+        <div class="section-header">
+          <div class="section-heading">
+            <h3>Proposal announcements</h3>
+            <p class="section-sub">Current proposal calls, submission periods and announcement details.</p>
           </div>
-
-          <div class="action-row">
-            <h3>Proposals Awaiting RPS Action</h3>
-            <button class="view-all-btn" @click="$router.push('/rps-subproposal')">
-              View All Submissions &rarr;
-            </button>
-          </div>
-
-          <!-- Dynamic Awaiting Proposals List -->
-          <div class="table-container">
-            <table class="proposal-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Project Leader</th>
-                  <th>Status</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="prop in pendingProposalsList" :key="prop.id">
-                  <td class="font-bold">{{ prop.projectTitle || "Untitled Project" }}</td>
-                  <td>{{ prop.projectLeader || "Unknown" }}</td>
-                  <td>
-                    <span class="table-status-pill pending">Pending</span>
-                  </td>
-                  <td class="text-right">
-                    <button class="table-review-btn" @click="$router.push(`/proposal/${prop.id}`)">
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div v-else class="empty-state">
-          <div class="empty-icon-wrapper">
-            <svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h3>No Active Submissions Yet</h3>
-          <p>Research proposals, reviews, and publication metrics will appear here dynamically once faculty submitters compile drafts.</p>
-        </div>
-      </div>
-
-      <!-- Right Panel: Side Action Blocks -->
-      <div class="side-panel">
-        
-        <!-- Live Action Streams -->
-        <div class="side-card">
-          <h3 class="side-card-title">Live Notification Logs</h3>
-          <p class="side-card-subtitle">Real-time alerts processed from active users.</p>
-
-          <ul class="activity-timeline">
-            <li v-for="(log, idx) in activityLogs" :key="idx">
-              <span class="timeline-dot"></span>
-              <div class="timeline-text">
-                <span class="log-desc">{{ log.text }}</span>
-                <span class="log-time">{{ log.time }}</span>
-              </div>
-            </li>
-          </ul>
-
-          <button class="side-action-btn border-top" @click="$router.push('/notifications')">
-            View All Logs
+          <button class="section-link" @click="$router.push('/proposal-announcements')">
+            <span>View all announcements</span>
+            <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
           </button>
         </div>
 
-        <!-- Quick Administration Hub -->
-        <div class="side-card bg-highlight">
-          <h3 class="side-card-title dark-text">Quick Actions</h3>
-          <p class="side-card-subtitle dark-text">Speed dial administrative utilities.</p>
-          
-          <div class="quick-action-column">
-            <button class="hub-btn primary" @click="$router.push('/rps-subproposal')">
-              Review Submitted Proposals
-            </button>
-            <button class="hub-btn secondary" @click="$router.push('/budget-processing')">
-              Manage Funding Releases
-            </button>
+        <div v-if="announcementsLoading" class="panel-state">Loading proposal announcements...</div>
+        <div v-else-if="announcementsError" class="panel-state error-text">{{ announcementsError }}</div>
+        <div v-else-if="announcements.length === 0" class="panel-state">No proposal announcements available at the moment.</div>
+        <div v-else class="announcement-grid">
+          <article
+            v-for="ann in announcementCards"
+            :key="ann.id"
+            class="announcement-card"
+            :class="`is-${ann.variant}`"
+          >
+            <div class="announcement-status-row">
+              <span class="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-label">{{ ann.statusLabel }}</span>
+              </span>
+              <span class="status-badge">{{ ann.badge }}</span>
+            </div>
+
+            <h4 class="announcement-title">{{ ann.title }}</h4>
+
+            <div class="announcement-meta" :class="{ 'meta-two': !ann.hasTimeLeft }">
+              <div class="meta-group">
+                <span class="meta-label">{{ ann.opensLabel }}</span>
+                <span class="meta-value">{{ ann.opens }}</span>
+              </div>
+              <div class="meta-group">
+                <span class="meta-label">{{ ann.deadlineLabel }}</span>
+                <span class="meta-value">{{ ann.deadline }}</span>
+              </div>
+              <div v-if="ann.hasTimeLeft" class="meta-group">
+                <span class="meta-label">Time left</span>
+                <span class="meta-value">{{ ann.timeLeft }}</span>
+              </div>
+            </div>
+
+            <div v-if="ann.progress !== null" class="announcement-progress">
+              <div class="progress-track">
+                <div class="progress-fill" :style="{ width: ann.progress + '%' }"></div>
+              </div>
+              <div class="progress-dates">
+                <span>{{ ann.startShort }}</span>
+                <span>{{ ann.endShort }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANELS GRID -->
+    <div class="panels-grid">
+      <!-- PANEL A: AWAITING RPS ACTION -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h3>Awaiting RPS Action</h3>
+            <p class="panel-sub">Newest submissions to review</p>
           </div>
+          <button class="panel-link" @click="$router.push('/rps-subproposal')">View all submissions &rarr;</button>
         </div>
 
-      </div>
+        <div v-if="isLoading" class="panel-state">Loading submissions...</div>
+        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+        <div v-else-if="awaitingAction.length === 0" class="panel-state">No submissions awaiting action.</div>
+        <div v-else class="panel-table-wrap">
+          <table class="panel-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Project Leader</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="prop in awaitingAction" :key="prop.id">
+                <td class="cell-title">{{ prop.projectTitle || 'Untitled Project' }}</td>
+                <td>{{ prop.projectLeader || 'Unknown' }}</td>
+                <td>
+                  <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+                </td>
+                <td class="text-right">
+                  <button class="row-btn" @click="$router.push(`/proposal/${prop.id}`)">Review</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
+      <!-- PANEL B: REVISION REQUESTS -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h3>Revision Requests</h3>
+          </div>
+          <button class="panel-link" @click="$router.push('/rps-revision-requests')">View all &rarr;</button>
+        </div>
+
+        <p class="panel-summary">
+          <strong>{{ revisionRequests.length }}</strong>
+          revision request{{ revisionRequests.length === 1 ? '' : 's' }}
+        </p>
+
+        <div v-if="isLoading" class="panel-state">Loading revision requests...</div>
+        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+        <div v-else-if="revisionRequests.length === 0" class="panel-state">No revision requests found.</div>
+        <ul v-else class="item-list">
+          <li v-for="prop in revisionRequests.slice(0, 5)" :key="prop.id" class="item" :class="{ urgent: isOverdue(prop) }">
+            <div class="item-main">
+              <div class="item-title">{{ prop.projectTitle || 'Untitled' }}</div>
+              <div class="item-meta">
+                {{ prop.projectLeader || prop.proponent?.name || 'Unknown' }} &bull;
+                {{ prop.documentId || prop.proposalCode || '—' }}
+              </div>
+              <div class="item-meta">{{ revDateLabel(prop) }}</div>
+            </div>
+            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- PANEL C: ENDORSED PROPOSALS -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h3>Endorsed Proposals</h3>
+          </div>
+          <button class="panel-link" @click="$router.push('/rpsendorsed-prop')">View all &rarr;</button>
+        </div>
+
+        <p class="panel-summary">
+          <strong>{{ endorsedProposals.length }}</strong>
+          endorsed proposal{{ endorsedProposals.length === 1 ? '' : 's' }}
+        </p>
+
+        <div v-if="isLoading" class="panel-state">Loading endorsed proposals...</div>
+        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+        <div v-else-if="endorsedProposals.length === 0" class="panel-state">No endorsed proposals found.</div>
+        <ul v-else class="item-list">
+          <li v-for="prop in endorsedProposals.slice(0, 5)" :key="prop.id" class="item">
+            <div class="item-main">
+              <div class="item-title">{{ prop.projectTitle || 'Untitled' }}</div>
+              <div class="item-meta">
+                {{ prop.projectLeader || prop.proponent?.name || 'N/A' }} &bull;
+                {{ prop.documentId || prop.proposalCode || '—' }}
+              </div>
+            </div>
+            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- PANEL D: BUDGET PROCESSING -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h3>Budget Processing</h3>
+            <p class="panel-sub">Approved research project budgets</p>
+          </div>
+          <button class="panel-link" @click="$router.push('/budget-processing')">Open budget processing &rarr;</button>
+        </div>
+
+        <div class="budget-filters">
+          <button
+            v-for="filter in budgetFilters"
+            :key="filter"
+            class="budget-filter"
+            :class="{ active: budgetFilter === filter }"
+            @click="budgetFilter = filter"
+          >
+            {{ filter }}
+          </button>
+        </div>
+
+        <div v-if="isLoading" class="panel-state">Loading budget records...</div>
+        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+        <div v-else-if="filteredBudget.length === 0" class="panel-state">No budget records available.</div>
+        <div v-else class="panel-table-wrap">
+          <table class="panel-table">
+            <thead>
+              <tr>
+                <th>Document ID</th>
+                <th>Proposal Title</th>
+                <th>Project Leader</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="prop in filteredBudget.slice(0, 5)" :key="prop.id">
+                <td class="cell-id">{{ prop.documentId || prop.proposalCode || '—' }}</td>
+                <td class="cell-title">{{ prop.projectTitle || 'Untitled' }}</td>
+                <td>{{ prop.projectLeader || prop.proponent?.name || 'N/A' }}</td>
+                <td>
+                  <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+                </td>
+                <td class="text-right">
+                  <button class="row-btn" @click="$router.push({ name: 'ProposalDetails', params: { id: prop.id } })">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -199,170 +240,297 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
-import { useUserDataStore } from '@/stores/userData'
 
+// Single data source reused from the existing dashboard. The backend returns all
+// proposals, so every panel below is derived client-side using the exact same
+// status sets used by the corresponding existing RPS pages.
 const proposals = ref([])
-const activities = ref([])
-const totalProposals = ref(0)
-const endorsedProposals = ref(0)
-const pendingReview = ref(0)
-const failedProposals = ref(0)
 const isLoading = ref(true)
+const error = ref(null)
 
-// Dynamic activity logs from notifications API
-const activityLogs = ref([])
+// Preserve the existing dashboard's record limit for the awaiting-action table.
+const AWAITING_LIMIT = 3
 
-// Compute list of dynamic pending proposals needing action
-const pendingProposalsList = computed(() => {
-  return proposals.value
-    .filter(p => p.status === 'SUBMITTED' || p.status === 'PENDING')
-    .slice(0, 3)
+// Status sets mirror the existing pages' filters (Revision / Endorsed / Budget).
+const REVISION_STATUSES = ['RETURNED_TO_RPS', 'RPS_RETURNED']
+const ENDORSED_STATUSES = ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+const BUDGET_STATUSES = ['APPROVED', 'READY_FOR_RELEASE', 'RELEASED', 'RETURNED']
+const PENDING_STATUSES = ['SUBMITTED', 'PENDING']
+
+const byStatus = (set) => proposals.value.filter(p => set.includes(p.status))
+
+const revisionRequests = computed(() => byStatus(REVISION_STATUSES))
+const endorsedProposals = computed(() => byStatus(ENDORSED_STATUSES))
+const budgetProposals = computed(() => byStatus(BUDGET_STATUSES))
+const pendingReviewList = computed(() => byStatus(PENDING_STATUSES))
+const awaitingAction = computed(() => pendingReviewList.value.slice(0, AWAITING_LIMIT))
+
+// Budget category filters mirror the existing Budget Processing page.
+const budgetFilters = ['All', 'Approved', 'Ready for Release', 'Released', 'Returned']
+const budgetStatusMap = {
+  'Approved': 'APPROVED',
+  'Ready for Release': 'READY_FOR_RELEASE',
+  'Released': 'RELEASED',
+  'Returned': 'RETURNED',
+}
+const budgetFilter = ref('All')
+const filteredBudget = computed(() => {
+  if (budgetFilter.value === 'All') return budgetProposals.value
+  const status = budgetStatusMap[budgetFilter.value]
+  return budgetProposals.value.filter(p => p.status === status)
 })
 
-const formatTimeAgo = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now - date
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+// Status label + badge mapping reusing the existing status meanings.
+const STATUS_META = {
+  SUBMITTED: { label: 'Pending', cls: 'pending' },
+  PENDING: { label: 'Pending', cls: 'pending' },
+  RETURNED_TO_RPS: { label: 'Returned to RPS', cls: 'returned' },
+  RPS_RETURNED: { label: 'Returned to Proponent', cls: 'returned' },
+  REVISION: { label: 'Revision', cls: 'revision' },
+  REC_REVISION: { label: 'Revision', cls: 'revision' },
+  ENDORSED: { label: 'Endorsed', cls: 'endorsed' },
+  UNDER_REVIEW: { label: 'Under Review', cls: 'pending' },
+  REC_APPROVED: { label: 'REC Approved', cls: 'approved' },
+  FOR_OVCAF_APPROVAL: { label: 'For OVCAF Review', cls: 'pending' },
+  FOR_OC_APPROVAL: { label: 'For Chancellor Approval', cls: 'pending' },
+  APPROVED: { label: 'Approved', cls: 'approved' },
+  READY_FOR_RELEASE: { label: 'Ready for Release', cls: 'ready' },
+  RELEASED: { label: 'Released', cls: 'released' },
+  RETURNED: { label: 'Returned', cls: 'returned' },
+}
+const statusMeta = (status) => STATUS_META[status] || { label: status || 'Unknown', cls: 'pending' }
+
+// Existing deadline logic: overdue when the revision deadline has passed.
+function isOverdue(prop) {
+  if (!prop.revisionDeadline) return false
+  const d = new Date(prop.revisionDeadline)
+  return !isNaN(d.getTime()) && d.getTime() < Date.now()
 }
 
-const loadActivityLogs = async () => {
+function formatDate(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString()
+}
+
+function revDateLabel(prop) {
+  if (prop.status === 'RPS_RETURNED') return 'Deadline: ' + formatDate(prop.revisionDeadline)
+  return 'Returned: ' + formatDate(prop.returnedAt)
+}
+
+async function loadDashboardData() {
+  isLoading.value = true
+  error.value = null
   try {
-    const userStore = useUserDataStore()
-    const userId = userStore.user?.id
-    if (!userId) return
-    const res = await api.get('/api/notifications', { params: { userId } })
-    const data = Array.isArray(res.data) ? res.data : []
-    activityLogs.value = data.slice(0, 5).map(n => ({
-      text: n.message || n.title || 'System notification',
-      time: formatTimeAgo(n.createdAt)
-    }))
+    const res = await api.get('/api/proposals')
+    proposals.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
-    console.error('Failed to load activity logs:', err)
-    activityLogs.value = []
-  }
-}
-
-const loadDashboardData = async () => {
-  try {
-    isLoading.value = true
-    const response = await api.get('/api/proposals')
-    const data = response.data || []
-    proposals.value = data
-
-    // Calculate database counts dynamically
-    totalProposals.value = data.length
-    endorsedProposals.value = data.filter(p => p.status === 'ENDORSED' || p.status === 'APPROVED' || p.status === 'REC_APPROVED').length
-    pendingReview.value = data.filter(p => p.status === 'SUBMITTED' || p.status === 'PENDING').length
-    failedProposals.value = data.filter(p => p.status === 'REJECTED' || p.status === 'REVISION' || p.status === 'REC_REVISION' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED').length
-
-    // Filter dynamic submissions list for top activity logs
-    if (data.length > 0) {
-      // Sort to show latest first
-      const sorted = [...data].sort((a, b) => b.id - a.id)
-      activities.value = sorted.slice(0, 4).map(p => {
-        let statusText = 'Pending'
-        let borderClass = 'review-border'
-        let badgeClass = 'review-badge'
-        
-        if (p.status === 'APPROVED') {
-          statusText = 'Approved'
-          borderClass = 'pass-border'
-          badgeClass = 'passed-badge'
-        } else if (p.status === 'REJECTED' || p.status === 'RETURNED' || p.status === 'RPS_RETURNED') {
-          statusText = 'Returned'
-          borderClass = 'fail-border'
-          badgeClass = 'failed-badge'
-        } else if (p.status === 'ENDORSED') {
-          statusText = 'Endorsed'
-          borderClass = 'pass-border'
-          badgeClass = 'passed-badge'
-        }
-
-        return {
-          id: p.id,
-          title: p.projectTitle || "Untitled Research",
-          description: "Leader: " + (p.projectLeader || "Anonymous"),
-          status: statusText,
-          borderClass,
-          badgeClass
-        }
-      })
-    }
-
-    // Load dynamic activity logs
-    await loadActivityLogs()
-  } catch (error) {
-    console.error("Failed to compile dashboard metrics:", error)
+    console.error('Failed to load RPS dashboard metrics:', err)
+    error.value = 'Failed to load dashboard data.'
+    proposals.value = []
   } finally {
     isLoading.value = false
   }
 }
 
-onMounted(loadDashboardData)
+// ===== Proposal announcements (reuses the existing Proposal Announcement feature) =====
+// Only a small subset is shown on the dashboard; the full list lives on the
+// existing Proposal Announcements page. Announcement order/visibility is unchanged.
+const ANNOUNCEMENT_LIMIT = 4
+const announcements = ref([])
+const announcementsLoading = ref(true)
+const announcementsError = ref(null)
+const visibleAnnouncements = computed(() => announcements.value.slice(0, ANNOUNCEMENT_LIMIT))
+
+function formatAnnouncementDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(`${iso}T00:00:00`)
+  return isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatAnnouncementShortDate(iso) {
+  if (!iso) return ''
+  const d = new Date(`${iso}T00:00:00`)
+  return isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+/** Local today as YYYY-MM-DD (matches backend LocalDate serialization). */
+function localTodayISO() {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+function daysBetween(fromISO, toISO) {
+  const from = new Date(`${fromISO}T00:00:00`)
+  const to = new Date(`${toISO}T00:00:00`)
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) return NaN
+  return Math.round((to.getTime() - from.getTime()) / 86400000)
+}
+
+function announcementIsActiveNow(announcement) {
+  const today = localTodayISO()
+  return announcement.status === 'ACTIVE' && announcement.startDate <= today && today <= announcement.endDate
+}
+
+/** Display variant derived from the existing status + date-range rules. */
+function announcementVariant(announcement) {
+  const today = localTodayISO()
+  if (announcement.endDate < today) return 'expired'
+  if (announcementIsActiveNow(announcement)) return 'open'
+  if (announcement.status === 'ACTIVE' && announcement.startDate > today) return 'upcoming'
+  return 'neutral'
+}
+
+function announcementStatusLabel(announcement) {
+  const variant = announcementVariant(announcement)
+  if (variant === 'open') return 'Open now · accepting submissions'
+  if (variant === 'expired') return 'Expired'
+  if (variant === 'upcoming') return `Opens ${formatAnnouncementDate(announcement.startDate)}`
+  return announcement.status
+}
+
+/** Badge always reflects the actual state; expired is shown as EXPIRED. */
+function announcementBadge(announcement) {
+  return announcementVariant(announcement) === 'expired' ? 'EXPIRED' : announcement.status
+}
+
+function announcementHasTimeLeft(announcement) {
+  const variant = announcementVariant(announcement)
+  return variant === 'open' || variant === 'upcoming'
+}
+
+function announcementTimeLeft(announcement) {
+  const d = daysBetween(localTodayISO(), announcement.endDate)
+  if (isNaN(d) || d < 0) return '—'
+  return `${d} day${d === 1 ? '' : 's'}`
+}
+
+/** Elapsed share of the submission window, clamped to 0–100 (null when not meaningful). */
+function announcementProgress(announcement) {
+  const start = new Date(`${announcement.startDate}T00:00:00`).getTime()
+  const end = new Date(`${announcement.endDate}T00:00:00`).getTime()
+  if (isNaN(start) || isNaN(end) || end <= start) return null
+  const now = new Date(`${localTodayISO()}T00:00:00`).getTime()
+  const pct = ((now - start) / (end - start)) * 100
+  return Math.min(100, Math.max(0, Math.round(pct)))
+}
+
+const announcementCards = computed(() =>
+  visibleAnnouncements.value.map((announcement) => {
+    const variant = announcementVariant(announcement)
+    return {
+      id: announcement.id,
+      title: announcement.name,
+      variant,
+      statusLabel: announcementStatusLabel(announcement),
+      badge: announcementBadge(announcement),
+      opensLabel: variant === 'expired' ? 'Opened' : 'Opens',
+      deadlineLabel: variant === 'expired' ? 'Closed' : 'Deadline',
+      opens: formatAnnouncementDate(announcement.startDate),
+      deadline: formatAnnouncementDate(announcement.endDate),
+      hasTimeLeft: announcementHasTimeLeft(announcement),
+      timeLeft: announcementTimeLeft(announcement),
+      progress: announcementProgress(announcement),
+      startShort: formatAnnouncementShortDate(announcement.startDate),
+      endShort: formatAnnouncementShortDate(announcement.endDate),
+    }
+  })
+)
+
+async function loadAnnouncements() {
+  announcementsLoading.value = true
+  announcementsError.value = null
+  try {
+    const res = await api.get('/api/proposal-announcements')
+    announcements.value = Array.isArray(res.data) ? res.data : []
+  } catch (err) {
+    console.error('Failed to load proposal announcements:', err)
+    announcementsError.value = 'Failed to load proposal announcements.'
+    announcements.value = []
+  } finally {
+    announcementsLoading.value = false
+  }
+}
+
+const isRefreshing = computed(() => isLoading.value || announcementsLoading.value)
+
+function refreshDashboard() {
+  loadDashboardData()
+  loadAnnouncements()
+}
+
+onMounted(() => {
+  loadDashboardData()
+  loadAnnouncements()
+})
 </script>
 
 <style scoped>
 .dashboard-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 10px;
+  /* Fill the content area (which has 32px padding) with the light page background. */
+  margin: -32px;
+  padding: 22px 26px 30px;
+  background: #f3f4f6;
+  min-height: calc(100vh - 169px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Header layout block */
+/* HEADER */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
-  padding-bottom: 18px;
-}
-
-.header-text {
-  text-align: left;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .header-text h2 {
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--color-heading, #0f172a);
-  margin: 0 0 4px 0;
+  color: #20234f;
+  line-height: 1.2;
 }
 
 .header-text p {
-  font-size: 0.875rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0;
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #77809a;
+  line-height: 1.4;
 }
 
 .refresh-btn {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #cbd5e1);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text, #475569);
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.15s ease;
+  gap: 7px;
+  height: 34px;
+  padding: 0 13px;
+  background: #ffffff;
+  border: 1px solid #e6e8ef;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #25245b;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: var(--color-background-soft, #f8fafc);
-  color: var(--color-heading, #0f172a);
+  background: #f8fafc;
+  border-color: #25245b;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .refresh-icon {
@@ -374,541 +542,535 @@ onMounted(loadDashboardData)
   animation: spin 1s linear infinite;
 }
 
-/* Quick Stats Row */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.stat-card {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 12px;
-  padding: 20px;
+/* PROPOSAL ANNOUNCEMENTS */
+.announcements-section {
+  width: 100%;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-}
-
-/* Left borders for visual accents */
-.blue-accent { border-left: 4px solid #3b82f6; }
-.green-accent { border-left: 4px solid #10b981; }
-.yellow-accent { border-left: 4px solid #f59e0b; }
-.red-accent { border-left: 4px solid #ef4444; }
-
-.stat-meta {
-  text-align: left;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-soft, #64748b);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-heading, #0f172a);
+.section-heading h3 {
   margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #25245b;
   line-height: 1.2;
 }
 
-.stat-icon-wrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  display: flex;
+.section-sub {
+  margin: 3px 0 0;
+  font-size: 10px;
+  font-weight: 400;
+  color: #78809a;
+  line-height: 1.4;
+}
+
+.section-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #25245b;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.stat-svg {
-  width: 22px;
-  height: 22px;
+.section-link:hover {
+  text-decoration: underline;
 }
 
-.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-.green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.section-link-arrow {
+  font-size: 11px;
+  line-height: 1;
+}
 
-/* Dashboard layout splitting panels */
-.dashboard-body {
+.announcements-panel {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e5e7ef;
+  border-radius: 13px;
+  padding: 14px;
+}
+
+.announcement-grid {
   display: grid;
-  grid-template-columns: 2fr 1.2fr;
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  align-items: start;
 }
 
-.main-panel {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 14px;
-  padding: 28px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+.announcement-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e6e8ef;
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* OPEN / ACCEPTING SUBMISSIONS */
+.announcement-card.is-open {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+/* EXPIRED */
+.announcement-card.is-expired {
+  background: #f7f7fc;
+  border-color: #e6e6f0;
+}
+
+/* UPCOMING */
+.announcement-card.is-upcoming {
+  background: #f5f8ff;
+  border-color: #dce6fa;
+}
+
+/* NEUTRAL (draft / other) */
+.announcement-card.is-neutral {
+  background: #fafafb;
+  border-color: #e6e8ef;
+}
+
+.announcement-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #9ca3af;
+}
+
+.status-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.status-badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.is-open .status-dot { background: #16a34a; }
+.is-open .status-label { color: #166534; }
+.is-open .status-badge { background: #dcfce7; color: #166534; }
+
+.is-expired .status-dot { background: #8b8ba7; }
+.is-expired .status-label { color: #777792; }
+.is-expired .status-badge { background: #e8e8f3; color: #777792; }
+
+.is-upcoming .status-dot { background: #2563eb; }
+.is-upcoming .status-label { color: #2563eb; }
+.is-upcoming .status-badge { background: #dbeafe; color: #1d4ed8; }
+
+.announcement-title {
+  margin: 10px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #25245b;
+  line-height: 1.3;
+}
+
+.announcement-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.announcement-meta.meta-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.meta-group {
+  min-width: 0;
+}
+
+.meta-label {
+  display: block;
+  font-size: 7.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #78809a;
+}
+
+.meta-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #25245b;
+  line-height: 1.3;
+}
+
+.announcement-progress {
+  margin-top: 11px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 4.5px;
+  background: #d1fae5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #16a34a;
+  border-radius: 999px;
+  transition: width 0.18s ease;
+}
+
+.is-expired .progress-track { background: #dad9e8; }
+.is-expired .progress-fill { background: #8b8ba7; }
+.is-upcoming .progress-track { background: #dbeafe; }
+.is-upcoming .progress-fill { background: #93b4f5; }
+
+.progress-dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 7.5px;
+  color: #78809a;
+}
+
+/* PANELS GRID */
+.panels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #e6e8ef;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--color-border, #f1f5f9);
-  padding-bottom: 14px;
-}
-
-.panel-header h3 {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--color-heading, #1e293b);
-  margin: 0;
-}
-
-.panel-badge {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  background: rgba(36, 82, 255, 0.1);
-  color: #2452ff;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-
-/* Loading indicators */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 60px 20px;
-  gap: 12px;
-}
-
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(36, 82, 255, 0.2);
-  border-top-color: #2452ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.loading-state p {
-  font-size: 0.875rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0;
-}
-
-/* Submission cards list */
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  text-align: left;
-}
-
-.activity-card {
-  background: var(--color-background-soft, #f8fafc);
-  border-radius: 12px;
-  padding: 16px 20px;
-  border: 1px solid var(--color-border, #cbd5e1);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Accent borders */
-.pass-border { border-left: 4px solid #10b981; }
-.review-border { border-left: 4px solid #3b82f6; }
-.fail-border { border-left: 4px solid #ef4444; }
-
-.activity-details {
-  display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
 }
 
-.activity-text h4 {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--color-heading, #0f172a);
-  margin: 0 0 4px 0;
-  line-height: 1.4;
-}
-
-.activity-text p {
-  font-size: 0.8125rem;
-  color: var(--color-text-soft, #64748b);
+.panel-heading h3 {
   margin: 0;
-}
-
-.status-badge {
-  font-size: 0.75rem;
+  font-size: 14px;
   font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 20px;
+  color: #20234f;
 }
 
-.passed-badge { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.review-badge { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-.failed-badge { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-
-.activity-footer {
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.04));
-  padding-top: 10px;
+.panel-sub {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: #77809a;
 }
 
-.review-btn {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #cbd5e1);
-  color: var(--color-text, #475569);
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.review-btn:hover {
-  background: var(--color-background-soft, #f8fafc);
-  color: var(--color-heading, #0f172a);
-  border-color: #ffd803;
-}
-
-.action-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 20px 0 10px 0;
-  border-top: 1px solid var(--color-border, #f1f5f9);
-  padding-top: 24px;
-}
-
-.action-row h3 {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--color-heading, #1e293b);
-  margin: 0;
-}
-
-.view-all-btn {
-  background: transparent;
+.panel-link {
+  background: none;
   border: none;
-  font-size: 0.8125rem;
+  padding: 0;
+  font-size: 11px;
   font-weight: 600;
-  color: #2452ff;
+  color: #25245b;
+  font-family: inherit;
   cursor: pointer;
-  padding: 4px;
+  white-space: nowrap;
 }
 
-.view-all-btn:hover {
+.panel-link:hover {
   text-decoration: underline;
 }
 
-/* Action Proposals table styling */
-.table-container {
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 10px;
+.panel-summary {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #77809a;
 }
 
-.proposal-table {
+.panel-summary strong {
+  font-size: 14px;
+  color: #20234f;
+}
+
+.panel-state {
+  padding: 14px 2px;
+  font-size: 12px;
+  color: #77809a;
+}
+
+.error-text {
+  color: #d64545;
+}
+
+/* TABLES */
+.panel-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.panel-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.proposal-table th,
-.proposal-table td {
-  padding: 12px 16px;
-  font-size: 0.8125rem;
-}
-
-.proposal-table th {
-  background: var(--color-background-soft, #f8fafc);
-  color: var(--color-text-soft, #64748b);
+.panel-table th {
+  padding: 7px 8px;
+  text-align: left;
+  font-size: 9px;
   font-weight: 600;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border, #cbd5e1);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #77809a;
+  border-bottom: 1px solid #e6e8ef;
+  white-space: nowrap;
 }
 
-.proposal-table td {
-  border-bottom: 1px solid var(--color-border, #cbd5e1);
-  color: var(--color-text, #1f2937);
-  text-align: left;
+.panel-table td {
+  padding: 8px;
+  font-size: 11px;
+  color: #1e234f;
+  border-bottom: 1px solid #eef0f5;
+  vertical-align: middle;
 }
 
-.proposal-table tr:last-child td {
+.panel-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.font-bold {
-  font-weight: 600;
-}
-
-.table-status-pill {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 12px;
-}
-
-.table-status-pill.pending {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+.panel-table tbody tr:hover {
+  background: #f8fafc;
 }
 
 .text-right {
-  text-align: right !important;
+  text-align: right;
 }
 
-.table-review-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: white !important;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+.cell-title {
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.table-review-btn:hover {
-  background: #1d40cc;
-  border-color: #1d40cc;
+.cell-id {
+  font-size: 10px;
+  font-weight: 500;
+  color: #25245b;
+  white-space: nowrap;
 }
 
-/* Empty states */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 60px 24px;
-}
-
-.empty-icon-wrapper {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--color-background-soft, #f3f4f6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-soft, #64748b);
-  margin-bottom: 18px;
-}
-
-.empty-svg {
-  width: 32px;
-  height: 32px;
-}
-
-.empty-state h3 {
-  font-size: 1.125rem;
+/* BADGES */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 9px;
   font-weight: 600;
-  color: var(--color-heading, #1f2937);
-  margin: 0 0 6px 0;
+  white-space: nowrap;
 }
 
-.empty-state p {
-  font-size: 0.8125rem;
-  color: var(--color-text-soft, #6b7280);
-  max-width: 360px;
-  line-height: 1.5;
-  margin: 0;
+.badge.pending,
+.badge.ready {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-/* Side panel container column */
-.side-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.badge.revision,
+.badge.returned {
+  background: #fde8e8;
+  color: #b91c1c;
 }
 
-.side-card {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-  text-align: left;
+.badge.endorsed {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
-.bg-highlight {
-  background: #ffd803 !important;
-  border-color: #ffd803 !important;
+.badge.approved {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.side-card-title {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--color-heading, #0f172a);
-  margin: 0 0 4px 0;
+.badge.released {
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
-.side-card-title.dark-text {
-  color: #000000 !important;
+/* ROW ACTION BUTTON */
+.row-btn {
+  background: #ffd400;
+  color: #25245b;
+  border: none;
+  height: 27px;
+  padding: 0 11px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.side-card-subtitle {
-  font-size: 0.75rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0 0 18px 0;
+.row-btn:hover {
+  background: #f0c800;
 }
 
-.side-card-subtitle.dark-text {
-  color: rgba(0, 0, 0, 0.7) !important;
+.row-btn:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
 }
 
-/* Timeline logs list */
-.activity-timeline {
+/* ITEM LISTS (Revision + Endorsed) */
+.item-list {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin: 0 0 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
-.activity-timeline li {
+.item {
   display: flex;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-}
-
-.timeline-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2452ff;
-  margin-top: 5px;
-  flex-shrink: 0;
-}
-
-.timeline-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-}
-
-.log-desc {
-  font-size: 0.8125rem;
-  color: var(--color-text, #1f2937);
-  line-height: 1.4;
-}
-
-.log-time {
-  font-size: 0.6875rem;
-  color: var(--color-text-soft, #64748b);
-}
-
-.side-action-btn {
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: center;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #2452ff;
-  cursor: pointer;
-  padding-top: 14px;
-}
-
-.border-top {
-  border-top: 1px solid var(--color-border, #f1f5f9);
-}
-
-.side-action-btn:hover {
-  text-decoration: underline;
-}
-
-/* Quick Action Buttons column */
-.quick-action-column {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
-  width: 100%;
-}
-
-.hub-btn {
-  padding: 12px;
+  padding: 9px 11px;
+  background: #ffffff;
+  border: 1px solid #e6e8ef;
   border-radius: 8px;
-  font-size: 0.8125rem;
+}
+
+.item.urgent {
+  background: #fef6f6;
+  border-color: #f6c9c9;
+}
+
+.item-main {
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 11px;
   font-weight: 600;
+  color: #1e234f;
+  line-height: 1.35;
+}
+
+.item-meta {
+  margin-top: 2px;
+  font-size: 9px;
+  color: #77809a;
+  overflow-wrap: anywhere;
+}
+
+/* BUDGET FILTERS */
+.budget-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.budget-filter {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e6e8ef;
+  background: #ffffff;
+  color: #25245b;
+  font-size: 10px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s ease;
-  width: 100%;
-  border: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.hub-btn.primary {
-  background: #000000 !important;
-  color: #ffd803 !important;
+.budget-filter:hover {
+  border-color: #25245b;
 }
 
-.hub-btn.primary:hover {
-  background: #1e293b !important;
+.budget-filter.active {
+  background: #25245b;
+  border-color: #25245b;
+  color: #ffd400;
+  font-weight: 600;
 }
 
-.hub-btn.secondary {
-  background: rgba(0, 0, 0, 0.08) !important;
-  color: #000000 !important;
-}
-
-.hub-btn.secondary:hover {
-  background: rgba(0, 0, 0, 0.14) !important;
-}
-
-/* Fade in effects */
-.animate-fade {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* RESPONSIVE */
 @media (max-width: 900px) {
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .dashboard-body {
+  .panels-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 540px) {
-  .stats-row {
+@media (max-width: 760px) {
+  .announcement-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 560px) {
+  .dashboard-container {
+    padding: 16px 14px 24px;
+  }
+
   .dashboard-header {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-header {
+    flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
   }
 }
 </style>

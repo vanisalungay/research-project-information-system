@@ -62,7 +62,7 @@ public class SecurityConfig {
                             .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
                         // Quarterly Progress Reports (implementation-phase reporting)
-                        .requestMatchers(HttpMethod.POST, "/api/quarterly-reports").hasRole("PROPONENT")
+                        .requestMatchers(HttpMethod.POST, "/api/quarterly-reports", "/api/quarterly-reports/**").hasRole("PROPONENT")
                         .requestMatchers(HttpMethod.PUT, "/api/quarterly-reports/*").hasRole("PROPONENT")
                         .requestMatchers(HttpMethod.GET, "/api/quarterly-reports/**").hasAnyRole("PROPONENT", "RPS_ADMIN", "RPS_STAFF", "OVCRIGE")
 

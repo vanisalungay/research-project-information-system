@@ -94,7 +94,7 @@
             </thead>
             <tbody>
               <tr v-for="prop in paginatedProposals" :key="prop.id">
-                <td class="id-cell">#{{ prop.id }}</td>
+                <td class="id-cell">{{ prop.documentId || prop.proposalCode || '—' }}</td>
                 <td class="title-cell">
                   <strong class="prop-title">{{ prop.projectTitle || 'Untitled' }}</strong>
                   <div class="prop-program">{{ prop.programTitle || '' }}</div>
@@ -548,6 +548,7 @@ export default {
   font-family: monospace;
   font-weight: 600;
   color: #64748b;
+  white-space: nowrap;
 }
 
 .title-cell {

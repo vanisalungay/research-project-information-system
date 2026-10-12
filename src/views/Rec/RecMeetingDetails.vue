@@ -12,7 +12,7 @@
         </span>
 
         <p class="proposal-id">
-          Proposal ID: #{{ proposal.id || 'N/A' }}
+          Proposal ID: {{ proposal.documentId || proposal.proposalCode || '—' }}
         </p>
       </div>
 

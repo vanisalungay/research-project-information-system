@@ -1,10 +1,13 @@
 <template>
   <div class="proposals-content">
     <div class="top-bar">
-      <h2>Proposals</h2>
-      <button class="btn-new" :disabled="checkingAnnouncement" @click="openNewProposal">
-        {{ checkingAnnouncement ? 'Checking...' : '+ New Proposal' }}
-      </button>
+      <h2>myProjects</h2>
+      <div class="top-bar-actions">
+        <button class="btn-revisions" @click="openRevisions">Revisions</button>
+        <button class="btn-new" :disabled="checkingAnnouncement" @click="openNewProposal">
+          {{ checkingAnnouncement ? 'Checking...' : '+ Create New Proposal' }}
+        </button>
+      </div>
     </div>
 
     <!-- MODALS -->
@@ -24,7 +27,7 @@
 
     <!-- FILTERS -->
     <div class="filters">
-      <input type="text" v-model="search" placeholder="Search proposals by title or category..." />
+      <input type="text" v-model="search" placeholder="Search by title, ID, college, leader, or date..." />
       <select v-model="statusFilter">
         <option value="">All Status</option>
         <option value="DRAFT">Draft</option>
@@ -57,7 +60,7 @@
       </thead>
       <tbody>
         <tr v-for="proposal in filteredProposals" :key="proposal.id">
-          <td>{{ proposal.documentId || proposal.proposalCode || proposal.id }}</td>
+          <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
           <td>{{ proposal.projectTitle || proposal.title }}</td>
           <td>
             <span class="status" :class="(proposal.status || '').toLowerCase()">
@@ -118,6 +121,10 @@ const resetAllForms = () => {
 }
 
 const checkingAnnouncement = ref(false)
+
+const openRevisions = () => {
+  router.push('/revisions')
+}
 
 // Pre-check gatekeeper: a new proposal can only be started while a
 // Proposal Announcement is ACTIVE and today falls within its date range.
@@ -201,10 +208,21 @@ const filteredProposals = computed(() => {
     if (statusFilter.value && p.status !== statusFilter.value) return false
     if (search.value.trim()) {
       const kw = search.value.toLowerCase()
-      return (p.projectTitle || p.title || '').toLowerCase().includes(kw)
+      const title = String(p.projectTitle || p.title || '').toLowerCase()
+      const proposalId = String(p.documentId || p.proposalCode || p.id || '').toLowerCase()
+      const college = String(p.college || '').toLowerCase()
+      const leader = String(p.projectLeader || p.teamLeader || '').toLowerCase()
+      const submitted = String(p.createdAt || p.dateSubmitted || '').toLowerCase()
+      return (
+        title.includes(kw) ||
+        proposalId.includes(kw) ||
+        college.includes(kw) ||
+        leader.includes(kw) ||
+        submitted.includes(kw)
+      )
     }
     return true
-  })
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
 const viewProposal = (id) => {
@@ -309,6 +327,22 @@ const refreshOnClose = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-revisions {
+  background: #4b3f72;
+  border: none;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .subtitle {

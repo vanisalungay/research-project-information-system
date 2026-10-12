@@ -5,7 +5,7 @@
       <button class="back-btn" @click="goBack">← Back</button>
       <div class="header-info">
         <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
-        <p class="subtitle">Proposal ID: {{ proposal.id }}</p>
+        <p class="subtitle">Proposal ID: {{ proposal.documentId || proposal.proposalCode || '—' }}</p>
       </div>
     </div>
 

@@ -7,6 +7,8 @@
       </div>
     </div>
 
+    <p v-if="actionError" class="action-error">{{ actionError }}</p>
+
     <div v-if="loading" class="state">Loading projects...</div>
     <div v-else-if="error" class="state error">{{ error }}</div>
 
@@ -22,17 +24,30 @@
 
       <div v-if="reportsLoading" class="state">Loading reports...</div>
       <div v-else-if="selectedReports.length === 0" class="state">
-        No quarterly progress reports submitted for this project yet.
+        No quarterly progress reports or terminal reports submitted for this project yet.
       </div>
       <div v-else class="report-list">
         <div v-for="r in selectedReports" :key="r.id" class="report-card">
           <div class="report-info">
-            <span class="report-period">{{ r.period }} {{ r.year }}</span>
+            <span class="report-type">{{ reportTypeLabel(r) }}</span>
+            <span v-if="periodLabel(r)" class="report-period">{{ periodLabel(r) }}</span>
             <span class="status-badge" :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'">{{ r.status }}</span>
             <span class="report-meta">Submitted: {{ formatDate(r.submittedAt) || '—' }}</span>
           </div>
           <div class="report-actions">
-            <button class="btn-view" @click="view(r)">View</button>
+            <template v-if="isTerminal(r)">
+              <button v-if="r.terminalReportFileName" class="btn-view" @click="previewDoc(r, 'terminal')">View Terminal Report</button>
+              <button v-if="r.terminalReportFileName" class="btn-download" @click="downloadDoc(r, 'terminal')">Download</button>
+              <span v-else class="report-meta">No terminal report file attached.</span>
+            </template>
+            <template v-else>
+              <button class="btn-view" @click="view(r)">View Report</button>
+              <!-- The Project Workplan is structured form data shown in the report
+                   view; a legacy uploaded workplan file (if any) stays downloadable. -->
+              <span v-if="hasWorkplan(r)" class="report-meta">Project Workplan saved</span>
+              <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">Download workplan file</button>
+              <span v-if="!hasWorkplan(r) && !r.workplanFileName" class="report-meta">No Project Workplan saved.</span>
+            </template>
           </div>
         </div>
       </div>
@@ -46,7 +61,7 @@
       <table v-else class="project-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>Proposal ID</th>
             <th>Project Title</th>
             <th>Project Leader</th>
             <th>SO Number</th>
@@ -56,7 +71,7 @@
         </thead>
         <tbody>
           <tr v-for="p in projects" :key="p.id">
-            <td class="id-cell">#{{ p.id }}</td>
+            <td class="id-cell">{{ p.documentId || p.proposalCode || '—' }}</td>
             <td class="title-cell">{{ p.projectTitle || 'Untitled' }}</td>
             <td>{{ p.projectLeader || p.proponent?.name || 'N/A' }}</td>
             <td>{{ p.soNumber || 'N/A' }}</td>
@@ -76,6 +91,8 @@
         </div>
         <div class="modal-body">
           <QuarterlyReportForm :report="viewing" readonly />
+          <ProjectWorkplanForm v-if="viewingWorkplan" :model-value="viewingWorkplan" readonly />
+          <p v-else class="report-meta">No Project Workplan has been saved for this reporting stage.</p>
         </div>
       </div>
     </div>
@@ -83,17 +100,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
+import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
+import { downloadReportDocument, previewReportDocument } from '@/utils/fileDownload'
 
 const projects = ref([])
 const loading = ref(true)
 const error = ref('')
+const actionError = ref('')
 const selectedProject = ref(null)
 const selectedReports = ref([])
 const reportsLoading = ref(false)
 const viewing = ref(null)
+
+// Saved Project Workplan of the report open in the read-only modal. A deep copy
+// is passed so the read-only component can normalise its display (twelve month
+// cells, etc.) without touching the loaded report data.
+const viewingWorkplan = computed(() => {
+  const r = viewing.value
+  if (!r || !r.workplan) return null
+  return JSON.parse(JSON.stringify(r.workplan))
+})
 
 async function fetchProjects() {
   loading.value = true
@@ -131,6 +160,47 @@ function formatDate(d) {
 }
 function formatStatus(s) {
   return s ? s.replace(/_/g, ' ') : 'Unknown'
+}
+
+// Reporting stages 1-3 are quarterly progress reports (each paired with a
+// Project Workplan); the fourth stage is the Terminal Report.
+function isTerminal(r) {
+  return r?.reportType === 'TERMINAL_REPORT'
+}
+
+// The Project Workplan is structured form data (workplan_json), not a file. A
+// legacy uploaded workplan file may still exist and stays downloadable.
+function hasWorkplan(r) {
+  const objectives = r?.workplan?.objectives
+  return Array.isArray(objectives) && objectives.some((o) => (o?.objective || '').trim() !== '')
+}
+
+function reportTypeLabel(r) {
+  return isTerminal(r) ? 'Terminal Report' : 'Quarterly Progress Report'
+}
+
+function periodLabel(r) {
+  if (isTerminal(r)) return ''
+  return `${r.period || ''} ${r.year || ''}`.trim()
+}
+
+async function downloadDoc(r, docType) {
+  try {
+    actionError.value = ''
+    const fileName = docType === 'workplan' ? r.workplanFileName : r.terminalReportFileName
+    await downloadReportDocument(r.id, docType, fileName)
+  } catch (e) {
+    actionError.value = 'Failed to download the document.'
+  }
+}
+
+async function previewDoc(r, docType) {
+  try {
+    actionError.value = ''
+    await previewReportDocument(r.id, docType)
+  } catch (e) {
+    actionError.value = 'Failed to open the document.'
+  }
 }
 
 onMounted(fetchProjects)
@@ -182,6 +252,15 @@ onMounted(fetchProjects)
 .state.error {
   color: #dc2626;
 }
+.action-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
 .project-table {
   width: 100%;
   border-collapse: collapse;
@@ -228,6 +307,16 @@ onMounted(fetchProjects)
   align-items: center;
   gap: 14px;
 }
+.report-type {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4338ca;
+  background: #eef2ff;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
 .report-period {
   font-size: 18px;
   font-weight: 700;
@@ -239,10 +328,20 @@ onMounted(fetchProjects)
 }
 .report-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 .btn-view {
   background: #eef2ff;
+  color: #1c2145;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-download {
+  background: #ffd400;
   color: #1c2145;
   border: none;
   padding: 8px 16px;

@@ -26,4 +26,9 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
     // Order (SO) — these are the only projects eligible for Quarterly Progress Reports.
     @Query("SELECT p FROM Proposal p WHERE p.soNumber IS NOT NULL AND p.soNumber <> '' AND p.status IN :statuses ORDER BY p.updatedAt DESC")
     List<Proposal> findEligibleForQuarterlyReport(@Param("statuses") List<String> statuses);
+
+    // Distinct announcement IDs that have at least one submitted (non-DRAFT)
+    // proposal. Used to block deletion of announcements that are in use.
+    @Query("SELECT DISTINCT p.proposalAnnouncementId FROM Proposal p WHERE p.proposalAnnouncementId IS NOT NULL AND p.status <> 'DRAFT'")
+    List<Long> findAnnouncementIdsWithSubmittedProposals();
 }

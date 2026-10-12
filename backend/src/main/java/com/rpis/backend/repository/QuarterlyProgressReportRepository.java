@@ -10,4 +10,6 @@ import java.util.List;
 public interface QuarterlyProgressReportRepository extends JpaRepository<QuarterlyProgressReport, Long> {
 
     List<QuarterlyProgressReport> findByProposalIdOrderByCreatedAtDesc(Long proposalId);
+
+    List<QuarterlyProgressReport> findByProposalIdOrderByCreatedAtAsc(Long proposalId);
 }

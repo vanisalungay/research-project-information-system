@@ -41,7 +41,6 @@ import OvcNotifications from '../views/Notifications/OvcNotifications.vue'
 import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
 import RpsStaffDashboard from '@/views/Dashboard/RpsStaffDashboard.vue'
 import RpsAdminVerification from '@/views/Rps/RpsAdminVerification.vue'
-import RpsInbox from '@/views/Rps/RpsInbox.vue'
 import RpsEndPro from '@/views/Rps/RpsEndPro.vue'
 import RpsReturn4Rev from '@/views/Rps/RpsReturn4Rev.vue'
 import RpsSubmittedProposals from '@/views/Rps/RpsSubmittedProposals.vue'
@@ -121,7 +120,6 @@ const routes = [
       { path: 'proposal/:id/review', name: 'ProposalReview', component: RpsProposalReview },
       { path: 'review-viewer/:id', name: 'ReviewResultViewer', component: RpsRevResultViewer },
 
-      { path: 'inbox', component: RpsInbox },
       { path: 'budget-processing', name: 'BudgetProcessing', component: RpsBudgetProcessing },
       { path: 'budgetrelease', name: 'BudgetRelease', component: RpsBudgetRelease },
 

@@ -27,7 +27,7 @@
                         <div class="header-layout">
                             <div class="title-section">
                                 <div class="id-badge-row">
-                                    <span class="proposal-id font-mono">{{ proposal.id }}</span>
+                                    <span class="proposal-id font-mono">{{ proposal.documentId || '—' }}</span>
                                     <span class="badge" :class="getStatusClass(proposal.status)">{{ proposal.status
                                         }}</span>
                                 </div>
@@ -219,6 +219,7 @@ const fetchProposal = async () => {
         if (p) {
             proposal.value = {
                 id: p.id,
+                documentId: p.documentId || '',
                 title: p.projectTitle || 'Untitled Project',
                 proponent: p.proponentName || 'Unknown',
                 college: p.college || 'Unknown',

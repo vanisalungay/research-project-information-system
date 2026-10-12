@@ -9,7 +9,7 @@
 
     <!-- Reporting period -->
     <div v-if="!readonly" class="qr-period-row">
-      <label class="period-field">
+      <label v-if="!lockPeriod" class="period-field">
         <span>Reporting Quarter</span>
         <select v-model="form.period" class="qr-select">
           <option value="Q1">Q1</option>
@@ -17,6 +17,10 @@
           <option value="Q3">Q3</option>
           <option value="Q4">Q4</option>
         </select>
+      </label>
+      <label v-else class="period-field">
+        <span>Reporting Quarter</span>
+        <span class="locked-period">{{ form.period }}</span>
       </label>
       <label class="period-field">
         <span>Year</span>
@@ -151,14 +155,8 @@
       <textarea v-model="form.suggestedSolutions" class="qr-textarea" :readonly="readonly" rows="4"></textarea>
     </div>
 
-    <!-- Actions (edit mode only) -->
-    <div v-if="!readonly" class="qr-actions">
-      <button class="btn-secondary" @click="emit('cancel')">Cancel</button>
-      <button class="btn-draft" :disabled="saving" @click="emit('save-draft', buildPayload())">Save Draft</button>
-      <button class="btn-submit" :disabled="saving" @click="emit('submit', buildPayload())">
-        {{ saving ? 'Saving...' : 'Submit Report' }}
-      </button>
-    </div>
+    <!-- Stage actions (Cancel / Save Draft / Submit Report) are rendered by the
+         parent page, below the interactive Project Workplan form. -->
   </div>
 </template>
 
@@ -169,6 +167,9 @@ const props = defineProps({
   report: { type: Object, default: null },
   readonly: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
+  // When true the reporting quarter is fixed to the current reporting stage and
+  // cannot be changed by the proponent (the backend validates the stage too).
+  lockPeriod: { type: Boolean, default: false },
 })
 const emit = defineEmits(['save-draft', 'submit', 'cancel'])
 
@@ -249,6 +250,11 @@ function buildPayload() {
     outputs: form.outputs,
   }
 }
+
+// The stage action buttons (Cancel / Save Draft / Submit Report) are rendered by
+// the parent page below the Project Workplan form, so the parent reads the
+// current quarterly progress report payload through this exposed method.
+defineExpose({ buildPayload })
 </script>
 
 <style scoped>
@@ -293,6 +299,10 @@ function buildPayload() {
 }
 .readonly-period {
   font-size: 14px;
+  font-weight: 700;
+  color: #1c2145;
+}
+.locked-period {
   font-weight: 700;
   color: #1c2145;
 }

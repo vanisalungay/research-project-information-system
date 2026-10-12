@@ -12,7 +12,7 @@
         <div class="header-info">
           <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
           <div class="header-meta">
-            <span class="proposal-id">ID: {{ proposal.id }}</span>
+            <span class="proposal-id">ID: {{ proposal.documentId || proposal.proposalCode || '—' }}</span>
             <span class="status-badge" :class="(proposal.status || '').toLowerCase()">
               {{ proposal.status || 'DRAFT' }}
             </span>

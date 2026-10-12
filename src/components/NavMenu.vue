@@ -38,7 +38,6 @@ const userStore = useUserDataStore()
 // SVG icon definitions
 const icons = {
   dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
-  inbox: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>`,
   notification: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>`,
   proposals: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   endorse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
@@ -97,13 +96,6 @@ const allNavItems = [
 
   // RPS STAFF
   {
-    iconKey: 'inbox',
-    text: 'Inbox',
-    path: '/inbox',
-    roles: [UserRole.RPS_STAFF],
-    section: 'main',
-  },
-  {
     iconKey: 'notification',
     text: 'Notifications',
     path: '/notifications',
@@ -111,20 +103,6 @@ const allNavItems = [
     section: 'main',
   },
 
-  {
-    iconKey: 'revisions',
-    text: 'Revision Requests',
-    path: '/rps-revision-requests',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
-    section: 'main',
-  },
-  {
-    iconKey: 'endorse',
-    text: 'Endorsed Proposals',
-    path: '/rpsendorsed-prop',
-    roles: [UserRole.RPS_STAFF],
-    section: 'main',
-  },
   {
     iconKey: 'budget',
     text: 'Budget Processing',
@@ -150,7 +128,7 @@ const allNavItems = [
   // PROPONENT
   {
     iconKey: 'proposals',
-    text: 'Projects',
+    text: 'My Projects',
     path: '/proposals',
     roles: [UserRole.PROPONENT],
     section: 'main',
@@ -160,21 +138,6 @@ const allNavItems = [
     iconKey: 'notification',
     text: 'Notifications',
     path: '/notifications',
-    roles: [UserRole.PROPONENT],
-    section: 'main',
-  },
-  {
-    iconKey: 'revisions',
-    text: 'Revisions',
-    path: '/revisions',
-    roles: [UserRole.PROPONENT],
-    section: 'main',
-  },
-
-  {
-    iconKey: 'evalCriteria',
-    text: 'Evaluation Criteria',
-    path: '/evalCriteria',
     roles: [UserRole.PROPONENT],
     section: 'main',
   },
