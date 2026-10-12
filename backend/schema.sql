@@ -94,6 +94,12 @@ CREATE TABLE proposals (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Proposal code allocator. nextval() is atomic, so simultaneous submissions
+-- (from any number of backend instances) always receive a distinct, increasing
+-- 3-digit code. The sequence never resets across years and is aligned with the
+-- highest existing code at application startup (ProposalCodeSequenceInitializer).
+CREATE SEQUENCE IF NOT EXISTS proposal_code_seq;
+
 -- 3. Proposal Sites Table
 CREATE TABLE proposal_sites (
     id BIGSERIAL PRIMARY KEY,

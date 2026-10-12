@@ -678,7 +678,7 @@
 
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { downloadUploadedFile } from '@/utils/fileDownload'
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 
 export default {
   name: "RpsProposalDetails",
@@ -768,7 +768,9 @@ export default {
       await this._showAlert("Download Proposal PDF", { type: 'info', title: 'Download' });
     },
     viewAttachment(filePath){
-      window.open(`http://localhost:8081/api/files?path=${encodeURIComponent(filePath)}`, "_blank")
+      // The file route requires authentication, so fetch it with the shared
+      // axios client (bearer token) and open the resulting blob.
+      previewUploadedFile(filePath)
     },
 
     downloadAttachment(filePath){

@@ -5,8 +5,10 @@ import com.rpis.backend.model.User;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,6 +46,26 @@ public class NotificationService {
     public Notification markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
+        notification.setIsRead(true);
+        return notificationRepository.save(notification);
+    }
+
+    /**
+     * Marks a notification as read on behalf of the authenticated caller. When the
+     * caller is restricted to their own records (a Proponent), the notification must
+     * belong to them; otherwise the request is rejected with 403.
+     */
+    @Transactional
+    public Notification markAsReadForCurrentUser(Long notificationId, Long requesterId, boolean restrictToOwner) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
+        if (restrictToOwner) {
+            Long ownerId = notification.getUser() != null ? notification.getUser().getId() : null;
+            if (ownerId == null || !ownerId.equals(requesterId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "You are not authorized to access this notification.");
+            }
+        }
         notification.setIsRead(true);
         return notificationRepository.save(notification);
     }

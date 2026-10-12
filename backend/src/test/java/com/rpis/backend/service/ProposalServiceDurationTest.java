@@ -6,10 +6,16 @@ import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.security.CurrentUser;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,9 +41,9 @@ class ProposalServiceDurationTest {
         ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
-                announcementService, versionService);
+                announcementService, versionService, new CurrentUser());
 
-        when(proposalRepository.findMaxProposalCode()).thenReturn(null);
+        when(proposalRepository.nextProposalCodeSequence()).thenReturn(1L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ProposalAnnouncement announcement = new ProposalAnnouncement();
@@ -51,6 +57,17 @@ class ProposalServiceDurationTest {
         User proponent = new User();
         proponent.setId(5L);
         when(userRepository.findById(5L)).thenReturn(Optional.of(proponent));
+
+        // The duration rule is enforced regardless of who creates the proposal; run
+        // as an authorized staff role so the proposal is created on behalf of
+        // proponent 5.
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                2L, null, List.of(new SimpleGrantedAuthority("ROLE_RPS_STAFF"))));
+    }
+
+    @AfterEach
+    void clearContext() {
+        SecurityContextHolder.clearContext();
     }
 
     private ProposalRequest newProposalRequest(String duration) {

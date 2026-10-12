@@ -230,6 +230,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { currentUserId } from '@/utils/session'
 
 const router = useRouter()
 
@@ -319,15 +320,19 @@ async function fetchDashboard() {
         last_name: names.slice(1).join(' ') || ''
       }
 
-      // Fetch dynamic proposals list from API
-      const response = await api.get('/api/proposals')
-      const data = response.data || []
+      // Reset user-scoped state so a previous account's records never linger.
+      recentProposals.value = []
+      monitoringProposals.value = []
+      statistics.value.activeProposals = 0
+      statistics.value.pendingRevisions = 0
+      statistics.value.approvedProposals = 0
 
-      // Filter to only display proposals owned by the current logged-in proponent
-      const myProposals = data.filter(p => 
-        (p.proponent && p.proponent.id === currentUser.id) ||
-        (p.projectLeader && p.projectLeader.toLowerCase().includes((currentUser.name || '').toLowerCase()))
-      )
+      // Fetch dynamic proposals list from API. The backend scopes this response
+      // to the authenticated proponent, so no client-side owner filtering is used.
+      const response = await api.get('/api/proposals')
+      // Discard a response if the session changed while it was in flight.
+      if (currentUserId() !== currentUser.id) return
+      const myProposals = response.data || []
 
       // Map stats
       statistics.value.activeProposals = myProposals.filter(p => 

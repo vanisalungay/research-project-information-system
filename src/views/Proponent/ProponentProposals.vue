@@ -86,6 +86,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -158,8 +159,12 @@ const openNewProposal = async () => {
 const fetchProposals = async () => {
   loading.value = true
   error.value = null
+  proposals.value = []
+  const requestUserId = currentUserId()
   try {
     const res = await api.get('/api/proposals')
+    // Discard a response if the session changed while it was in flight.
+    if (currentUserId() !== requestUserId) return
     proposals.value = Array.isArray(res.data) ? res.data : res.data.data || []
   } catch (err) {
     console.error(err)

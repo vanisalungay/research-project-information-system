@@ -177,6 +177,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { currentUserId } from '@/utils/session'
 
 const router = useRouter()
 
@@ -252,22 +253,20 @@ async function fetchRevisions() {
   error.value = null
 
   try {
-    const res = await api.get('/api/proposals')
-    const allProposals = res.data || []
+    const requestUserId = currentUserId()
+    revisions.value = []
+    if (requestUserId) {
+      // The backend scopes this response to the authenticated proponent, so no
+      // client-side owner filtering is used.
+      const res = await api.get('/api/proposals')
+      // Discard a response if the session changed while it was in flight.
+      if (currentUserId() !== requestUserId) return
+      const myProposals = Array.isArray(res.data) ? res.data : []
 
-    const stored = localStorage.getItem('user_data')
-    if (stored) {
-      const user = JSON.parse(atob(stored))
-      
-      revisions.value = allProposals.filter(p => {
-        const isMine = (p.proponent && p.proponent.id === user.id) || 
-                       (p.projectLeader && p.projectLeader.toLowerCase().includes((user.name || '').toLowerCase()))
-                       
-        // Only RPS-forwarded revision requests should appear in the proponent's queue.
-        const isRevision = p.status === 'RPS_RETURNED'
-        
-        return isMine && isRevision
-      }).map(p => ({
+      // Only RPS-forwarded revision requests should appear in the proponent's queue.
+      revisions.value = myProposals
+        .filter(p => p.status === 'RPS_RETURNED')
+        .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Proposal',
         code: p.documentId || p.proposalCode || '—',

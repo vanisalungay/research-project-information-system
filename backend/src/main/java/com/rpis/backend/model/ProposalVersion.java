@@ -18,7 +18,8 @@ import java.time.LocalDateTime;
  * complete, non-overwriting history of every submission.
  */
 @Entity
-@Table(name = "proposal_versions")
+@Table(name = "proposal_versions", uniqueConstraints = @UniqueConstraint(
+        name = "uq_proposal_versions", columnNames = { "proposal_id", "version_number" }))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

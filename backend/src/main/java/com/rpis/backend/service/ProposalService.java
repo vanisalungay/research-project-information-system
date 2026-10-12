@@ -4,6 +4,7 @@ import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.model.*;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class ProposalService {
     private final NotificationService notificationService;
     private final ProposalAnnouncementService proposalAnnouncementService;
     private final ProposalVersionService proposalVersionService;
+    private final CurrentUser currentUser;
 
     /**
      * Internally funded MSUN projects are fixed at a 12-month duration. The RPIS
@@ -43,20 +45,17 @@ public class ProposalService {
     // Example: MSUN-ORPS-DA-001-2026-REV00
 
     /**
-     * Generate the next proposal code (3-digit continuous counter).
-     * This counter never resets across years.
+     * Allocate the next proposal code (3-digit continuous counter) from the
+     * database sequence. The counter never resets across years and is safe under
+     * concurrent submissions and multiple backend instances.
      */
     private String generateNextProposalCode() {
-        String maxCode = proposalRepository.findMaxProposalCode();
-        if (maxCode == null || maxCode.isEmpty()) {
-            return "001"; // First proposal
+        Number next = proposalRepository.nextProposalCodeSequence();
+        if (next == null) {
+            throw new IllegalStateException(
+                    "Unable to allocate the next proposal code: the proposal_code_seq sequence is unavailable.");
         }
-        try {
-            int nextNum = Integer.parseInt(maxCode) + 1;
-            return String.format("%03d", nextNum);
-        } catch (NumberFormatException e) {
-            return "001"; // Fallback if parsing fails
-        }
+        return String.format("%03d", next.longValue());
     }
 
     /**
@@ -96,6 +95,59 @@ public class ProposalService {
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + id));
     }
 
+    /**
+     * Lists proposals for the caller, enforcing ownership server-side.
+     * <p>
+     * Only explicitly authorized staff/reviewer roles ({@link CurrentUser#isPrivileged()})
+     * may see the university-wide set. Every other caller — a Faculty Proponent or
+     * any unrecognized role — is scoped to their own proposals, so the endpoint
+     * fails closed instead of leaking records. The {@code requestedProponentId}
+     * supplied by the frontend is ignored for non-privileged callers.
+     */
+    public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status, List<String> statusIn) {
+        String normalizedStatus = status != null ? status.toUpperCase() : null;
+        List<String> normalizedStatuses = statusIn != null
+                ? statusIn.stream().filter(s -> s != null && !s.isBlank()).map(String::toUpperCase).toList()
+                : List.of();
+
+        if (!currentUser.isPrivileged()) {
+            // Own-records-only. requireUserId() fails with 401 when unauthenticated,
+            // so an unidentified caller can never fall through to the full list.
+            User me = userRepository.findById(currentUser.requireUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("Proponent not found"));
+            if (normalizedStatus != null) {
+                return proposalRepository.findByProponentAndStatus(me, normalizedStatus);
+            }
+            if (!normalizedStatuses.isEmpty()) {
+                return proposalRepository.findByProponentAndStatusIn(me, normalizedStatuses);
+            }
+            return proposalRepository.findByProponent(me);
+        }
+
+        // Privileged staff/reviewers keep the existing university-wide view.
+        if (requestedProponentId != null) {
+            return getProposalsByProponent(requestedProponentId);
+        }
+        if (normalizedStatus != null) {
+            return getProposalsByStatus(normalizedStatus);
+        }
+        if (!normalizedStatuses.isEmpty()) {
+            return getProposalsByStatusIn(normalizedStatuses);
+        }
+        return getAllProposals();
+    }
+
+    /**
+     * Loads a single proposal, enforcing ownership for Proponents. Used by every
+     * endpoint that returns proposal data (details, versions, reviews, ...) so a
+     * Proponent cannot reach another user's proposal by changing the id.
+     */
+    public Proposal getProposalByIdForCurrentUser(Long id) {
+        Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
+        return proposal;
+    }
+
     @Transactional
     public Proposal saveProposal(ProposalRequest request, Long proposalId) {
         Proposal proposal;
@@ -104,7 +156,13 @@ public class ProposalService {
         String revisionRemarks = null;
 
         if (proposalId != null) {
-            proposal = getProposalById(proposalId);
+            // Lock the row for the duration of the transaction so two simultaneous
+            // revision resubmissions of the same proposal are serialized and cannot
+            // allocate the same revision number / document id.
+            proposal = proposalRepository.findByIdForUpdate(proposalId)
+                    .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+            // A Proponent may only modify a proposal they own.
+            currentUser.requireAccessTo(proposal);
             // Check if this is a revision resubmission (proposal was returned and is now
             // being resubmitted)
             if (proposalVersionService.isRevisionStatus(proposal.getStatus())) {
@@ -124,6 +182,9 @@ public class ProposalService {
             }
         } else {
             proposal = new Proposal();
+            // The owner is always derived from the authenticated principal, never from
+            // the (spoofable) request payload.
+            proposal.setProponent(resolveOwnerForNewProposal(request));
         }
 
         // Proposal Announcement gatekeeper (server-side enforcement): new proposals and
@@ -162,8 +223,9 @@ public class ProposalService {
             proposal.setDocumentId(generateDocumentId(proposal.getProposalCode(), newRevisionNumber));
         }
 
-        // Proponent
-        if (request.getProponentId() != null) {
+        // Owner reassignment is only permitted for privileged roles on an existing
+        // proposal; a Proponent can never move their proposal to another user.
+        if (!isNewProposal && currentUser.isPrivileged() && request.getProponentId() != null) {
             User proponent = userRepository.findById(request.getProponentId())
                     .orElseThrow(
                             () -> new IllegalArgumentException("Proponent not found: " + request.getProponentId()));
@@ -341,6 +403,26 @@ public class ProposalService {
         return proposal;
     }
 
+    /**
+     * Resolves the owner of a brand-new proposal. A Faculty Proponent is always the
+     * authenticated caller; privileged roles may create a proposal on behalf of a
+     * specified proponent.
+     */
+    private User resolveOwnerForNewProposal(ProposalRequest request) {
+        if (!currentUser.isPrivileged()) {
+            // Faculty Proponent (or any non-privileged role) always owns their own
+            // submission; requireUserId() fails closed with 401 if unauthenticated.
+            return userRepository.findById(currentUser.requireUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("Proponent not found"));
+        }
+        if (request.getProponentId() != null) {
+            return userRepository.findById(request.getProponentId())
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("Proponent not found: " + request.getProponentId()));
+        }
+        return null;
+    }
+
     /** Statuses that must only be set through the RPS revision workflow. */
     private static final Set<String> REVISION_STATUSES = Set.of(
             "RPS_RETURNED", "REVISION", "REC_REVISION", "PENDING_REVISION", "RETURNED_TO_RPS");
@@ -353,6 +435,7 @@ public class ProposalService {
                     "Revision statuses can only be set through the RPS revision workflow.");
         }
         Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
         proposal.setStatus(upper);
         proposal = proposalRepository.save(proposal);
 
@@ -377,6 +460,7 @@ public class ProposalService {
     @Transactional
     public Proposal updateReviewerInfo(Long id, String reviewedBy, String reviewedByPosition) {
         Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
         proposal.setReviewedBy(reviewedBy);
         proposal.setReviewedByPosition(reviewedByPosition);
         return proposalRepository.save(proposal);
@@ -386,6 +470,7 @@ public class ProposalService {
     public Proposal returnForRevision(Long id, String remarks, String returnedByOffice,
                                       Long returnedByUserId, String returnedByName) {
         Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
         // A return from a reviewing office goes to RPS first, never directly to the
         // Proponent. RPS is the only party that can forward the request and set the
         // revision deadline.
@@ -420,6 +505,7 @@ public class ProposalService {
                                                Long forwardedByUserId, String forwardedByName,
                                                String remarks) {
         Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
         LocalDateTime deadlineLdt = parseDeadline(deadline);
 
         // If no office return was recorded yet (RPS returning directly), capture the
@@ -480,6 +566,7 @@ public class ProposalService {
     @Transactional
     public void deleteProposal(Long id) {
         Proposal proposal = getProposalById(id);
+        currentUser.requireAccessTo(proposal);
         proposalRepository.delete(proposal);
     }
 

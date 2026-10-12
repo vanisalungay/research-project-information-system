@@ -3,6 +3,8 @@ package com.rpis.backend.controller;
 import com.rpis.backend.dto.QuarterlyProgressReportRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.QuarterlyProgressReport;
+import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.QuarterlyProgressReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -22,10 +24,29 @@ import java.util.Map;
 public class QuarterlyProgressReportController {
 
     private final QuarterlyProgressReportService service;
+    private final ProposalService proposalService;
+    private final CurrentUser currentUser;
+
+    /**
+     * Enforces proposal ownership for Proponents (details, reports and documents).
+     * Staff/reviewing roles keep full access.
+     */
+    private void requireProposalAccess(Long proposalId) {
+        proposalService.getProposalByIdForCurrentUser(proposalId);
+    }
+
+    /** Enforces ownership of the proposal a report belongs to. */
+    private void requireReportAccess(Long reportId) {
+        QuarterlyProgressReport report = service.getReport(reportId);
+        proposalService.getProposalByIdForCurrentUser(report.getProposalId());
+    }
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody QuarterlyProgressReportRequest request) {
         try {
+            if (request.getProposalId() != null) {
+                requireProposalAccess(request.getProposalId());
+            }
             return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
@@ -37,6 +58,7 @@ public class QuarterlyProgressReportController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody QuarterlyProgressReportRequest request) {
         try {
+            requireReportAccess(id);
             return ResponseEntity.ok(service.update(id, request));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
@@ -47,17 +69,27 @@ public class QuarterlyProgressReportController {
 
     @GetMapping("/{id}")
     public ResponseEntity<QuarterlyProgressReport> get(@PathVariable Long id) {
+        requireReportAccess(id);
         return ResponseEntity.ok(service.getReport(id));
     }
 
     @GetMapping("/proposal/{proposalId}")
     public ResponseEntity<List<QuarterlyProgressReport>> getByProposal(@PathVariable Long proposalId) {
+        requireProposalAccess(proposalId);
         return ResponseEntity.ok(service.getReportsByProposal(proposalId));
     }
 
     @GetMapping("/eligible-projects")
     public ResponseEntity<List<Proposal>> getEligibleProjects() {
-        return ResponseEntity.ok(service.getEligibleProjects());
+        List<Proposal> eligible = service.getEligibleProjects();
+        // A Proponent only sees their own eligible projects; staff keep the full list.
+        if (currentUser.isProponent()) {
+            Long me = currentUser.requireUserId();
+            eligible = eligible.stream()
+                    .filter(p -> p.getProponent() != null && me.equals(p.getProponent().getId()))
+                    .toList();
+        }
+        return ResponseEntity.ok(eligible);
     }
 
     /**
@@ -67,6 +99,7 @@ public class QuarterlyProgressReportController {
     @GetMapping("/next-stage/{proposalId}")
     public ResponseEntity<?> getNextStage(@PathVariable Long proposalId) {
         try {
+            requireProposalAccess(proposalId);
             return ResponseEntity.ok(service.getNextStage(proposalId));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
@@ -85,6 +118,7 @@ public class QuarterlyProgressReportController {
             @RequestParam(value = "workplan", required = false) MultipartFile workplan,
             @RequestParam(value = "terminalReport", required = false) MultipartFile terminalReport) {
         try {
+            requireReportAccess(id);
             return ResponseEntity.ok(service.attachDocuments(id, workplan, terminalReport));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
@@ -101,6 +135,7 @@ public class QuarterlyProgressReportController {
     @GetMapping("/{id}/documents/{docType}")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Long id, @PathVariable String docType) {
         try {
+            requireReportAccess(id);
             QuarterlyProgressReportService.DocumentDownload download = service.loadDocument(id, docType);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + download.fileName() + "\"")

@@ -39,25 +39,24 @@ public class ProposalController {
             @RequestParam(required = false) Long proponentId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String[] statusIn) {
-        if (proponentId != null) {
-            return ResponseEntity.ok(proposalService.getProposalsByProponent(proponentId));
-        } else if (status != null) {
-            return ResponseEntity.ok(proposalService.getProposalsByStatus(status));
-        } else if (statusIn != null && statusIn.length > 0) {
-            return ResponseEntity.ok(proposalService.getProposalsByStatusIn(List.of(statusIn)));
-        }
-        return ResponseEntity.ok(proposalService.getAllProposals());
+        // Ownership is resolved from the authenticated principal inside the service;
+        // a Proponent can never use proponentId/status params to read another user's
+        // proposals.
+        List<String> statuses = (statusIn != null && statusIn.length > 0) ? List.of(statusIn) : null;
+        return ResponseEntity.ok(proposalService.getProposalsForCurrentUser(proponentId, status, statuses));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Proposal> getProposalById(@PathVariable Long id) {
-        return ResponseEntity.ok(proposalService.getProposalById(id));
+        return ResponseEntity.ok(proposalService.getProposalByIdForCurrentUser(id));
     }
 
     // ========== SUBMISSION & REVISION HISTORY ==========
 
     @GetMapping("/{id}/versions")
     public ResponseEntity<List<ProposalVersionResponse>> getProposalVersions(@PathVariable Long id) {
+        // Ownership check before exposing revision history.
+        proposalService.getProposalByIdForCurrentUser(id);
         return ResponseEntity.ok(proposalVersionService.getVersions(id));
     }
 
@@ -65,6 +64,7 @@ public class ProposalController {
     public ResponseEntity<ProposalVersionResponse> getProposalVersion(
             @PathVariable Long id,
             @PathVariable Integer versionNumber) {
+        proposalService.getProposalByIdForCurrentUser(id);
         return ResponseEntity.ok(proposalVersionService.getVersion(id, versionNumber));
     }
 
@@ -243,6 +243,8 @@ public class ProposalController {
 
     @GetMapping("/{id}/reviews")
     public ResponseEntity<List<ProposalReview>> getProposalReviews(@PathVariable Long id) {
+        // Ownership check before exposing reviews (Proponents see only their own).
+        proposalService.getProposalByIdForCurrentUser(id);
         return ResponseEntity.ok(reviewService.getReviewsForProposal(id));
     }
 
@@ -266,5 +268,16 @@ public class ProposalController {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleSubmissionsClosed(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
+    // Safety net for the proposal/revision identifier unique constraints. The
+    // sequence allocator makes collisions structurally impossible, but if one is
+    // ever detected the request fails cleanly with 409 and no partial record is
+    // committed (record creation happens in a single transaction).
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleIdentifierConflict(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "A conflicting proposal or revision identifier was generated. Please retry."));
     }
 }

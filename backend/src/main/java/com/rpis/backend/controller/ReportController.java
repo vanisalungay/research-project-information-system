@@ -1,12 +1,16 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProjectReport;
+import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProjectReportRepository;
+import com.rpis.backend.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +29,31 @@ import java.util.UUID;
 public class ReportController {
 
     private final ProjectReportRepository reportRepository;
+    private final ProposalRepository proposalRepository;
+    private final CurrentUser currentUser;
 
     private static final String UPLOAD_DIR = "uploads/reports/";
+
+    /**
+     * Ensures the caller may access reports for the given proposal. A Proponent is
+     * restricted to their own proposals; staff/reviewing roles keep full access.
+     */
+    private void requireProposalAccess(Long proposalId) {
+        if (!currentUser.isProponent()) {
+            return;
+        }
+        Proposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+        currentUser.requireAccessTo(proposal);
+    }
+
+    /** Rejects Proponents from RPS/reviewer-only report endpoints. */
+    private void requireStaff() {
+        if (currentUser.isProponent()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to access this resource.");
+        }
+    }
 
     /**
      * Upload project reports (Quarterly Progress and/or Financial)
@@ -39,6 +66,7 @@ public class ReportController {
             @RequestParam(value = "quarterlyReport", required = false) MultipartFile quarterlyReport,
             @RequestParam(value = "financialReport", required = false) MultipartFile financialReport) {
 
+        requireProposalAccess(proposalId);
         try {
             // Ensure upload directory exists
             Path uploadPath = Paths.get(UPLOAD_DIR);
@@ -79,6 +107,7 @@ public class ReportController {
      */
     @GetMapping("/proposal/{proposalId}")
     public ResponseEntity<List<ProjectReport>> getReportsByProposal(@PathVariable Long proposalId) {
+        requireProposalAccess(proposalId);
         return ResponseEntity.ok(reportRepository.findByProposalId(proposalId));
     }
 
@@ -89,6 +118,7 @@ public class ReportController {
     public ResponseEntity<List<ProjectReport>> getReportsByType(
             @PathVariable Long proposalId,
             @PathVariable String reportType) {
+        requireProposalAccess(proposalId);
         return ResponseEntity.ok(reportRepository.findByProposalIdAndReportType(proposalId, reportType));
     }
 
@@ -97,6 +127,7 @@ public class ReportController {
      */
     @GetMapping("/pending")
     public ResponseEntity<List<ProjectReport>> getPendingReports() {
+        requireStaff();
         return ResponseEntity.ok(reportRepository.findByReviewStatus("PENDING"));
     }
 
@@ -110,6 +141,7 @@ public class ReportController {
             @RequestParam String status, // APPROVED or RETURNED
             @RequestParam(required = false) String comments) {
 
+        requireStaff();
         return reportRepository.findById(reportId)
                 .map(report -> {
                     report.setReviewedBy(reviewerId);
@@ -126,6 +158,7 @@ public class ReportController {
      */
     @DeleteMapping("/{reportId}")
     public ResponseEntity<Void> deleteReport(@PathVariable Long reportId) {
+        requireStaff();
         if (reportRepository.existsById(reportId)) {
             reportRepository.deleteById(reportId);
             return ResponseEntity.noContent().build();

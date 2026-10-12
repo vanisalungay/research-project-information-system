@@ -7,8 +7,6 @@
 
 import api from '@/utils/api'
 
-const API_BASE = 'http://localhost:8081'
-
 /** Normalize a stored path/name into a clean relative path. */
 function normalizePath(path) {
   return String(path || '')
@@ -17,11 +15,19 @@ function normalizePath(path) {
     .replace(/^uploads\//, '')
 }
 
-/** Trigger a browser download of a single uploaded file. */
-export function downloadUploadedFile(path) {
+/**
+ * Trigger a browser download of a single uploaded file. The file route requires
+ * authentication, so the request is sent through the shared axios client (which
+ * attaches the bearer token) and the response is saved as a blob.
+ */
+export async function downloadUploadedFile(path) {
   if (!path) return
   const clean = normalizePath(path)
-  const url = `${API_BASE}/api/files?path=${encodeURIComponent(clean)}`
+  const res = await api.get('/api/files', {
+    params: { path: clean },
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(res.data)
   const a = document.createElement('a')
   a.href = url
   a.download = clean.split('/').pop() || 'file'
@@ -29,6 +35,20 @@ export function downloadUploadedFile(path) {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
+/** Open an uploaded file (e.g. a PDF) in a new tab for preview. */
+export async function previewUploadedFile(path) {
+  if (!path) return
+  const clean = normalizePath(path)
+  const res = await api.get('/api/files', {
+    params: { path: clean },
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(res.data)
+  window.open(url, '_blank')
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000)
 }
 
 /** Download several uploaded files in sequence. */

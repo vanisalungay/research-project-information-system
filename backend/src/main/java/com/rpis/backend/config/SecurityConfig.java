@@ -40,8 +40,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // Uploaded document downloads (Special Orders, attachments)
-                        .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                        // Uploaded document downloads (Special Orders, attachments) require
+                        // authentication; per-proposal ownership is enforced in FileController.
+                        .requestMatchers(HttpMethod.GET, "/api/files/**").authenticated()
 
                         // Administrative endpoints (RPS_ADMIN & RPS_STAFF)
                         .requestMatchers("/api/users/pending", "/api/users/*/approve", "/api/users/*/reject", "/api/users/admin/create").hasAnyRole("RPS_ADMIN", "RPS_STAFF")

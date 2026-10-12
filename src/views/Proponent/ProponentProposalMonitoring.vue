@@ -263,6 +263,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -364,26 +365,25 @@ const filteredProposals = computed(() => {
 const fetchProposals = async () => {
   loading.value = true
   error.value = null
+  proposals.value = []
 
   try {
-    const stored = localStorage.getItem('user_data')
-    if (!stored) {
+    const requestUserId = currentUserId()
+    if (!requestUserId) {
       error.value = 'Please log in to view your proposals.'
       return
     }
 
-    const user = JSON.parse(atob(stored))
+    // The backend scopes this response to the authenticated proponent, so the
+    // list already contains only the current user's proposals.
     const res = await api.get('/api/proposals')
-    const allProposals = res.data || []
-
-    // Filter to only show current proponent's proposals
-    proposals.value = allProposals.filter(p =>
-      (p.proponent && p.proponent.id === user.id) ||
-      (p.projectLeader && p.projectLeader.toLowerCase().includes((user.name || '').toLowerCase()))
-    )
+    // Discard a response if the session changed while it was in flight.
+    if (currentUserId() !== requestUserId) return
+    proposals.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
     console.error('Failed to fetch proposals:', err)
     error.value = 'Failed to load proposals. Please try again.'
+    proposals.value = []
   } finally {
     loading.value = false
   }
