@@ -1,12 +1,15 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.dto.FieldRemarkRequest;
 import com.rpis.backend.dto.ForwardRevisionRequest;
 import com.rpis.backend.dto.ProposalRequest;
+import com.rpis.backend.dto.ProposalSectionRemarksResponse;
 import com.rpis.backend.dto.ProposalVersionResponse;
 import com.rpis.backend.dto.ReturnRevisionRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
 import com.rpis.backend.service.ProposalReviewService;
+import com.rpis.backend.service.ProposalSectionRemarkService;
 import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.ProposalVersionService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class ProposalController {
     private final ProposalService proposalService;
     private final ProposalReviewService reviewService;
     private final ProposalVersionService proposalVersionService;
+    private final ProposalSectionRemarkService sectionRemarkService;
 
     @GetMapping
     public ResponseEntity<List<Proposal>> getProposals(
@@ -202,8 +206,56 @@ public class ProposalController {
         String office = request != null ? request.getReturnedByOffice() : null;
         Long userId = request != null ? request.getReturnedById() : null;
         String userName = request != null ? request.getReturnedByName() : null;
-        Proposal updated = proposalService.returnForRevision(id, remarks, office, userId, userName);
+        Proposal updated = proposalService.returnForRevision(id, remarks, office, userId, userName,
+                request != null ? request.getSectionRemarks() : null);
         return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Section- and field-level revision remarks of a proposal, grouped by revision
+     * round. Ownership is enforced by the service, so a Proponent only ever sees the
+     * remarks of their own proposal while authorized reviewers keep their existing
+     * access.
+     */
+    @GetMapping({ "/{id}/field-remarks", "/{id}/section-remarks" })
+    public ResponseEntity<ProposalSectionRemarksResponse> getSectionRemarks(@PathVariable Long id) {
+        proposalService.getProposalByIdForCurrentUser(id);
+        return ResponseEntity.ok(sectionRemarkService.getRemarksForProposal(id));
+    }
+
+    /**
+     * Creates or updates the remark a reviewer leaves beside one specific proposal
+     * field (or repeated entry). Persisted immediately so the remark survives
+     * navigation and refresh, and so it is available when the proposal is returned
+     * for revision. Only authorized reviewer roles may call this.
+     */
+    @PutMapping("/{id}/field-remarks")
+    public ResponseEntity<ProposalSectionRemarksResponse.Item> saveFieldRemark(
+            @PathVariable Long id,
+            @RequestBody FieldRemarkRequest request) {
+        Proposal proposal = proposalService.getProposalByIdForCurrentUser(id);
+        return ResponseEntity.ok(sectionRemarkService.upsertFieldRemark(proposal, request));
+    }
+
+    /** Removes a single field remark. Only authorized reviewer roles may call this. */
+    @DeleteMapping("/{id}/field-remarks/{remarkId}")
+    public ResponseEntity<Void> deleteFieldRemark(
+            @PathVariable Long id,
+            @PathVariable Long remarkId) {
+        proposalService.getProposalByIdForCurrentUser(id);
+        sectionRemarkService.deleteRemark(id, remarkId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Creates a new DRAFT proposal by reusing the reusable content of a completed /
+     * approved proposal. Authorization, eligibility and identifier allocation are all
+     * enforced server-side.
+     */
+    @PostMapping("/{id}/duplicate")
+    public ResponseEntity<Proposal> duplicateProposal(@PathVariable Long id) {
+        Proposal duplicate = proposalService.duplicateProposal(id);
+        return new ResponseEntity<>(duplicate, HttpStatus.CREATED);
     }
 
     /**
@@ -220,7 +272,8 @@ public class ProposalController {
                 request != null ? request.getNotes() : null,
                 request != null ? request.getForwardedById() : null,
                 request != null ? request.getForwardedByName() : null,
-                request != null ? request.getRemarks() : null);
+                request != null ? request.getRemarks() : null,
+                request != null ? request.getSectionRemarks() : null);
         return ResponseEntity.ok(updated);
     }
 
@@ -268,6 +321,14 @@ public class ProposalController {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleSubmissionsClosed(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
+    // Invalid request data (e.g. a remark submitted for an unknown proposal section)
+    // fails cleanly with a readable 400 instead of a generic 500 error.
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRequest(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Invalid request."));
     }
 
     // Safety net for the proposal/revision identifier unique constraints. The

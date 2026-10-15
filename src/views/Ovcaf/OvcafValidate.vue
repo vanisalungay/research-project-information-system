@@ -41,6 +41,25 @@
       <!-- SCROLLABLE CONTENT AREA -->
       <div class="content-area">
         <div class="proposal-body">
+          <h4>FIELD-LEVEL REVIEW</h4>
+          <p class="field-note">
+            Leave a remark beside any field that needs correction; the proponent sees it beside that
+            exact field on the revision page.
+          </p>
+          <p v-if="remarksError" class="error-text">{{ remarksError }}</p>
+          <ProposalFieldSection
+            v-for="section in PROPOSAL_FIELD_SECTIONS"
+            :key="section.key"
+            :section="section"
+            :proposal="proposal"
+            :proposal-id="proposal.id"
+            :remark-index="remarkIndex"
+            :editable="true"
+            @remark-saved="onRemarkSaved"
+            @remark-removed="onRemarkRemoved"
+          />
+        </div>
+        <div class="proposal-body">
           <h4>1. PROJECT PROFILE</h4>
           <div class="two-column">
             <div>
@@ -130,6 +149,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { downloadProposalDocument } from '@/utils/documentExport'
+import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
 
@@ -138,6 +159,49 @@ const loading = ref(true)
 const error = ref(null)
 const actionLoading = ref(false)
 const approvalType = ref('budget')
+
+// Field-level remarks of the active revision round.
+const remarksResponse = ref(null)
+const remarksError = ref('')
+const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+
+const loadFieldRemarks = async (proposalId) => {
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}/field-remarks`)
+    remarksResponse.value = res.data || null
+    remarksError.value = ''
+  } catch (err) {
+    console.error(err)
+    remarksResponse.value = null
+    remarksError.value = 'Unable to load the existing remarks.'
+  }
+}
+
+const onRemarkSaved = (item) => {
+  const current = { ...(remarksResponse.value || { activeRound: 1, rounds: [] }) }
+  const rounds = Array.isArray(current.rounds) ? [...current.rounds] : []
+  let activeIndex = rounds.findIndex((round) => round.active)
+  if (activeIndex < 0) {
+    rounds.unshift({ round: current.activeRound || 1, active: true, remarks: [] })
+    activeIndex = 0
+    current.activeRound = rounds[0].round
+  }
+  const remarks = [...(rounds[activeIndex].remarks || [])]
+  const existing = remarks.findIndex((row) => row.id === item.id || row.fieldKey === item.fieldKey)
+  if (existing >= 0) remarks[existing] = item
+  else remarks.push(item)
+  rounds[activeIndex] = { ...rounds[activeIndex], remarks }
+  remarksResponse.value = { ...current, rounds }
+}
+
+const onRemarkRemoved = (remarkId) => {
+  if (!remarksResponse.value) return
+  const rounds = (remarksResponse.value.rounds || []).map((round) => ({
+    ...round,
+    remarks: (round.remarks || []).filter((row) => row.id !== remarkId),
+  }))
+  remarksResponse.value = { ...remarksResponse.value, rounds }
+}
 
 const showRejectModal = ref(false)
 const rejectReason = ref('')
@@ -160,6 +224,7 @@ const loadProposal = async () => {
     }
     const res = await api.get(`/api/proposals/${proposalId}`)
     proposal.value = res.data
+    await loadFieldRemarks(proposalId)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load proposal details.'

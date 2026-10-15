@@ -1056,6 +1056,8 @@ const loadProposal = (data) => {
   proposal.specific_objectives = data.objectivesSpecific || ''
   proposal.methodology = data.methodology || ''
   proposal.expected_outputs = parseSixPs(data.outputs)
+  proposal.review_of_literature = data.review || ''
+  proposal.limitations = data.limitationsText || ''
   proposal.potential_outcomes = data.outcomes || ''
   proposal.economic_impact = data.impactEconomic || ''
   proposal.social_ethical_impact = data.impactSocial || ''
@@ -1088,8 +1090,8 @@ const loadProposal = (data) => {
   }
 
   // Map logical framework
-  if (data.logFrame && data.logFrame.length > 0) {
-    proposal.logical_framework = data.logFrame.map(lf => ({
+  if (data.logFrames && data.logFrames.length > 0) {
+    proposal.logical_framework = data.logFrames.map(lf => ({
       outcome_indicator: lf.outcome || '',
       output_indicator: lf.output || ''
     }))
@@ -1099,7 +1101,8 @@ const loadProposal = (data) => {
   if (data.personnel && data.personnel.length > 0) {
     proposal.personnel_requirements = data.personnel.map(p => ({
       position: p.position || '',
-      effort: p.time || '',
+      // The API returns the entity field name (timeDevoted), not "time".
+      effort: p.timeDevoted || '',
       responsibilities: p.responsibilities || ''
     }))
   }
@@ -1626,6 +1629,7 @@ const mapFormToDTO = (data, proponentId, status) => {
     programTitle: data.program_title || '',
     projectTitle: data.project_title || '',
     projectLeader: data.project_leader || '',
+    projectLeaderSex: data.project_leader_sex || '',
     duration: data.duration || '',
     startDate: data.start_date || '',
     endDate: data.end_date || '',
@@ -1643,6 +1647,8 @@ const mapFormToDTO = (data, proponentId, status) => {
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
     outputs: serializeSixPs(data.expected_outputs),
+    review: data.review_of_literature || '',
+    limitationsText: data.limitations || '',
     outcomes: data.potential_outcomes || '',
     impactEconomic: data.economic_impact || '',
     impactSocial: data.social_ethical_impact || '',

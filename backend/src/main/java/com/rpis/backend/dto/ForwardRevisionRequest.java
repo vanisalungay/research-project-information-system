@@ -2,6 +2,8 @@ package com.rpis.backend.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * Payload for RPS forwarding a revision request to the Proponent. Only RPS may
  * set the revision deadline and forward the request.
@@ -25,4 +27,11 @@ public class ForwardRevisionRequest {
      * in {@code return_remarks} and are preserved unchanged.
      */
     private String remarks;
+
+    /**
+     * Optional section-specific remarks added by RPS. When a reviewing office has
+     * already returned the proposal, these are appended to the same revision round
+     * so both offices' feedback is visible per section.
+     */
+    private List<SectionRemarkDTO> sectionRemarks;
 }

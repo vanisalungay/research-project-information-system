@@ -12,6 +12,7 @@ public class ProposalRequest {
     private String programTitle;
     private String projectTitle;
     private String projectLeader;
+    private String projectLeaderSex;
     private String duration;
     private String startDate; // Keep as String to avoid parsing exceptions, convert in service
     private String endDate;
@@ -44,6 +45,7 @@ public class ProposalRequest {
     private BigDecimal gadScore;
     private String gadFileName;
     private List<LimitationDTO> limitationsTable;
+    private String limitationsText;
     private String risks;
     private List<LogFrameDTO> logFrame;
     private List<ReferenceDTO> references;

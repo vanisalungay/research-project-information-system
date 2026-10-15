@@ -103,6 +103,12 @@ public class Proposal {
     @Column(name = "review_file_name")
     private String reviewFileName;
 
+    @Column(name = "project_leader_sex", length = 20)
+    private String projectLeaderSex;
+
+    @Column(name = "limitations_text", columnDefinition = "TEXT")
+    private String limitationsText;
+
     @Column(columnDefinition = "TEXT")
     private String methodology;
 

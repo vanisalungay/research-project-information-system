@@ -31,6 +31,14 @@
           Edit Draft
         </button>
         <button class="btn-secondary" @click="printProposal">Print</button>
+        <button
+          v-if="isDuplicable(proposal.status)"
+          class="btn-duplicate"
+          :disabled="duplicating"
+          @click="duplicateProposal"
+        >
+          {{ duplicating ? 'Duplicating...' : 'Duplicate Proposal' }}
+        </button>
       </div>
     </header>
 
@@ -62,38 +70,47 @@
                 <div class="info-item">
                   <label>Program Title</label>
                   <p>{{ proposal.programTitle || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'programTitle'" field-label="Program Title" :remarks="remarksForField('programTitle')" readonly />
                 </div>
                 <div class="info-item">
                   <label>Project Title</label>
                   <p>{{ proposal.projectTitle || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectTitle'" field-label="Project Title" :remarks="remarksForField('projectTitle')" readonly />
                 </div>
                 <div class="info-item">
                   <label>Project Leader</label>
                   <p>{{ proposal.projectLeader || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectLeader'" field-label="Project Leader" :remarks="remarksForField('projectLeader')" readonly />
                 </div>
                 <div class="info-item">
                   <label>Sex</label>
                   <p>{{ proposal.projectLeaderSex || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectLeaderSex'" field-label="Sex" :remarks="remarksForField('projectLeaderSex')" readonly />
                 </div>
                 <div class="info-item">
                   <label>Duration</label>
                   <p>{{ proposal.duration || 'Not provided' }} months</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'duration'" field-label="Duration (months)" :remarks="remarksForField('duration')" readonly />
                 </div>
                 <div class="info-item">
                   <label>Start Date</label>
                   <p>{{ proposal.startDate || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'startDate'" field-label="Start Date" :remarks="remarksForField('startDate')" readonly />
                 </div>
                 <div class="info-item">
                   <label>End Date</label>
                   <p>{{ proposal.endDate || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'endDate'" field-label="End Date" :remarks="remarksForField('endDate')" readonly />
                 </div>
                 <div class="info-item full-width">
                   <label>Implementing College / Department</label>
                   <p>{{ proposal.college || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'college'" field-label="Implementing College / Department" :remarks="remarksForField('college')" readonly />
                 </div>
                 <div class="info-item full-width">
                   <label>Address / Contact</label>
                   <p>{{ proposal.address || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'address'" field-label="Address / Contact" :remarks="remarksForField('address')" readonly />
                 </div>
               </div>
             </div>
@@ -107,6 +124,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.cooperatingAgencies || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Name/s and Address/es" :remarks="remarksForField('cooperatingAgencies')" readonly />
             </div>
           </section>
 
@@ -133,12 +151,12 @@
                   <tbody>
                     <tr v-for="(site, index) in proposal.sites" :key="index">
                       <td>{{ index + 1 }}</td>
-                      <td>{{ site.country }}</td>
-                      <td>{{ site.region }}</td>
-                      <td>{{ site.province }}</td>
-                      <td>{{ site.district }}</td>
-                      <td>{{ site.municipality }}</td>
-                      <td>{{ site.barangay }}</td>
+                      <td>{{ site.country }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].country`" field-label="Country" :remarks="remarksForField(`sites[${index}].country`)" readonly /></td>
+                      <td>{{ site.region }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].region`" field-label="Region" :remarks="remarksForField(`sites[${index}].region`)" readonly /></td>
+                      <td>{{ site.province }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].province`" field-label="Province" :remarks="remarksForField(`sites[${index}].province`)" readonly /></td>
+                      <td>{{ site.district }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].district`" field-label="District" :remarks="remarksForField(`sites[${index}].district`)" readonly /></td>
+                      <td>{{ site.municipality }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].municipality`" field-label="Municipality" :remarks="remarksForField(`sites[${index}].municipality`)" readonly /></td>
+                      <td>{{ site.barangay }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].barangay`" field-label="Barangay" :remarks="remarksForField(`sites[${index}].barangay`)" readonly /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -156,6 +174,7 @@
             <div class="card-body">
               <span class="type-badge" :class="(proposal.researchType || '').toLowerCase()">
                 {{ proposal.researchType || 'Not specified' }}
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'04'" :field-key="'researchType'" field-label="Type of Research" :remarks="remarksForField('researchType')" readonly />
               </span>
             </div>
           </section>
@@ -167,20 +186,11 @@
             </div>
             <div class="card-body">
               <div v-if="hasPriorityAgendas" class="agenda-list">
-                <div v-if="proposal.priorityAgendas?.dagat?.selected" class="agenda-item">
-                  <strong>DAGAT:</strong> {{ proposal.priorityAgendas.dagat.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.punla?.selected" class="agenda-item">
-                  <strong>PUNLA:</strong> {{ proposal.priorityAgendas.punla.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.kalikasan?.selected" class="agenda-item">
-                  <strong>KALIKASAN:</strong> {{ proposal.priorityAgendas.kalikasan.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.negosyo?.selected" class="agenda-item">
-                  <strong>NEGOSYO:</strong> {{ proposal.priorityAgendas.negosyo.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.tanglaw?.selected" class="agenda-item">
-                  <strong>TANGLAW:</strong> {{ proposal.priorityAgendas.tanglaw.value }}
+                <div v-for="agenda in proposal.priorityAgendas" :key="agenda.agendaKey" class="agenda-item">
+                  <template v-if="agenda.selected">
+                    <strong>{{ agenda.agendaKey.toUpperCase() }}:</strong> {{ agenda.value }}
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'05'" :field-key="`priorityAgenda.${agenda.agendaKey}.value`" :field-label="`Priority Agenda — ${agenda.agendaKey}`" :remarks="remarksForField(`priorityAgenda.${agenda.agendaKey}.value`)" readonly />
+                  </template>
                 </div>
               </div>
               <p v-else class="empty-text">No priority agenda selected.</p>
@@ -195,6 +205,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.innovationGoals || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'06'" :field-key="'innovationGoals'" field-label="Innovation Goals" :remarks="remarksForField('innovationGoals')" readonly />
             </div>
           </section>
 
@@ -205,6 +216,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.sectorRelevance || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'07'" :field-key="'sectorRelevance'" field-label="Sector Relevance" :remarks="remarksForField('sectorRelevance')" readonly />
             </div>
           </section>
 
@@ -215,6 +227,7 @@
             </div>
             <div class="card-body">
               <SdgChecklist :value="proposal.sdg" />
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'08'" :field-key="'sdg'" field-label="Selected SDGs" :remarks="remarksForField('sdg')" readonly />
             </div>
           </section>
 
@@ -225,6 +238,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.executiveSummary || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'09'" :field-key="'executiveSummary'" field-label="Executive Summary" :remarks="remarksForField('executiveSummary')" readonly />
             </div>
           </section>
 
@@ -238,10 +252,12 @@
               <div class="subsection">
                 <h3>10.1 Rationale / Significance</h3>
                 <p class="text-content">{{ proposal.rationale || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'rationale'" field-label="Rationale / Significance" :remarks="remarksForField('rationale')" readonly />
               </div>
               <div class="subsection">
                 <h3>10.2 Scientific Basis / Theoretical Framework</h3>
                 <p class="text-content">{{ proposal.framework || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'framework'" field-label="Scientific Basis / Theoretical Framework" :remarks="remarksForField('framework')" readonly />
               </div>
               <div class="subsection">
                 <h3>10.3 Objectives</h3>
@@ -249,10 +265,14 @@
                   <div>
                     <strong>General Objective:</strong>
                     <p>{{ proposal.objectivesGeneral || 'Not provided' }}</p>
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesGeneral'" field-label="General Objective" :remarks="remarksForField('objectivesGeneral')" readonly />
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesGeneral'" field-label="General Objective" :remarks="remarksForField('objectivesGeneral')" readonly />
                   </div>
                   <div>
                     <strong>Specific Objectives:</strong>
                     <p>{{ proposal.objectivesSpecific || 'Not provided' }}</p>
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesSpecific'" field-label="Specific Objectives" :remarks="remarksForField('objectivesSpecific')" readonly />
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesSpecific'" field-label="Specific Objectives" :remarks="remarksForField('objectivesSpecific')" readonly />
                   </div>
                 </div>
               </div>
@@ -270,6 +290,7 @@
                 <div class="file-icon">📄</div>
                 <div class="file-info">
                   <p class="file-name">{{ proposal.reviewFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'11'" :field-key="'reviewFileName'" field-label="Review of Literature (document)" :remarks="remarksForField('reviewFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">Download</button>
@@ -285,6 +306,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.methodology || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'12'" :field-key="'methodology'" field-label="Methodology" :remarks="remarksForField('methodology')" readonly />
             </div>
           </section>
 
@@ -298,6 +320,7 @@
                 <div class="file-icon">📄</div>
                 <div class="file-info">
                   <p class="file-name">{{ proposal.roadmapFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'13'" :field-key="'roadmapFileName'" field-label="Technology Roadmap (document)" :remarks="remarksForField('roadmapFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.roadmapFileName)">Download</button>
@@ -314,6 +337,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.outputs || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'14'" :field-key="'outputs'" field-label="Expected Outputs (6Ps)" :remarks="remarksForField('outputs')" readonly />
             </div>
           </section>
 
@@ -325,6 +349,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.outcomes || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'15'" :field-key="'outcomes'" field-label="Potential Outcomes" :remarks="remarksForField('outcomes')" readonly />
             </div>
           </section>
 
@@ -338,10 +363,12 @@
               <div class="subsection">
                 <h3>a. Economic Impact</h3>
                 <p class="text-content">{{ proposal.impactEconomic || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'16'" :field-key="'impactEconomic'" field-label="Economic Impact" :remarks="remarksForField('impactEconomic')" readonly />
               </div>
               <div class="subsection">
                 <h3>b. Social / Ethical Impact</h3>
                 <p class="text-content">{{ proposal.impactSocial || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'16'" :field-key="'impactSocial'" field-label="Social / Ethical Impact" :remarks="remarksForField('impactSocial')" readonly />
               </div>
             </div>
           </section>
@@ -354,6 +381,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.beneficiaries || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'17'" :field-key="'beneficiaries'" field-label="Target Beneficiaries" :remarks="remarksForField('beneficiaries')" readonly />
             </div>
           </section>
 
@@ -365,6 +393,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.sustainability || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'18'" :field-key="'sustainability'" field-label="Sustainability Plan" :remarks="remarksForField('sustainability')" readonly />
             </div>
           </section>
 
@@ -379,6 +408,7 @@
                 <div class="file-icon">📄</div>
                 <div class="file-info">
                   <p class="file-name">{{ proposal.gadFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'19'" :field-key="'gadFileName'" field-label="GAD Score (document)" :remarks="remarksForField('gadFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
@@ -394,7 +424,26 @@
               <h2>Limitations of the Project</h2>
             </div>
             <div class="card-body">
-              <p class="text-content">{{ proposal.limitations || 'Not provided' }}</p>
+              <p class="text-content">{{ proposal.limitationsText || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="'limitationsText'" field-label="Limitations of the Project" :remarks="remarksForField('limitationsText')" readonly />
+              <table v-if="proposal.limitations && proposal.limitations.length" class="data-table" style="margin-top:8px;">
+                <thead>
+                  <tr><th>#</th><th>Limitation</th><th>Remarks</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, index) in proposal.limitations" :key="row.id ?? index">
+                    <td>{{ index + 1 }}</td>
+                    <td>
+                      {{ row.limitation || '-' }}
+                      <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].limitation`" :field-label="`Limitation #${index + 1}`" :remarks="remarksForField(`limitations[${index}].limitation`)" readonly />
+                    </td>
+                    <td>
+                      {{ row.remarks || '-' }}
+                      <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].remarks`" :field-label="`Limitation #${index + 1} — Remarks`" :remarks="remarksForField(`limitations[${index}].remarks`)" readonly />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -406,6 +455,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.risks || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
             </div>
           </section>
 
@@ -425,9 +475,9 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, index) in proposal.logFrame" :key="index">
-                      <td>{{ row.outcome || '-' }}</td>
-                      <td>{{ row.output || '-' }}</td>
+                    <tr v-for="(row, index) in proposal.logFrames" :key="index">
+                      <td>{{ row.outcome || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'22'" :field-key="`logFrames[${index}].outcome`" field-label="Outcome Indicator" :remarks="remarksForField(`logFrames[${index}].outcome`)" readonly /></td>
+                      <td>{{ row.output || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'22'" :field-key="`logFrames[${index}].output`" field-label="Output Indicator" :remarks="remarksForField(`logFrames[${index}].output`)" readonly /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -443,7 +493,7 @@
               <h2>Literature Cited</h2>
             </div>
             <div class="card-body">
-              <p class="text-content">{{ proposal.literatureCited || 'Not provided' }}</p>
+              <p class="text-content">{{ proposal.referencesText || 'Not provided' }}</p>
             </div>
           </section>
 
@@ -465,9 +515,9 @@
                   </thead>
                   <tbody>
                     <tr v-for="(row, index) in proposal.personnel" :key="index">
-                      <td>{{ row.position || '-' }}</td>
-                      <td>{{ row.time || '-' }}</td>
-                      <td>{{ row.responsibilities || '-' }}</td>
+                      <td>{{ row.position || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].position`" field-label="Position" :remarks="remarksForField(`personnel[${index}].position`)" readonly /></td>
+                      <td>{{ row.time || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly /></td>
+                      <td>{{ row.responsibilities || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].responsibilities`" field-label="Responsibilities" :remarks="remarksForField(`personnel[${index}].responsibilities`)" readonly /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -486,7 +536,8 @@
               <div v-if="proposal.budgetFileName" class="file-attachment">
                 <div class="file-icon">📄</div>
                 <div class="file-info">
-                  <p class="file-name">{{ proposal.budgetFileName }}</p>
+                  <p class="file-name">{{ proposal.beneficiariesFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'25'" :field-key="'beneficiariesFileName'" field-label="Line-Item Budget (document)" :remarks="remarksForField('beneficiariesFileName')" readonly />
                   <p class="file-type">Budget Document</p>
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">Download</button>
@@ -504,6 +555,7 @@
             <div class="card-body">
               <p v-if="proposal.otherProjectsNumber" class="text-content" style="margin-bottom: 12px;">
                 <strong>Number of other projects:</strong> {{ proposal.otherProjectsNumber }}
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="'otherProjectsNumber'" field-label="Number of other projects" :remarks="remarksForField('otherProjectsNumber')" readonly />
               </p>
               <div v-if="proposal.otherProjects && proposal.otherProjects.length > 0" class="table-wrapper">
                 <table class="data-table">
@@ -516,9 +568,9 @@
                   </thead>
                   <tbody>
                     <tr v-for="(row, index) in proposal.otherProjects" :key="index">
-                      <td>{{ row.title || '-' }}</td>
-                      <td>{{ row.agency || '-' }}</td>
-                      <td>{{ row.involvement || '-' }}</td>
+                      <td>{{ row.title || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].title`" field-label="Title" :remarks="remarksForField(`otherProjects[${index}].title`)" readonly /></td>
+                      <td>{{ row.agency || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].agency`" field-label="Funding Agency" :remarks="remarksForField(`otherProjects[${index}].agency`)" readonly /></td>
+                      <td>{{ row.involvement || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].involvement`" field-label="Involvement" :remarks="remarksForField(`otherProjects[${index}].involvement`)" readonly /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -621,6 +673,9 @@
 
       <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
     </template>
+
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
 </template>
 
@@ -632,12 +687,70 @@ import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/uti
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
+import { useDialog } from '@/composables/useDialog'
+import { isDuplicable } from '@/utils/proposalStatus'
+import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
 const router = useRouter()
 const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
+
+// Reviewer remarks of the active revision round, shown beside the matching field.
+const remarksResponse = ref(null)
+const remarksByKey = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+const remarksForField = (key) => remarksByKey.value[key] || []
+
+const fetchFieldRemarks = async (proposalId) => {
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}/field-remarks`)
+    remarksResponse.value = res.data || null
+  } catch (err) {
+    // Remarks are informational here: never block the proposal view.
+    console.error(err)
+    remarksResponse.value = null
+  }
+}
+
+const { dialogState, showAlert, showConfirm } = useDialog()
+const duplicating = ref(false)
+
+// Creates a new DRAFT from this completed proposal. The backend allocates a new
+// proposal code / document id and copies only the reusable content; the copy is
+// then opened in the proposal form for editing before it is submitted.
+const duplicateProposal = async () => {
+  const title = proposal.value.projectTitle || 'this proposal'
+  const confirmed = await showConfirm(
+    `Create a new draft proposal from "${title}"? You can edit the copy before submitting it.`,
+    { title: 'Duplicate Proposal', type: 'info', confirmText: 'Duplicate' }
+  )
+  if (!confirmed) return
+
+  duplicating.value = true
+  try {
+    const res = await api.post(`/api/proposals/${proposal.value.id}/duplicate`)
+    const created = res.data || {}
+    await showAlert(
+      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Edit it and submit it when ready.`,
+      { type: 'success', title: 'Proposal Duplicated' }
+    )
+    if (created.id) {
+      router.push({ path: '/proposals', query: { edit: created.id } })
+    }
+  } catch (err) {
+    console.error(err)
+    const body = err.response?.data
+    const message =
+      (body && typeof body === 'object' ? body.error : body) ||
+      'Failed to duplicate the proposal. Please try again.'
+    await showAlert(String(message), { type: 'error', title: 'Duplicate Failed' })
+  } finally {
+    duplicating.value = false
+  }
+}
 
 const hasPriorityAgendas = computed(() => {
   if (!proposal.value.priorityAgendas) return false
@@ -655,6 +768,7 @@ const fetchProposal = async () => {
     }
     const res = await api.get(`/api/proposals/${proposalId}`)
     proposal.value = res.data
+    await fetchFieldRemarks(proposalId)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load proposal details.'
@@ -844,6 +958,27 @@ const formatReviewerPosition = (position) => {
   background: #f1f5f9;
 }
 
+.btn-duplicate {
+  background: #4b3f72;
+  border: 1px solid #4b3f72;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-duplicate:hover:not(:disabled) {
+  background: #3c3160;
+}
+
+.btn-duplicate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-edit-draft {
   display: flex;
   align-items: center;
@@ -965,6 +1100,9 @@ const formatReviewerPosition = (position) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+  /* Keep each field at its natural height so a remark on one field can never
+     stretch its row partner and misalign the neighbouring column. */
+  align-items: start;
 }
 
 .info-item {

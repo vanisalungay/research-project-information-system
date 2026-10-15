@@ -51,6 +51,36 @@
       <span>{{ successMessage }}</span>
     </div>
 
+    <!-- SECTION REMARKS SUMMARY -->
+    <div v-if="flaggedSections.length > 0" class="remarks-summary">
+      <div class="remarks-summary-head">
+        <span class="remarks-summary-count">{{ flaggedSections.length }}</span>
+        <div>
+          <strong>
+            {{ flaggedSections.length === 1 ? 'section needs' : 'sections need' }} revision
+          </strong>
+          <p class="remarks-summary-sub">
+            Review each remark below, then edit the matching section in the form.
+          </p>
+        </div>
+      </div>
+      <div class="remarks-summary-list">
+        <button
+          v-for="section in flaggedSections"
+          :key="section.key"
+          type="button"
+          class="remarks-chip"
+          @click="scrollToSection(section.key)"
+        >
+          <span class="remarks-chip-number">{{ section.key }}</span>
+          <span class="remarks-chip-label">{{ section.label }}</span>
+          <span class="remarks-chip-count">{{ remarksFor(section.key).length }}</span>
+        </button>
+      </div>
+    </div>
+
+    <p v-if="remarksError" class="remarks-error">{{ remarksError }}</p>
+
     <!-- LOADING STATE -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
@@ -69,26 +99,31 @@
                 <span class="section-number">01</span>
                 <h3>Project Profile</h3>
               </div>
+              <SectionRemarksNotice :section-key="'01'" :remarks="remarksFor('01')" />
               <div class="section-card">
                 <div class="form-row">
                   <div class="form-group">
                     <label>Program Title</label>
                     <input v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'programTitle'" field-label="Program Title" :remarks="remarksForField('programTitle')" readonly />
                   </div>
                   <div class="form-group">
                     <label>Project Title</label>
                     <input v-model="proposal.project_title"
                       placeholder="e.g. Community-Based Water Filtration System" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'projectTitle'" field-label="Project Title" :remarks="remarksForField('projectTitle')" readonly />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label>Project Leader</label>
                     <input v-model="proposal.project_leader" placeholder="Full name of project leader" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'projectLeader'" field-label="Project Leader" :remarks="remarksForField('projectLeader')" readonly />
                   </div>
                   <div class="form-group">
                     <label>Sex</label>
                     <select v-model="proposal.project_leader_sex">
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'projectLeaderSex'" field-label="Sex" :remarks="remarksForField('projectLeaderSex')" readonly />
                       <option value="">Select Sex</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -100,25 +135,30 @@
                   <div class="form-group">
                     <label>Duration (months)</label>
                     <input v-model="proposal.duration" placeholder="e.g. 12" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'duration'" field-label="Duration (months)" :remarks="remarksForField('duration')" readonly />
                   </div>
                   <div class="form-group">
                     <label>Start Date</label>
                     <input type="date" v-model="proposal.start_date" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'startDate'" field-label="Start Date" :remarks="remarksForField('startDate')" readonly />
                   </div>
                   <div class="form-group">
                     <label>End Date</label>
                     <input type="date" v-model="proposal.end_date" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'endDate'" field-label="End Date" :remarks="remarksForField('endDate')" readonly />
                   </div>
                 </div>
                 <div class="form-group">
                   <label>Implementing College / Department</label>
                   <input v-model="proposal.department" placeholder="e.g. College of Engineering" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'college'" field-label="Implementing College / Department" :remarks="remarksForField('college')" readonly />
                 </div>
                 <div class="form-group">
                   <label>Address / Contact</label>
                   <textarea v-model="proposal.address"
                     placeholder="Barangay, Municipality, District, Province, Region / Telephone / Fax / Email"
                     rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'address'" field-label="Address / Contact" :remarks="remarksForField('address')" readonly />
                 </div>
               </div>
             </section>
@@ -129,11 +169,13 @@
                 <span class="section-number">02</span>
                 <h3>Cooperating Agencies</h3>
               </div>
+              <SectionRemarksNotice :section-key="'02'" :remarks="remarksFor('02')" />
               <div class="section-card">
                 <div class="form-group">
                   <label>Name/s and Address/es</label>
                   <textarea v-model="proposal.cooperating_agencies"
                     placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Name/s and Address/es" :remarks="remarksForField('cooperatingAgencies')" readonly />
                 </div>
               </div>
             </section>
@@ -144,6 +186,7 @@
                 <span class="section-number">03</span>
                 <h3>Sites of Implementation</h3>
               </div>
+              <SectionRemarksNotice :section-key="'03'" :remarks="remarksFor('03')" />
               <div class="section-card">
                 <div class="table-wrapper">
                   <table class="form-table">
@@ -163,11 +206,17 @@
                       <tr v-for="(site, index) in proposal.sites" :key="index">
                         <td class="row-num">{{ index + 1 }}</td>
                         <td><input v-model="site.country" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].country`" field-label="Country" :remarks="remarksForField(`sites[${index}].country`)" readonly />
                         <td><input v-model="site.region" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].region`" field-label="Region" :remarks="remarksForField(`sites[${index}].region`)" readonly />
                         <td><input v-model="site.province" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].province`" field-label="Province" :remarks="remarksForField(`sites[${index}].province`)" readonly />
                         <td><input v-model="site.district" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].district`" field-label="District" :remarks="remarksForField(`sites[${index}].district`)" readonly />
                         <td><input v-model="site.municipality" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].municipality`" field-label="Municipality" :remarks="remarksForField(`sites[${index}].municipality`)" readonly />
                         <td><input v-model="site.barangay" placeholder="" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'03'" :field-key="`sites[${index}].barangay`" field-label="Barangay" :remarks="remarksForField(`sites[${index}].barangay`)" readonly />
                         <td><button class="btn-icon btn-remove" @click="removeSite(index)" title="Remove">✕</button>
                         </td>
                       </tr>
@@ -184,6 +233,7 @@
                 <span class="section-number">04</span>
                 <h3>Type of Research</h3>
               </div>
+              <SectionRemarksNotice :section-key="'04'" :remarks="remarksFor('04')" />
               <div class="section-card">
                 <div class="radio-group">
                   <label class="radio-card" :class="{ active: proposal.research_type === 'Basic' }">
@@ -200,6 +250,7 @@
                       <span class="radio-desc">Practical application of existing knowledge</span>
                     </div>
                   </label>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'04'" :field-key="'researchType'" field-label="Type of Research" :remarks="remarksForField('researchType')" readonly />
                 </div>
               </div>
             </section>
@@ -211,6 +262,7 @@
                 <h3>Priority Agenda</h3>
                 <span class="section-sub">(based on MSUN RIIDE 2025–2028)</span>
               </div>
+              <SectionRemarksNotice :section-key="'05'" :remarks="remarksFor('05')" />
               <div class="section-card">
                 <div class="agenda-grid">
                   <div v-for="program in programList" :key="program.key" class="agenda-item"
@@ -224,6 +276,7 @@
                       <span class="agenda-sub">{{ program.subLabel }}:</span>
                       <input v-model="proposal.priority_agendas[program.key].value"
                         :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'05'" :field-key="`priorityAgenda.${program.key}.value`" field-label="Priority Agenda" :remarks="remarksForField(`priorityAgenda.${program.key}.value`)" readonly />
                     </div>
                   </div>
                 </div>
@@ -236,9 +289,11 @@
                 <span class="section-number">06</span>
                 <h3>Innovation Goals</h3>
               </div>
+              <SectionRemarksNotice :section-key="'06'" :remarks="remarksFor('06')" />
               <div class="section-card">
                 <textarea v-model="proposal.innovation_goals"
                   placeholder="Describe the innovation goals of this project..." rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'06'" :field-key="'innovationGoals'" field-label="Innovation Goals" :remarks="remarksForField('innovationGoals')" readonly />
               </div>
             </section>
 
@@ -247,9 +302,11 @@
                 <span class="section-number">07</span>
                 <h3>Sector Relevance</h3>
               </div>
+              <SectionRemarksNotice :section-key="'07'" :remarks="remarksFor('07')" />
               <div class="section-card">
                 <textarea v-model="proposal.sector_relevance"
                   placeholder="Public Health, Environment, Agriculture, etc." rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'07'" :field-key="'sectorRelevance'" field-label="Sector Relevance" :remarks="remarksForField('sectorRelevance')" readonly />
               </div>
             </section>
 
@@ -258,6 +315,7 @@
                 <span class="section-number">08</span>
                 <h3>Sustainable Development Goals (SDG)</h3>
               </div>
+              <SectionRemarksNotice :section-key="'08'" :remarks="remarksFor('08')" />
               <div class="section-card">
                 <div class="form-group">
                   <label>Select all applicable SDGs</label>
@@ -266,6 +324,7 @@
                       <input type="checkbox" :value="goal" v-model="proposal.sustainable_development_goals" />
                       <span>{{ goal }}</span>
                     </label>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'08'" :field-key="'sdg'" field-label="Selected SDGs" :remarks="remarksForField('sdg')" readonly />
                   </div>
                 </div>
               </div>
@@ -276,9 +335,11 @@
                 <span class="section-number">09</span>
                 <h3>Executive Summary</h3>
               </div>
+              <SectionRemarksNotice :section-key="'09'" :remarks="remarksFor('09')" />
               <div class="section-card">
                 <textarea v-model="proposal.executive_summary" placeholder="Not to exceed 200 words" rows="5"
                   class="word-limit"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'09'" :field-key="'executiveSummary'" field-label="Executive Summary" :remarks="remarksForField('executiveSummary')" readonly />
                 <span class="char-count">{{ executiveWordCount }} / 200 words</span>
               </div>
             </section>
@@ -289,25 +350,30 @@
                 <span class="section-number">10</span>
                 <h3>Introduction</h3>
               </div>
+              <SectionRemarksNotice :section-key="'10'" :remarks="remarksFor('10')" />
               <div class="section-card">
                 <div class="sub-section">
                   <h4>10.1 Rationale / Significance</h4>
                   <p class="field-note">Not to exceed 300 words</p>
                   <textarea v-model="proposal.rationale" rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'10'" :field-key="'rationale'" field-label="Rationale / Significance" :remarks="remarksForField('rationale')" readonly />
                 </div>
                 <div class="sub-section">
                   <h4>10.2 Scientific Basis / Theoretical Framework</h4>
                   <textarea v-model="proposal.theoretical_framework" rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'10'" :field-key="'framework'" field-label="Scientific Basis / Theoretical Framework" :remarks="remarksForField('framework')" readonly />
                 </div>
                 <div class="sub-section">
                   <h4>10.3 Objectives</h4>
                   <div class="form-group">
                     <label>General Objective:</label>
                     <textarea v-model="proposal.general_objective" rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'10'" :field-key="'objectivesGeneral'" field-label="General Objective" :remarks="remarksForField('objectivesGeneral')" readonly />
                   </div>
                   <div class="form-group">
                     <label>Specific Objectives:</label>
                     <textarea v-model="proposal.specific_objectives" rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'10'" :field-key="'objectivesSpecific'" field-label="Specific Objectives" :remarks="remarksForField('objectivesSpecific')" readonly />
                   </div>
                 </div>
               </div>
@@ -319,8 +385,19 @@
                 <span class="section-number">11</span>
                 <h3>Review of Literature</h3>
               </div>
+              <SectionRemarksNotice :section-key="'11'" :remarks="remarksFor('11')" />
               <div class="section-card">
+                <div class="form-group">
+                  <label>Review of Literature</label>
+                  <textarea v-model="proposal.review_of_literature" placeholder="Enter your review of literature..."
+                    rows="5"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'11'" :field-key="'review'" field-label="Review of Literature" :remarks="remarksForField('review')" readonly />
+                </div>
                 <div class="file-upload">
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'25'" :field-key="'beneficiariesFileName'" field-label="Line-Item Budget (document)" :remarks="remarksForField('beneficiariesFileName')" readonly />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'19'" :field-key="'gadFileName'" field-label="GAD Score (document)" :remarks="remarksForField('gadFileName')" readonly />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'13'" :field-key="'roadmapFileName'" field-label="Technology Roadmap (document)" :remarks="remarksForField('roadmapFileName')" readonly />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'11'" :field-key="'reviewFileName'" field-label="Review of Literature (document)" :remarks="remarksForField('reviewFileName')" readonly />
                   <div class="upload-area" @click="$refs.litFile.click()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -346,9 +423,11 @@
                 <span class="section-number">12</span>
                 <h3>Methodology</h3>
               </div>
+              <SectionRemarksNotice :section-key="'12'" :remarks="remarksFor('12')" />
               <div class="section-card">
                 <textarea v-model="proposal.methodology" placeholder="Describe the research methodology..."
                   rows="5"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'12'" :field-key="'methodology'" field-label="Methodology" :remarks="remarksForField('methodology')" readonly />
               </div>
             </section>
 
@@ -359,6 +438,7 @@
                 <h3>Technology Roadmap</h3>
                 <span class="section-sub">(if applicable)</span>
               </div>
+              <SectionRemarksNotice :section-key="'13'" :remarks="remarksFor('13')" />
               <div class="section-card">
                 <div class="file-upload">
                   <div class="upload-area" @click="$refs.techFile.click()">
@@ -385,9 +465,11 @@
                 <span class="section-number">14</span>
                 <h3>Expected Outputs (6Ps)</h3>
               </div>
+              <SectionRemarksNotice :section-key="'14'" :remarks="remarksFor('14')" />
               <div class="section-card">
                 <textarea v-model="proposal.expected_outputs" placeholder="List expected outputs..."
                   rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'14'" :field-key="'outputs'" field-label="Expected Outputs (6Ps)" :remarks="remarksForField('outputs')" readonly />
               </div>
             </section>
 
@@ -396,9 +478,11 @@
                 <span class="section-number">15</span>
                 <h3>Potential Outcomes</h3>
               </div>
+              <SectionRemarksNotice :section-key="'15'" :remarks="remarksFor('15')" />
               <div class="section-card">
                 <textarea v-model="proposal.potential_outcomes" placeholder="Describe potential outcomes..."
                   rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'15'" :field-key="'outcomes'" field-label="Potential Outcomes" :remarks="remarksForField('outcomes')" readonly />
               </div>
             </section>
 
@@ -407,14 +491,17 @@
                 <span class="section-number">16</span>
                 <h3>Potential Impacts (2Is)</h3>
               </div>
+              <SectionRemarksNotice :section-key="'16'" :remarks="remarksFor('16')" />
               <div class="section-card">
                 <div class="form-group">
                   <label>a. Economic Impact:</label>
                   <textarea v-model="proposal.economic_impact" rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'16'" :field-key="'impactEconomic'" field-label="Economic Impact" :remarks="remarksForField('impactEconomic')" readonly />
                 </div>
                 <div class="form-group">
                   <label>b. Social / Ethical Impact:</label>
                   <textarea v-model="proposal.social_ethical_impact" rows="3"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'16'" :field-key="'impactSocial'" field-label="Social / Ethical Impact" :remarks="remarksForField('impactSocial')" readonly />
                 </div>
               </div>
             </section>
@@ -425,9 +512,11 @@
                 <span class="section-number">17</span>
                 <h3>Target Beneficiaries</h3>
               </div>
+              <SectionRemarksNotice :section-key="'17'" :remarks="remarksFor('17')" />
               <div class="section-card">
                 <textarea v-model="proposal.target_beneficiaries" placeholder="Describe the target beneficiaries..."
                   rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'17'" :field-key="'beneficiaries'" field-label="Target Beneficiaries" :remarks="remarksForField('beneficiaries')" readonly />
               </div>
             </section>
 
@@ -437,9 +526,11 @@
                 <span class="section-number">18</span>
                 <h3>Sustainability Plan</h3>
               </div>
+              <SectionRemarksNotice :section-key="'18'" :remarks="remarksFor('18')" />
               <div class="section-card">
                 <textarea v-model="proposal.sustainability_plan" placeholder="Describe the sustainability plan..."
                   rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'18'" :field-key="'sustainability'" field-label="Sustainability Plan" :remarks="remarksForField('sustainability')" readonly />
               </div>
             </section>
 
@@ -449,6 +540,7 @@
                 <span class="section-number">19</span>
                 <h3>Gender and Development (GAD) Score</h3>
               </div>
+              <SectionRemarksNotice :section-key="'19'" :remarks="remarksFor('19')" />
               <div class="section-card">
                 <div class="file-upload">
                   <div class="upload-area" @click="$refs.gadFile.click()">
@@ -475,9 +567,11 @@
                 <span class="section-number">20</span>
                 <h3>Limitations of the Project</h3>
               </div>
+              <SectionRemarksNotice :section-key="'20'" :remarks="remarksFor('20')" />
               <div class="section-card">
                 <textarea v-model="proposal.limitations" placeholder="Describe project limitations..."
                   rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'20'" :field-key="'limitationsText'" field-label="Limitations of the Project" :remarks="remarksForField('limitationsText')" readonly />
               </div>
             </section>
 
@@ -487,9 +581,11 @@
                 <span class="section-number">21</span>
                 <h3>Risk Management Plan</h3>
               </div>
+              <SectionRemarksNotice :section-key="'21'" :remarks="remarksFor('21')" />
               <div class="section-card">
                 <textarea v-model="proposal.risks_assumptions"
                   placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
               </div>
             </section>
 
@@ -500,6 +596,7 @@
                 <h3>Logical Framework</h3>
                 <span class="section-sub">Outcome and Output Indicators</span>
               </div>
+              <SectionRemarksNotice :section-key="'22'" :remarks="remarksFor('22')" />
               <div class="section-card">
                 <div class="table-wrapper">
                   <table class="form-table">
@@ -513,7 +610,9 @@
                     <tbody>
                       <tr v-for="(row, index) in proposal.logical_framework" :key="index">
                         <td><input v-model="row.outcome_indicator" placeholder="e.g. Improved water quality" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'22'" :field-key="`logFrames[${index}].outcome`" field-label="Outcome Indicator" :remarks="remarksForField(`logFrames[${index}].outcome`)" readonly />
                         <td><input v-model="row.output_indicator" placeholder="e.g. 5 filtration units installed" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'22'" :field-key="`logFrames[${index}].output`" field-label="Output Indicator" :remarks="remarksForField(`logFrames[${index}].output`)" readonly />
                         </td>
                         <td><button class="btn-icon btn-remove"
                             @click="removeTableRow('logical_framework', index)">✕</button></td>
@@ -531,9 +630,11 @@
                 <span class="section-number">23</span>
                 <h3>Literature Cited</h3>
               </div>
+              <SectionRemarksNotice :section-key="'23'" :remarks="remarksFor('23')" />
               <div class="section-card">
                 <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..."
                   rows="5"></textarea>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'23'" :field-key="'referencesText'" field-label="Literature Cited" :remarks="remarksForField('referencesText')" readonly />
               </div>
             </section>
 
@@ -543,6 +644,7 @@
                 <span class="section-number">24</span>
                 <h3>Personnel Requirement</h3>
               </div>
+              <SectionRemarksNotice :section-key="'24'" :remarks="remarksFor('24')" />
               <div class="section-card">
                 <div class="table-wrapper">
                   <table class="form-table">
@@ -557,8 +659,11 @@
                     <tbody>
                       <tr v-for="(row, index) in proposal.personnel_requirements" :key="index">
                         <td><input v-model="row.position" placeholder="e.g. Research Assistant" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].position`" field-label="Position" :remarks="remarksForField(`personnel[${index}].position`)" readonly />
                         <td><input v-model="row.effort" placeholder="e.g. 50%" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly />
                         <td><input v-model="row.responsibilities" placeholder="e.g. Data collection" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].responsibilities`" field-label="Responsibilities" :remarks="remarksForField(`personnel[${index}].responsibilities`)" readonly />
                         <td><button class="btn-icon btn-remove"
                             @click="removeTableRow('personnel_requirements', index)">✕</button></td>
                       </tr>
@@ -575,6 +680,7 @@
                 <span class="section-number">25</span>
                 <h3>Line-Item Budget Requirement</h3>
               </div>
+              <SectionRemarksNotice :section-key="'25'" :remarks="remarksFor('25')" />
               <div class="section-card">
                 <div class="budget-actions">
                   <button class="btn-outline" @click="downloadBudgetFormat">
@@ -614,10 +720,12 @@
                 <h3>Other Ongoing Projects</h3>
                 <span class="section-sub">Being handled by the Project Leader</span>
               </div>
+              <SectionRemarksNotice :section-key="'26'" :remarks="remarksFor('26')" />
               <div class="section-card">
                 <div class="form-group">
                   <label>Number of other projects:</label>
                   <input v-model="proposal.other_projects_number" placeholder="e.g. 2" class="input-short" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'26'" :field-key="'otherProjectsNumber'" field-label="Number of other projects" :remarks="remarksForField('otherProjectsNumber')" readonly />
                 </div>
                 <div class="table-wrapper">
                   <table class="form-table">
@@ -632,8 +740,11 @@
                     <tbody>
                       <tr v-for="(row, index) in proposal.other_projects" :key="index">
                         <td><input v-model="row.project_title" placeholder="Project title" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'26'" :field-key="`otherProjects[${index}].title`" field-label="Title" :remarks="remarksForField(`otherProjects[${index}].title`)" readonly />
                         <td><input v-model="row.funding_agency" placeholder="e.g. DOST" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'26'" :field-key="`otherProjects[${index}].agency`" field-label="Funding Agency" :remarks="remarksForField(`otherProjects[${index}].agency`)" readonly />
                         <td><input v-model="row.involvement" placeholder="e.g. Project Leader" /></td>
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'26'" :field-key="`otherProjects[${index}].involvement`" field-label="Involvement" :remarks="remarksForField(`otherProjects[${index}].involvement`)" readonly />
                         <td><button class="btn-icon btn-remove"
                             @click="removeTableRow('other_projects', index)">✕</button>
                         </td>
@@ -651,6 +762,7 @@
                 <span class="section-number">27</span>
                 <h3>Other Supporting Documents</h3>
               </div>
+              <SectionRemarksNotice :section-key="'27'" :remarks="remarksFor('27')" />
               <div class="section-card">
                 <p class="field-note">Please refer to the next page for additional necessary documents.</p>
               </div>
@@ -683,6 +795,46 @@
                   REVISION
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div v-if="flaggedSections.length > 0" class="sidebar-card">
+            <h3>Sections to Revise</h3>
+
+            <ul class="flagged-list">
+              <li v-for="section in flaggedSections" :key="section.key">
+                <button type="button" class="flagged-item" @click="scrollToSection(section.key)">
+                  <span class="flagged-number">{{ section.key }}</span>
+                  <span class="flagged-label">{{ section.label }}</span>
+                </button>
+                <p v-for="(remark, index) in remarksFor(section.key)" :key="remark.id ?? index" class="flagged-remark">
+                  {{ remark.remark }}
+                  <span v-if="remark.reviewerRole" class="flagged-role">— {{ remark.reviewerRole }}</span>
+                </p>
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="previousRoundsList.length > 0" class="sidebar-card">
+            <h3>Previous Revision Rounds</h3>
+            <p class="history-note">
+              Earlier feedback is kept for reference; only the current round needs to be addressed.
+            </p>
+
+            <div v-for="round in previousRoundsList" :key="round.round" class="history-round">
+              <span class="history-round-title">Round {{ round.round }}</span>
+              <ul class="history-list">
+                <li v-for="(remark, index) in round.remarks" :key="remark.id ?? index">
+                  <span class="history-section">
+                    {{ remark.sectionKey }} · {{ remark.sectionLabel || sectionLabel(remark.sectionKey) }}
+                  </span>
+                  <p class="history-text">{{ remark.remark }}</p>
+                  <span class="history-meta">
+                    <template v-if="remark.reviewerRole">{{ remark.reviewerRole }}</template>
+                    <template v-if="remark.createdAt"> · {{ formatRemarkDate(remark.createdAt) }}</template>
+                  </span>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -726,9 +878,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SectionRemarksNotice from '@/components/SectionRemarksNotice.vue'
+import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
+import { PROPOSAL_SECTIONS, activeRemarksBySection, previousRounds, sectionLabel } from '@/utils/proposalSections'
+import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
 const router = useRouter()
@@ -744,6 +900,56 @@ const successMessage = ref('')
 const documentId = ref('')
 const revisionNumber = ref(0)
 const revisionDeadline = ref<string | null>(null)
+
+// ===== Reviewer remarks per proposal section =====
+// Remarks are loaded from the backend (GET /api/proposals/{id}/section-remarks) and
+// rendered beside the section they belong to. They are stored in their own table, so
+// editing and resubmitting this proposal never clears them.
+const sectionRemarks = ref<any>(null)
+const remarksLoading = ref(false)
+const remarksError = ref('')
+const remarksBySection = computed(() => activeRemarksBySection(sectionRemarks.value))
+const remarksFor = (key: string) => remarksBySection.value[key] || []
+/** Field-level remarks of the active round: { fieldKey: [remark, ...] }. */
+const fieldRemarksByKey = computed(() => buildFieldRemarkIndex(sectionRemarks.value))
+const remarksForField = (key: string) => fieldRemarksByKey.value[key] || []
+const flaggedSections = computed(() =>
+  PROPOSAL_SECTIONS.filter((section) => remarksFor(section.key).length > 0)
+)
+const previousRoundsList = computed(() => previousRounds(sectionRemarks.value))
+
+const fetchSectionRemarks = async () => {
+  if (!proposalId.value) return
+  remarksLoading.value = true
+  remarksError.value = ''
+  try {
+    // One request returns both the section-level and the field-level remarks.
+    const res = await api.get(`/api/proposals/${proposalId.value}/field-remarks`)
+    sectionRemarks.value = res.data || null
+  } catch (err) {
+    console.error(err)
+    // A missing remark history must never block the revision itself.
+    sectionRemarks.value = null
+    remarksError.value = 'Unable to load the reviewer remarks for this proposal.'
+  } finally {
+    remarksLoading.value = false
+  }
+}
+
+const scrollToSection = (key: string) => {
+  const sections = Array.from(document.querySelectorAll('.form-section'))
+  const match = sections.find(
+    (section) => section.querySelector('.section-number')?.textContent?.trim() === key
+  )
+  if (match) match.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const formatRemarkDate = (value: string | null) => {
+  if (!value) return ''
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleString()
+}
+
 const isPastDeadline = computed(() => {
   if (!revisionDeadline.value) return false
   const d = new Date(revisionDeadline.value)
@@ -935,6 +1141,7 @@ const fetchProposal = async () => {
       other_projects_number: data.otherProjectsNumber || '',
 
       review_of_literature_file: data.reviewFileName ? { name: data.reviewFileName } : null,
+      review_of_literature: data.review || '',
       technology_roadmap_file: data.roadmapFileName ? { name: data.roadmapFileName } : null,
       gad_score_file: data.gadFileName ? { name: data.gadFileName } : null,
       line_item_budget_file: data.beneficiariesFileName ? { name: data.beneficiariesFileName } : null,
@@ -972,7 +1179,8 @@ const fetchProposal = async () => {
         data.personnel?.length > 0
           ? data.personnel.map(p => ({
             position: p.position || '',
-            effort: p.time || '',
+            // The API returns the entity field name (timeDevoted), not "time".
+            effort: p.timeDevoted || '',
             responsibilities: p.responsibilities || ''
           }))
           : [],
@@ -1044,6 +1252,7 @@ const submitRevision = async () => {
     programTitle: data.program_title || '',
     projectTitle: data.project_title || '',
     projectLeader: data.project_leader || '',
+    projectLeaderSex: data.project_leader_sex || '',
     duration: data.duration || '',
     startDate: data.start_date || '',
     endDate: data.end_date || '',
@@ -1065,6 +1274,8 @@ const submitRevision = async () => {
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
     outputs: data.expected_outputs || '',
+    review: data.review_of_literature || '',
+    limitationsText: data.limitations || '',
     outcomes: data.potential_outcomes || '',
     impactEconomic: data.economic_impact || '',
     impactSocial: data.social_ethical_impact || '',
@@ -1132,6 +1343,7 @@ const goBack = () => {
 
 onMounted(() => {
   fetchProposal()
+  fetchSectionRemarks()
 })
 </script>
 
@@ -1305,6 +1517,9 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+  /* Keep each field at its natural height so a remark on one field can never
+     stretch its row partner and misalign the neighbouring column. */
+  align-items: start;
 }
 
 .info-item {
@@ -1626,6 +1841,197 @@ onMounted(() => {
    ADDITIONAL FORM STYLES
 ========================= */
 
+/* ===== SECTION REMARKS ===== */
+.remarks-summary {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.remarks-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.remarks-summary-count {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remarks-summary-head strong {
+  font-size: 14px;
+  color: #92400e;
+}
+
+.remarks-summary-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #a16207;
+}
+
+.remarks-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.remarks-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #78350f;
+  cursor: pointer;
+}
+
+.remarks-chip:hover {
+  background: #fef3c7;
+}
+
+.remarks-chip-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.remarks-chip-count {
+  background: #f59e0b;
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+}
+
+.remarks-error {
+  color: #b45309;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.flagged-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.flagged-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.flagged-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.flagged-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.flagged-item:hover .flagged-label {
+  text-decoration: underline;
+}
+
+.flagged-remark {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #4b5563;
+  white-space: pre-wrap;
+}
+
+.flagged-role {
+  font-weight: 700;
+  color: #b45309;
+}
+
+.history-note {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.history-round + .history-round {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.history-round-title {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-section {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4338ca;
+}
+
+.history-text {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #4b5563;
+  white-space: pre-wrap;
+}
+
+.history-meta {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
 .modal-body {
   display: flex;
   flex-direction: column;
@@ -1684,6 +2090,8 @@ onMounted(() => {
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   margin-bottom: 20px;
+  /* A remark inside one field must not stretch the field beside it. */
+  align-items: start;
 }
 
 .form-row.three-col {

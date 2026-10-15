@@ -48,507 +48,21 @@
       <div class="content-grid">
         <!-- LEFT COLUMN: Main Content -->
         <div class="main-content">
-          <!-- Project Profile -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">01</span>
-              <h2>Project Profile</h2>
-            </div>
-            <div class="card-body">
-              <div class="info-grid">
-                <div class="info-item">
-                  <label>Program Title</label>
-                  <p>{{ proposal.programTitle || 'Not provided' }}</p>
-                </div>
-                <div class="info-item">
-                  <label>Project Title</label>
-                  <p>{{ proposal.projectTitle || 'Not provided' }}</p>
-                </div>
-                <div class="info-item">
-                  <label>Project Leader</label>
-                  <p>{{ proposal.projectLeader || 'Not provided' }}</p>
-                </div>
-                <div class="info-item">
-                  <label>Sex</label>
-                  <p>{{ proposal.projectLeaderSex || 'Not provided' }}</p>
-                </div>
-                <div class="info-item">
-                  <label>Duration</label>
-                  <p>{{ proposal.duration || 'Not provided' }} months</p>
-                </div>
-                <div class="info-item">
-                  <label>Start Date</label>
-                  <p>{{ proposal.startDate || 'Not provided' }}</p>
-                </div>
-                <div class="info-item">
-                  <label>End Date</label>
-                  <p>{{ proposal.endDate || 'Not provided' }}</p>
-                </div>
-                <div class="info-item full-width">
-                  <label>Implementing College / Department</label>
-                  <p>{{ proposal.college || 'Not provided' }}</p>
-                </div>
-                <div class="info-item full-width">
-                  <label>Address / Contact</label>
-                  <p>{{ proposal.address || 'Not provided' }}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Cooperating Agencies -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">02</span>
-              <h2>Cooperating Agencies</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.cooperatingAgencies || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Sites of Implementation -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">03</span>
-              <h2>Sites of Implementation</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.sites && proposal.sites.length > 0" class="table-wrapper">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Country</th>
-                      <th>Region</th>
-                      <th>Province</th>
-                      <th>District</th>
-                      <th>Municipality</th>
-                      <th>Barangay</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(site, index) in proposal.sites" :key="index">
-                      <td>{{ index + 1 }}</td>
-                      <td>{{ site.country }}</td>
-                      <td>{{ site.region }}</td>
-                      <td>{{ site.province }}</td>
-                      <td>{{ site.district }}</td>
-                      <td>{{ site.municipality }}</td>
-                      <td>{{ site.barangay }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p v-else class="empty-text">No implementation sites available.</p>
-            </div>
-          </section>
-
-          <!-- Research Type -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">04</span>
-              <h2>Type of Research</h2>
-            </div>
-            <div class="card-body">
-              <span class="type-badge" :class="(proposal.researchType || '').toLowerCase()">
-                {{ proposal.researchType || 'Not specified' }}
-              </span>
-            </div>
-          </section>
-
-          <!-- Priority Agenda -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">05</span>
-              <h2>Priority Agenda</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="hasPriorityAgendas" class="agenda-list">
-                <div v-if="proposal.priorityAgendas?.dagat?.selected" class="agenda-item">
-                  <strong>DAGAT:</strong> {{ proposal.priorityAgendas.dagat.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.punla?.selected" class="agenda-item">
-                  <strong>PUNLA:</strong> {{ proposal.priorityAgendas.punla.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.kalikasan?.selected" class="agenda-item">
-                  <strong>KALIKASAN:</strong> {{ proposal.priorityAgendas.kalikasan.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.negosyo?.selected" class="agenda-item">
-                  <strong>NEGOSYO:</strong> {{ proposal.priorityAgendas.negosyo.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.tanglaw?.selected" class="agenda-item">
-                  <strong>TANGLAW:</strong> {{ proposal.priorityAgendas.tanglaw.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.agriculture?.selected" class="agenda-item">
-                  <strong>Agriculture:</strong> {{ proposal.priorityAgendas.agriculture.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.environment?.selected" class="agenda-item">
-                  <strong>Environment:</strong> {{ proposal.priorityAgendas.environment.value }}
-                </div>
-                <div v-if="proposal.priorityAgendas?.health?.selected" class="agenda-item">
-                  <strong>Health:</strong> {{ proposal.priorityAgendas.health.value }}
-                </div>
-              </div>
-              <p v-else class="empty-text">No priority agenda selected.</p>
-            </div>
-          </section>
-
-          <!-- Innovation Goals -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">06</span>
-              <h2>Innovation Goals</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.innovationGoals || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Sector Relevance -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">07</span>
-              <h2>Sector Relevance</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.sectorRelevance || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- SDG -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">08</span>
-              <h2>Sustainable Development Goals</h2>
-            </div>
-            <div class="card-body">
-              <SdgChecklist :value="proposal.sdg" />
-            </div>
-          </section>
-
-          <!-- Executive Summary -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">09</span>
-              <h2>Executive Summary</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.executiveSummary || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Introduction -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">10</span>
-              <h2>Introduction</h2>
-            </div>
-            <div class="card-body">
-              <div class="subsection">
-                <h3>10.1 Rationale / Significance</h3>
-                <p class="text-content">{{ proposal.rationale || 'Not provided' }}</p>
-              </div>
-              <div class="subsection">
-                <h3>10.2 Scientific Basis / Theoretical Framework</h3>
-                <p class="text-content">{{ proposal.framework || 'Not provided' }}</p>
-              </div>
-              <div class="subsection">
-                <h3>10.3 Objectives</h3>
-                <div class="objectives">
-                  <div>
-                    <strong>General Objective:</strong>
-                    <p>{{ proposal.objectivesGeneral || 'Not provided' }}</p>
-                  </div>
-                  <div>
-                    <strong>Specific Objectives:</strong>
-                    <p>{{ proposal.objectivesSpecific || 'Not provided' }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Review of Literature -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">11</span>
-              <h2>Review of Literature</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.reviewFileName" class="file-attachment">
-                <div class="file-icon">📄</div>
-                <div class="file-info">
-                  <p class="file-name">{{ proposal.reviewFileName }}</p>
-                  <p class="file-type">PDF Document</p>
-                </div>
-                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">Download</button>
-              </div>
-              <p v-else class="empty-text">No file uploaded.</p>
-            </div>
-          </section>
-
-          <!-- Methodology -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">12</span>
-              <h2>Methodology</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.methodology || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Technology Roadmap -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">13</span>
-              <h2>Technology Roadmap</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.roadmapFileName" class="file-attachment">
-                <div class="file-icon">📄</div>
-                <div class="file-info">
-                  <p class="file-name">{{ proposal.roadmapFileName }}</p>
-                  <p class="file-type">PDF Document</p>
-                </div>
-                <button class="btn-download" @click="downloadFile(proposal.roadmapFileName)">Download</button>
-              </div>
-              <p v-else class="empty-text">No file uploaded.</p>
-            </div>
-          </section>
-
-          <!-- Expected Outputs -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">14</span>
-              <h2>Expected Outputs (6Ps)</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.outputs || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Potential Outcomes -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">15</span>
-              <h2>Potential Outcomes</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.outcomes || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Potential Impacts -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">16</span>
-              <h2>Potential Impacts (2Is)</h2>
-            </div>
-            <div class="card-body">
-              <div class="subsection">
-                <h3>a. Economic Impact</h3>
-                <p class="text-content">{{ proposal.impactEconomic || 'Not provided' }}</p>
-              </div>
-              <div class="subsection">
-                <h3>b. Social / Ethical Impact</h3>
-                <p class="text-content">{{ proposal.impactSocial || 'Not provided' }}</p>
-              </div>
-            </div>
-          </section>
-
-          <!-- Target Beneficiaries -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">17</span>
-              <h2>Target Beneficiaries</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.beneficiaries || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Sustainability Plan -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">18</span>
-              <h2>Sustainability Plan</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.sustainability || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- GAD Score -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">19</span>
-              <h2>Gender and Development (GAD) Score</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.gadFileName" class="file-attachment">
-                <div class="file-icon">📄</div>
-                <div class="file-info">
-                  <p class="file-name">{{ proposal.gadFileName }}</p>
-                  <p class="file-type">PDF Document</p>
-                </div>
-                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
-              </div>
-              <p v-else class="empty-text">No file uploaded.</p>
-            </div>
-          </section>
-
-          <!-- Limitations -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">20</span>
-              <h2>Limitations of the Project</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.limitations || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Risks -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">21</span>
-              <h2>Risk Management Plan</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.risks || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Logical Framework -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">22</span>
-              <h2>Logical Framework</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.logFrame && proposal.logFrame.length > 0" class="table-wrapper">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Outcome Indicators</th>
-                      <th>Output Indicators / Physical Target</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row, index) in proposal.logFrame" :key="index">
-                      <td>{{ row.outcome || '-' }}</td>
-                      <td>{{ row.output || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p v-else class="empty-text">No logical framework data.</p>
-            </div>
-          </section>
-
-          <!-- Literature Cited -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">23</span>
-              <h2>Literature Cited</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">{{ proposal.literatureCited || 'Not provided' }}</p>
-            </div>
-          </section>
-
-          <!-- Personnel -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">24</span>
-              <h2>Personnel Requirement</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.personnel && proposal.personnel.length > 0" class="table-wrapper">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Position</th>
-                      <th>% Time Devoted</th>
-                      <th>Responsibilities</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row, index) in proposal.personnel" :key="index">
-                      <td>{{ row.position || '-' }}</td>
-                      <td>{{ row.time || '-' }}</td>
-                      <td>{{ row.responsibilities || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p v-else class="empty-text">No personnel data.</p>
-            </div>
-          </section>
-
-          <!-- Budget -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">25</span>
-              <h2>Line-Item Budget Requirement</h2>
-            </div>
-            <div class="card-body">
-              <div v-if="proposal.budgetFileName" class="file-attachment">
-                <div class="file-icon">📄</div>
-                <div class="file-info">
-                  <p class="file-name">{{ proposal.budgetFileName }}</p>
-                  <p class="file-type">Budget Document</p>
-                </div>
-                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">Download</button>
-              </div>
-              <p v-else class="empty-text">No budget file uploaded.</p>
-            </div>
-          </section>
-
-          <!-- Other Projects -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">26</span>
-              <h2>Other Ongoing Projects</h2>
-            </div>
-            <div class="card-body">
-              <p v-if="proposal.otherProjectsNumber" class="text-content" style="margin-bottom: 12px;">
-                <strong>Number of other projects:</strong> {{ proposal.otherProjectsNumber }}
-              </p>
-              <div v-if="proposal.otherProjects && proposal.otherProjects.length > 0" class="table-wrapper">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Funding Agency</th>
-                      <th>Involvement</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row, index) in proposal.otherProjects" :key="index">
-                      <td>{{ row.title || '-' }}</td>
-                      <td>{{ row.agency || '-' }}</td>
-                      <td>{{ row.involvement || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p v-else class="empty-text">No other projects.</p>
-            </div>
-          </section>
-
-          <!-- Other Supporting Documents -->
-          <section class="content-card">
-            <div class="card-header">
-              <span class="card-number">27</span>
-              <h2>Other Supporting Documents</h2>
-            </div>
-            <div class="card-body">
-              <p class="text-content">Please refer to the attached documents for additional necessary documents.</p>
-            </div>
-          </section>
+          <!-- Every reviewable field, rendered from the shared field registry
+               (src/utils/proposalFields.js) so each field has its own remark control and
+               the correct entity/DTO key. Sections 01-27 are covered exhaustively. -->
+          <ProposalFieldSection
+            v-for="section in PROPOSAL_FIELD_SECTIONS"
+            :key="section.key"
+            :section="section"
+            :proposal="proposal"
+            :proposal-id="$route.params.id"
+            :remark-index="remarkIndex"
+            :editable="true"
+            @download="downloadFile"
+            @remark-saved="onRemarkSaved"
+            @remark-removed="onRemarkRemoved"
+          />
         </div>
 
         <!-- RIGHT COLUMN: Sidebar -->
@@ -745,6 +259,8 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
+import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -776,12 +292,56 @@ const loadProposal = async () => {
     }
     const res = await api.get(`/api/proposals/${proposalId}`)
     proposal.value = res.data
+    await loadFieldRemarks()
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load proposal details.'
   } finally {
     loading.value = false
   }
+}
+
+// ===== Field-level remarks (active revision round) =====
+const remarksResponse = ref(null)
+const remarksError = ref('')
+const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+
+const loadFieldRemarks = async () => {
+  try {
+    const res = await api.get(`/api/proposals/${route.params.id}/field-remarks`)
+    remarksResponse.value = res.data || null
+    remarksError.value = ''
+  } catch (err) {
+    console.error(err)
+    remarksResponse.value = null
+    remarksError.value = 'Unable to load the existing remarks.'
+  }
+}
+
+const onRemarkSaved = (item) => {
+  const current = { ...(remarksResponse.value || { activeRound: 1, rounds: [] }) }
+  const rounds = Array.isArray(current.rounds) ? [...current.rounds] : []
+  let activeIndex = rounds.findIndex((round) => round.active)
+  if (activeIndex < 0) {
+    rounds.unshift({ round: current.activeRound || 1, active: true, remarks: [] })
+    activeIndex = 0
+    current.activeRound = rounds[0].round
+  }
+  const remarks = [...(rounds[activeIndex].remarks || [])]
+  const existing = remarks.findIndex((row) => row.id === item.id || row.fieldKey === item.fieldKey)
+  if (existing >= 0) remarks[existing] = item
+  else remarks.push(item)
+  rounds[activeIndex] = { ...rounds[activeIndex], remarks }
+  remarksResponse.value = { ...current, rounds }
+}
+
+const onRemarkRemoved = (remarkId) => {
+  if (!remarksResponse.value) return
+  const rounds = (remarksResponse.value.rounds || []).map((round) => ({
+    ...round,
+    remarks: (round.remarks || []).filter((row) => row.id !== remarkId),
+  }))
+  remarksResponse.value = { ...remarksResponse.value, rounds }
 }
 
 onMounted(loadProposal)
@@ -1135,6 +695,9 @@ const formatReviewerPosition = (position) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  /* Keep each field at its natural height so a remark on one field can never
+     stretch its row partner and misalign the neighbouring column. */
+  align-items: start;
 }
 
 .info-item {

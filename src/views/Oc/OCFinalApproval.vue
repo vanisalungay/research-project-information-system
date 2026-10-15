@@ -52,6 +52,27 @@
           <p class="summary-text">{{ proposal.executiveSummary || 'No executive summary provided.' }}</p>
         </div>
 
+        <!-- Field-level review: a remark can be left beside any proposal field. -->
+        <div class="card">
+          <h3>Proposal Field Review</h3>
+          <p class="field-note">
+            Leave a remark beside any field that needs correction. The proponent sees each remark
+            beside that exact field on the revision page.
+          </p>
+          <p v-if="remarksError" class="error-text">{{ remarksError }}</p>
+          <ProposalFieldSection
+            v-for="section in PROPOSAL_FIELD_SECTIONS"
+            :key="section.key"
+            :section="section"
+            :proposal="proposal"
+            :proposal-id="proposal.id"
+            :remark-index="remarkIndex"
+            :editable="true"
+            @remark-saved="onRemarkSaved"
+            @remark-removed="onRemarkRemoved"
+          />
+        </div>
+
         <div class="card">
           <h3>Chancellor's Notes</h3>
           <textarea v-model="chancellorNotes" placeholder="Add your notes and comments..."></textarea>
@@ -208,9 +229,12 @@
 
 <script>
 import api from '@/utils/api'
+import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 export default {
   name: 'FinalApproval',
+  components: { ProposalFieldSection },
   data() {
     return {
       proposal: {},
@@ -225,12 +249,58 @@ export default {
       soNumber: '',
       soFile: null,
       soUploading: false,
+      // Field-level remarks of the active revision round.
+      PROPOSAL_FIELD_SECTIONS,
+      remarksResponse: null,
+      remarksError: '',
     }
+  },
+  computed: {
+    remarkIndex() {
+      return buildFieldRemarkIndex(this.remarksResponse)
+    },
   },
   async mounted() {
     await this.loadProposal()
+    await this.loadFieldRemarks()
   },
   methods: {
+    async loadFieldRemarks() {
+      if (!this.proposal.id) return
+      try {
+        const res = await api.get(`/api/proposals/${this.proposal.id}/field-remarks`)
+        this.remarksResponse = res.data || null
+        this.remarksError = ''
+      } catch (err) {
+        console.error(err)
+        this.remarksResponse = null
+        this.remarksError = 'Unable to load the existing remarks.'
+      }
+    },
+    onRemarkSaved(item) {
+      const current = { ...(this.remarksResponse || { activeRound: 1, rounds: [] }) }
+      const rounds = Array.isArray(current.rounds) ? [...current.rounds] : []
+      let activeIndex = rounds.findIndex((round) => round.active)
+      if (activeIndex < 0) {
+        rounds.unshift({ round: current.activeRound || 1, active: true, remarks: [] })
+        activeIndex = 0
+        current.activeRound = rounds[0].round
+      }
+      const remarks = [...(rounds[activeIndex].remarks || [])]
+      const existing = remarks.findIndex((row) => row.id === item.id || row.fieldKey === item.fieldKey)
+      if (existing >= 0) remarks[existing] = item
+      else remarks.push(item)
+      rounds[activeIndex] = { ...rounds[activeIndex], remarks }
+      this.remarksResponse = { ...current, rounds }
+    },
+    onRemarkRemoved(remarkId) {
+      if (!this.remarksResponse) return
+      const rounds = (this.remarksResponse.rounds || []).map((round) => ({
+        ...round,
+        remarks: (round.remarks || []).filter((row) => row.id !== remarkId),
+      }))
+      this.remarksResponse = { ...this.remarksResponse, rounds }
+    },
     async loadProposal() {
       this.loading = true
       this.error = null

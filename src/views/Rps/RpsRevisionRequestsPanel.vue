@@ -28,6 +28,20 @@
           <label>Revision remarks</label>
           <p>{{ p.returnRemarks || p.remarks || 'No remarks provided.' }}</p>
         </div>
+
+        <div v-if="(flaggedSections[p.id] || []).length > 0" class="section-flags">
+          <label>Section-specific remarks</label>
+          <div v-for="section in flaggedSections[p.id]" :key="section.key" class="section-flag">
+            <span class="section-flag-head">
+              {{ section.key }} · {{ section.label }}
+              <template v-if="section.reviewerRole"> — {{ section.reviewerRole }}</template>
+            </span>
+            <p v-for="(remark, index) in section.remarks" :key="remark.id ?? index" class="section-flag-text">
+              {{ remark.remark }}
+            </p>
+          </div>
+        </div>
+
         <div class="actions">
           <router-link :to="`/rps-forward-revision/${p.id}`" class="btn primary">Review &amp; Forward</router-link>
         </div>
@@ -64,11 +78,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
+import { activeRemarksBySection, PROPOSAL_SECTIONS } from '@/utils/proposalSections'
 
 const proposals = ref([])
 const loading = ref(false)
 const error = ref('')
 const activeTab = ref('awaiting')
+// Section remarks returned by the reviewing office, keyed by proposal id.
+const flaggedSections = ref({})
 
 const awaiting = computed(() => proposals.value.filter(p => p.status === 'RETURNED_TO_RPS'))
 const forwarded = computed(() => proposals.value.filter(p => p.status === 'RPS_RETURNED'))
@@ -85,12 +102,38 @@ function isOverdue(p) {
   return !isNaN(d.getTime()) && d.getTime() < Date.now()
 }
 
+async function fetchSectionRemarks(proposalList) {
+  const results = await Promise.all(
+    proposalList.map(async (p) => {
+      try {
+        const res = await api.get(`/api/proposals/${p.id}/section-remarks`)
+        const map = activeRemarksBySection(res.data)
+        return [
+          p.id,
+          PROPOSAL_SECTIONS.filter((section) => (map[section.key] || []).length > 0).map((section) => ({
+            key: section.key,
+            label: section.label,
+            reviewerRole: map[section.key][0]?.reviewerRole || '',
+            remarks: map[section.key]
+          }))
+        ]
+      } catch (err) {
+        // The request list itself must still render if the remarks cannot be read.
+        console.error(err)
+        return [p.id, []]
+      }
+    })
+  )
+  flaggedSections.value = Object.fromEntries(results)
+}
+
 async function fetchProposals() {
   loading.value = true
   error.value = ''
   try {
     const res = await api.get('/api/proposals?statusIn=RETURNED_TO_RPS&statusIn=RPS_RETURNED')
     proposals.value = Array.isArray(res.data) ? res.data : []
+    await fetchSectionRemarks(proposals.value)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load revision requests.'
@@ -249,6 +292,43 @@ onMounted(fetchProposals)
 .remarks .rps-note {
   margin-top: 8px;
   color: #3730a3;
+}
+
+.section-flags {
+  margin-top: 10px;
+  background: #eef2ff;
+  border-left: 3px solid #4f46e5;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.section-flags label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #78809a;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.section-flag + .section-flag {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #c7d2fe;
+}
+
+.section-flag-head {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3730a3;
+}
+
+.section-flag-text {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #475569;
+  white-space: pre-wrap;
 }
 
 .actions {

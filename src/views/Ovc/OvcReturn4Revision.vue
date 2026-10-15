@@ -72,6 +72,28 @@
           </div>
         </section>
 
+        <!-- FIELD REMARKS RECORDED ON THE REVIEW PAGE -->
+        <section class="card">
+          <h3>Field Remarks Recorded</h3>
+          <p class="hint">
+            These remarks were left beside individual proposal fields and stay attached to those
+            fields. They are sent to the proponent together with the general comments below.
+          </p>
+          <p v-if="fieldRemarks.length === 0" class="hint">No field remarks recorded yet.</p>
+          <div v-for="item in fieldRemarks" :key="item.id" class="field-remark-item">
+            <span class="field-remark-head">
+              {{ item.fieldLabel || item.fieldKey }} · {{ item.sectionKey }}
+              <template v-if="item.reviewerRole"> — {{ item.reviewerRole }}</template>
+            </span>
+            <p class="field-remark-text">{{ item.remark }}</p>
+          </div>
+        </section>
+
+        <!-- SECTION-SPECIFIC REMARKS -->
+        <section class="card">
+          <SectionRemarksEditor v-model="sectionRemarks" />
+        </section>
+
         <!-- OPTIONAL ATTACHMENTS -->
         <section class="card">
           <h3>Optional Attachments</h3>
@@ -151,6 +173,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
+import { toSectionRemarkPayload } from '@/utils/proposalSections'
+import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const router = useRouter()
 const route = useRoute()
@@ -162,6 +187,11 @@ const loadError = ref('')
 
 const revisionComment = ref('')
 const checklist = ref([false, false, false, false])
+// Reviewer remarks keyed by proposal section ("12" -> remark text).
+const sectionRemarks = ref({})
+// Field-level remarks already recorded for this proposal (active round).
+const fieldRemarksResponse = ref(null)
+const fieldRemarks = computed(() => Object.values(buildFieldRemarkIndex(fieldRemarksResponse.value)).flat())
 
 const showConfirmModal = ref(false)
 const showSuccessMessage = ref(false)
@@ -209,7 +239,8 @@ const confirmReturn = async () => {
       returnedById: userStore.user?.id || null,
       returnedByName: userStore.user?.name || null,
       returnedByOffice: 'OVCRIGE',
-      remarks: revisionComment.value.trim()
+      remarks: revisionComment.value.trim(),
+      sectionRemarks: toSectionRemarkPayload(sectionRemarks.value)
     })
     showConfirmModal.value = false
     showSuccessMessage.value = true
@@ -237,6 +268,12 @@ onMounted(async () => {
   try {
     const res = await api.get(`/api/proposals/${id}`)
     proposal.value = res.data
+    try {
+      const remarksRes = await api.get(`/api/proposals/${id}/field-remarks`)
+      fieldRemarksResponse.value = remarksRes.data || null
+    } catch (e) {
+      console.error(e)
+    }
   } catch (err) {
     console.error(err)
     loadError.value = 'Failed to load proposal.'
@@ -499,5 +536,26 @@ textarea:focus {
   border-radius: 8px;
   font-weight: bold;
   animation: fadeInOut 2s ease;
+}
+.field-remark-item {
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+
+.field-remark-head {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.field-remark-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #3f3f46;
+  white-space: pre-wrap;
 }
 </style>

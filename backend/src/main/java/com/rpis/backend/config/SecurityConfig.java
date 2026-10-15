@@ -62,6 +62,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
                             .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
+                        // Field-level revision remarks: reviewer roles only. A Proponent must
+                        // never be able to write review feedback on their own proposal.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/field-remarks")
+                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
+                        .requestMatchers(HttpMethod.DELETE, "/api/proposals/*/field-remarks/*")
+                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
+
                         // Quarterly Progress Reports (implementation-phase reporting)
                         .requestMatchers(HttpMethod.POST, "/api/quarterly-reports", "/api/quarterly-reports/**").hasRole("PROPONENT")
                         .requestMatchers(HttpMethod.PUT, "/api/quarterly-reports/*").hasRole("PROPONENT")

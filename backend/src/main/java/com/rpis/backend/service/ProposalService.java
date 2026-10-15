@@ -1,6 +1,7 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalRequest;
+import com.rpis.backend.dto.SectionRemarkDTO;
 import com.rpis.backend.model.*;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +28,7 @@ public class ProposalService {
     private final NotificationService notificationService;
     private final ProposalAnnouncementService proposalAnnouncementService;
     private final ProposalVersionService proposalVersionService;
+    private final ProposalSectionRemarkService proposalSectionRemarkService;
     private final CurrentUser currentUser;
 
     /**
@@ -236,6 +239,7 @@ public class ProposalService {
         proposal.setProgramTitle(request.getProgramTitle());
         proposal.setProjectTitle(request.getProjectTitle());
         proposal.setProjectLeader(request.getProjectLeader());
+        proposal.setProjectLeaderSex(request.getProjectLeaderSex());
         // Project duration is selected by the proponent (12, 24 or 36 months). It is
         // validated server-side (not only by the frontend dropdown) so a modified API
         // request cannot persist an unsupported value on a new proposal or on a draft
@@ -274,6 +278,7 @@ public class ProposalService {
         proposal.setGadScore(request.getGadScore());
         proposal.setGadFileName(request.getGadFileName());
         proposal.setRisks(request.getRisks());
+        proposal.setLimitationsText(request.getLimitationsText());
         proposal.setOtherProjectsNumber(request.getOtherProjectsNumber());
 
         // Status
@@ -313,14 +318,15 @@ public class ProposalService {
         }
 
         // Clear existing child lists to overwrite (cascade all + orphan removal takes
-        // care of orphans)
+        // care of orphans). The limitations table is handled separately below: only
+        // the forms that actually edit it send it, so clearing it here would silently
+        // delete existing rows on every revision resubmission.
         proposal.getSites().clear();
         proposal.getLogFrames().clear();
         proposal.getPersonnel().clear();
         proposal.getBudget().clear();
         proposal.getOtherProjects().clear();
         proposal.getPriorityAgendas().clear();
-        proposal.getLimitations().clear();
 
         // Save parent proposal to generate ID if new
         proposal = proposalRepository.save(proposal);
@@ -369,8 +375,11 @@ public class ProposalService {
             }
         }
 
-        // Limitations
+        // Limitations table. Only touched when the request actually carries the table,
+        // so a form that does not edit it (the revision form) can never wipe existing
+        // rows — that previously caused silent data loss on every resubmission.
         if (request.getLimitationsTable() != null) {
+            proposal.getLimitations().clear();
             for (ProposalRequest.LimitationDTO l : request.getLimitationsTable()) {
                 ProposalLimitation limitation = new ProposalLimitation(null, proposal, l.getLimitation(),
                         l.getRemarks());
@@ -395,6 +404,13 @@ public class ProposalService {
         // or a revision). Previous versions are preserved and never overwritten.
         if (proposalVersionService.isSubmissionStatus(proposal.getStatus())) {
             proposalVersionService.recordSubmission(proposal, isRevisionResubmission, revisionRemarks);
+        }
+
+        // A revision resubmission closes the open remark round: the feedback the
+        // reviewer gave for the previous cycle becomes history and the next review
+        // cycle starts a fresh round, so nothing is ever overwritten.
+        if (isRevisionResubmission) {
+            proposalSectionRemarkService.closeActiveRound(proposal);
         }
 
         // Send system notification for submissions
@@ -483,6 +499,18 @@ public class ProposalService {
     @Transactional
     public Proposal returnForRevision(Long id, String remarks, String returnedByOffice,
                                       Long returnedByUserId, String returnedByName) {
+        return returnForRevision(id, remarks, returnedByOffice, returnedByUserId, returnedByName, null);
+    }
+
+    /**
+     * Returns a proposal for revision, optionally recording section-specific remarks.
+     * The section remarks open a new revision round so any previous round's feedback
+     * is retained as history instead of being overwritten.
+     */
+    @Transactional
+    public Proposal returnForRevision(Long id, String remarks, String returnedByOffice,
+                                      Long returnedByUserId, String returnedByName,
+                                      List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
         // A return from a reviewing office goes to RPS first, never directly to the
@@ -503,6 +531,10 @@ public class ProposalService {
         proposal.setRevisionNotes(null);
         proposal = proposalRepository.save(proposal);
 
+        // Persist the per-section remarks for this revision round (if any).
+        proposalSectionRemarkService.recordReturnRemarks(
+                proposal, sectionRemarks, returnedByOffice, returnedByUserId, returnedByName);
+
         // Notify RPS to review and forward the revision request.
         notifySubscribedRoles(proposal, null);
 
@@ -518,6 +550,21 @@ public class ProposalService {
     public Proposal forwardRevisionToProponent(Long id, String deadline, String notes,
                                                Long forwardedByUserId, String forwardedByName,
                                                String remarks) {
+        return forwardRevisionToProponent(id, deadline, notes, forwardedByUserId, forwardedByName,
+                remarks, null);
+    }
+
+    /**
+     * RPS-only action: set the revision deadline and forward the revision request to
+     * the Proponent. Also used when RPS itself returns a proposal during its own
+     * review (RPS is the forwarder, so it records remarks + deadline in one step).
+     * Section-specific remarks added by RPS are appended to the round already opened
+     * by the returning office, so both offices' feedback stays visible per section.
+     */
+    @Transactional
+    public Proposal forwardRevisionToProponent(Long id, String deadline, String notes,
+                                               Long forwardedByUserId, String forwardedByName,
+                                               String remarks, List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
         LocalDateTime deadlineLdt = parseDeadline(deadline);
@@ -546,6 +593,11 @@ public class ProposalService {
         proposal.setRemarks(proposal.getReturnRemarks());
 
         proposal = proposalRepository.save(proposal);
+
+        // Append RPS's own per-section remarks (if any) to the open revision round so
+        // the Proponent sees the office feedback and the RPS feedback together.
+        proposalSectionRemarkService.recordForwardRemarks(
+                proposal, sectionRemarks, "RPS", forwardedByUserId, forwardedByName);
 
         // Notify the Proponent of the revision request + deadline.
         if (proposal.getProponent() != null) {
@@ -582,6 +634,156 @@ public class ProposalService {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
         proposalRepository.delete(proposal);
+    }
+
+    /**
+     * Statuses whose proposal content may be reused as the starting point for a new
+     * proposal. Only proposals that already completed the review/approval lifecycle
+     * are eligible, so the duplicate action can never be used to bypass the normal
+     * validation, review or submission process.
+     */
+    public static final Set<String> DUPLICABLE_STATUSES = Set.of(
+            "APPROVED", "IMPLEMENTATION", "RELEASED", "COMPLETED");
+
+    /** True when the given proposal status allows creating a duplicate draft from it. */
+    public static boolean isDuplicableStatus(String status) {
+        return status != null && DUPLICABLE_STATUSES.contains(status.toUpperCase());
+    }
+
+    /**
+     * Creates a brand-new DRAFT proposal by reusing the reusable content of an
+     * eligible (completed/approved) proposal.
+     * <p>
+     * The duplicate is an independent record: it receives its own proposal code and
+     * document id from the existing sequence allocation, its child rows are fresh
+     * copies bound to the new proposal, and none of the original proposal's workflow
+     * state (status, revision metadata, review remarks, approval/SO data, reports,
+     * notifications or submission history) is carried over.
+     *
+     * @param sourceId id of the proposal to copy
+     * @return the newly created DRAFT proposal
+     */
+    @Transactional
+    public Proposal duplicateProposal(Long sourceId) {
+        Proposal source = getProposalById(sourceId);
+        // Ownership is enforced server-side: a Proponent can never duplicate a
+        // proposal they are not authorized to access by manipulating the request.
+        currentUser.requireAccessTo(source);
+
+        if (!isDuplicableStatus(source.getStatus())) {
+            throw new IllegalStateException(
+                    "Only completed or approved proposals can be duplicated. Current status: "
+                            + source.getStatus());
+        }
+
+        // A proposal whose proponent record was deleted has no owner, so a duplicate
+        // could never be reached by anyone. Fail instead of creating an orphan record.
+        if (source.getProponent() == null) {
+            throw new IllegalStateException(
+                    "This proposal has no proponent on record and cannot be duplicated.");
+        }
+
+        Proposal copy = new Proposal();
+        // The duplicate belongs to the same proponent so it stays in their workspace.
+        copy.setProponent(source.getProponent());
+        // A duplicate is a private draft: it is not attached to a submission window and
+        // only becomes part of an announcement when the proponent actually submits it,
+        // which keeps the normal gatekeeper/validation flow in force.
+        copy.setProposalAnnouncementId(null);
+        copy.setStatus("DRAFT");
+        copy.setRevisionNumber(0);
+        String proposalCode = generateNextProposalCode();
+        copy.setProposalCode(proposalCode);
+        copy.setDocumentId(generateDocumentId(proposalCode, 0));
+
+        copyReusableContent(source, copy);
+
+        // Two-step save mirrors saveProposal(): the parent is inserted first so the
+        // child collections can be cascaded with the generated foreign key. Everything
+        // happens in one transaction, so a failure leaves no partial duplicate behind.
+        copy = proposalRepository.save(copy);
+        copyChildCollections(source, copy);
+        return proposalRepository.save(copy);
+    }
+
+    /**
+     * Copies only the content fields that are meaningful to reuse. Workflow fields
+     * (status, identifiers, revision/SO/approval metadata, remarks) are intentionally
+     * excluded and set explicitly by {@link #duplicateProposal(Long)}.
+     */
+    private void copyReusableContent(Proposal source, Proposal copy) {
+        copy.setProgramTitle(source.getProgramTitle());
+        copy.setProjectTitle(source.getProjectTitle());
+        copy.setProjectLeader(source.getProjectLeader());
+        copy.setProjectLeaderSex(source.getProjectLeaderSex());
+        copy.setDuration(source.getDuration());
+        copy.setStartDate(source.getStartDate());
+        copy.setEndDate(source.getEndDate());
+        copy.setCollege(source.getCollege());
+        copy.setAddress(source.getAddress());
+        copy.setCooperatingAgencies(source.getCooperatingAgencies());
+        copy.setResearchType(source.getResearchType());
+        copy.setInnovationGoals(source.getInnovationGoals());
+        copy.setSectorRelevance(source.getSectorRelevance());
+        copy.setSdg(source.getSdg() != null ? new ArrayList<>(source.getSdg()) : new ArrayList<>());
+        copy.setExecutiveSummary(source.getExecutiveSummary());
+        copy.setRationale(source.getRationale());
+        copy.setFramework(source.getFramework());
+        copy.setObjectivesGeneral(source.getObjectivesGeneral());
+        copy.setObjectivesSpecific(source.getObjectivesSpecific());
+        copy.setReview(source.getReview());
+        copy.setReviewFileName(source.getReviewFileName());
+        copy.setMethodology(source.getMethodology());
+        copy.setRoadmapFileName(source.getRoadmapFileName());
+        copy.setTechnologyTrl(source.getTechnologyTrl());
+        copy.setOutputs(source.getOutputs());
+        copy.setOutcomes(source.getOutcomes());
+        copy.setImpactEconomic(source.getImpactEconomic());
+        copy.setImpactSocial(source.getImpactSocial());
+        copy.setBeneficiaries(source.getBeneficiaries());
+        copy.setBeneficiariesFileName(source.getBeneficiariesFileName());
+        copy.setSustainability(source.getSustainability());
+        copy.setGadScore(source.getGadScore());
+        copy.setGadFileName(source.getGadFileName());
+        copy.setRisks(source.getRisks());
+        copy.setLimitationsText(source.getLimitationsText());
+        copy.setReferencesText(source.getReferencesText());
+        copy.setOtherProjectsNumber(source.getOtherProjectsNumber());
+    }
+
+    /**
+     * Deep-copies the reusable child collections onto the duplicate. Every row is a
+     * brand-new entity bound to the copy, so editing the duplicate can never mutate
+     * the original proposal's related records.
+     */
+    private void copyChildCollections(Proposal source, Proposal copy) {
+        for (ProposalSite s : source.getSites()) {
+            copy.getSites().add(new ProposalSite(null, copy, s.getCountry(), s.getRegion(),
+                    s.getProvince(), s.getDistrict(), s.getMunicipality(), s.getBarangay()));
+        }
+        for (ProposalLogFrame lf : source.getLogFrames()) {
+            copy.getLogFrames().add(new ProposalLogFrame(null, copy, lf.getOutcome(), lf.getOutput()));
+        }
+        for (ProposalPersonnel p : source.getPersonnel()) {
+            copy.getPersonnel().add(new ProposalPersonnel(null, copy, p.getPosition(),
+                    p.getTimeDevoted(), p.getResponsibilities()));
+        }
+        for (ProposalBudget b : source.getBudget()) {
+            copy.getBudget().add(new ProposalBudget(null, copy, b.getAgency(), b.getPs(),
+                    b.getMooe(), b.getEo(), b.getTotal()));
+        }
+        for (ProposalOtherProject op : source.getOtherProjects()) {
+            copy.getOtherProjects().add(new ProposalOtherProject(null, copy, op.getTitle(),
+                    op.getAgency(), op.getInvolvement()));
+        }
+        for (ProposalPriorityAgenda pa : source.getPriorityAgendas()) {
+            copy.getPriorityAgendas().add(new ProposalPriorityAgenda(null, copy, pa.getAgendaKey(),
+                    pa.getSelected(), pa.getValue()));
+        }
+        for (ProposalLimitation l : source.getLimitations()) {
+            copy.getLimitations().add(new ProposalLimitation(null, copy, l.getLimitation(),
+                    l.getRemarks()));
+        }
     }
 
     private void notifySubscribedRoles(Proposal proposal, String message) {

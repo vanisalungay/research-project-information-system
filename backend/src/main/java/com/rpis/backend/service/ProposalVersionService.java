@@ -323,6 +323,7 @@ public class ProposalVersionService {
         m.put("programTitle", p.getProgramTitle());
         m.put("projectTitle", p.getProjectTitle());
         m.put("projectLeader", p.getProjectLeader());
+        m.put("projectLeaderSex", p.getProjectLeaderSex());
         m.put("duration", p.getDuration());
         m.put("startDate", p.getStartDate() != null ? p.getStartDate().toString() : null);
         m.put("endDate", p.getEndDate() != null ? p.getEndDate().toString() : null);
@@ -349,6 +350,7 @@ public class ProposalVersionService {
         m.put("sustainability", p.getSustainability());
         m.put("gadScore", p.getGadScore());
         m.put("risks", p.getRisks());
+        m.put("limitationsText", p.getLimitationsText());
         m.put("referencesText", p.getReferencesText());
         m.put("otherProjectsNumber", p.getOtherProjectsNumber());
 

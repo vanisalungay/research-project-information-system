@@ -35,6 +35,38 @@
             </div>
           </div>
 
+          <div v-if="fieldRemarks.length > 0" class="card">
+            <h3>Field remarks recorded for this proposal ({{ fieldRemarks.length }})</h3>
+            <p class="hint">
+              These were left beside individual fields on the review page and will be visible to the
+              proponent next to each field.
+            </p>
+            <div v-for="item in fieldRemarks" :key="item.id" class="flagged-section">
+              <span class="flagged-section-head">
+                {{ item.fieldLabel || item.fieldKey }} · {{ item.sectionKey }}
+                <template v-if="item.reviewerRole"> — {{ item.reviewerRole }}</template>
+              </span>
+              <p class="flagged-section-remark">{{ item.remark }}</p>
+            </div>
+          </div>
+
+          <div v-if="existingFlaggedSections.length > 0" class="card">
+            <h3>Sections flagged by the reviewing office</h3>
+            <div v-for="section in existingFlaggedSections" :key="section.key" class="flagged-section">
+              <span class="flagged-section-head">
+                {{ section.key }} · {{ section.label }}
+                <template v-if="section.reviewerRole"> — {{ section.reviewerRole }}</template>
+              </span>
+              <p v-for="(remark, index) in section.remarks" :key="remark.id ?? index" class="flagged-section-remark">
+                {{ remark.remark }}
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <SectionRemarksEditor v-model="sectionRemarks" />
+          </div>
+
           <div class="card">
             <h3>Set Revision Deadline</h3>
             <label class="field-label">Deadline for resubmission</label>
@@ -63,11 +95,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
+import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
+import { activeRemarksBySection, PROPOSAL_SECTIONS, toSectionRemarkPayload } from '@/utils/proposalSections'
+import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
 const router = useRouter()
@@ -82,6 +117,38 @@ const submitting = ref(false)
 const success = ref('')
 const submitError = ref('')
 
+// RPS's own per-section remarks, plus the remarks already recorded by the
+// reviewing office that returned the proposal.
+const sectionRemarks = ref({})
+const existingRemarks = ref(null)
+
+const existingFlaggedSections = computed(() => {
+  const map = activeRemarksBySection(existingRemarks.value)
+  return PROPOSAL_SECTIONS.filter((section) => (map[section.key] || []).length > 0).map((section) => ({
+    key: section.key,
+    label: section.label,
+    reviewerRole: map[section.key][0]?.reviewerRole || '',
+    remarks: map[section.key]
+  }))
+})
+
+/** Field-level remarks already recorded for this proposal (active round). */
+const fieldRemarks = computed(() => {
+  const map = buildFieldRemarkIndex(existingRemarks.value)
+  return Object.values(map).flat()
+})
+
+async function fetchExistingSectionRemarks(id) {
+  try {
+    const res = await api.get(`/api/proposals/${id}/field-remarks`)
+    existingRemarks.value = res.data || null
+  } catch (err) {
+    // The forward step must still work when the remark history cannot be read.
+    console.error(err)
+    existingRemarks.value = null
+  }
+}
+
 function formatDate(value) {
   if (!value) return '—'
   const d = new Date(value)
@@ -95,6 +162,7 @@ async function fetchProposal() {
     const id = route.params.id
     const res = await api.get(`/api/proposals/${id}`)
     proposal.value = res.data
+    await fetchExistingSectionRemarks(id)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load proposal.'
@@ -116,7 +184,8 @@ async function forward() {
       forwardedById: userStore.user?.id || null,
       forwardedByName: userStore.user?.name || null,
       deadline: deadline.value,
-      notes: notes.value || null
+      notes: notes.value || null,
+      sectionRemarks: toSectionRemarkPayload(sectionRemarks.value)
     })
     success.value = 'Revision request forwarded to the proponent.'
     setTimeout(() => router.push('/rps-revision-requests'), 1200)
@@ -218,6 +287,27 @@ onMounted(fetchProposal)
   font-weight: 600;
   color: #374151;
   margin-bottom: 6px;
+}
+
+.flagged-section + .flagged-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.flagged-section-head {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3730a3;
+}
+
+.flagged-section-remark {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+  white-space: pre-wrap;
 }
 input[type='date'],
 textarea {

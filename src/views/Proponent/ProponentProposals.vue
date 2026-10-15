@@ -70,6 +70,10 @@
           <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
             <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
+            <button v-if="isDuplicable(proposal.status)" class="btn-duplicate" :disabled="duplicatingId === proposal.id"
+              @click="duplicateProposal(proposal)">
+              {{ duplicatingId === proposal.id ? 'Duplicating...' : 'Duplicate' }}
+            </button>
             <button v-if="proposal.status === 'DRAFT'" class="btn-delete"
               @click="deleteProposal(proposal.id)">Delete</button>
           </td>
@@ -87,6 +91,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
+import { isDuplicable } from '@/utils/proposalStatus'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -232,6 +237,44 @@ const filteredProposals = computed(() => {
 
 const viewProposal = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })
+}
+
+// ===== Duplicate a completed proposal =====
+// The backend creates a new DRAFT with its own proposal code / document id and
+// only the reusable content of the source proposal. The new draft is opened for
+// editing right away so the proponent can adjust it before submitting.
+const duplicatingId = ref(null)
+
+const duplicateProposal = async (proposal) => {
+  const title = proposal.projectTitle || proposal.title || 'this proposal'
+  const confirmed = await showConfirm(
+    `Create a new draft proposal from "${title}"? You can edit the copy before submitting it.`,
+    { title: 'Duplicate Proposal', type: 'info', confirmText: 'Duplicate' }
+  )
+  if (!confirmed) return
+
+  duplicatingId.value = proposal.id
+  try {
+    const res = await api.post(`/api/proposals/${proposal.id}/duplicate`)
+    const created = res.data || {}
+    await showAlert(
+      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Edit it and submit it when ready.`,
+      { type: 'success', title: 'Proposal Duplicated' }
+    )
+    await fetchProposals()
+    if (created.id) {
+      await openDraftForEdit(created.id)
+    }
+  } catch (err) {
+    console.error(err)
+    const body = err.response?.data
+    const message =
+      (body && typeof body === 'object' ? body.error : body) ||
+      'Failed to duplicate the proposal. Please try again.'
+    await showAlert(String(message), { type: 'error', title: 'Duplicate Failed' })
+  } finally {
+    duplicatingId.value = null
+  }
 }
 
 const deleteProposal = async (id) => {
@@ -454,6 +497,26 @@ const refreshOnClose = () => {
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.btn-duplicate {
+  background: #ffffff;
+  border: 1px solid #4b3f72;
+  color: #4b3f72;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.btn-duplicate:hover:not(:disabled) {
+  background: #f1f0f7;
+}
+
+.btn-duplicate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-delete:hover {

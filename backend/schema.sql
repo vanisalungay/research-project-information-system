@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS quarterly_progress_reports CASCADE;
 DROP TABLE IF EXISTS project_reports CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS proposal_reviews CASCADE;
+DROP TABLE IF EXISTS proposal_section_remarks CASCADE;
 DROP TABLE IF EXISTS proposal_limitations CASCADE;
 DROP TABLE IF EXISTS proposal_priority_agendas CASCADE;
 DROP TABLE IF EXISTS proposal_other_projects CASCADE;
@@ -73,6 +74,8 @@ CREATE TABLE proposals (
     reviewed_by VARCHAR(255),
     reviewed_by_position VARCHAR(50),
     remarks TEXT,
+    project_leader_sex VARCHAR(20),         -- Sex of the project leader (Project Profile)
+    limitations_text TEXT,                  -- Free-text Limitations of the Project (section 20)
     -- Special Order (SO) fields issued by Office of the Chancellor
     so_number VARCHAR(100),
     so_file_name VARCHAR(255),
@@ -283,7 +286,31 @@ CREATE TABLE proposal_versions (
     CONSTRAINT uq_proposal_versions UNIQUE (proposal_id, version_number)
 );
 
--- 16. Quarterly Progress Reports Table (implementation-phase reporting for
+-- 16. Proposal Section Remarks Table (section- AND field-level revision feedback)
+-- One row per reviewer remark, bound to exactly one proposal, one numbered
+-- proposal section and (optionally) one specific field of that section. Remarks are
+-- grouped into revision rounds: a new review cycle opens a new round (previous
+-- ACTIVE rows become SUPERSEDED so nothing is overwritten).
+CREATE TABLE proposal_section_remarks (
+    id BIGSERIAL PRIMARY KEY,
+    proposal_id BIGINT NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    section_key VARCHAR(10) NOT NULL,              -- canonical "01".."27"
+    section_label VARCHAR(150),
+    field_key VARCHAR(120),                        -- stable field path; NULL = section-level
+    field_label VARCHAR(255),
+    entry_index INT,                               -- position of the repeated entry (last resort)
+    entry_id BIGINT,                               -- best-effort stable id of the repeated entry
+    entry_snapshot TEXT,                           -- JSON snapshot of the entry as reviewed
+    remark TEXT NOT NULL,
+    round INT NOT NULL,                            -- 1-based revision round
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',  -- ACTIVE | SUPERSEDED
+    reviewer_role VARCHAR(50),
+    reviewer_name VARCHAR(255),
+    reviewer_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 17. Quarterly Progress Reports Table (implementation-phase reporting for
 -- approved, SO-issued projects)
 CREATE TABLE quarterly_progress_reports (
     id BIGSERIAL PRIMARY KEY,
