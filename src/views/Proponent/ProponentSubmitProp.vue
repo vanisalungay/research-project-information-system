@@ -70,7 +70,18 @@
             <div class="form-row">
               <div class="form-group" :class="{ 'has-error': showValidation && errors.program_title }">
                 <label>Program Title</label>
-                <input v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                <select v-model="programTitleChoice" :disabled="programTitlesLoading"
+                  @change="onProgramTitleChoiceChange">
+                  <option value="">Select a program title</option>
+                  <option :value="CREATE_NEW_PROGRAM_TITLE">Create New Program Title</option>
+                  <option v-for="title in existingProgramTitles" :key="title" :value="title">{{ title }}</option>
+                </select>
+                <input v-if="programTitleChoice === CREATE_NEW_PROGRAM_TITLE" class="program-title-new-input"
+                  v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                <small v-if="programTitlesError" class="field-hint field-hint-error">{{ programTitlesError }}</small>
+                <small v-else-if="programTitlesEmpty" class="field-hint">
+                  No previously submitted program titles yet — choose "Create New Program Title" to add one.
+                </small>
                 <span class="field-error" v-if="showValidation && errors.program_title">{{ errors.program_title
                   }}</span>
               </div>
@@ -101,10 +112,14 @@
               </div>
             </div>
             <div class="form-row three-col">
-              <div class="form-group">
-                <label>Duration (months) <span class="req">*</span></label>
-                <input v-model="proposal.duration" readonly />
-                <small style="color: #64748b;">Fixed at 12 months for internally funded MSUN projects.</small>
+              <div class="form-group" :class="{ 'has-error': showValidation && errors.duration }">
+                <label>Project Duration (Months) <span class="req">*</span></label>
+                <select v-model="proposal.duration">
+                  <option value="12">12 months</option>
+                  <option value="24">24 months</option>
+                  <option value="36">36 months</option>
+                </select>
+                <span class="field-error" v-if="showValidation && errors.duration">{{ errors.duration }}</span>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.start_date }">
                 <label>Start Date <span class="req">*</span></label>
@@ -801,7 +816,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, nextTick } from 'vue'
+import { reactive, ref, computed, nextTick, watch, onMounted } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -822,7 +837,7 @@ import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
-defineProps({ modelValue: Boolean })
+const props = defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
 
 const modalBodyRef = ref(null)
@@ -872,6 +887,80 @@ const sectionRefs = {
 }
 
 const sectionElementRefs = {}
+
+// Selectable project durations (months) for internally funded proposals.
+const DURATION_OPTIONS = ['12', '24', '36']
+
+// ===== PROGRAM TITLE (reuse an existing title or create a new one) =====
+// A Proponent may pick a program title from their own previously submitted
+// proposals or create a brand new one. This sentinel distinguishes the
+// "create new" choice from the empty placeholder option in the dropdown.
+const CREATE_NEW_PROGRAM_TITLE = '__CREATE_NEW_PROGRAM_TITLE__'
+const programTitleChoice = ref('')
+const existingProgramTitles = ref([])
+const programTitlesLoading = ref(false)
+const programTitlesError = ref('')
+
+// Loads the distinct program titles the proponent is allowed to reuse. This reuses
+// the existing proposal-list endpoint (which already returns only the caller's own
+// proposals) instead of a dedicated backend endpoint, so no backend change is
+// required. Failures are surfaced inline and never block the form: the proponent
+// can always fall back to "Create New Program Title".
+const fetchExistingProgramTitles = async () => {
+  programTitlesLoading.value = true
+  programTitlesError.value = ''
+  try {
+    const res = await api.get('/api/proposals')
+    const proposals = Array.isArray(res.data) ? res.data : []
+    const titles = proposals
+      .map((p) => (p && typeof p.programTitle === 'string' ? p.programTitle.trim() : ''))
+      .filter((title) => title !== '')
+    // De-duplicate the trimmed titles so each distinct value appears only once.
+    existingProgramTitles.value = [...new Set(titles)].sort((a, b) => a.localeCompare(b))
+  } catch (err) {
+    // A genuine API failure must never be reported as "no titles exist".
+    console.error(
+      'Failed to load existing program titles:',
+      err?.response?.status,
+      err?.response?.data || err?.message
+    )
+    existingProgramTitles.value = []
+    programTitlesError.value = 'Unable to load existing program titles. You can still create a new one.'
+  } finally {
+    programTitlesLoading.value = false
+  }
+}
+
+// True when the request succeeded but the proponent simply has no reusable titles
+// yet. This is an empty state, not an error.
+const programTitlesEmpty = computed(
+  () => !programTitlesLoading.value && !programTitlesError.value && existingProgramTitles.value.length === 0
+)
+
+// Keeps the submitted value (proposal.program_title) in sync with the dropdown.
+// Switching to "Create New Program Title" clears any previously selected existing
+// title so a stale value can never be submitted.
+const onProgramTitleChoiceChange = () => {
+  if (programTitleChoice.value === CREATE_NEW_PROGRAM_TITLE) {
+    proposal.program_title = ''
+  } else {
+    proposal.program_title = programTitleChoice.value || ''
+  }
+}
+
+// Reflects an already-saved program title (draft/revision) back into the dropdown
+// without losing the value when it is not (yet) part of the loaded list.
+const applyProgramTitleSelection = (title) => {
+  const value = typeof title === 'string' ? title.trim() : ''
+  if (!value) {
+    programTitleChoice.value = ''
+  } else if (existingProgramTitles.value.includes(value)) {
+    programTitleChoice.value = value
+  } else {
+    programTitleChoice.value = CREATE_NEW_PROGRAM_TITLE
+  }
+  proposal.program_title = value
+}
 
 const getInitialProposal = () => ({
   proposal_id: null,
@@ -939,17 +1028,18 @@ const resetForm = () => {
   })
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
+  programTitleChoice.value = ''
 }
 
 const loadProposal = (data) => {
   // Map backend DTO fields to form fields
   proposal.proposal_id = data.id || null
-  proposal.program_title = data.programTitle || ''
+  applyProgramTitleSelection(data.programTitle)
   proposal.project_title = data.projectTitle || ''
   proposal.project_leader = data.projectLeader || ''
   proposal.project_leader_sex = data.projectLeaderSex || ''
-  // Internally funded proposals always have a fixed 12-month duration.
-  proposal.duration = '12'
+  // Preserve the proposal's saved duration (12, 24 or 36 months).
+  proposal.duration = DURATION_OPTIONS.includes(String(data.duration)) ? String(data.duration) : '12'
   proposal.start_date = data.startDate || ''
   proposal.end_date = data.endDate || ''
   proposal.department = data.college || ''
@@ -1338,10 +1428,17 @@ const validateStep1 = () => {
   Object.keys(errors).forEach(key => delete errors[key])
 
   // 01 - Project Profile
+  // Program Title is now chosen from a dropdown (existing title) or entered as a
+  // new one, so an empty/whitespace-only value is rejected either way.
+  if (isBlank(proposal.program_title)) {
+    errors.program_title = programTitleChoice.value === CREATE_NEW_PROGRAM_TITLE
+      ? 'Please enter a new Program Title.'
+      : 'Please select a program title or create a new one.'
+  }
   if (isBlank(proposal.project_title)) errors.project_title = 'Project Title is required.'
   if (isBlank(proposal.project_leader)) errors.project_leader = 'Project Leader is required.'
   if (isBlank(proposal.project_leader_sex)) errors.project_leader_sex = 'Please select a sex.'
-  if (isBlank(proposal.duration)) errors.duration = 'Duration is required.'
+  if (!DURATION_OPTIONS.includes(String(proposal.duration))) errors.duration = 'Please select a valid project duration (12, 24, or 36 months).'
   if (isBlank(proposal.start_date)) errors.start_date = 'Start Date is required.'
   if (isBlank(proposal.end_date)) errors.end_date = 'End Date is required.'
   if (isBlank(proposal.department)) errors.department = 'Implementing College/Department is required.'
@@ -1584,6 +1681,13 @@ const mapFormToDTO = (data, proponentId, status) => {
     }))
   }
 }
+
+// Load the reusable program titles once, then refresh them whenever the form is
+// (re)opened so a title created in the meantime is available in the dropdown.
+onMounted(fetchExistingProgramTitles)
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen) fetchExistingProgramTitles()
+})
 </script>
 
 <style scoped>
@@ -1885,6 +1989,24 @@ const mapFormToDTO = (data, proponentId, status) => {
   color: #dc2626;
   margin-top: 4px;
   font-weight: 500;
+}
+
+/* Neutral helper text (e.g. program title load failure) shown under a field. */
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Genuine load failure is shown as a warning, distinct from the empty state. */
+.field-hint-error {
+  color: #b45309;
+}
+
+/* The "Create New Program Title" text input sits below its dropdown. */
+.program-title-new-input {
+  margin-top: 8px;
 }
 
 .sdg-checkbox-list {

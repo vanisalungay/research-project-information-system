@@ -18,23 +18,17 @@ public interface ProposalAnnouncementRepository extends JpaRepository<ProposalAn
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     /**
-     * Overlap detection. Two date ranges overlap when
-     * existing.startDate <= new.endDate AND existing.endDate >= new.startDate.
-     */
-    List<ProposalAnnouncement> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            LocalDate endDate, LocalDate startDate);
-
-    /**
-     * Same overlap detection but excluding a given announcement (used on updates so an
-     * announcement does not conflict with its own existing range).
-     */
-    List<ProposalAnnouncement> findByIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            Long id, LocalDate endDate, LocalDate startDate);
-
-    /**
      * The announcement currently accepting submissions: status is ACTIVE and today falls
      * within [startDate, endDate] (inclusive on both ends).
      */
     Optional<ProposalAnnouncement> findFirstByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateDesc(
             String status, LocalDate endDate, LocalDate startDate);
+
+    /**
+     * Full announcement list for the ORPS Proposal Announcements page, newest first:
+     * by Start Date descending, then by creation order (most recently created first)
+     * so that announcements sharing the same Start Date keep a stable, predictable
+     * order instead of relying on an arbitrary database row order.
+     */
+    List<ProposalAnnouncement> findAllByOrderByStartDateDescCreatedAtDescIdDesc();
 }

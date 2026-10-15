@@ -188,6 +188,7 @@ class ProposalServiceOwnershipTest {
 
         ProposalRequest request = new ProposalRequest();
         request.setProjectTitle("My Proposal");
+        request.setDuration("12");
         request.setStatus("DRAFT");
         request.setProponentId(99L); // spoofed owner
 

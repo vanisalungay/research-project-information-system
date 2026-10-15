@@ -84,6 +84,7 @@ class ProposalServiceIdGenerationTest {
     private ProposalRequest newProposalRequest() {
         ProposalRequest request = new ProposalRequest();
         request.setProjectTitle("Concurrent Test Proposal");
+        request.setDuration("12");
         request.setStatus("DRAFT");
         return request;
     }

@@ -31,7 +31,10 @@ public class ProposalAnnouncementService {
     // ==================== READ ====================
 
     public List<ProposalAnnouncement> getAllAnnouncements() {
-        List<ProposalAnnouncement> announcements = announcementRepository.findAll();
+        // Newest first: Start Date descending, then creation order (most recently
+        // created first) so announcements sharing a start date stay predictable.
+        List<ProposalAnnouncement> announcements =
+                announcementRepository.findAllByOrderByStartDateDescCreatedAtDescIdDesc();
 
         Set<Long> announcementIdsWithSubmissions = new HashSet<>(
                 proposalRepository.findAnnouncementIdsWithSubmittedProposals());
@@ -97,8 +100,6 @@ public class ProposalAnnouncementService {
                     "A proposal announcement named \"" + name + "\" already exists.");
         }
 
-        validateNoOverlap(request.getStartDate(), request.getEndDate(), null);
-
         ProposalAnnouncement announcement = new ProposalAnnouncement();
         announcement.setName(name);
         announcement.setStartDate(request.getStartDate());
@@ -134,8 +135,6 @@ public class ProposalAnnouncementService {
                     "A proposal announcement named \"" + name + "\" already exists.");
         }
 
-        validateNoOverlap(request.getStartDate(), request.getEndDate(), id);
-
         String previousStatus = announcement.getStatus();
         String newStatus = normalizeStatus(request.getStatus());
 
@@ -169,10 +168,6 @@ public class ProposalAnnouncementService {
             throw new IllegalArgumentException(
                     "Cannot activate an expired announcement. The end date has already passed.");
         }
-
-        // Defensively re-check the no-overlap rule in case the announcement was created
-        // before this rule existed.
-        validateNoOverlap(announcement.getStartDate(), announcement.getEndDate(), id);
 
         announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
         ProposalAnnouncement saved = announcementRepository.save(announcement);
@@ -233,27 +228,6 @@ public class ProposalAnnouncementService {
                     "Invalid announcement status: " + status + ". Allowed values are DRAFT, ACTIVE, CLOSED.");
         }
         return normalized;
-    }
-
-    /**
-     * Business rule: proposal announcements must not overlap. Two ranges overlap when
-     * newStart <= existingEnd AND newEnd >= existingStart. Applies across all
-     * statuses (Draft, Active, Closed).
-     */
-    private void validateNoOverlap(LocalDate startDate, LocalDate endDate, Long excludeAnnouncementId) {
-        List<ProposalAnnouncement> overlapping = (excludeAnnouncementId == null)
-                ? announcementRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate)
-                : announcementRepository.findByIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                        excludeAnnouncementId, endDate, startDate);
-
-        if (!overlapping.isEmpty()) {
-            ProposalAnnouncement conflict = overlapping.get(0);
-            throw new IllegalStateException(String.format(
-                    "The selected date range overlaps with an existing announcement \"%s\" (%s - %s). Please choose a non-overlapping range.",
-                    conflict.getName(),
-                    conflict.getStartDate().format(DATE_FORMAT),
-                    conflict.getEndDate().format(DATE_FORMAT)));
-        }
     }
 
     // ==================== NOTIFICATIONS ====================

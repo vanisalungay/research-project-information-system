@@ -19,14 +19,15 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the fixed 12-month duration rule that applies to new internally
- * funded MSUN proposals. The rule is enforced in the service so a modified API
- * request cannot persist a different duration.
+ * Unit tests for the proponent-selected project duration rule. Only 12, 24 or 36
+ * months are accepted; the rule is enforced in the service so a modified API
+ * request cannot persist an unsupported value on a new proposal.
  */
 class ProposalServiceDurationTest {
 
@@ -80,14 +81,32 @@ class ProposalServiceDurationTest {
     }
 
     @Test
-    void newInternallyFundedProposalAlwaysSavesTwelveMonths() {
-        Proposal saved = service.saveProposal(newProposalRequest("5"), null);
+    void newProposalSavesSelectedTwelveMonthDuration() {
+        Proposal saved = service.saveProposal(newProposalRequest("12"), null);
         assertEquals("12", saved.getDuration());
     }
 
     @Test
-    void tamperedDurationOnANewProposalIsIgnored() {
-        Proposal saved = service.saveProposal(newProposalRequest("999"), null);
-        assertEquals("12", saved.getDuration());
+    void newProposalSavesSelectedTwentyFourMonthDuration() {
+        Proposal saved = service.saveProposal(newProposalRequest("24"), null);
+        assertEquals("24", saved.getDuration());
+    }
+
+    @Test
+    void newProposalSavesSelectedThirtySixMonthDuration() {
+        Proposal saved = service.saveProposal(newProposalRequest("36"), null);
+        assertEquals("36", saved.getDuration());
+    }
+
+    @Test
+    void unsupportedDurationIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(newProposalRequest("5"), null));
+    }
+
+    @Test
+    void tamperedUnsupportedDurationIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(newProposalRequest("999"), null));
     }
 }

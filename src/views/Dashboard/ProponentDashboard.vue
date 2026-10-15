@@ -38,7 +38,7 @@
     <!-- CREATE NEW PROPOSAL -->
     <div class="dashboard-actions">
       <button class="btn-new" @click="goToProposals">
-        CREATE NEW PROPOSAL
+        SUBMIT NEW PROPOSAL
       </button>
     </div>
 

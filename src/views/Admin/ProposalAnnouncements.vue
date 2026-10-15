@@ -46,7 +46,7 @@
           <td>{{ formatDate(announcement.startDate) }}</td>
           <td>{{ formatDate(announcement.endDate) }}</td>
           <td>
-            <span class="status-badge" :class="statusClass(announcement.status)">{{ announcement.status }}</span>
+            <span class="status-badge" :class="statusClass(announcement)">{{ announcementStatus(announcement) }}</span>
           </td>
           <td>
             <span class="window-hint" :class="windowClass(announcement)">{{ windowLabel(announcement) }}</span>
@@ -93,11 +93,11 @@
           <label>Status</label>
           <select v-model="form.status" class="form-input">
             <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
+            <option value="ACTIVE">Open</option>
             <option value="CLOSED">Closed</option>
           </select>
           <p v-if="form.status === 'ACTIVE'" class="hint">
-            Saving with Active status notifies all proponents that submissions are open.
+            Saving with Open status notifies all proponents that submissions are open.
           </p>
         </div>
 
@@ -122,6 +122,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import { announcementStatus } from '@/utils/announcementStatus'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -169,12 +170,13 @@ function canDelete(announcement) {
   return announcement.status !== 'ACTIVE' && !announcement.hasSubmittedProposals
 }
 
-function statusClass(status) {
+function statusClass(announcement) {
   return {
-    DRAFT: 'status-draft',
-    ACTIVE: 'status-active',
-    CLOSED: 'status-closed',
-  }[status] || ''
+    Draft: 'status-draft',
+    Scheduled: 'status-scheduled',
+    Open: 'status-active',
+    Closed: 'status-closed',
+  }[announcementStatus(announcement)] || ''
 }
 
 function windowLabel(announcement) {
@@ -476,6 +478,11 @@ td {
 .status-active {
   background: #dcfce7;
   color: #166534;
+}
+
+.status-scheduled {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .status-closed {

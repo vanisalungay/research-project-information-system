@@ -127,6 +127,7 @@ class ProposalConcurrencyPostgresTest {
     private ProposalRequest request(String title, String status) {
         ProposalRequest request = new ProposalRequest();
         request.setProjectTitle(title);
+        request.setDuration("12");
         request.setStatus(status);
         return request;
     }
@@ -293,5 +294,20 @@ class ProposalConcurrencyPostgresTest {
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> versionRepository.saveAndFlush(duplicate));
+    }
+
+    @Test
+    void eachSupportedDurationIsPersistedAndReadBack() {
+        for (String duration : List.of("12", "24", "36")) {
+            authenticate(proponentA);
+            ProposalRequest request = request("Duration " + duration + " proposal", "DRAFT");
+            request.setDuration(duration);
+
+            Proposal saved = proposalService.saveProposal(request, null);
+            Proposal reloaded = proposalRepository.findById(saved.getId()).orElseThrow();
+
+            assertEquals(duration, reloaded.getDuration(),
+                    "duration " + duration + " must be persisted and read back from PostgreSQL");
+        }
     }
 }

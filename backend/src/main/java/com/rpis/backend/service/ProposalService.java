@@ -29,11 +29,11 @@ public class ProposalService {
     private final CurrentUser currentUser;
 
     /**
-     * Internally funded MSUN projects are fixed at a 12-month duration. The RPIS
-     * only handles internally funded proposals, so this applies to every new
-     * proposal and to drafts that are still being prepared.
+     * Project durations (in months) a proponent may select for an internally funded
+     * MSUN project. The RPIS only handles internally funded proposals, so every new
+     * proposal and draft must use one of these values.
      */
-    public static final String INTERNALLY_FUNDED_DURATION_MONTHS = "12";
+    public static final Set<String> SUPPORTED_DURATIONS = Set.of("12", "24", "36");
 
     // ========================
     // PROPOSAL ID AND REVISION FORMAT
@@ -236,15 +236,17 @@ public class ProposalService {
         proposal.setProgramTitle(request.getProgramTitle());
         proposal.setProjectTitle(request.getProjectTitle());
         proposal.setProjectLeader(request.getProjectLeader());
-        // Enforce the fixed 12-month duration for internally funded proposals.
-        // This is enforced server-side (not only by a disabled frontend field) so a
-        // modified API request cannot persist any other value on a new proposal or
-        // on a draft that is still being prepared. Proposals already in the review
-        // lifecycle (e.g. revision resubmissions) keep their existing duration.
-        boolean applyFixedDuration = isNewProposal
+        // Project duration is selected by the proponent (12, 24 or 36 months). It is
+        // validated server-side (not only by the frontend dropdown) so a modified API
+        // request cannot persist an unsupported value on a new proposal or on a draft
+        // that is still being prepared. Proposals already in the review lifecycle
+        // (e.g. revision resubmissions) keep their existing duration handling.
+        boolean applySelectedDuration = isNewProposal
                 || proposal.getStatus() == null
                 || "DRAFT".equalsIgnoreCase(proposal.getStatus());
-        proposal.setDuration(applyFixedDuration ? INTERNALLY_FUNDED_DURATION_MONTHS : request.getDuration());
+        proposal.setDuration(applySelectedDuration
+                ? validateSelectedDuration(request.getDuration())
+                : request.getDuration());
         proposal.setCollege(request.getCollege());
         proposal.setAddress(request.getAddress());
         proposal.setCooperatingAgencies(request.getCooperatingAgencies());
@@ -421,6 +423,18 @@ public class ProposalService {
                             () -> new IllegalArgumentException("Proponent not found: " + request.getProponentId()));
         }
         return null;
+    }
+
+    /**
+     * Validates a proponent-selected project duration. Only the supported internally
+     * funded durations (12, 24 or 36 months) are accepted.
+     */
+    private String validateSelectedDuration(String duration) {
+        String normalized = duration == null ? null : duration.trim();
+        if (normalized == null || !SUPPORTED_DURATIONS.contains(normalized)) {
+            throw new IllegalArgumentException("Project duration must be one of 12, 24 or 36 months.");
+        }
+        return normalized;
     }
 
     /** Statuses that must only be set through the RPS revision workflow. */

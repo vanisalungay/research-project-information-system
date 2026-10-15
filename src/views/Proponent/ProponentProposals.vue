@@ -5,7 +5,7 @@
       <div class="top-bar-actions">
         <button class="btn-revisions" @click="openRevisions">Revisions</button>
         <button class="btn-new" :disabled="checkingAnnouncement" @click="openNewProposal">
-          {{ checkingAnnouncement ? 'Checking...' : '+ Create New Proposal' }}
+          {{ checkingAnnouncement ? 'Checking...' : '+ Submit New Proposal' }}
         </button>
       </div>
     </div>

@@ -40,37 +40,55 @@
       <div v-if="reports.length === 0" class="state">
         No reports submitted yet. Click the button above to start the first reporting stage.
       </div>
-      <div v-else class="report-list">
-        <div v-for="r in reports" :key="r.id" class="report-card">
-          <div class="report-info">
-            <span class="report-title">{{ reportTypeLabel(r) }}</span>
-            <span v-if="periodLabel(r)" class="report-period">{{ periodLabel(r) }}</span>
-            <span class="report-date">Submitted: {{ formatDate(r.submittedAt) || '—' }}</span>
-          </div>
-          <div class="report-status">
-            <span class="status-badge" :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'">{{ r.status }}</span>
-          </div>
-          <div class="report-actions">
-            <template v-if="isTerminal(r)">
-              <button
-                v-if="r.terminalReportFileName"
-                class="btn-view"
-                @click="openTerminalReport(r)"
-              >
-                View
-              </button>
-              <span v-else class="report-meta">No terminal report file</span>
-            </template>
-            <template v-else>
-              <button class="btn-view" @click="view(r)">View</button>
-              <!-- A legacy uploaded workplan file (from before the interactive
-                   workplan form) stays downloadable. -->
-              <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">Download workplan file</button>
-            </template>
-            <button v-if="r.status === 'DRAFT'" class="btn-edit" @click="edit(r)">Edit</button>
-          </div>
-        </div>
-      </div>
+      <table v-else class="report-table">
+        <thead>
+          <tr>
+            <th scope="col" class="cell-report">Report</th>
+            <th scope="col" class="cell-date">Date Submitted</th>
+            <th scope="col" class="cell-status">Status</th>
+            <th scope="col" class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in reports" :key="r.id">
+            <td class="cell-report">
+              <div class="report-info">
+                <span class="report-title">{{ reportTypeLabel(r) }}</span>
+                <span v-if="periodLabel(r)" class="report-period">{{ periodLabel(r) }}</span>
+              </div>
+            </td>
+            <td class="cell-date">
+              <span class="report-date">{{ formatDate(r.submittedAt) || '—' }}</span>
+            </td>
+            <td class="cell-status">
+              <div class="report-status">
+                <span class="status-badge" :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'">{{ r.status }}</span>
+              </div>
+            </td>
+            <td class="cell-actions">
+              <div class="report-actions">
+                <template v-if="isTerminal(r)">
+                  <button
+                    v-if="r.terminalReportFileName"
+                    class="btn-view"
+                    @click="openTerminalReport(r)"
+                  >
+                    View
+                  </button>
+                  <span v-else class="report-meta">No terminal report file</span>
+                </template>
+                <template v-else>
+                  <button class="btn-view" @click="view(r)">View</button>
+                  <!-- A legacy uploaded workplan file (from before the interactive
+                       workplan form) stays downloadable. -->
+                  <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">Download workplan file</button>
+                </template>
+                <button v-if="r.status === 'DRAFT'" class="btn-edit" @click="edit(r)">Edit</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </template>
 
     <!-- Read-only view modal -->
@@ -483,28 +501,72 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   background: #fffbeb;
   border-color: #fde68a;
 }
-.report-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* Report list rendered as a table so the Report / Status / Actions headers line
+   up with every row. Each row keeps the previous card look (white, rounded, 1px
+   border, 12px gaps) via border-spacing plus per-cell borders. */
+.report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
 }
-.report-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 16px;
+.report-table thead th {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: #4b3f72;
+  text-align: center;
+}
+.report-table thead th.cell-report {
+  padding-left: 20px;
+  text-align: left;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.report-table thead th.cell-actions {
+  padding-right: 20px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+.report-table tbody td {
   background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 16px;
+  vertical-align: middle;
 }
-/* Left section: report title, then the quarter/year, then the submission date. */
+.report-table tbody td.cell-report {
+  padding-left: 20px;
+}
+.report-table tbody td.cell-date,
+.report-table tbody td.cell-status,
+.report-table tbody td.cell-actions {
+  white-space: nowrap;
+  text-align: center;
+}
+.report-table tbody td.cell-actions {
+  padding-right: 20px;
+}
+.report-table tbody td:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.report-table tbody td:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+/* Left section: report title, then the quarter/year. */
 .report-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
   min-width: 0;
+  text-align: left;
 }
 .report-title {
   font-size: 15px;
@@ -518,14 +580,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   color: #475569;
 }
 .report-date {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 13px;
+  color: #1c2145;
 }
 /* Status badge gets its own column so it lines up on every card. */
 .report-status {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
 }
 .report-meta {
   color: #64748b;
@@ -535,7 +597,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .report-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
 }
 .btn-view,
@@ -559,18 +621,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   background: #dcfce7;
   color: #166534;
 }
+/* Read-only status label: no pill/background/rounded styling so it cannot be
+   mistaken for a clickable button. */
 .status-badge {
-  padding: 4px 10px;
-  border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.03em;
 }
 .status-badge.submitted {
-  background: #dcfce7;
   color: #166534;
 }
 .status-badge.draft {
-  background: #fef3c7;
   color: #92400e;
 }
 .modal-overlay {
@@ -690,15 +751,48 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   color: #dc2626;
 }
 
-/* Report cards: stack the sections when there is not enough width. */
+/* Small screens: hide the column headers and stack each report as a card. */
 @media (max-width: 640px) {
-  .report-card {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+  .report-table {
+    border-spacing: 0;
+  }
+  .report-table thead {
+    display: none;
+  }
+  .report-table,
+  .report-table tbody,
+  .report-table tr,
+  .report-table td {
+    display: block;
+    width: 100%;
+  }
+  .report-table tbody tr {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .report-table tbody td,
+  .report-table tbody td:first-child,
+  .report-table tbody td:last-child {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  .report-table tbody td.cell-report {
+    margin-bottom: 4px;
+  }
+  .report-table tbody td.cell-date {
+    margin-bottom: 12px;
   }
   .report-status,
   .report-actions {
-    justify-content: flex-start;
+    justify-content: center;
+  }
+  .report-actions {
+    flex-wrap: wrap;
   }
 }
 </style>

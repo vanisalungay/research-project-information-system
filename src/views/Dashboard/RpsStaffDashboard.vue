@@ -240,6 +240,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
+import { announcementStatus } from '@/utils/announcementStatus'
 
 // Single data source reused from the existing dashboard. The backend returns all
 // proposals, so every panel below is derived client-side using the exact same
@@ -384,16 +385,15 @@ function announcementVariant(announcement) {
 }
 
 function announcementStatusLabel(announcement) {
-  const variant = announcementVariant(announcement)
-  if (variant === 'open') return 'Open now · accepting submissions'
-  if (variant === 'expired') return 'Expired'
-  if (variant === 'upcoming') return `Opens ${formatAnnouncementDate(announcement.startDate)}`
-  return announcement.status
+  const status = announcementStatus(announcement)
+  if (status === 'Open') return 'Open now · accepting submissions'
+  if (status === 'Scheduled') return `Opens ${formatAnnouncementDate(announcement.startDate)}`
+  return status
 }
 
-/** Badge always reflects the actual state; expired is shown as EXPIRED. */
+/** Badge shows the standard announcement status: Draft, Scheduled, Open or Closed. */
 function announcementBadge(announcement) {
-  return announcementVariant(announcement) === 'expired' ? 'EXPIRED' : announcement.status
+  return announcementStatus(announcement)
 }
 
 function announcementHasTimeLeft(announcement) {
