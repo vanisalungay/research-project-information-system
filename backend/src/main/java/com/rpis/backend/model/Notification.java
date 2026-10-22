@@ -35,6 +35,15 @@ public class Notification {
     @Column(name = "proposal_id")
     private Long proposalId;
 
+    /**
+     * The Proposal Announcement (Call for Proposals) this notification is about.
+     * Null for every notification that is not raised for an announcement (for
+     * example proposal status notifications). Lets the Proponent notification list
+     * open the exact announcement the notification refers to.
+     */
+    @Column(name = "proposal_announcement_id")
+    private Long proposalAnnouncementId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

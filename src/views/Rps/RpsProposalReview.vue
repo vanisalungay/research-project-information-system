@@ -144,7 +144,7 @@
 <script>
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { downloadProposalDocument } from '@/utils/documentExport'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
@@ -418,7 +418,7 @@ export default {
       }
     },
     async downloadProposal() {
-      downloadProposalDocument(this.proposal)
+      downloadOfficialProposal(this.proposal)
     },
     downloadFile(fileName) {
       downloadUploadedFile(fileName)

@@ -6,7 +6,7 @@
         <header class="modal-header">
           <div class="header-left">
             <h2>Certification & Endorsement</h2>
-            <span class="header-badge">Step 2 of 3</span>
+            <span class="header-badge">Step 3 of 4</span>
           </div>
           <div class="header-actions">
             <button class="btn-download" @click="downloadForm">
@@ -25,16 +25,21 @@
         <div class="progress-bar">
           <div class="progress-step completed" @click="$emit('goToStep', 1)">
             <span class="step-number">✓</span>
+            <span class="step-label">Call for Proposal</span>
+          </div>
+          <div class="progress-line filled"></div>
+          <div class="progress-step completed" @click="$emit('goToStep', 2)">
+            <span class="step-number">✓</span>
             <span class="step-label">Proposal Details</span>
           </div>
           <div class="progress-line filled"></div>
-          <div class="progress-step active" @click="$emit('goToStep', 2)">
-            <span class="step-number">2</span>
+          <div class="progress-step active">
+            <span class="step-number">3</span>
             <span class="step-label">Certification</span>
           </div>
           <div class="progress-line"></div>
-          <div class="progress-step" @click="$emit('goToStep', 3)">
-            <span class="step-number">3</span>
+          <div class="progress-step" @click="$emit('goToStep', 4)">
+            <span class="step-number">4</span>
             <span class="step-label">Review & Submit</span>
           </div>
         </div>

@@ -91,73 +91,44 @@
       </table>
     </template>
 
-    <!-- Read-only view modal -->
+    <!-- Read-only view modal: the report content scrolls inside the modal while
+         its header and the page navigation footer stay in place. -->
     <div v-if="viewing" class="modal-overlay" @click.self="viewing = null">
-      <div class="modal">
+      <div class="modal modal--viewer">
         <div class="modal-header">
           <h2>Quarterly Progress Report</h2>
           <button class="close-btn" @click="viewing = null">✕</button>
         </div>
         <div class="modal-body">
-          <QuarterlyReportForm :report="viewing" readonly />
-          <ProjectWorkplanForm v-if="viewingWorkplan" :model-value="viewingWorkplan" readonly />
+          <QuarterlyReportViewer :report="viewing" @close="viewing = null" />
         </div>
       </div>
     </div>
 
-    <!-- Terminal Report view modal: shows the uploaded file and offers the
-         authorized download. Opening it never downloads or changes the report. -->
-    <div v-if="terminalModal" class="modal-overlay" @click.self="closeTerminalModal">
-      <div
-        class="modal modal--terminal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="terminal-report-modal-title"
-      >
-        <div class="modal-header">
-          <h2 id="terminal-report-modal-title">Terminal Report</h2>
-          <button class="close-btn" @click="closeTerminalModal" aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="terminalModal.fileName" class="terminal-file">
-            <span class="terminal-file-icon" :class="`terminal-file-icon--${terminalModal.kind}`">
-              {{ terminalModal.typeLabel }}
-            </span>
-            <div class="terminal-file-info">
-              <span class="terminal-file-name" :title="terminalModal.fileName">
-                {{ terminalModal.fileName }}
-              </span>
-              <span class="terminal-file-sub">
-                {{ terminalModal.typeLabel }}
-                <template v-if="terminalModal.periodLabel"> · {{ terminalModal.periodLabel }}</template>
-              </span>
-            </div>
-          </div>
-          <p v-else class="report-meta">No Terminal Report file is attached to this report.</p>
-          <p v-if="terminalModal.error" class="terminal-file-error">{{ terminalModal.error }}</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeTerminalModal">Close</button>
-          <button
-            class="btn-primary"
-            :disabled="!terminalModal.fileName || terminalModal.downloading"
-            @click="downloadTerminalReport"
-          >
-            {{ terminalModal.downloading ? 'Downloading…' : 'Download' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Terminal Report preview modal (shared component): shows the actual
+         uploaded file through the existing authorized document endpoint, with a
+         Download action. Opening it never downloads, changes or deletes the
+         report. -->
+    <TerminalReportPreviewModal
+      v-if="terminalModal"
+      :report-id="terminalModal.reportId"
+      :file-name="terminalModal.fileName"
+      :period-label="terminalModal.periodLabel"
+      @close="closeTerminalModal"
+    />
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
-import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
-import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
+import { resetScrollPosition } from '@/utils/scrollReset'
+import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
+import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
 import { downloadReportDocument } from '@/utils/fileDownload'
+import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
 const route = useRoute()
 const router = useRouter()
@@ -172,21 +143,9 @@ const actionError = ref('')
 const viewing = ref(null)
 const terminalModal = ref(null)
 
-// Saved Project Workplan of the report open in the read-only modal (deep copy so
-// the read-only component can normalise its display without mutating the report).
-const viewingWorkplan = computed(() => {
-  const r = viewing.value
-  if (!r || !r.workplan) return null
-  return JSON.parse(JSON.stringify(r.workplan))
-})
-
-const eligible = computed(() => {
-  const p = project.value
-  if (!p) return false
-  const hasSo = p.soNumber && p.soNumber.trim() !== ''
-  const approved = p.status === 'APPROVED' || p.status === 'RELEASED'
-  return hasSo && approved
-})
+// Quarterly reporting is only available to approved, SO-issued projects - the
+// same rule the backend enforces (utils/quarterlyReport.js).
+const eligible = computed(() => isQuarterlyReportEligible(project.value))
 
 const allStagesComplete = computed(() => !!nextStage.value?.allStagesComplete)
 
@@ -314,34 +273,14 @@ async function downloadDoc(r, docType) {
   }
 }
 
-/** File-type bucket for the modal icon (pdf / doc / generic). */
-function fileKind(name) {
-  const ext = (name || '').toLowerCase().split('.').pop()
-  if (ext === 'pdf') return 'pdf'
-  if (ext === 'doc' || ext === 'docx') return 'doc'
-  return 'file'
-}
-
-/** Extension shown on the modal icon, e.g. "PDF" or "DOCX". */
-function fileTypeLabel(name) {
-  const lower = (name || '').toLowerCase()
-  const ext = lower.split('.').pop()
-  if (!ext || ext === lower) return 'FILE'
-  return ext.toUpperCase()
-}
-
-// Opens the read-only Terminal Report modal. Nothing is downloaded here and the
-// report's status / saved data are left untouched.
+// Opens the read-only Terminal Report preview modal. The shared modal component
+// loads the file through the existing authorized endpoint itself; nothing is
+// downloaded here and the report's status / saved data are left untouched.
 function openTerminalReport(r) {
-  const fileName = r.terminalReportFileName || ''
   terminalModal.value = {
     reportId: r.id,
-    fileName,
-    kind: fileKind(fileName),
-    typeLabel: fileTypeLabel(fileName),
+    fileName: r.terminalReportFileName || '',
     periodLabel: periodLabel(r),
-    error: '',
-    downloading: false,
   }
 }
 
@@ -349,31 +288,24 @@ function closeTerminalModal() {
   terminalModal.value = null
 }
 
-// Downloads through the existing authorized endpoint used by the report cards.
-async function downloadTerminalReport() {
-  const modal = terminalModal.value
-  if (!modal || !modal.fileName) return
-  modal.downloading = true
-  modal.error = ''
-  try {
-    await downloadReportDocument(modal.reportId, 'terminal', modal.fileName)
-  } catch (e) {
-    modal.error = 'Failed to download the Terminal Report. Please try again.'
-  } finally {
-    modal.downloading = false
-  }
+// The app shell scrolls its <main class="content"> region (not the window), and
+// that region keeps the scroll position of the previous page. Arriving here from
+// Proposal Monitoring (after scrolling its proposal list) used to land half-way
+// down this page, hiding its title and the reporting progress. Resetting the
+// real scroll container after the DOM updates puts the top back in view, while
+// normal downward scrolling still works when the page is taller than the screen.
+async function scrollPageToTop() {
+  await nextTick()
+  resetScrollPosition()
 }
 
-function onKeydown(e) {
-  if (e.key === 'Escape' && terminalModal.value) closeTerminalModal()
-}
-
-onMounted(() => {
-  fetchAll()
-  window.addEventListener('keydown', onKeydown)
+onMounted(async () => {
+  // Reset before and after the reports load, because the loaded page is taller
+  // than the loading state.
+  await scrollPageToTop()
+  await fetchAll()
+  await scrollPageToTop()
 })
-
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <style scoped>
@@ -678,79 +610,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .modal-body {
   padding: 16px 20px 24px;
 }
-/* Terminal Report modal */
-.modal--terminal {
-  max-width: 460px;
-}
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid #e2e8f0;
-}
-.modal-footer .btn-primary {
-  margin-left: 0;
-}
-.btn-secondary {
-  background: #e2e8f0;
-  color: #1c2145;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.terminal-file {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.terminal-file-icon {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: #e2e8f0;
-  color: #475569;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-}
-.terminal-file-icon--pdf {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-.terminal-file-icon--doc {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-.terminal-file-info {
-  flex: 1;
-  min-width: 0;
+/* The report viewer modal uses a column layout, so the modal header keeps its
+   place while the viewer owns the scrolling. Scoped to the modifier, so the
+   list modals are unaffected. */
+.modal.modal--viewer {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  overflow: hidden; /* the modal itself never scrolls */
 }
-.terminal-file-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1c2145;
-  overflow-wrap: anywhere;
+.modal--viewer .modal-header {
+  flex-shrink: 0;
 }
-.terminal-file-sub {
-  font-size: 12px;
-  color: #64748b;
+.modal--viewer .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* The viewer owns the report and footer padding, so the scrollable area and
+     the footer can span the full modal width. */
+  padding: 0;
 }
-.terminal-file-error {
-  margin: 12px 0 0;
-  font-size: 13px;
-  color: #dc2626;
-}
-
 /* Small screens: hide the column headers and stack each report as a card. */
 @media (max-width: 640px) {
   .report-table {

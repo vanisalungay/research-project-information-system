@@ -6,6 +6,7 @@ import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
@@ -35,9 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * HTTP-level wiring test for the two new endpoints:
- * {@code POST /api/proposals/{id}/duplicate} and
- * {@code GET /api/proposals/{id}/section-remarks}.
+ * HTTP-level wiring test for the two endpoints:
+ * {@code POST /api/proposals/{id}/duplicate} ("Make a Copy" of a REJECTED proposal)
+ * and {@code GET /api/proposals/{id}/section-remarks}.
  * <p>
  * Exercises the real controller + service + {@link CurrentUser} (with a mocked
  * repository) to prove ownership is enforced from the authenticated principal, so a
@@ -56,10 +57,11 @@ class ProposalControllerDuplicateTest {
         sectionRemarkService = mock(ProposalSectionRemarkService.class);
         ProposalService service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), mock(ProposalAnnouncementService.class),
-                mock(ProposalVersionService.class), sectionRemarkService, new CurrentUser());
+                mock(ProposalVersionService.class), sectionRemarkService, new CurrentUser(),
+                mock(CooperatingAgencyService.class));
         ProposalController controller = new ProposalController(service,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class),
-                sectionRemarkService);
+                sectionRemarkService, mock(CooperatingAgencyService.class));
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(7L);
@@ -84,26 +86,37 @@ class ProposalControllerDuplicateTest {
         proposal.setId(id);
         proposal.setProponent(owner);
         proposal.setStatus(status);
-        proposal.setProjectTitle("Completed Project");
+        proposal.setProjectTitle("Rejected Project");
         return proposal;
     }
 
     @Test
-    void ownerCanDuplicateAnEligibleProposal() throws Exception {
+    void ownerCanCopyARejectedProposal() throws Exception {
         authenticate(7L, "PROPONENT");
-        when(proposalRepository.findById(1L)).thenReturn(Optional.of(proposal(1L, 7L, "COMPLETED")));
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(proposal(1L, 7L, "REJECTED")));
 
         mockMvc.perform(post("/api/proposals/1/duplicate"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.proposalCode").value("007"))
-                .andExpect(jsonPath("$.projectTitle").value("Completed Project"));
+                .andExpect(jsonPath("$.projectTitle").value("Rejected Project"));
+    }
+
+    @Test
+    void approvedProposalCannotBeCopied() throws Exception {
+        authenticate(7L, "PROPONENT");
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(proposal(1L, 7L, "APPROVED")));
+
+        mockMvc.perform(post("/api/proposals/1/duplicate"))
+                .andExpect(status().isForbidden());
+
+        verify(proposalRepository, never()).save(any(Proposal.class));
     }
 
     @Test
     void proponentCannotDuplicateAnotherUsersProposal() throws Exception {
         authenticate(7L, "PROPONENT");
-        when(proposalRepository.findById(1L)).thenReturn(Optional.of(proposal(1L, 8L, "COMPLETED")));
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(proposal(1L, 8L, "REJECTED")));
 
         mockMvc.perform(post("/api/proposals/1/duplicate"))
                 .andExpect(status().isForbidden());

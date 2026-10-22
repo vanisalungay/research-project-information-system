@@ -6,6 +6,7 @@
  */
 
 import api from '@/utils/api'
+import { previewMimeType } from '@/utils/documentPreview'
 
 /** Normalize a stored path/name into a clean relative path. */
 function normalizePath(path) {
@@ -92,4 +93,34 @@ export async function previewReportDocument(reportId, docType) {
   window.open(url, '_blank')
   // Release the object URL once the new tab has had time to load it.
   setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+}
+
+/**
+ * Fetch an attached reporting-stage document and return an object URL that can
+ * be used as the src of an in-modal <iframe>/<img> preview.
+ *
+ * The document route requires authentication, so the bytes are fetched through
+ * the shared axios client (which attaches the bearer token) - a plain src=""
+ * attribute could not authenticate. The route serves every document as
+ * application/octet-stream, so the bytes are re-typed from the file extension
+ * before the object URL is created; browsers would not render them inline
+ * otherwise.
+ *
+ * @param {number|string} reportId report row id
+ * @param {'workplan'|'terminal'} docType which attached document to fetch
+ * @param {string} [fileName] stored file name (used to restore the media type)
+ * @returns {Promise<string>} object URL - release it with releaseObjectUrl()
+ */
+export async function fetchReportDocumentPreviewUrl(reportId, docType, fileName) {
+  const res = await api.get(`/api/quarterly-reports/${reportId}/documents/${docType}`, {
+    responseType: 'blob',
+  })
+  const type = previewMimeType(fileName)
+  const blob = type ? new Blob([res.data], { type }) : res.data
+  return window.URL.createObjectURL(blob)
+}
+
+/** Release an object URL created by the preview helpers. */
+export function releaseObjectUrl(url) {
+  if (url) window.URL.revokeObjectURL(url)
 }

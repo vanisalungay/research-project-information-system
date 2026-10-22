@@ -505,7 +505,7 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '02',
       title: 'Cooperating Agencies',
-      body: textBlock('Name/s and Address/es', p.cooperatingAgencies)
+      body: textBlock('Cooperating Agencies', p.cooperatingAgencies)
     }),
     section({
       number: '03',

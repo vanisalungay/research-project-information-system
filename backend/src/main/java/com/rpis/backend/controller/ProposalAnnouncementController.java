@@ -36,9 +36,45 @@ public class ProposalAnnouncementController {
         return ResponseEntity.ok(announcementService.getActiveAnnouncement());
     }
 
+    /**
+     * The Calls for Proposal a proponent can currently respond to (status ACTIVE and
+     * today inside the submission window). An empty list means there is nothing open
+     * right now - the Create Proposal workflow shows its empty state in that case.
+     * <p>
+     * Drafts, scheduled, closed and past-deadline calls are never returned, so the
+     * selection page cannot offer a call that is not genuinely open.
+     */
+    @GetMapping("/open")
+    public ResponseEntity<List<ProposalAnnouncement>> getOpenAnnouncements() {
+        return ResponseEntity.ok(announcementService.getOpenAnnouncements());
+    }
+
+    /**
+     * The Calls for Proposal the first step of the Create Proposal workflow shows: the
+     * published calls that are open for submissions right now, followed by the
+     * published calls that open later (scheduled), ordered by their opening date.
+     * <p>
+     * Only status ACTIVE calls are included, and a call whose deadline has passed is
+     * never returned: drafts, unpublished, cancelled/closed and expired calls stay
+     * hidden. The response is empty when there is nothing open or upcoming.
+     */
+    @GetMapping("/available")
+    public ResponseEntity<List<ProposalAnnouncement>> getAvailableAnnouncements() {
+        return ResponseEntity.ok(announcementService.getAvailableAnnouncements());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProposalAnnouncement> getAnnouncementById(@PathVariable Long id) {
         return ResponseEntity.ok(announcementService.getAnnouncementById(id));
+    }
+
+    /**
+     * Proponent-facing Call for Proposals details, opened from an announcement
+     * notification. Read-only; draft announcements are reported as not found.
+     */
+    @GetMapping("/{id}/details")
+    public ResponseEntity<ProposalAnnouncement> getAnnouncementDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(announcementService.getAnnouncementForProponents(id));
     }
 
     // ==================== CREATE / UPDATE / DELETE ====================

@@ -148,7 +148,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
-import { downloadProposalDocument } from '@/utils/documentExport'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
@@ -305,7 +305,7 @@ const confirmReject = async () => {
 }
 
 const downloadProject = () => {
-  downloadProposalDocument(proposal.value)
+  downloadOfficialProposal(proposal.value)
 }
 </script>
 

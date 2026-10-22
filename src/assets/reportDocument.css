@@ -1,0 +1,419 @@
+/* ============================================================
+   reportDocument.css
+   Shared "printed paper" shell for the MSUN quarterly reporting documents:
+     - Quarterly Progress Report, page 1 and page 2
+     - Project Workplan, page 3
+   Used by src/components/QuarterlyReportForm.vue and
+   src/components/ProjectWorkplanForm.vue so the three pages share one
+   document design. Presentation only - no report data or logic lives here.
+   ============================================================ */
+
+.doc-scroll {
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+
+/* One printed sheet. A4 portrait, matching the application's existing print
+   setup (src/assets/print.css: @page size A4; margin 16mm 15mm). */
+.doc-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #d8d9e8;
+  box-shadow: 0 1px 3px rgba(37, 34, 79, 0.1);
+  color: #202044;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  line-height: 1.3;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.doc-body {
+  flex: 1 1 auto;
+  padding: 10px 12px 14px;
+}
+
+/* ---------- Document header ---------- */
+.doc-header {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 9px 12px;
+  background: #25224f;
+  color: #ffffff;
+}
+
+.doc-ring {
+  position: absolute;
+  border: 1px solid rgba(216, 217, 232, 0.2);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.doc-ring-1 {
+  width: 120px;
+  height: 120px;
+  top: -54px;
+  right: 60px;
+}
+
+.doc-ring-2 {
+  width: 168px;
+  height: 168px;
+  top: -80px;
+  right: 26px;
+  border-color: rgba(216, 217, 232, 0.14);
+}
+
+.doc-ring-3 {
+  width: 214px;
+  height: 214px;
+  top: -104px;
+  right: -10px;
+  border-color: rgba(216, 217, 232, 0.1);
+}
+
+.doc-header-left {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.doc-emblem {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffd400;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.doc-header-text {
+  min-width: 0;
+}
+
+.doc-eyebrow {
+  display: block;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #ffd400;
+}
+
+.doc-title {
+  margin: 1px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.doc-header-right {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.doc-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #ffd400;
+  color: #25224f;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.doc-badge-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 8px;
+  color: #e5e5f2;
+}
+
+.doc-badge-input {
+  margin-top: 4px;
+  width: 118px;
+  padding: 1px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  background: #ffffff;
+  color: #25224f;
+  font: inherit;
+  font-size: 8px;
+}
+
+.doc-divider {
+  height: 2px;
+  background: #ffd400;
+}
+
+/* ---------- Section headings ---------- */
+.doc-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #25224f;
+}
+
+.doc-section-accent {
+  flex-shrink: 0;
+  width: 3px;
+  height: 14px;
+  background: #ffd400;
+}
+
+.doc-subsection {
+  margin: 7px 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #25224f;
+}
+
+.doc-hint {
+  margin: 0 0 5px;
+  font-size: 9.5px;
+  color: #4a4a68;
+}
+
+/* ---------- Information tables ---------- */
+.doc-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d8d9e8;
+}
+
+.doc-info-table td {
+  border: 1px solid #d8d9e8;
+  padding: 5px 8px;
+  vertical-align: top;
+}
+
+.doc-info-table .doc-cream {
+  background: #fff8de;
+}
+
+.doc-label {
+  display: block;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #25224f;
+}
+
+.doc-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: #202044;
+  overflow-wrap: anywhere;
+}
+/* ---------- Data tables ---------- */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.doc-table th,
+.doc-table td {
+  border: 1px solid #d8d9e8;
+  padding: 4px 5px;
+  vertical-align: top;
+}
+
+.doc-table thead th {
+  background: #29244f;
+  color: #ffffff;
+  font-size: 7.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.doc-table td {
+  font-size: 9px;
+  color: #202044;
+}
+
+.doc-table td.doc-center {
+  text-align: center;
+}
+
+.doc-table .doc-cell-cream {
+  background: #fff8de;
+}
+
+/* ---------- Bordered narrative areas ---------- */
+.doc-note {
+  position: relative;
+  border: 1px solid #d8d9e8;
+  border-radius: 5px;
+  background: #ffffff;
+  padding: 8px 10px 8px 15px;
+  font-size: 9.5px;
+  color: #202044;
+}
+
+.doc-note::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #25224f;
+  border-radius: 5px 0 0 5px;
+}
+
+.doc-note--yellow::before {
+  background: #ffd400;
+}
+
+.doc-note--green::before {
+  background: #16834b;
+}
+
+/* ---------- Footer ---------- */
+.doc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1.5px solid #ffd400;
+  background: #f1f0f8;
+  padding: 6px 12px;
+  font-size: 8px;
+  color: #64647d;
+}
+
+.doc-footer-side {
+  flex-shrink: 0;
+}
+
+.doc-footer-center {
+  flex: 1 1 auto;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.doc-page-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffd400;
+  color: #25224f;
+  font-size: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Light document guard ----------
+   The report is a printable MSUN form and must stay a light document even when
+   the operating system (and src/assets/css/base.css) switches the rest of the
+   application to dark mode. */
+.doc-sheet {
+  color-scheme: light;
+}
+
+.doc-sheet,
+.doc-sheet .doc-body,
+.doc-sheet .doc-info-table,
+.doc-sheet .doc-info-table td,
+.doc-sheet .doc-note {
+  background-color: #ffffff !important;
+}
+
+.doc-sheet .doc-info-table .doc-cream,
+.doc-sheet .doc-table .doc-cell-cream {
+  background-color: #fff8de !important;
+}
+
+.doc-sheet .doc-header {
+  background-color: #25224f !important;
+}
+
+.doc-sheet .doc-table thead th {
+  background-color: #29244f !important;
+}
+
+.doc-sheet .doc-footer {
+  background-color: #f1f0f8 !important;
+}
+
+.doc-sheet .doc-badge,
+.doc-sheet .doc-page-badge,
+.doc-sheet .doc-emblem {
+  background-color: #ffd400 !important;
+}
+
+.doc-sheet .doc-title,
+.doc-sheet .doc-table thead th {
+  color: #ffffff !important;
+}
+
+.doc-sheet .doc-label,
+.doc-sheet .doc-value,
+.doc-sheet .doc-section,
+.doc-sheet .doc-subsection,
+.doc-sheet .doc-hint,
+.doc-sheet .doc-table td,
+.doc-sheet .doc-note,
+.doc-sheet .qr-cell-text,
+.doc-sheet .qr-cell-value,
+.doc-sheet .qr-note-text,
+.doc-sheet input,
+.doc-sheet textarea {
+  color: #202044 !important;
+}
+
+.doc-sheet input,
+.doc-sheet textarea {
+  background-color: transparent !important;
+}
+
+/* ---------- Print / PDF ----------
+   Each .doc-sheet becomes one printed A4 sheet: the 265mm minimum height is A4
+   (297mm) minus the @page top/bottom margins (16mm each) set in
+   src/assets/print.css, so the footer sits at the bottom of its own page and
+   never overlaps the next page's content. */
+@media print {
+  .doc-scroll {
+    overflow: visible !important;
+  }
+
+  .doc-sheet {
+    width: auto;
+    min-height: 265mm;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .doc-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

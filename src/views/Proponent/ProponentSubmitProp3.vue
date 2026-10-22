@@ -5,7 +5,7 @@
       <header class="modal-header">
         <div class="header-left">
           <h2>Review & Submit</h2>
-          <span class="header-badge">Step 3 of 3</span>
+          <span class="header-badge">Step 4 of 4</span>
         </div>
         <div class="header-actions">
           <button class="close-btn" @click="close">✕</button>
@@ -16,17 +16,22 @@
       <div class="progress-bar">
         <div class="progress-step completed" @click="$emit('goToStep', 1)">
           <span class="step-number">✓</span>
-          <span class="step-label">Proposal Details</span>
+          <span class="step-label">Call for Proposal</span>
         </div>
         <div class="progress-line filled"></div>
         <div class="progress-step completed" @click="$emit('goToStep', 2)">
           <span class="step-number">✓</span>
+          <span class="step-label">Proposal Details</span>
+        </div>
+        <div class="progress-line filled"></div>
+        <div class="progress-step completed" @click="$emit('goToStep', 3)">
+          <span class="step-number">✓</span>
           <span class="step-label">Certification</span>
         </div>
         <div class="progress-line filled"></div>
-        <div class="progress-step active" @click="$emit('goToStep', 3)">
-          <span class="step-number">3</span>
-          <span class="step-label">Review & Submit</span>
+        <div class="progress-step active">
+          <span class="step-number">4</span>
+          <span class="step-label">Review &amp; Submit</span>
         </div>
       </div>
 
@@ -122,6 +127,23 @@
             </div>
           </section>
 
+          <!-- Literature Cited (section 23): exactly what will be submitted, with the
+               APA italics, so the proponent can verify the references before submitting. -->
+          <section class="form-section">
+            <div class="section-header">
+              <span class="section-number">03</span>
+              <h3>Literature Cited</h3>
+            </div>
+            <div class="section-card">
+              <ul v-if="literatureEntries.length" class="review-references">
+                <li v-for="entry in literatureEntries" :key="entry.id" class="review-reference">
+                  <span class="review-reference-text" v-html="entryHtml(entry)"></span>
+                </li>
+              </ul>
+              <p v-else class="review-empty">No references were added.</p>
+            </div>
+          </section>
+
           <!-- Confirm Checkbox -->
           <section class="form-section">
             <div class="section-card confirm-card">
@@ -182,6 +204,22 @@ import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import {
+  formatAddressContact,
+  isIndependentCity,
+  loadCitiesMunicipalities,
+} from '@/utils/philippineLocations'
+import { validateContact } from '@/utils/contactDetails'
+import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import {
+  technologyMapKey,
+  technologyMapUploadError,
+  uploadTechnologyMap,
+} from '@/utils/technologyMap'
+import { budgetFileKey, budgetFileUploadError, uploadBudgetFile } from '@/utils/budgetFile'
+// Section 23: the references shown on the review come from the same entry list the
+// form uses (plain text + the structured entries of the reference builder).
+import { entryHtml, parseReferenceEntries } from '@/utils/apaReferences'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -204,12 +242,85 @@ const submitted = ref(false)
 const submitMessage = ref('')
 const error = ref(null)
 
+// ===== TECHNOLOGY MAP (section 13) =====
+// The image is chosen in step 1 and travels with the draft. It is uploaded here,
+// once, right after the proposal has been saved (see saveOrUpdateProposal), so the
+// image is attached to the exact proposal that was created or updated.
+const uploadedTechnologyMapKey = ref('')
+
+/** The chosen image, if any (a saved file name is not a file). */
+const technologyMapFile = computed(() => {
+  const file = props.proposalData?.technology_roadmap_file
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+const uploadTechnologyMapIfNeeded = async (proposalId) => {
+  const file = technologyMapFile.value
+  if (!proposalId || !file) return
+  const key = technologyMapKey(file)
+  if (key === uploadedTechnologyMapKey.value) return
+
+  try {
+    await uploadTechnologyMap(proposalId, file)
+    uploadedTechnologyMapKey.value = key
+  } catch (err) {
+    // The proposal itself was submitted; only the image could not be attached, so the
+    // failure is reported without hiding the submission result.
+    await showAlert(technologyMapUploadError(err), {
+      type: 'error',
+      title: 'Technology Map Not Uploaded'
+    })
+  }
+}
+
+// ===== LINE-ITEM BUDGET FILE (section 25) =====
+// The filled-out budget is chosen in step 1 and travels with the draft. Like the
+// technology map it is uploaded here, once, right after the proposal has been
+// saved, so the file is attached to the exact proposal that was created or updated.
+const uploadedBudgetFileKey = ref('')
+
+/** The chosen file, if any (a saved file name is not a file). */
+const budgetFileToUpload = computed(() => {
+  const file = props.proposalData?.line_item_budget_file
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+/**
+ * Section 23: the references of the proposal, read from the same entry list the form
+ * builds (the structured entries when the reference builder was used, otherwise the
+ * stored plain text). The review therefore shows exactly what will be submitted.
+ */
+const literatureEntries = computed(() =>
+  parseReferenceEntries(props.proposalData?.literature_json, props.proposalData?.literature_cited),
+)
+
+const uploadBudgetFileIfNeeded = async (proposalId) => {
+  const file = budgetFileToUpload.value
+  if (!proposalId || !file) return
+  const key = budgetFileKey(file)
+  if (key === uploadedBudgetFileKey.value) return
+
+  try {
+    await uploadBudgetFile(proposalId, file)
+    uploadedBudgetFileKey.value = key
+  } catch (err) {
+    // The proposal itself was submitted; only the file could not be attached, so the
+    // failure is reported without hiding the submission result.
+    await showAlert(budgetFileUploadError(err), {
+      type: 'error',
+      title: 'Budget File Not Uploaded'
+    })
+  }
+}
+
 const resetForm = () => {
   confirmed.value = false
   submitted.value = false
   submitting.value = false
   submitMessage.value = ''
   error.value = null
+  uploadedTechnologyMapKey.value = ''
+  uploadedBudgetFileKey.value = ''
 }
 
 defineExpose({ resetForm })
@@ -243,6 +354,32 @@ const serializeSixPs = (expectedOutputs) => {
   return lines.join('\n')
 }
 
+// Bundled PSGC cities / municipalities, read when the review page opens. They
+// tell a complete address whose city belongs to no province and no district
+// (City of Isabela, City of Cotabato) apart from an address that is simply
+// missing its province.
+const citiesMunicipalities = ref([])
+const citiesRead = ref(false)
+
+watch(
+  () => props.modelValue,
+  async (open) => {
+    if (!open || citiesRead.value) return
+    try {
+      citiesMunicipalities.value = await loadCitiesMunicipalities()
+    } catch (err) {
+      // The dataset ships with the app; if it cannot be read, the province /
+      // district rule is left to step 1 and to the backend instead of blocking a
+      // valid address here.
+      console.error('Failed to load the PSGC cities / municipalities:', err?.message)
+      citiesMunicipalities.value = []
+    } finally {
+      citiesRead.value = true
+    }
+  },
+  { immediate: true },
+)
+
 const validationErrors = computed(() => {
   const errs = []
   const d = props.proposalData || {}
@@ -255,8 +392,26 @@ const validationErrors = computed(() => {
   if (isBlank(d.start_date)) errs.push('Start Date is missing.')
   if (isBlank(d.end_date)) errs.push('End Date is missing.')
   if (isBlank(d.department)) errs.push('Department is missing.')
-  if (isBlank(d.address)) errs.push('Address / Contact is missing.')
-  if (isBlank(d.cooperating_agencies)) errs.push('Cooperating Agencies is missing.')
+  // Address and Contact are two separate sections now; step 1 validates them in
+  // full, this is the review page's summary check. The province / district is
+  // required unless the selected city belongs to no province and no district.
+  const address = d.address_details || {}
+  const addressParts = ['country', 'region', 'municipality', 'barangay']
+  const areaLevelApplies =
+    !isBlank(address.province) ||
+    !isBlank(address.district) ||
+    (citiesMunicipalities.value.length > 0 &&
+      !isIndependentCity(citiesMunicipalities.value, address.municipality))
+  if (addressParts.some((part) => isBlank(address[part])) || !areaLevelApplies) {
+    errs.push('Address is incomplete.')
+  }
+  const contactError = validateContact(d.contact_details)
+  if (contactError) errs.push(`Contact: ${contactError}`)
+  // Section 02: at least one agency of the shared directory must be selected. A
+  // proposal saved before the checklist (free text only) keeps the previous rule.
+  if (!normalizeSelectedIds(d.cooperating_agency_ids).length && isBlank(d.cooperating_agencies)) {
+    errs.push('Cooperating Agencies is missing.')
+  }
 
   // Sites
   if (!d.sites || !d.sites.length) {
@@ -378,15 +533,34 @@ const saveOrUpdateProposal = async (status) => {
 
   const payload = {
     proponentId,
+    // Step 1 of the workflow: the Call for Proposal this proposal responds to. The
+    // backend attaches the proposal to that exact call and re-validates that the call
+    // is still open before the submission is accepted.
+    proposalAnnouncementId: data.proposal_announcement_id || null,
     programTitle: data.program_title || '',
     projectTitle: data.project_title || '',
     projectLeader: data.project_leader || '',
+    projectLeaderSex: data.project_leader_sex || '',
     duration: data.duration || '',
     startDate: data.start_date || '',
     endDate: data.end_date || '',
     college: data.department || '',
-    address: data.address || '',
-    cooperatingAgencies: data.cooperating_agencies || '',
+    // The combined "Address / Contact" column stays in sync with the two new
+    // sections, so existing screens and exports keep showing both.
+    address: formatAddressContact(data.address_details, data.contact_details),
+    addressCountry: data.address_details?.country || '',
+    addressRegion: data.address_details?.region || '',
+    addressProvince: data.address_details?.province || '',
+    addressDistrict: data.address_details?.district || '',
+    addressMunicipality: data.address_details?.municipality || '',
+    addressBarangay: data.address_details?.barangay || '',
+    contactType: data.contact_details?.type || '',
+    contactValue: (data.contact_details?.value || '').trim(),
+    // Section 02: the checklist selection travels as directory ids, and the legacy
+    // text column is derived from the selected names (the backend derives it from
+    // the ids again, so the text and the relation can never drift apart).
+    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
+    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
@@ -397,14 +571,23 @@ const saveOrUpdateProposal = async (status) => {
     objectivesGeneral: data.general_objective || '',
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
+    review: data.review_of_literature || '',
+    limitationsText: data.limitations || '',
     outputs: serializeSixPs(data.expected_outputs),
     outcomes: data.potential_outcomes || '',
     impactEconomic: data.economic_impact || '',
     impactSocial: data.social_ethical_impact || '',
     beneficiaries: data.target_beneficiaries || '',
+    // Section 25: the file name of the filled-out Line-Item Budget. The bytes are
+    // uploaded right after the proposal exists (see uploadBudgetFileIfNeeded), and
+    // that upload stores the authoritative name / path on the proposal itself.
+    beneficiariesFileName: data.budget_file_name || data.line_item_budget_file?.name || '',
     sustainability: data.sustainability_plan || '',
     risks: data.risks_assumptions || '',
     otherProjectsNumber: data.other_projects_number || '',
+    referencesText: data.literature_cited || '',
+    // Section 23: the structured entries behind the list (italics + editing).
+    referencesJson: data.literature_json || '',
     status,
     sites: (data.sites || []).map(s => ({
       country: s.country || '',
@@ -437,11 +620,20 @@ const saveOrUpdateProposal = async (status) => {
   }
 
   // If we have a proposal_id, update; otherwise create
-  if (data.proposal_id) {
-    await api.put(`/api/proposals/${data.proposal_id}`, payload)
+  let proposalId = data.proposal_id || null
+  if (proposalId) {
+    await api.put(`/api/proposals/${proposalId}`, payload)
   } else {
-    await api.post('/api/proposals', payload)
+    const created = await api.post('/api/proposals', payload)
+    proposalId = created.data?.id ?? null
   }
+
+  // The technology map (section 13) is uploaded right after the proposal has been
+  // saved, so the image is attached to this exact proposal.
+  await uploadTechnologyMapIfNeeded(proposalId)
+
+  // The filled-out Line-Item Budget (section 25) is attached to the same proposal.
+  await uploadBudgetFileIfNeeded(proposalId)
 }
 </script>
 
@@ -679,6 +871,37 @@ const saveOrUpdateProposal = async (status) => {
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+/* ===== LITERATURE CITED (section 23) =====
+   The references exactly as they will be submitted: one entry each, with the APA
+   italics and a hanging indent. */
+.review-references {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-reference {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #1e293b;
+}
+
+.review-reference-text {
+  display: block;
+  padding-left: 2em;
+  text-indent: -2em;
+  overflow-wrap: anywhere;
+}
+
+.review-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .file-row {

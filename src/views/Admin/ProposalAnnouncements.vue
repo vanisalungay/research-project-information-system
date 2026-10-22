@@ -69,46 +69,153 @@
 
     <!-- Create / Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-box">
-        <h3>{{ isEditing ? 'Edit Proposal Announcement' : 'Create Proposal Announcement' }}</h3>
-
-        <div class="form-group">
-          <label>Announcement Name</label>
-          <input v-model="form.name" type="text" class="form-input"
-            placeholder="e.g., FY 2026 - 1st Call for Proposals" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Start Date</label>
-            <input v-model="form.startDate" type="date" class="form-input" />
+      <div class="modal-box create-announcement-modal">
+        <!-- Header: dark purple announcement banner -->
+        <header class="modal-header">
+          <span class="header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 10v3a1 1 0 0 0 1 1h2l4 4V5L7 9H5a1 1 0 0 0-1 1z" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M14 9a4 4 0 0 1 0 6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M17 6.5a7.5 7.5 0 0 1 0 11" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <div class="header-text">
+            <h3 class="header-title">
+              {{ isEditing ? 'Edit Proposal Announcement' : 'Create Proposal Announcement' }}
+            </h3>
+            <p class="header-subtitle">Set the submission window and choose the priority agendas for this call.</p>
           </div>
-          <div class="form-group">
-            <label>End Date</label>
-            <input v-model="form.endDate" type="date" class="form-input" :min="form.startDate || undefined" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Status</label>
-          <select v-model="form.status" class="form-input">
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Open</option>
-            <option value="CLOSED">Closed</option>
-          </select>
-          <p v-if="form.status === 'ACTIVE'" class="hint">
-            Saving with Open status notifies all proponents that submissions are open.
-          </p>
-        </div>
-
-        <p v-if="formError" class="error-text">{{ formError }}</p>
-
-        <div class="modal-actions">
-          <button class="cancel-btn" @click="closeModal" :disabled="saving">Cancel</button>
-          <button class="confirm-btn" @click="saveAnnouncement" :disabled="saving">
-            {{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Announcement') }}
+          <button type="button" class="header-close" @click="closeModal" :disabled="saving" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+            </svg>
           </button>
+        </header>
+
+        <div class="modal-body">
+          <!-- 1. Announcement details -->
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">1</span>Announcement details</h4>
+            </div>
+            <div class="form-group">
+              <label>Announcement name</label>
+              <input v-model="form.name" type="text" class="form-input"
+                placeholder="e.g., FY 2026 - 1st Call for Proposals" />
+            </div>
+          </section>
+
+          <!-- 2. Submission window -->
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">2</span>Submission window</h4>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Start date</label>
+                <input v-model="form.startDate" type="date" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>End date</label>
+                <input v-model="form.endDate" type="date" class="form-input" :min="form.startDate || undefined" />
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select v-model="form.status" class="form-input">
+                  <option value="DRAFT">Draft</option>
+                  <option value="ACTIVE">Open</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </div>
+            <p v-if="form.status === 'ACTIVE'" class="helper-banner">
+              <span class="banner-icon" aria-hidden="true">
+                <!-- viewBox cropped to the glyph (no built-in left margin) plus an
+                     intrinsic size, so the icon never depends on a CSS selector -->
+                <svg width="11" height="11" viewBox="2 2 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 11v5M12 8h.01" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="banner-text">Saving with Open status notifies all proponents that submissions are open.</span>
+            </p>
+          </section>
+
+          <!-- 3. Priority agenda -->
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">3</span>Priority agenda</h4>
+            </div>
+            <div class="selection-row">
+              <p class="selection-counter" aria-live="polite">
+                {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected
+              </p>
+              <button type="button" class="check-all-btn" @click="toggleAllPrograms">
+                {{ allProgramsSelected ? 'Uncheck All' : 'Check All' }}
+              </button>
+            </div>
+            <div class="option-list">
+              <label v-for="program in RIIDE_PROGRAMS" :key="program.key" class="option-item"
+                :class="{ selected: form.priorityAgendas.includes(program.key) }">
+                <input type="checkbox" :value="program.key" v-model="form.priorityAgendas" />
+                <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
+                <span class="option-text">
+                  <span class="option-label">{{ program.label }}</span>
+                  <span class="option-description">{{ program.description }}</span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- 4. Announcement reminders -->
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">4</span>Announcement reminders</h4>
+              <p class="section-note">Select the reminders to include in the announcement.</p>
+            </div>
+            <div class="option-list">
+              <label v-for="reminder in ANNOUNCEMENT_REMINDERS" :key="reminder.key"
+                class="option-item reminder-item"
+                :class="{ selected: form.reminderIds.includes(reminder.key) }">
+                <input type="checkbox" :value="reminder.key" v-model="form.reminderIds" />
+                <span class="option-text">
+                  <span class="reminder-text">{{ reminder.text }}</span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- 5. Additional announcement (existing optional text area) -->
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">5</span>Additional announcement (Optional)</h4>
+            </div>
+            <div class="form-group">
+              <textarea v-model="form.additionalAnnouncement" class="form-input form-textarea" rows="4"
+                placeholder="Add special instructions, funding details, submission links, contact information, or other information for this call..."></textarea>
+            </div>
+          </section>
+
+          <p v-if="formError" class="error-text form-error">{{ formError }}</p>
         </div>
+
+        <!-- Footer: selection/status summary left, actions right -->
+        <footer class="modal-footer">
+          <p class="footer-summary">
+            {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected · Status: {{ formStatusLabel }}
+          </p>
+          <div class="modal-actions">
+            <button class="cancel-btn" @click="closeModal" :disabled="saving">Cancel</button>
+            <button class="confirm-btn create-announcement-button" @click="saveAnnouncement" :disabled="saving">
+              <svg v-if="!isEditing && !saving" class="btn-icon" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+              </svg>
+              <span class="confirm-btn-label">{{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Announcement') }}</span>
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
 
@@ -123,6 +230,16 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { announcementStatus } from '@/utils/announcementStatus'
+import {
+  RIIDE_PROGRAMS,
+  ANNOUNCEMENT_REMINDERS,
+  PROGRAM_KEYS,
+  defaultReminderKeys,
+  normalizeProgramKeys,
+  normalizeReminderKeys,
+  isAllSelected,
+  toggleAllSelection,
+} from '@/utils/announcementOptions'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -138,7 +255,37 @@ const formError = ref(null)
 const form = ref(emptyForm())
 
 function emptyForm() {
-  return { name: '', startDate: '', endDate: '', status: 'ACTIVE' }
+  return {
+    name: '',
+    startDate: '',
+    endDate: '',
+    status: 'ACTIVE',
+    // A new announcement starts with no agenda selected and with every standard
+    // reminder selected; both can be changed before saving.
+    priorityAgendas: [],
+    reminderIds: defaultReminderKeys(),
+    additionalAnnouncement: '',
+  }
+}
+
+// The Check All button label always follows the actual checkbox selection.
+const allProgramsSelected = computed(() => isAllSelected(form.value.priorityAgendas, PROGRAM_KEYS))
+
+// Selection counter shown under the section heading, derived from the same state.
+const selectedProgramCount = computed(() => normalizeProgramKeys(form.value.priorityAgendas).length)
+
+// Footer summary label: reuses the existing announcement status helper, so the
+// displayed status always matches the table's Draft / Scheduled / Open / Closed.
+const formStatusLabel = computed(() =>
+  announcementStatus({
+    status: form.value.status,
+    startDate: form.value.startDate,
+    endDate: form.value.endDate,
+  })
+)
+
+function toggleAllPrograms() {
+  form.value.priorityAgendas = toggleAllSelection(form.value.priorityAgendas, PROGRAM_KEYS)
 }
 
 // ===== HELPERS =====
@@ -239,6 +386,11 @@ function openEditModal(announcement) {
     startDate: announcement.startDate,
     endDate: announcement.endDate,
     status: announcement.status,
+    // Restore the saved selection (never the new-announcement defaults); legacy
+    // announcements without these values load as an empty selection / empty text.
+    priorityAgendas: normalizeProgramKeys(announcement.priorityAgendas),
+    reminderIds: normalizeReminderKeys(announcement.reminderIds),
+    additionalAnnouncement: announcement.additionalAnnouncement || '',
   }
   formError.value = null
   showModal.value = true
@@ -272,6 +424,10 @@ async function saveAnnouncement() {
       startDate: form.value.startDate,
       endDate: form.value.endDate,
       status: form.value.status,
+      // Stable identifiers only; the backend re-validates and stores them.
+      priorityAgendas: normalizeProgramKeys(form.value.priorityAgendas),
+      reminderIds: normalizeReminderKeys(form.value.reminderIds),
+      additionalAnnouncement: (form.value.additionalAnnouncement || '').trim(),
     }
 
     if (isEditing.value) {
@@ -559,103 +715,626 @@ td {
   background: #dc2626;
 }
 
-/* Modal */
+/* ===== Create / Edit Announcement modal ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(23, 20, 43, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   z-index: 999;
 }
 
 .modal-box {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  width: 480px;
-  max-width: 92vw;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-box h3 {
-  margin: 0 0 16px 0;
-  color: #1f2937;
-}
-
-.form-group {
-  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
+  width: 92vw;
+  max-width: 1140px;
+  max-height: 90vh;
+  background: #f8f8fc;
+  border: 1px solid #dedeea;
+  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: 0 18px 40px rgba(41, 35, 79, 0.28);
+}
+
+/* Header: dark purple announcement banner */
+.modal-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 11px 14px;
+  background: #29234f;
+  border-bottom: 3px solid #f5c400;
+}
+
+.header-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffcc00;
+  color: #29234f;
+}
+
+.header-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 17.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.header-subtitle {
+  margin: 3px 0 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #d9d5ea;
+}
+
+.header-close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: #3b3566;
+  color: #e8e6f6;
+  cursor: pointer;
+}
+
+.header-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.header-close:hover {
+  background: #4a4380;
+}
+
+.header-close:focus-visible {
+  outline: 2px solid #ffcc00;
+  outline-offset: 2px;
+}
+
+.header-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Body (scrolls; header and footer stay put) */
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+/* Numbered section headings */
+.form-section {
+  margin-top: 14px;
+  text-align: left;
+}
+
+.form-section:first-of-type {
+  margin-top: 0;
+}
+
+/* Numbered section headings — modal-scoped so headings on other pages keep their
+   own styles. Deliberately larger than field labels (12.5px); the modal's own
+   header title (.header-title) is untouched. */
+.create-announcement-modal .section-head {
+  /* 9px between a section heading and the content it labels. */
+  margin-bottom: 9px;
+}
+
+.create-announcement-modal .section-title {
+  display: flex;
+  align-items: center; /* number badge stays centred on the heading text */
+  gap: 9px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #302954;
+  text-align: left;
+}
+
+.create-announcement-modal .section-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #302954;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.section-note {
+  margin: 4px 0 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #77758f;
+  text-align: left;
+}
+
+/* Form controls */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .form-group label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
   margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #302954;
 }
 
 .form-input {
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #dcdce8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #302954;
+  font-size: 13.5px;
+  line-height: 1.3;
   outline: none;
   box-sizing: border-box;
+}
+
+/* ===== Submission window: one identical box for all three controls =====
+   The global rules in assets/main.css style form controls with
+   "input[type=...], select, textarea" (specificity 0,1,1), which can beat a plain
+   class rule and let the two date inputs and the native <select> resolve
+   different padding/font metrics. These modal-scoped selectors outrank them, so
+   Start date, End date and Status always share the same box and vertical
+   alignment. The textarea is untouched (it keeps .form-textarea). */
+.create-announcement-modal .form-row .form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.create-announcement-modal .form-row .form-group label {
+  display: block;
+  margin: 0 0 6px 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.create-announcement-modal .form-row input.form-input,
+.create-announcement-modal .form-row select.form-input {
+  display: block;
   width: 100%;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #dcdce8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #302954;
+  font-family: inherit;
+  font-size: 13.5px;
+  /* The content box is 36px (38px - 2px border). Matching the line box to it
+     centres the text and the native dropdown arrow in both control types, with
+     no transform/positioning offset. */
+  line-height: 36px;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.create-announcement-modal .form-row select.form-input {
+  /* Keep the selected value clear of the native dropdown arrow. */
+  padding-right: 30px;
+}
+
+.form-input::placeholder {
+  color: #9c9ab2;
 }
 
 .form-input:focus {
-  border-color: #2452ff;
+  border-color: #29234f;
+  box-shadow: 0 0 0 2px rgba(41, 35, 79, 0.12);
 }
 
+/* Give the Draft / Open / Closed options room instead of running together
+   (the select's own padding comes from the modal-scoped rule above). */
+select.form-input option {
+  padding: 6px 10px;
+}
+
+/* Start date, End date and Status share one row inside the Submission window. */
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px;
 }
 
-.hint {
-  font-size: 12px;
-  color: #64748b;
-  margin: 6px 0 0 0;
+/* Submission-window helper banner */
+.helper-banner {
+  display: flex;
+  /* Icon and message share the same vertical centre — no per-icon offset needed. */
+  align-items: center;
+  /* The single space between the icon and the message text. Nothing else adds any:
+     the icon has no margin/padding and no literal whitespace sits between them. */
+  gap: 6px;
+  margin: 10px 0 0 0;
+  /* Normal inner padding only; the icon starts at this edge (its SVG viewBox is
+     cropped to the glyph, so it carries no built-in leading margin). */
+  padding: 8px 10px;
+  background: #fff7d8;
+  border: 1px solid #f4d77b;
+  border-radius: 7px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6b5316;
+  text-align: left;
+}
+
+.banner-icon {
+  /* Never shrinks, so the wrapped message can never overlap the icon. */
+  flex: 0 0 auto;
+  display: flex;
+  width: 11px;
+  height: 11px;
+  color: #b8860b;
+}
+
+.banner-icon svg {
+  /* Glyph-sized box matching the cropped viewBox: the icon renders at the same
+     visual size as before, but flush with the banner's padding edge. The SVG also
+     carries width/height attributes, so it keeps this size even if this selector
+     ever fails to apply. */
+  display: block;
+  width: 11px;
+  height: 11px;
+}
+
+.banner-text {
+  /* Lets the message wrap naturally inside the banner instead of forcing width. */
+  min-width: 0;
+}
+
+/* ===== Footer: selection/status summary left, actions right ===== */
+.modal-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-top: 1px solid #e6e6f0;
+}
+
+.footer-summary {
+  margin: 0;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #77758f;
+  text-align: left;
 }
 
 .modal-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ===== Footer actions: both buttons are exactly the same box =====
+   Modal-scoped so the global button rules in assets/main.css cannot interfere,
+   and specific enough that the shared size is never overridden. */
+.create-announcement-modal .modal-footer .cancel-btn,
+.create-announcement-modal .modal-footer .confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 190px;
+  min-width: 0;
+  max-width: 100%;
+  height: 38px;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 14px;
+  border: none;
+  border-radius: 7px;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* The label is a nested <span>, and the global reset in assets/css/base.css
+   ("* { font-weight: normal }") targets that span directly — a direct declaration
+   beats inheritance, which is why the label rendered at weight 400. Weighting the
+   span explicitly restores the bold primary label. */
+.create-announcement-modal .modal-footer .confirm-btn,
+.create-announcement-modal .modal-footer .confirm-btn .confirm-btn-label {
+  font-weight: 700;
+}
+
+.btn-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
 }
 
 .cancel-btn {
-  padding: 10px 18px;
-  background: #f1f5f9;
-  color: #334155;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
+  background: #eceaf5;
+  color: #302954;
 }
 
 .cancel-btn:hover {
-  background: #e2e8f0;
+  background: #dedbf0;
 }
 
 .confirm-btn {
-  padding: 10px 18px;
-  background: #2452ff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
+  background: #ffcc00;
+  color: #302954;
+  font-weight: 700;
+}
+
+.confirm-btn:hover {
+  background: #f5c400;
 }
 
 .confirm-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ===== Priority agenda toolbar: counter left, Check All right ===== */
+.selection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selection-counter {
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eceaf5;
+  color: #302954;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.check-all-btn {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  background: #ffffff;
+  border: 1px solid #cfcde0;
+  border-radius: 6px;
+  color: #302954;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.check-all-btn:hover {
+  background: #f1eff8;
+}
+
+.check-all-btn:focus-visible {
+  outline: 2px solid #29234f;
+  outline-offset: 2px;
+}
+
+/* ===== Program and reminder cards ===== */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 50px;
+  padding: 9px 11px;
+  background: #ffffff;
+  border: 1px solid #e0e0ea;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.option-item.reminder-item {
+  align-items: center;
+  min-height: 44px;
+}
+
+.option-item:hover {
+  border-color: #c3c0d8;
+}
+
+.option-item.selected {
+  border-color: #ffcc00;
+  background: #fffdf3;
+}
+
+.option-item:focus-within {
+  border-color: #29234f;
+  box-shadow: 0 0 0 2px rgba(41, 35, 79, 0.12);
+}
+
+.option-item input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0 0;
+  accent-color: #29234f;
+  cursor: pointer;
+}
+
+.option-item.reminder-item input[type='checkbox'] {
+  margin: 0;
+}
+
+.program-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #29234f;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.option-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+.option-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #302954;
+  overflow-wrap: anywhere;
+}
+
+.option-description {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #77758f;
+  overflow-wrap: anywhere;
+}
+
+.reminder-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #4a4666;
+  overflow-wrap: anywhere;
+}
+
+.form-error {
+  margin: 10px 0 0 0;
+  font-size: 11.5px;
+}
+
+/* ===== Responsive: tablet keeps two columns, phones stack everything ===== */
+@media (max-width: 900px) {
+  .form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-box {
+    width: 94vw;
+    max-height: 92vh;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  /* Keep the title on one line on narrow screens. */
+  .header-title {
+    font-size: 16px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-row {
+    align-items: stretch;
+  }
+
+  .check-all-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal-footer {
+    justify-content: stretch;
+  }
+
+  .modal-actions {
+    width: 100%;
+  }
+
+  .create-announcement-modal .modal-footer .cancel-btn,
+  .create-announcement-modal .modal-footer .confirm-btn {
+    width: 100%;
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: inherit;
+  line-height: 1.45;
 }
 </style>

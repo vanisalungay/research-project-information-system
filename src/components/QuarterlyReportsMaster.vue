@@ -7,8 +7,6 @@
       </div>
     </div>
 
-    <p v-if="actionError" class="action-error">{{ actionError }}</p>
-
     <div v-if="loading" class="state">Loading projects...</div>
     <div v-else-if="error" class="state error">{{ error }}</div>
 
@@ -26,30 +24,37 @@
       <div v-else-if="selectedReports.length === 0" class="state">
         No quarterly progress reports or terminal reports submitted for this project yet.
       </div>
-      <div v-else class="report-list">
-        <div v-for="r in selectedReports" :key="r.id" class="report-card">
-          <div class="report-info">
-            <span class="report-type">{{ reportTypeLabel(r) }}</span>
-            <span v-if="periodLabel(r)" class="report-period">{{ periodLabel(r) }}</span>
-            <span class="status-badge" :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'">{{ r.status }}</span>
-            <span class="report-meta">Submitted: {{ formatDate(r.submittedAt) || '—' }}</span>
-          </div>
-          <div class="report-actions">
-            <template v-if="isTerminal(r)">
-              <button v-if="r.terminalReportFileName" class="btn-view" @click="previewDoc(r, 'terminal')">View Terminal Report</button>
-              <button v-if="r.terminalReportFileName" class="btn-download" @click="downloadDoc(r, 'terminal')">Download</button>
-              <span v-else class="report-meta">No terminal report file attached.</span>
-            </template>
-            <template v-else>
-              <button class="btn-view" @click="view(r)">View Report</button>
-              <!-- The Project Workplan is structured form data shown in the report
-                   view; a legacy uploaded workplan file (if any) stays downloadable. -->
-              <span v-if="hasWorkplan(r)" class="report-meta">Project Workplan saved</span>
-              <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">Download workplan file</button>
-              <span v-if="!hasWorkplan(r) && !r.workplanFileName" class="report-meta">No Project Workplan saved.</span>
-            </template>
-          </div>
-        </div>
+      <!-- Every submitted report is one row: the terminal report and each
+           quarterly report are listed separately, newest first (the order the
+           existing reports endpoint returns). -->
+      <div v-else class="report-table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Report</th>
+              <th>Date Submitted</th>
+              <th>Status</th>
+              <th class="cell-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in selectedReports" :key="r.id">
+              <td class="report-name">{{ reportName(r) }}</td>
+              <td class="report-date">{{ formatDate(r.submittedAt) || '—' }}</td>
+              <td>
+                <span
+                  class="status-badge"
+                  :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'"
+                >
+                  {{ formatStatus(r.status) }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <button class="btn-view" @click="viewReport(r)">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </template>
 
@@ -82,47 +87,46 @@
       </table>
     </template>
 
-    <!-- Read-only view modal -->
+    <!-- Read-only quarterly progress report modal: the same three page viewer the
+         proponent sees, with its own Previous Page / Next Page navigation. -->
     <div v-if="viewing" class="modal-overlay" @click.self="viewing = null">
-      <div class="modal">
+      <div class="modal modal--viewer">
         <div class="modal-header">
           <h2>Quarterly Progress Report</h2>
-          <button class="close-btn" @click="viewing = null">✕</button>
+          <button class="close-btn" @click="viewing = null" aria-label="Close">✕</button>
         </div>
         <div class="modal-body">
-          <QuarterlyReportForm :report="viewing" readonly />
-          <ProjectWorkplanForm v-if="viewingWorkplan" :model-value="viewingWorkplan" readonly />
-          <p v-else class="report-meta">No Project Workplan has been saved for this reporting stage.</p>
+          <QuarterlyReportViewer :report="viewing" @close="viewing = null" />
         </div>
       </div>
     </div>
+
+    <!-- Terminal Report preview modal (shared component): shows the actual
+         uploaded file, read only, with its own Download action. -->
+    <TerminalReportPreviewModal
+      v-if="terminalModal"
+      :report-id="terminalModal.reportId"
+      :file-name="terminalModal.fileName"
+      :period-label="terminalModal.periodLabel"
+      @close="terminalModal = null"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/utils/api'
-import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
-import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
-import { downloadReportDocument, previewReportDocument } from '@/utils/fileDownload'
+import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
+import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
 
 const projects = ref([])
 const loading = ref(true)
 const error = ref('')
-const actionError = ref('')
 const selectedProject = ref(null)
 const selectedReports = ref([])
 const reportsLoading = ref(false)
 const viewing = ref(null)
-
-// Saved Project Workplan of the report open in the read-only modal. A deep copy
-// is passed so the read-only component can normalise its display (twelve month
-// cells, etc.) without touching the loaded report data.
-const viewingWorkplan = computed(() => {
-  const r = viewing.value
-  if (!r || !r.workplan) return null
-  return JSON.parse(JSON.stringify(r.workplan))
-})
+const terminalModal = ref(null)
 
 async function fetchProjects() {
   loading.value = true
@@ -151,7 +155,19 @@ async function openProject(p) {
   }
 }
 
-function view(r) {
+// One "View" action per row, dispatching on the report type the row holds:
+// terminal reports open the document preview modal, every quarterly progress
+// report opens the read-only three page report modal. Both are read only - the
+// report id of the clicked row is the record they load.
+function viewReport(r) {
+  if (isTerminal(r)) {
+    terminalModal.value = {
+      reportId: r.id,
+      fileName: r.terminalReportFileName || '',
+      periodLabel: periodLabel(r),
+    }
+    return
+  }
   viewing.value = r
 }
 
@@ -168,13 +184,8 @@ function isTerminal(r) {
   return r?.reportType === 'TERMINAL_REPORT'
 }
 
-// The Project Workplan is structured form data (workplan_json), not a file. A
-// legacy uploaded workplan file may still exist and stays downloadable.
-function hasWorkplan(r) {
-  const objectives = r?.workplan?.objectives
-  return Array.isArray(objectives) && objectives.some((o) => (o?.objective || '').trim() !== '')
-}
-
+// The Project Workplan is structured form data (workplan_json), not a file, and
+// is displayed inside the read-only report viewer (page 3).
 function reportTypeLabel(r) {
   return isTerminal(r) ? 'Terminal Report' : 'Quarterly Progress Report'
 }
@@ -184,23 +195,14 @@ function periodLabel(r) {
   return `${r.period || ''} ${r.year || ''}`.trim()
 }
 
-async function downloadDoc(r, docType) {
-  try {
-    actionError.value = ''
-    const fileName = docType === 'workplan' ? r.workplanFileName : r.terminalReportFileName
-    await downloadReportDocument(r.id, docType, fileName)
-  } catch (e) {
-    actionError.value = 'Failed to download the document.'
-  }
-}
-
-async function previewDoc(r, docType) {
-  try {
-    actionError.value = ''
-    await previewReportDocument(r.id, docType)
-  } catch (e) {
-    actionError.value = 'Failed to open the document.'
-  }
+/**
+ * Report column value, derived from the stored record: the terminal report is
+ * named by its type, and each quarterly progress report by its reporting period
+ * (e.g. "Quarterly Progress Report — Q3 2026").
+ */
+function reportName(r) {
+  const period = periodLabel(r)
+  return period ? `${reportTypeLabel(r)} — ${period}` : reportTypeLabel(r)
 }
 
 onMounted(fetchProjects)
@@ -252,16 +254,8 @@ onMounted(fetchProjects)
 .state.error {
   color: #dc2626;
 }
-.action-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-}
-.project-table {
+.project-table,
+.report-table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
@@ -270,16 +264,38 @@ onMounted(fetchProjects)
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .project-table th,
-.project-table td {
+.project-table td,
+.report-table th,
+.report-table td {
   padding: 12px 14px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
   font-size: 14px;
 }
-.project-table th {
+.project-table th,
+.report-table th {
   background: #f1f5f9;
   color: #475569;
   font-weight: 700;
+}
+/* The submitted-reports table keeps its four columns readable on smaller
+   screens by scrolling horizontally instead of overlapping the columns. */
+.report-table-wrap {
+  overflow-x: auto;
+}
+.report-table {
+  min-width: 720px;
+}
+.report-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+.report-date {
+  color: #64748b;
+  white-space: nowrap;
+}
+.cell-actions {
+  white-space: nowrap;
 }
 .id-cell {
   color: #64748b;
@@ -288,60 +304,8 @@ onMounted(fetchProjects)
   font-weight: 600;
   color: #0f172a;
 }
-.report-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.report-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 16px 20px;
-}
-.report-info {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.report-type {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #4338ca;
-  background: #eef2ff;
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-.report-period {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0f172a;
-}
-.report-meta {
-  color: #64748b;
-  font-size: 13px;
-}
-.report-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 .btn-view {
   background: #eef2ff;
-  color: #1c2145;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.btn-download {
-  background: #ffd400;
   color: #1c2145;
   border: none;
   padding: 8px 16px;
@@ -406,5 +370,23 @@ onMounted(fetchProjects)
 }
 .modal-body {
   padding: 16px 20px 24px;
+}
+/* The report viewer modal uses a column layout, so the modal header keeps its
+   place while the viewer owns the scrolling and its own page navigation. */
+.modal.modal--viewer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* the modal itself never scrolls */
+}
+.modal--viewer .modal-header {
+  flex-shrink: 0;
+}
+.modal--viewer .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0; /* the viewer owns its own padding */
 }
 </style>

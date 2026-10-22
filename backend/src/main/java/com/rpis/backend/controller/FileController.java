@@ -87,7 +87,9 @@ public class FileController {
     private boolean referencesFile(Proposal proposal, String requestedName) {
         return fileNameMatches(proposal.getReviewFileName(), requestedName)
                 || fileNameMatches(proposal.getRoadmapFileName(), requestedName)
+                || fileNameMatches(proposal.getRoadmapFilePath(), requestedName)
                 || fileNameMatches(proposal.getBeneficiariesFileName(), requestedName)
+                || fileNameMatches(proposal.getBeneficiariesFilePath(), requestedName)
                 || fileNameMatches(proposal.getGadFileName(), requestedName)
                 || fileNameMatches(proposal.getSoFileName(), requestedName)
                 || fileNameMatches(proposal.getSoFilePath(), requestedName);

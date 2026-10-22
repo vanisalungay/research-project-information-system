@@ -1,150 +1,184 @@
 <template>
-  <div class="wp-scroll">
-    <div class="wp-doc">
-      <!-- (A) Form heading -->
-      <div class="wp-heading">
-        <h2>MSUN INTERNALLY FUNDED PROJECT WORKPLAN</h2>
-        <p class="wp-asof">
-          <span class="wp-asof-label">As of:</span>
-          <input v-if="!readonly" v-model="model.asOf" type="date" class="wp-date" />
-          <span v-else class="wp-asof-value">{{ model.asOf || '__________' }}</span>
-        </p>
-      </div>
+  <div class="doc-scroll">
+    <!-- ==================== PAGE 3 - PROJECT WORKPLAN ==================== -->
+    <section class="doc-sheet">
+      <div class="doc-header">
+        <span class="doc-ring doc-ring-1" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-2" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-3" aria-hidden="true"></span>
 
-      <!-- (B) Project information -->
-      <div class="wp-fields">
-        <div class="wp-field">
-          <span class="wp-label">(1) Project Title:</span>
-          <input v-if="!readonly" v-model="model.projectTitle" class="wp-input" />
-          <span v-else class="wp-static">{{ model.projectTitle || '' }}</span>
+        <div class="doc-header-left">
+          <span class="doc-emblem" aria-hidden="true"></span>
+          <div class="doc-header-text">
+            <span class="doc-eyebrow">MSUN Internally-Funded Project</span>
+            <h2 class="doc-title">Project Workplan</h2>
+          </div>
         </div>
-        <div class="wp-field">
-          <span class="wp-label">(2) Project Leader:</span>
-          <input v-if="!readonly" v-model="model.projectLeader" class="wp-input" />
-          <span v-else class="wp-static">{{ model.projectLeader || '' }}</span>
-        </div>
-        <div class="wp-field">
-          <span class="wp-label">(3) Project Duration (number of months):</span>
-          <!-- Fixed at 12 months for internally funded projects; the workplan must
-               not contradict the proposal's approved duration. -->
-          <input v-if="!readonly" v-model="model.projectDuration" class="wp-input wp-input-short" readonly />
-          <span v-else class="wp-static">{{ model.projectDuration || '' }}</span>
+
+        <div class="doc-header-right">
+          <span class="doc-badge">As of: {{ model.asOf || '—' }}</span>
+          <input
+            v-if="!readonly"
+            v-model="model.asOf"
+            type="date"
+            class="doc-badge-input"
+            aria-label="Workplan as-of date"
+          />
         </div>
       </div>
+      <div class="doc-divider"></div>
 
-      <!-- (C/D/E) Monthly target activities and accomplishments -->
-      <table class="wp-table">
-        <colgroup>
-          <col class="col-objectives" />
-          <col v-for="m in months" :key="m" class="col-month" />
-          <col class="col-total" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th rowspan="2" class="th-objectives">OBJECTIVES</th>
-            <th :colspan="months.length" class="th-months">
-              MONTHLY TARGET ACTIVITIES AND ACCOMPLISHMENTS (in %)
-            </th>
-            <th rowspan="2" class="th-total">TOTAL</th>
-          </tr>
-          <tr>
-            <th v-for="m in months" :key="m" class="th-month">{{ m }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(obj, i) in objectives"
-            :key="i"
-            class="row-objective"
-            :class="{ 'row-first': i === 0 }"
+      <div class="doc-body">
+        <!-- (1)-(3) Project information strip -->
+        <table class="doc-info-table wp-strip">
+          <colgroup>
+            <col class="col-title" />
+            <col class="col-leader" />
+            <col class="col-duration" />
+          </colgroup>
+          <tbody>
+            <tr>
+              <td class="doc-cream">
+                <span class="doc-label">(1) Project Title</span>
+                <input v-if="!readonly" v-model="model.projectTitle" class="doc-cell-input" />
+                <span v-else class="doc-value">{{ model.projectTitle || '' }}</span>
+              </td>
+              <td>
+                <span class="doc-label">(2) Project Leader</span>
+                <input v-if="!readonly" v-model="model.projectLeader" class="doc-cell-input" />
+                <span v-else class="doc-value">{{ model.projectLeader || '' }}</span>
+              </td>
+              <td>
+                <span class="doc-label">(3) Duration (Months)</span>
+                <!-- Fixed at 12 months for internally funded projects; the workplan
+                     must not contradict the proposal's approved duration. -->
+                <input v-if="!readonly" v-model="model.projectDuration" class="doc-cell-input" readonly />
+                <span v-else class="doc-value">{{ model.projectDuration || '' }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Monthly target activities and accomplishments -->
+        <table class="doc-table wp-table">
+          <colgroup>
+            <col class="col-objectives" />
+            <col v-for="m in months" :key="m" class="col-month" />
+            <col class="col-total" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2" class="th-objectives">OBJECTIVES</th>
+              <th :colspan="months.length" class="th-months">
+                MONTHLY TARGET ACTIVITIES AND ACCOMPLISHMENTS (in %)
+              </th>
+              <th rowspan="2" class="th-total">TOTAL</th>
+            </tr>
+            <tr>
+              <th v-for="m in months" :key="m" class="th-month">{{ m }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(obj, i) in objectives"
+              :key="i"
+              class="row-objective"
+              :class="{ 'row-first': i === 0 }"
+            >
+              <td class="td-objectives doc-cell-cream">
+                <span class="obj-num">{{ i + 1 }}.</span>
+                <textarea
+                  v-if="!readonly"
+                  v-model="obj.objective"
+                  class="wp-cell-area"
+                  rows="4"
+                  placeholder="Objective description"
+                ></textarea>
+                <span v-else class="wp-cell-text">{{ obj.objective }}</span>
+              </td>
+              <td v-for="(m, mi) in months" :key="m" class="td-month">
+                <textarea
+                  v-if="!readonly"
+                  v-model="obj.months[mi]"
+                  class="wp-cell-area wp-cell-month"
+                  rows="4"
+                  placeholder="Activity / Target accomplishment: __%"
+                ></textarea>
+                <span v-else class="wp-cell-text">{{ monthValue(obj, mi) }}</span>
+              </td>
+              <td class="td-total">
+                <textarea
+                  v-if="!readonly"
+                  v-model="obj.total"
+                  class="wp-cell-area wp-cell-total"
+                  rows="3"
+                  placeholder="%"
+                ></textarea>
+                <span v-else class="wp-cell-text">{{ obj.total }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div v-if="!readonly" class="wp-row-actions">
+          <button type="button" class="wp-btn-add" @click="addObjective">+ Add objective row</button>
+          <button
+            type="button"
+            class="wp-btn-remove"
+            :disabled="objectives.length <= minRows"
+            @click="removeObjective"
           >
-            <td class="td-objectives">
-              <span class="obj-num">{{ i + 1 }}.</span>
-              <textarea
-                v-if="!readonly"
-                v-model="obj.objective"
-                class="wp-cell-area"
-                rows="4"
-                placeholder="Objective description"
-              ></textarea>
-              <span v-else class="wp-cell-text">{{ obj.objective }}</span>
-            </td>
-            <td v-for="(m, mi) in months" :key="m" class="td-month">
-              <textarea
-                v-if="!readonly"
-                v-model="obj.months[mi]"
-                class="wp-cell-area wp-cell-month"
-                rows="4"
-                placeholder="Activity / Target accomplishment: __%"
-              ></textarea>
-              <span v-else class="wp-cell-text">{{ monthValue(obj, mi) }}</span>
-            </td>
-            <td class="td-total">
-              <textarea
-                v-if="!readonly"
-                v-model="obj.total"
-                class="wp-cell-area wp-cell-total"
-                rows="3"
-                placeholder="%"
-              ></textarea>
-              <span v-else class="wp-cell-text">{{ obj.total }}</span>
-            </td>
-          </tr>
-          <tr class="row-remarks">
-            <td class="td-remarks-label">
-              REMARKS
-              <span class="remarks-sub">(Catch up plan, etc)</span>
-            </td>
-            <td :colspan="months.length + 1" class="td-remarks">
-              <textarea
-                v-if="!readonly"
-                v-model="model.remarks"
-                class="wp-remarks-area"
-                rows="3"
-                placeholder="Remarks, delays, catch-up plans, etc."
-              ></textarea>
-              <span v-else class="wp-cell-text">{{ model.remarks }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-if="!readonly" class="wp-row-actions">
-        <button type="button" class="wp-btn-add" @click="addObjective">+ Add objective row</button>
-        <button
-          type="button"
-          class="wp-btn-remove"
-          :disabled="objectives.length <= minRows"
-          @click="removeObjective"
-        >
-          − Remove last row
-        </button>
-        <span class="wp-hint">
-          TOTAL is entered manually — the official format does not define an automatic calculation.
-        </span>
-      </div>
-
-      <!-- (G) Prepared by / Reviewed by -->
-      <div class="wp-footer">
-        <div class="wp-sign">
-          <span class="wp-sign-label">Prepared by:</span>
-          <span class="wp-sign-name">{{ preparedByName }}</span>
-          <span class="wp-sign-line"></span>
-          <span class="wp-sign-role">Project Leader</span>
+            − Remove last row
+          </button>
+          <span class="wp-hint">
+            TOTAL is entered manually — the official format does not define an automatic calculation.
+          </span>
         </div>
-        <div class="wp-sign">
-          <span class="wp-sign-label">Reviewed by:</span>
-          <span class="wp-sign-name">{{ REVIEWER_NAME }}</span>
-          <span class="wp-sign-line"></span>
-          <span class="wp-sign-role">{{ REVIEWER_DESIGNATION }}</span>
+
+        <!-- Remarks -->
+        <p class="doc-label wp-remarks-label">Remarks (catch-up plan, etc.)</p>
+        <div class="doc-note">
+          <textarea
+            v-if="!readonly"
+            v-model="model.remarks"
+            class="wp-note-area"
+            rows="2"
+            placeholder="Remarks, delays, catch-up plans, etc."
+          ></textarea>
+          <span v-else class="wp-note-text">{{ model.remarks }}</span>
+        </div>
+
+        <!-- Prepared by / Reviewed by -->
+        <div class="wp-signatures">
+          <div class="wp-sign">
+            <span class="doc-label">Prepared by</span>
+            <span class="wp-sign-name">{{ preparedByName }}</span>
+            <span class="wp-sign-line"></span>
+            <span class="wp-sign-role">Project Leader</span>
+          </div>
+          <div class="wp-sign">
+            <span class="doc-label">Reviewed by</span>
+            <span class="wp-sign-name">{{ REVIEWER_NAME }}</span>
+            <span class="wp-sign-line"></span>
+            <span class="wp-sign-role">{{ REVIEWER_DESIGNATION }}</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="doc-footer">
+        <span class="doc-footer-side">MSUN Internally-Funded Project &middot; Project Workplan</span>
+        <span class="doc-footer-center">{{ model.projectTitle || '—' }}</span>
+        <span class="doc-page-badge">Page 3 of 3</span>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { computed, watch } from 'vue'
+// Shared document shell (page, header, footer, tables, print rules) used by the
+// Quarterly Progress Report pages and the Project Workplan page.
+import '@/assets/reportDocument.css'
 
 /**
  * Interactive "MSUN Internally Funded Project Workplan" form.
@@ -232,305 +266,214 @@ function removeObjective() {
 }
 </script>
 
-
 <style scoped>
-/* Horizontally scrollable on small screens so the twelve month columns stay
-   usable instead of being compressed. */
-.wp-scroll {
-  overflow-x: auto;
-  margin-bottom: 12px;
+/* (1)-(3) Project information strip proportions. */
+.wp-strip .col-title {
+  width: 44%;
 }
 
-/* ============================================================
-   Light "paper document" theme guard (mirrors QuarterlyReportForm).
-   The workplan is a printable MSUN form and must always render as a light
-   document regardless of the OS-level dark mode the rest of the app adapts to.
-   ============================================================ */
-.wp-doc {
-  color-scheme: light;
-  background: #fff !important;
-  border: 2px solid #1c2145 !important;
-  color: #0f172a !important;
-  padding: 12px 14px 14px;
-  min-width: 940px;
-  font-family: Arial, sans-serif;
-  font-size: 11px;
-  line-height: 1.25;
+.wp-strip .col-leader {
+  width: 30%;
 }
 
-.wp-doc input,
-.wp-doc textarea {
-  background: transparent !important;
-  color: #0f172a !important;
-  border-radius: 0 !important;
-  font-family: inherit;
+.wp-strip .col-duration {
+  width: 26%;
 }
 
-.wp-heading {
-  text-align: center;
-  margin-bottom: 8px;
-}
-.wp-heading h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: #0f172a !important;
-}
-.wp-asof {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: #0f172a !important;
-}
-.wp-asof-label {
-  font-weight: 700;
-}
-.wp-date {
-  width: 150px;
-  padding: 1px 4px;
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-  border: none !important;
-  border-bottom: 1px solid #1c2145 !important;
-}
-.wp-asof-value {
-  font-weight: 700;
-}
-
-.wp-fields {
-  margin-bottom: 8px;
-}
-.wp-field {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 3px;
-}
-.wp-label {
-  font-weight: 700;
-  white-space: nowrap;
-  color: #0f172a !important;
-}
-.wp-input {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  font-size: 11px;
-  padding: 1px 4px;
-  border: none !important;
-  border-bottom: 1px solid #94a3b8 !important;
-}
-.wp-input-short {
-  flex: 0 0 90px;
-}
-.wp-static {
-  flex: 1;
-  padding: 1px 4px;
-  border-bottom: 1px solid #94a3b8;
-  color: #0f172a !important;
-}
-
-.wp-table {
+/* Values inside the strip read as printed text while staying editable inputs. */
+.doc-cell-input {
+  display: block;
   width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-.wp-table,
-.wp-table tr {
-  background-color: transparent !important;
-}
-.wp-table th,
-.wp-table td {
-  border: 1px solid #1c2145 !important;
-  padding: 3px 4px;
+  margin-top: 1px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #202044;
+  font: inherit;
   font-size: 10px;
-  font-weight: 400;
-  vertical-align: top;
-  text-align: left;
-  color: #0f172a !important;
-  background-color: transparent !important;
-}
-.wp-table tbody tr:hover td {
-  background-color: transparent !important;
+  outline: none;
 }
 
-/* Column proportions match the reference: OBJECTIVES ~11%, each month ~7%,
-   TOTAL ~6%. */
-.col-objectives {
+.doc-cell-input[readonly] {
+  color: #202044;
+}
+
+/* Workplan table column proportions: OBJECTIVES wider than each month column. */
+.wp-table .col-objectives {
   width: 11%;
 }
-.col-month {
+
+.wp-table .col-month {
   width: 6.9%;
 }
-.col-total {
+
+.wp-table .col-total {
   width: 6.2%;
 }
 
 .th-objectives,
-.th-total {
-  text-align: center !important;
-  vertical-align: middle !important;
-  font-weight: 700 !important;
-}
-.th-months {
-  text-align: center !important;
-  font-weight: 700 !important;
-}
+.th-total,
+.th-months,
 .th-month {
-  text-align: center !important;
-  font-weight: 700 !important;
-  font-size: 9px !important;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 700;
 }
 
 .obj-num {
   font-weight: 700;
 }
+
 /* The first objective row is taller to hold longer descriptions and multi-line
    monthly activities. */
 .row-first td {
   height: 96px;
 }
+
 .row-objective td {
   height: 44px;
-}
-.row-remarks td {
-  height: 56px;
 }
 
 .wp-cell-area {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  min-height: 34px;
+  min-height: 30px;
   padding: 0;
-  border: none !important;
+  border: none;
+  background: transparent;
+  color: #202044;
   font: inherit;
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.25;
   resize: vertical;
   outline: none;
 }
+
 .wp-cell-month,
 .wp-cell-total {
-  font-size: 9px;
+  font-size: 8.5px;
 }
-.wp-cell-total {
-  min-height: 24px;
-}
+
 .wp-cell-text {
   display: block;
   white-space: pre-wrap;
   word-break: break-word;
-}
-.wp-remarks-area {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 0;
-  border: none !important;
-  font: inherit;
-  font-size: 10px;
-  resize: vertical;
-  outline: none;
-}
-
-.td-remarks-label {
-  font-weight: 700 !important;
-}
-.remarks-sub {
-  display: block;
-  font-size: 9px;
-  font-weight: 400 !important;
 }
 
 .wp-row-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 6px;
 }
+
 .wp-btn-add,
 .wp-btn-remove {
   font-family: inherit;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 5px 10px;
+  padding: 4px 9px;
   border-radius: 4px;
   cursor: pointer;
 }
+
 .wp-btn-add {
-  background: #eef2ff;
-  color: #1c2145;
-  border: 1px solid #1c2145;
+  background: #f1f0f8;
+  color: #25224f;
+  border: 1px dashed #25224f;
 }
+
 .wp-btn-remove {
   background: #fee2e2;
   color: #b91c1c;
   border: 1px solid #fca5a5;
 }
+
 .wp-btn-remove:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 .wp-hint {
-  font-size: 10px;
-  color: #64748b;
+  font-size: 8.5px;
+  color: #64647d;
 }
 
-.wp-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 24px;
-  margin-top: 12px;
+/* Remarks */
+.wp-remarks-label {
+  margin: 10px 0 4px;
 }
+
+.wp-note-area {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #202044;
+  font: inherit;
+  font-size: 9.5px;
+  line-height: 1.35;
+  resize: vertical;
+  outline: none;
+}
+
+.wp-note-text {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 9.5px;
+}
+
+/* Prepared by / Reviewed by */
+.wp-signatures {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 22px;
+}
+
 .wp-sign {
   display: flex;
   flex-direction: column;
-  width: 44%;
-  min-width: 220px;
+  width: 48%;
+  min-width: 0;
 }
-.wp-sign-label {
-  font-size: 10px;
-  color: #0f172a !important;
-}
+
 .wp-sign-name {
-  margin-top: 4px;
-  font-size: 10px;
-  font-weight: 700;
+  margin-top: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
   text-align: center;
-  color: #0f172a !important;
+  color: #202044;
   overflow-wrap: anywhere;
 }
+
 .wp-sign-line {
   height: 0;
-  margin: 4px 0 3px;
-  border-bottom: 1px solid #1c2145;
+  margin: 3px 0 3px;
+  border-bottom: 1px solid #8f8fa8;
 }
+
 .wp-sign-role {
-  font-size: 10px;
+  font-size: 8.5px;
   text-align: center;
-  color: #0f172a !important;
+  color: #64647d;
 }
 
 /* Stack the two signature areas on smaller screens so they never overlap. */
 @media (max-width: 720px) {
-  .wp-footer {
+  .wp-signatures {
     flex-direction: column;
     gap: 14px;
   }
+
   .wp-sign {
     width: 100%;
   }
 }
 </style>
-

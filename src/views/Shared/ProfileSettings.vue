@@ -51,6 +51,18 @@
         </svg>
         <span>Notifications</span>
       </button>
+
+      <button
+        class="tab-link"
+        :class="{ active: activeTab === 'signature' }"
+        @click="activeTab = 'signature'"
+      >
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 17.5c2.6 0 3.4-9.5 6-9.5s2.4 7 4.6 7 1.9-3 3.4-3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 21h16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Electronic Signature</span>
+      </button>
     </div>
 
     <!-- Active Tab Configuration Display -->
@@ -194,6 +206,11 @@
         </div>
       </div>
 
+      <!-- Tab 4: ELECTRONIC SIGNATURE -->
+      <div v-if="activeTab === 'signature'" class="form-card animate-fade">
+        <ElectronicSignaturePanel />
+      </div>
+
     </div>
 
     <ConfirmDialog
@@ -211,6 +228,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ElectronicSignaturePanel from '@/components/ElectronicSignaturePanel.vue'
 import { useDialog } from '@/composables/useDialog'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
@@ -501,6 +519,7 @@ const saveNotif = async () => {
 /* Tab Navigation items */
 .tab-navbar {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--color-border, #e2e8f0);
   gap: 8px;
 }

@@ -132,48 +132,153 @@
       <p v-if="saveError" class="state error">{{ saveError }}</p>
     </template>
 
-    <!-- Quarterly Progress Report stages (1-3): QPR form + Project Workplan. -->
+    <!-- Quarterly Progress Report stages (1-3), presented as a 3-step wizard:
+         Page 1 = Quarterly Progress Report, Page 2 = its continuation,
+         Page 3 = Project Workplan. All three pages share one form state, so
+         moving between steps never clears what was already entered. -->
     <template v-else>
-      <QuarterlyReportForm ref="qprFormRef" :report="report" :saving="saving" :lock-period="true" />
-      <div class="doc-card">
-        <h3>Project Workplan <span class="req">*</span></h3>
-        <p class="doc-desc">
-          Complete the MSUN Internally Funded Project Workplan below. It is saved and submitted together with
-          the Quarterly Progress Report using the <strong>Save Draft</strong> /
-          <strong>Submit Report</strong> buttons at the bottom of this page.
-        </p>
+      <!-- Wizard header: title of the current page, project + reporting period
+           and the step progress indicator. -->
+      <div class="wizard-card">
+        <div class="wizard-head">
+          <div class="wizard-head-text">
+            <span class="wizard-eyebrow">MSUN Internally-Funded Project</span>
+            <h2 class="wizard-title">{{ currentStepTitle }}</h2>
+            <p class="wizard-meta">
+              <span class="wizard-meta-item">{{ project?.projectTitle || '—' }}</span>
+              <span v-if="reportingPeriodLabel" class="wizard-meta-item">
+                Reporting period: {{ reportingPeriodLabel }}
+              </span>
+            </p>
+          </div>
+          <span class="wizard-page-badge">Page {{ currentStep }} of {{ TOTAL_STEPS }}</span>
+        </div>
 
-        <!-- Interactive workplan form, persisted as structured data with the report. -->
+        <ol class="wizard-progress">
+          <li
+            v-for="(step, index) in wizardSteps"
+            :key="step.key"
+            class="wizard-progress-item"
+            :class="`is-${stepStateOf(index + 1)}`"
+          >
+            <button
+              type="button"
+              class="wizard-progress-btn"
+              :aria-current="currentStep === index + 1 ? 'step' : undefined"
+              @click="goToStep(index + 1)"
+            >
+              <span class="wizard-progress-marker" aria-hidden="true">
+                <template v-if="stepStateOf(index + 1) === 'done'">✓</template>
+                <template v-else>{{ index + 1 }}</template>
+              </span>
+              <span class="wizard-progress-label">{{ step.label }}</span>
+            </button>
+          </li>
+        </ol>
+      </div>
+
+      <p v-if="stepError" class="wizard-field-error">{{ stepError }}</p>
+
+      <!-- PAGE 1 and PAGE 2: one Quarterly Progress Report form instance. The
+           `page` prop renders only the sections of the active step, so the
+           single shared form state is preserved on every navigation. -->
+      <div v-show="currentStep < TOTAL_STEPS" class="wizard-panel">
+        <QuarterlyReportForm
+          ref="qprFormRef"
+          :report="report"
+          :saving="saving"
+          :lock-period="true"
+          :page="currentStep"
+          :errors="stepErrors"
+        />
+      </div>
+
+      <!-- PAGE 3: Project Workplan. It is completed here and is saved and
+           submitted together with the Quarterly Progress Report through the
+           existing Save Draft / Submit Report workflow. -->
+      <div v-show="currentStep === TOTAL_STEPS" class="wizard-panel">
         <ProjectWorkplanForm v-model="workplan" />
 
         <p v-if="existingWorkplanName" class="existing-file">
           A workplan file previously uploaded for this report is preserved: {{ existingWorkplanName }}
         </p>
+
+        <p v-if="stepErrors.workplan" class="wizard-field-error">{{ stepErrors.workplan }}</p>
       </div>
 
-      <!-- Stage actions, below the entire Project Workplan form. -->
-      <div class="workplan-actions">
-        <button class="btn-secondary" @click="$router.back()">Cancel</button>
-        <div class="workplan-actions-right">
-          <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
-            Save Draft
+      <!-- Bottom navigation: Previous Page on the left (pages 2-3 only), the
+           forward / final action on the right. -->
+      <div class="wizard-actions">
+        <div class="wizard-actions-left">
+          <button v-if="currentStep > 1" class="btn-secondary" @click="goToStep(currentStep - 1)">
+            Previous Page
           </button>
-          <button class="btn-submit" :disabled="saving" @click="saveQuarterly('SUBMITTED', qprPayload())">
-            {{ saving ? 'Saving...' : 'Submit Report' }}
-          </button>
+        </div>
+        <div class="wizard-actions-right">
+          <button v-if="currentStep < TOTAL_STEPS" class="btn-submit" @click="nextPage">Next Page</button>
+          <template v-else>
+            <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
+              Save Draft
+            </button>
+            <button class="btn-submit" :disabled="saving" @click="openReview">Review Report</button>
+          </template>
         </div>
       </div>
       <p v-if="saveError" class="state error">{{ saveError }}</p>
     </template>
+
+    <!-- Review Report: read-only view of all three pages. Reaching this point
+         never submits anything - the proponent still completes the existing
+         Save Draft / Submit Report actions from here. -->
+    <div v-if="reviewing" class="review-overlay" @click.self="reviewing = false">
+      <div class="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-report-title">
+        <div class="review-header">
+          <div>
+            <h2 id="review-report-title" class="review-title">Review Report</h2>
+            <p class="review-sub">
+              Check all three pages below. Nothing is submitted until you choose Submit Report.
+            </p>
+          </div>
+          <button class="close-btn" aria-label="Close review" @click="reviewing = false">✕</button>
+        </div>
+
+        <div class="review-body">
+          <QuarterlyReportForm :report="reviewReport" readonly />
+          <ProjectWorkplanForm :model-value="reviewWorkplan" readonly />
+        </div>
+
+        <div class="review-footer">
+          <button class="btn-secondary" @click="reviewing = false">Back to Editing</button>
+          <div class="review-footer-right">
+            <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
+              Save Draft
+            </button>
+            <button class="btn-submit" :disabled="saving" @click="saveQuarterly('SUBMITTED', qprPayload())">
+              {{ saving ? 'Saving...' : 'Submit Report' }}
+            </button>
+          </div>
+        </div>
+        <p v-if="saveError" class="state error">{{ saveError }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
 import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
+import {
+  REPORT_WIZARD_PAGES,
+  REPORT_WIZARD_STEPS,
+  clampStep,
+  resolveReportStep,
+  stepState,
+  validateReportStep,
+} from '@/utils/reportWizard'
 
 // Official ORPS Terminal Report format shipped with the app (public/templates).
 const TERMINAL_FORMAT_URL = '/templates/ORPS-Inhouse-Terminal-Report-Format-2026-Rev01.pdf'
@@ -296,6 +401,139 @@ const terminalFormatName = 'ORPS-Inhouse-Terminal-Report-Format-2026-Rev01.pdf'
 
 const existingWorkplanName = computed(() => report.value?.workplanFileName || '')
 const existingTerminalName = computed(() => report.value?.terminalReportFileName || '')
+
+/* ==========================================================================
+   3-step Quarterly Progress Report wizard (proponent side)
+   --------------------------------------------------------------------------
+   Page 1  Quarterly Progress Report
+   Page 2  Continuation of the Quarterly Progress Report
+   Page 3  Project Workplan
+   The wizard only decides which page is visible: the report data stays in the
+   existing form state (QuarterlyReportForm's own form for pages 1-2, and the
+   `workplan` model for page 3), so navigating between pages never clears
+   entered values and the final payload keeps using the existing endpoints.
+   ========================================================================== */
+const TOTAL_STEPS = REPORT_WIZARD_STEPS
+const wizardSteps = REPORT_WIZARD_PAGES
+
+const currentStep = ref(1)
+// Field messages of the page currently shown, plus its page-level message.
+const stepErrors = ref({})
+const stepError = ref('')
+const reviewing = ref(false)
+
+const currentStepTitle = computed(() => wizardSteps[currentStep.value - 1].title)
+
+// Reporting quarter the proponent is reporting on, read from the report form so
+// it is never hardcoded. The stage period is used while the form is loading.
+const reportingPeriodLabel = computed(() => qprFormRef.value?.periodLabel || stagePeriod.value || '')
+
+// 'done' (an earlier page) / 'current' / 'upcoming' - drives the progress
+// indicator and its completed checkmarks.
+const stepStateOf = (step) => stepState(step, currentStep.value)
+
+// A validation message disappears as soon as the proponent starts correcting
+// the value it refers to.
+function clearStepErrors() {
+  if (stepError.value || Object.keys(stepErrors.value).length) {
+    stepErrors.value = {}
+    stepError.value = ''
+  }
+}
+
+// Current form state the wizard rules are checked against: the quarterly
+// progress report payload (pages 1-2) and whether the Project Workplan has at
+// least one described objective (page 3).
+function reportContext() {
+  return { payload: qprPayload(), hasWorkplan: hasWorkplanContent() }
+}
+
+/** Validates a page (rules in src/utils/reportWizard.js) and shows its messages. */
+function checkStep(step) {
+  const result = validateReportStep(step, reportContext())
+  stepErrors.value = result.errors
+  stepError.value = result.summary
+  return Object.keys(result.errors).length === 0
+}
+
+// Navigation is clamped to pages 1-3 and every forward move validates the pages
+// it passes through; a blocked move lands on the page that needs attention.
+function goToStep(target) {
+  const wanted = clampStep(target)
+  if (wanted === currentStep.value) return
+
+  const next = resolveReportStep(wanted, currentStep.value, reportContext)
+  if (next !== wanted) {
+    currentStep.value = next
+    checkStep(next)
+    return
+  }
+
+  currentStep.value = next
+  stepErrors.value = {}
+  stepError.value = ''
+}
+
+function nextPage() {
+  goToStep(currentStep.value + 1)
+}
+
+// ---------------------------------------------------------------------------
+// Scroll behaviour
+// The app shell scrolls its <main class="content"> region (not the window) and
+// that region keeps the scroll position of the previous page. Opening the report
+// right after scrolling down Proposal Monitoring - or moving between Page 1, 2
+// and 3 - used to land half-way down the report, hiding its title, progress
+// indicator and first section. Resetting the real scroll container after the DOM
+// has updated puts the top of the report back in view. Only the scroll position
+// changes: the shared form state, validation and Previous/Next Page behaviour
+// are untouched, and normal downward scrolling still works when a page is taller
+// than the screen.
+// ---------------------------------------------------------------------------
+async function scrollReportToTop() {
+  await nextTick()
+  resetScrollPosition()
+}
+
+// Each wizard page starts at the top of the report content area.
+watch(currentStep, scrollReportToTop)
+
+// The review dialog shows all three pages, so every page is validated before it
+// opens. Nothing is submitted here - the proponent still completes the existing
+// Save Draft / Submit Report actions.
+function openReview() {
+  saveError.value = ''
+  for (let step = 1; step <= TOTAL_STEPS; step += 1) {
+    if (!checkStep(step)) {
+      currentStep.value = step
+      return
+    }
+  }
+  stepErrors.value = {}
+  stepError.value = ''
+  reviewing.value = true
+}
+
+// Read-only snapshots for the review dialog. The workplan is deep-copied so the
+// read-only component can normalise its display without touching the live model.
+const reviewReport = computed(() => ({ ...qprPayload() }))
+const reviewWorkplan = computed(() => JSON.parse(JSON.stringify(serializeWorkplan())))
+
+watch(() => qprFormRef.value?.buildPayload?.(), clearStepErrors, { deep: true })
+watch(workplan, clearStepErrors, { deep: true })
+
+// The "new" and "edit" routes share this component, so navigating between them
+// reuses the instance instead of re-mounting it. Reset only when the route just
+// opened is still a report form route, so leaving the report never disturbs the
+// scroll position of the page that is opening next.
+watch(
+  () => route.name,
+  (name) => {
+    if (name === 'ProponentQuarterlyReportNew' || name === 'ProponentQuarterlyReportEdit') {
+      scrollReportToTop()
+    }
+  },
+)
 
 async function fetchData() {
   loading.value = true
@@ -519,7 +757,17 @@ async function submitTerminal() {
   await submitStage({}, 'TERMINAL_REPORT', 'TERMINAL')
 }
 
-onMounted(fetchData)
+// Opening the report (new, resumed draft or edit) always starts at the very top
+// of the content area - even when the proponent had scrolled down Proposal
+// Monitoring first. Reset once immediately (so the loading state is at the top
+// too) and again after the report has rendered, because the loaded report is
+// taller than the loading state.
+onMounted(async () => {
+  await scrollReportToTop()
+  await fetchData()
+  await scrollReportToTop()
+})
+
 </script>
 
 <style scoped>
@@ -527,7 +775,11 @@ onMounted(fetchData)
   padding: 24px;
   background: #f8fafc;
   min-height: 100vh;
-  max-width: 1100px;
+  /* Fills the Proponent content area (viewport - 246px sidebar - the layout's
+     32px padding) so the report card uses nearly the whole width, with a single
+     cap for very large monitors. The Submit Terminal Report screen keeps its own
+     narrower width through .qpr-form-page--terminal below. */
+  max-width: 1680px;
   margin: 0 auto;
 }
 .page-header {
@@ -538,14 +790,14 @@ onMounted(fetchData)
 }
 .page-header h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #0f172a;
 }
 .subtitle {
   margin: 4px 0 0;
   color: #64748b;
-  font-size: 14px;
+  font-size: 15.5px;
 }
 .page-header-text {
   min-width: 0;
@@ -568,9 +820,10 @@ onMounted(fetchData)
   background: #fff;
   color: #0f172a;
   border: 1px solid #cbd5e1;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 15px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -581,9 +834,13 @@ onMounted(fetchData)
   border-radius: 8px;
   text-align: center;
   color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
 }
 .state.error {
   color: #dc2626;
+  font-size: 15px;
+  font-weight: 600;
 }
 .state.notice {
   color: #92400e;
@@ -886,8 +1143,8 @@ onMounted(fetchData)
   cursor: not-allowed;
 }
 .existing-file {
-  margin: 8px 0 0;
-  font-size: 13px;
+  margin: 10px 0 0;
+  font-size: 15px;
   color: #166534;
 }
 .btn-secondary {
@@ -912,19 +1169,434 @@ onMounted(fetchData)
   opacity: 0.6;
   cursor: not-allowed;
 }
-/* Stage action row, placed below the entire Project Workplan form. */
-.workplan-actions {
+/* ============================================================
+   3-step report wizard (proponent side)
+   ============================================================ */
+.wizard-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.wizard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wizard-head-text {
+  min-width: 0;
+}
+.wizard-eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.wizard-title {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1c2145;
+}
+.wizard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #475569;
+}
+.wizard-page-badge {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #ffd400;
+  color: #1c2145;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* Progress indicator: descriptive labels, the current page highlighted and
+   completed pages ticked. */
+.wizard-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.wizard-progress-item {
+  flex: 1 1 210px;
+  min-width: 0;
+}
+.wizard-progress-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.wizard-progress-marker {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+.wizard-progress-item.is-current .wizard-progress-btn {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #1c2145;
+}
+.wizard-progress-item.is-current .wizard-progress-marker {
+  background: #1c2145;
+  color: #fff;
+}
+.wizard-progress-item.is-done .wizard-progress-btn {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+.wizard-progress-item.is-done .wizard-progress-marker {
+  background: #16834b;
+  color: #fff;
+}
+.wizard-panel {
+  margin-bottom: 4px;
+}
+/* ---------- On-screen reading scale for the report document ----------
+   The report sheets are authored for a printed A4 page (reportDocument.css sets
+   .doc-sheet { width: 210mm; font-size: 10px } and the components use 7-10px
+   text), which is far too small and narrow on a screen. Inside the wizard the
+   same components are presented at a comfortable reading size: the sheet fills
+   the available content width, the typography grows to 13-28px and the fields
+   get room to breathe. Every rule below is scoped to @media screen and to
+   .qpr-form-page, so the printed A4 form and the read-only report viewers keep
+   their existing document styling. */
+@media screen {
+  .qpr-form-page :deep(.doc-sheet) {
+    /* width: 100% fills the card (the page container sets the maximum width);
+       min-width keeps the wide report tables usable on small screens, where
+       .doc-scroll scrolls them horizontally as it already did. */
+    width: 100%;
+    min-width: 760px;
+    min-height: 0; /* content-driven height: no empty A4 sheet */
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  /* Base size for every report field; the more specific rules below refine it.
+     border-box keeps the 42px minimum an outer height (the printed document is
+     authored without box-sizing on its inline fields). */
+  .qpr-form-page :deep(.doc-sheet input),
+  .qpr-form-page :deep(.doc-sheet select),
+  .qpr-form-page :deep(.doc-sheet textarea) {
+    box-sizing: border-box;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .qpr-form-page :deep(.doc-body) {
+    padding: 16px 20px 20px;
+  }
+  /* Document header */
+  .qpr-form-page :deep(.doc-header) {
+    min-height: 88px;
+    padding: 14px 20px;
+  }
+  .qpr-form-page :deep(.doc-emblem) {
+    width: 40px;
+    height: 40px;
+  }
+  .qpr-form-page :deep(.doc-eyebrow) {
+    font-size: 12px;
+  }
+  .qpr-form-page :deep(.doc-title) {
+    font-size: 28px;
+  }
+  .qpr-form-page :deep(.doc-badge) {
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+  .qpr-form-page :deep(.doc-badge-sub) {
+    font-size: 13px;
+  }
+  .qpr-form-page :deep(.doc-badge-input) {
+    width: 170px;
+    padding: 4px 8px;
+    font-size: 13.5px;
+  }
+  /* Section headings */
+  .qpr-form-page :deep(.doc-section) {
+    gap: 10px;
+    margin: 24px 0 12px;
+    font-size: 21px;
+  }
+  .qpr-form-page :deep(.doc-section-accent) {
+    width: 4px;
+    height: 24px;
+  }
+  .qpr-form-page :deep(.doc-subsection) {
+    margin: 16px 0 8px;
+    font-size: 17px;
+  }
+  .qpr-form-page :deep(.doc-hint) {
+    margin: 0 0 10px;
+    font-size: 14.5px;
+  }
+  /* Labels, values and narrative notes */
+  .qpr-form-page :deep(.doc-label) {
+    font-size: 15px;
+    letter-spacing: 0.2px;
+  }
+  .qpr-form-page :deep(.doc-value) {
+    margin-top: 4px;
+    font-size: 16px;
+  }
+  .qpr-form-page :deep(.doc-note) {
+    padding: 12px 14px 12px 20px;
+    font-size: 16px;
+  }
+  /* Document tables */
+  .qpr-form-page :deep(.doc-info-table td) {
+    padding: 10px 12px;
+  }
+  .qpr-form-page :deep(.doc-table th) {
+    padding: 9px 8px;
+    font-size: 13.5px;
+  }
+  .qpr-form-page :deep(.doc-table td) {
+    padding: 8px 8px;
+    font-size: 15px;
+  }
+  /* Report fields. These selectors include .doc-sheet so they outrank the base
+     field rule above (an element-qualified selector wins on specificity). */
+  .qpr-form-page :deep(.doc-sheet .doc-cell-input) {
+    min-height: 42px;
+    padding: 8px 0;
+  }
+  .qpr-form-page :deep(.doc-sheet .doc-badge-input) {
+    width: 170px;
+    padding: 4px 8px;
+    font-size: 13.5px;
+  }
+  .qpr-form-page :deep(.doc-sheet .qr-period-input) {
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 15px;
+    border-radius: 6px;
+  }
+  .qpr-form-page :deep(.doc-sheet .qr-cell-area) {
+    min-height: 60px;
+    font-size: 15px;
+  }
+  /* The workplan grid carries 12 month columns beside the objectives column, so
+     its cells use slightly smaller text and tighter padding to stay readable
+     instead of wrapping every word. */
+  .qpr-form-page :deep(.doc-sheet .wp-cell-area) {
+    min-height: 60px;
+    font-size: 14px;
+  }
+  .qpr-form-page :deep(.doc-sheet .wp-table th),
+  .qpr-form-page :deep(.doc-sheet .wp-table td) {
+    padding: 6px 5px;
+  }
+  .qpr-form-page :deep(.doc-sheet .qr-cell-input),
+  .qpr-form-page :deep(.doc-sheet .wp-cell-month),
+  .qpr-form-page :deep(.doc-sheet .wp-cell-total) {
+    min-height: 34px;
+    font-size: 15px;
+  }
+  .qpr-form-page :deep(.doc-sheet .qr-note-area),
+  .qpr-form-page :deep(.doc-sheet .wp-note-area) {
+    min-height: 110px;
+    font-size: 16px;
+  }
+  .qpr-form-page :deep(.wp-cell-text),
+  .qpr-form-page :deep(.wp-note-text) {
+    font-size: 15px;
+  }
+  /* Read-only display values (the review dialog renders the report without
+     editable controls) carry no minimum height, so only their typography is
+     scaled: no empty space is introduced. */
+  .qpr-form-page :deep(.doc-sheet .qr-cell-text),
+  .qpr-form-page :deep(.doc-sheet .qr-cell-value) {
+    font-size: 15px;
+  }
+  .qpr-form-page :deep(.doc-sheet .qr-note-text) {
+    font-size: 16px;
+  }
+  /* Row controls and hints */
+  .qpr-form-page :deep(.row-remove) {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+  .qpr-form-page :deep(.qr-add-btn),
+  .qpr-form-page :deep(.wp-btn-add),
+  .qpr-form-page :deep(.wp-btn-remove) {
+    padding: 8px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+  .qpr-form-page :deep(.wp-hint) {
+    font-size: 13.5px;
+  }
+  /* Workplan rows grow with the larger text so nothing is cramped */
+  .qpr-form-page :deep(.wp-table .row-first td) {
+    height: 150px;
+  }
+  .qpr-form-page :deep(.wp-table .row-objective td) {
+    height: 90px;
+  }
+  /* Signatures */
+  .qpr-form-page :deep(.wp-sign-name) {
+    font-size: 16px;
+  }
+  .qpr-form-page :deep(.wp-sign-role) {
+    font-size: 13.5px;
+  }
+  /* Document footer */
+  .qpr-form-page :deep(.doc-footer) {
+    padding: 10px 20px;
+    font-size: 12.5px;
+  }
+  .qpr-form-page :deep(.doc-page-badge) {
+    padding: 4px 12px;
+    font-size: 12.5px;
+  }
+  /* Field-level validation message */
+  .qpr-form-page :deep(.field-error) {
+    margin-top: 4px;
+    font-size: 13.5px;
+  }
+}
+.wizard-field-error {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+/* Bottom navigation, placed below the page content: Previous Page on the left,
+   the forward / final action on the right. */
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+}
+/* Comfortable, consistent button size for the wizard navigation and the review
+   dialog (the Terminal Report screen keeps its own button sizing). */
+.wizard-actions .btn-submit,
+.wizard-actions .btn-draft,
+.wizard-actions .btn-secondary,
+.review-footer .btn-submit,
+.review-footer .btn-draft,
+.review-footer .btn-secondary {
+  min-height: 46px;
+  padding: 12px 26px;
+  font-size: 15.5px;
+}
+.wizard-actions-right,
+.review-footer-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+/* Review Report dialog: read-only view of all three pages. */
+.review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+}
+.review-modal {
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+}
+.review-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+.review-title {
+  margin: 0;
+  font-size: 22px;
+  color: #1c2145;
+}
+.review-sub {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #64748b;
+}
+.review-body {
+  padding: 18px 20px 8px;
+}
+.review-footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #e2e8f0;
 }
-.workplan-actions-right {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.review-modal .state.error {
+  margin: 0 20px 16px;
+}
+.close-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  cursor: pointer;
 }
 .btn-draft {
   background: #fff;
@@ -940,12 +1612,47 @@ onMounted(fetchData)
   cursor: not-allowed;
 }
 
-/* Keep the action buttons visible and usable on smaller screens. */
+/* On smaller screens the page padding shrinks so the report keeps as much
+   content width as possible without overflowing the viewport. */
+@media (max-width: 1024px) {
+  .qpr-form-page {
+    padding: 16px;
+  }
+}
+/* Keep the navigation and action buttons usable on smaller screens. */
 @media (max-width: 640px) {
-  .workplan-actions,
-  .workplan-actions-right {
+  .qpr-form-page {
+    padding: 12px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+  }
+  .wizard-card {
+    padding: 16px;
+  }
+  .wizard-title {
+    font-size: 19px;
+  }
+  .wizard-head {
+    flex-direction: column;
+  }
+  .wizard-progress-item {
+    flex: 1 1 100%;
+  }
+  .wizard-actions,
+  .wizard-actions-right,
+  .review-footer,
+  .review-footer-right {
     flex-direction: column;
     align-items: stretch;
+  }
+  .wizard-actions .btn-submit,
+  .wizard-actions .btn-draft,
+  .wizard-actions .btn-secondary,
+  .review-footer .btn-submit,
+  .review-footer .btn-draft,
+  .review-footer .btn-secondary {
+    width: 100%;
   }
   /* Submit Terminal Report page */
   .qpr-form-page--terminal {

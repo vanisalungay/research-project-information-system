@@ -48,4 +48,15 @@ public class User {
 
     private String contactNumber;
     private String specialization;
+
+    /**
+     * Electronic signature of the account (Manage Profile -> Electronic
+     * Signature). The image is stored as a file under uploads/signatures/ - the
+     * existing upload convention - so only its original file name and stored path
+     * live on the account. The path is never serialized back to the client.
+     */
+    private String signatureFileName;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String signatureFilePath;
 }

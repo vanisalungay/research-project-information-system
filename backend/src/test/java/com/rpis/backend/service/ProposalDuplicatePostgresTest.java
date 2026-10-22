@@ -1,11 +1,7 @@
 package com.rpis.backend.service;
 
-import com.rpis.backend.dto.ProposalRequest;
-import com.rpis.backend.dto.ProposalSectionRemarksResponse;
-import com.rpis.backend.dto.SectionRemarkDTO;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalBudget;
-import com.rpis.backend.model.ProposalSectionRemark;
 import com.rpis.backend.model.ProposalSite;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
@@ -29,12 +25,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * PostgreSQL-backed tests for the two new features, exercising real persistence:
- * duplicating a completed proposal must produce a fully independent draft, and
- * section-specific revision remarks must survive editing/resubmission while each
+ * PostgreSQL-backed tests for the two new features, exercising real
+ * persistence:
+ * duplicating a rejected proposal must produce a fully independent draft, and
+ * section-specific revision remarks must survive editing/resubmission while
+ * each
  * revision round keeps its own history.
  * <p>
  * Runs against the isolated {@code rpis_test} database only.
@@ -46,8 +45,6 @@ class ProposalDuplicatePostgresTest {
 
     @Autowired
     private ProposalService proposalService;
-    @Autowired
-    private ProposalSectionRemarkService sectionRemarkService;
     @Autowired
     private ProposalRepository proposalRepository;
     @Autowired
@@ -83,14 +80,14 @@ class ProposalDuplicatePostgresTest {
         SecurityContextHolder.clearContext();
     }
 
-    private Proposal completedProposal() {
+    private Proposal rejectedProposal() {
         Proposal p = new Proposal();
         p.setProponent(proponent);
         p.setProposalCode("500");
         p.setDocumentId("MSUN-ORPS-DA-500-2026-REV00");
         p.setRevisionNumber(0);
-        p.setStatus("COMPLETED");
-        p.setProjectTitle("Original Completed Project");
+        p.setStatus("REJECTED");
+        p.setProjectTitle("Original Rejected Project");
         p.setProgramTitle("Kalikasan Program");
         p.setDuration("12");
         p.setMethodology("Original methodology");
@@ -98,22 +95,18 @@ class ProposalDuplicatePostgresTest {
         p.setReturnedByOffice("REC");
         p.setSoNumber("SO-2026-500");
         p.setNeedsBudget(true);
+        // Uploaded attachments belong to the original and must not be carried over.
+        p.setRoadmapFileName("original-roadmap.pdf");
+        p.setGadFileName("original-gad.pdf");
         p.getSites().add(new ProposalSite(null, p, "Philippines", "X", "Misamis Oriental",
                 "District", "Naawan", "Barangay 1"));
         p.getBudget().add(new ProposalBudget(null, p, "MSU", "1000", "2000", "3000", "6000"));
         return proposalRepository.saveAndFlush(p);
     }
 
-    private SectionRemarkDTO remark(String sectionKey, String text) {
-        SectionRemarkDTO dto = new SectionRemarkDTO();
-        dto.setSectionKey(sectionKey);
-        dto.setRemark(text);
-        return dto;
-    }
-
     @Test
     void duplicateIsAnIndependentDraftAndTheOriginalIsUntouched() {
-        Proposal source = completedProposal();
+        Proposal source = rejectedProposal();
         long versionsBefore = proposalVersionRepository.count();
 
         Proposal copy = proposalService.duplicateProposal(source.getId());
@@ -123,12 +116,15 @@ class ProposalDuplicatePostgresTest {
         assertEquals("DRAFT", copy.getStatus());
         assertEquals(0, copy.getRevisionNumber());
         assertTrue(copy.getDocumentId().endsWith("-REV00"));
-        assertEquals("Original Completed Project", copy.getProjectTitle());
+        assertEquals("Original Rejected Project", copy.getProjectTitle());
         assertEquals("Original methodology", copy.getMethodology());
         assertNull(copy.getSoNumber());
         assertNull(copy.getRemarks());
         assertNull(copy.getReturnedByOffice());
         assertNull(copy.getNeedsBudget());
+        // Uploaded attachments are not carried over: the proponent re-uploads them.
+        assertNull(copy.getRoadmapFileName());
+        assertNull(copy.getGadFileName());
 
         // Child rows are real, separate rows bound to the duplicate.
         assertEquals(1, copy.getSites().size());
@@ -143,17 +139,29 @@ class ProposalDuplicatePostgresTest {
 
         // The original proposal is unchanged, including its children and status.
         Proposal reloaded = proposalRepository.findById(source.getId()).orElseThrow();
-        assertEquals("COMPLETED", reloaded.getStatus());
-        assertEquals("Original Completed Project", reloaded.getProjectTitle());
+        assertEquals("REJECTED", reloaded.getStatus());
+        assertEquals("Original Rejected Project", reloaded.getProjectTitle());
         assertEquals("SO-2026-500", reloaded.getSoNumber());
+        assertEquals("original-roadmap.pdf", reloaded.getRoadmapFileName());
+        assertEquals("original-gad.pdf", reloaded.getGadFileName());
         assertEquals(1, reloaded.getSites().size());
         assertEquals(1, reloaded.getBudget().size());
         assertEquals("Naawan", reloaded.getSites().get(0).getMunicipality());
     }
 
     @Test
+    void approvedProposalCannotBeCopied() {
+        Proposal source = rejectedProposal();
+        source.setStatus("APPROVED");
+        proposalRepository.saveAndFlush(source);
+
+        assertThrows(IllegalStateException.class,
+                () -> proposalService.duplicateProposal(source.getId()));
+    }
+
+    @Test
     void editingTheDuplicateDoesNotChangeTheOriginal() {
-        Proposal source = completedProposal();
+        Proposal source = rejectedProposal();
         Proposal copy = proposalService.duplicateProposal(source.getId());
 
         copy.setProjectTitle("Edited Duplicate");
@@ -164,7 +172,7 @@ class ProposalDuplicatePostgresTest {
         Proposal original = proposalRepository.findById(source.getId()).orElseThrow();
         Proposal reloadedCopy = proposalRepository.findById(copy.getId()).orElseThrow();
         assertEquals("Edited Duplicate", reloadedCopy.getProjectTitle());
-        assertEquals("Original Completed Project", original.getProjectTitle());
+        assertEquals("Original Rejected Project", original.getProjectTitle());
         assertEquals(1, original.getSites().size());
         assertEquals("Naawan", original.getSites().get(0).getMunicipality());
     }

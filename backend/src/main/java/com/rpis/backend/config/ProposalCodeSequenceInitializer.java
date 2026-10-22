@@ -1,6 +1,5 @@
 package com.rpis.backend.config;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -19,12 +18,23 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ProposalCodeSequenceInitializer {
 
     private static final String SEQUENCE = "proposal_code_seq";
 
     private final JdbcTemplate jdbcTemplate;
+
+    /**
+     * The constructor is written out explicitly instead of relying on
+     * {@code @RequiredArgsConstructor}. Lombok-injected constructors are
+     * currently misreported by the Eclipse/JDT based Java language server as
+     * "The Java feature 'Flexible Constructor Bodies' is only available with
+     * source level 25 and above" (false positive, see vscode-java#4521), so an
+     * explicit constructor keeps this class free of that diagnostic.
+     */
+    public ProposalCodeSequenceInitializer(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeSequence() {

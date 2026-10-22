@@ -40,10 +40,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the "Duplicate Proposal" feature: a completed/approved proposal can be
- * reused as the starting point for a brand-new draft that gets its own identifiers,
- * copies only reusable content, and never modifies or inherits the original
- * proposal's workflow state.
+ * Verifies the "Make a Copy" feature: a REJECTED proposal can be reused as the
+ * starting point for a brand-new draft that gets its own identifiers, copies only
+ * reusable content, and never modifies or inherits the original proposal's workflow
+ * state. Approval and returned-for-revision statuses are deliberately not copyable.
  */
 class ProposalServiceDuplicateTest {
 
@@ -61,7 +61,7 @@ class ProposalServiceDuplicateTest {
         versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser());
+                new CurrentUser(), mock(CooperatingAgencyService.class));
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(100L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -86,15 +86,15 @@ class ProposalServiceDuplicateTest {
         return user;
     }
 
-    /** A completed proposal carrying reusable content plus workflow state. */
-    private Proposal completedProposal(Long id, Long ownerId) {
+    /** A rejected proposal carrying reusable content plus workflow state. */
+    private Proposal rejectedProposal(Long id, Long ownerId) {
         Proposal p = new Proposal();
         p.setId(id);
         p.setProponent(proponent(ownerId));
         p.setProposalCode("041");
         p.setDocumentId("MSUN-ORPS-DA-041-2026-REV00");
         p.setRevisionNumber(0);
-        p.setStatus("COMPLETED");
+        p.setStatus("REJECTED");
         p.setProposalAnnouncementId(3L);
 
         p.setProgramTitle("Kalikasan Program");
@@ -158,7 +158,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void duplicateReceivesNewIdentifiersAndDraftWorkflowDefaults() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         Proposal copy = service.duplicateProposal(1L);
@@ -174,7 +174,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void duplicateCopiesReusableContentAndChildCollectionsAsIndependentRows() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         Proposal copy = service.duplicateProposal(1L);
@@ -207,7 +207,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void editingTheDuplicateNeverModifiesTheOriginalProposal() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         Proposal copy = service.duplicateProposal(1L);
@@ -225,7 +225,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void workflowStateOfTheOriginalIsNotCopied() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         Proposal copy = service.duplicateProposal(1L);
@@ -251,7 +251,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void duplicateDoesNotRecordHistoryOrNotifyAnyone() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         service.duplicateProposal(1L);
@@ -264,7 +264,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void proponentCannotDuplicateAnotherUsersProposal() {
         authenticate(7L, "PROPONENT");
-        when(proposalRepository.findById(1L)).thenReturn(Optional.of(completedProposal(1L, 8L)));
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(rejectedProposal(1L, 8L)));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> service.duplicateProposal(1L));
@@ -273,19 +273,71 @@ class ProposalServiceDuplicateTest {
     }
 
     @Test
-    void onlyCompletedOrApprovedProposalsCanBeDuplicated() {
+    void rejectedProposalsCanBeCopied() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
-        source.setStatus("SUBMITTED");
+        Proposal source = rejectedProposal(1L, 7L);
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
+
+        Proposal copy = service.duplicateProposal(1L);
+
+        assertEquals("DRAFT", copy.getStatus());
+        assertSame(source.getProponent(), copy.getProponent());
+    }
+
+    @Test
+    void approvedProposalsCannotBeCopied() {
+        authenticate(7L, "PROPONENT");
+        Proposal source = rejectedProposal(1L, 7L);
+        source.setStatus("APPROVED");
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
         assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L));
     }
 
     @Test
+    void returnedForRevisionProposalsCannotBeCopied() {
+        authenticate(7L, "PROPONENT");
+        Proposal source = rejectedProposal(1L, 7L);
+        source.setStatus("RPS_RETURNED");
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
+
+        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L));
+    }
+
+    @Test
+    void onlyRejectedProposalsCanBeCopied() {
+        authenticate(7L, "PROPONENT");
+        for (String status : List.of("SUBMITTED", "APPROVED", "IMPLEMENTATION", "RELEASED",
+                "COMPLETED", "DRAFT", "RPS_RETURNED", "REVISION", "REC_REVISION", "RETURNED_TO_RPS")) {
+            Proposal source = rejectedProposal(1L, 7L);
+            source.setStatus(status);
+            when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
+
+            assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L),
+                    status + " must not be copyable");
+        }
+    }
+
+    @Test
+    void uploadedAttachmentsAreNotCarriedOver() {
+        authenticate(7L, "PROPONENT");
+        Proposal source = rejectedProposal(1L, 7L);
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
+
+        Proposal copy = service.duplicateProposal(1L);
+
+        // The uploaded files belong to the original proposal, so the copy must not
+        // point at them; the proponent re-uploads them before submitting.
+        assertNull(copy.getReviewFileName());
+        assertNull(copy.getRoadmapFileName());
+        assertNull(copy.getBeneficiariesFileName());
+        assertNull(copy.getGadFileName());
+    }
+
+    @Test
     void proposalWithoutAProponentCannotBeDuplicated() {
         authenticate(2L, "RPS_STAFF");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         source.setProponent(null);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
@@ -295,7 +347,7 @@ class ProposalServiceDuplicateTest {
     @Test
     void aFailedSavePropagatesSoNoPartialDuplicateIsLeftBehind() {
         authenticate(7L, "PROPONENT");
-        Proposal source = completedProposal(1L, 7L);
+        Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
         when(proposalRepository.save(any(Proposal.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate key"));

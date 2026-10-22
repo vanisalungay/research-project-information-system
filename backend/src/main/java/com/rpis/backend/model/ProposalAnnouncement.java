@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Proposal Announcement: defines the date window (start date to end date) during
@@ -40,6 +42,32 @@ public class ProposalAnnouncement {
 
     @Column(nullable = false)
     private String status = STATUS_DRAFT;
+
+    /**
+     * Stable MSUN RIIDE 2025–2028 priority-agenda program keys selected for this
+     * call (for example {@code dagat} or {@code punla}), stored as a JSON array in
+     * a TEXT column. An announcement may carry no selected agenda.
+     */
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "priority_agendas", columnDefinition = "TEXT")
+    private List<String> priorityAgendas = new ArrayList<>();
+
+    /**
+     * Stable ids of the standard announcement reminders selected for this call,
+     * stored as a JSON array in a TEXT column. A newly created announcement
+     * defaults to every standard reminder; the saved selection is always restored
+     * when the announcement is edited.
+     */
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "reminder_ids", columnDefinition = "TEXT")
+    private List<String> reminderIds = new ArrayList<>();
+
+    /**
+     * Optional free-text announcement body (plain text, line breaks preserved).
+     * Rendered as text by the UI, never as HTML.
+     */
+    @Column(name = "additional_announcement", columnDefinition = "TEXT")
+    private String additionalAnnouncement;
 
     /**
      * Computed (not persisted) flag set when loading the announcement list:

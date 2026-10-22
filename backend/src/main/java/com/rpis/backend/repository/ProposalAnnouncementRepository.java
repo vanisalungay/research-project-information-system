@@ -25,6 +25,25 @@ public interface ProposalAnnouncementRepository extends JpaRepository<ProposalAn
             String status, LocalDate endDate, LocalDate startDate);
 
     /**
+     * Every Call for Proposal currently accepting submissions - the same rule as the
+     * single active announcement, but the whole set, because several submission
+     * windows may overlap. Newest window first, then the most recently created one,
+     * so the proponent's list is stable and predictable.
+     */
+    List<ProposalAnnouncement> findByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateDescIdDesc(
+            String status, LocalDate endDate, LocalDate startDate);
+
+    /**
+     * The published calls that have not passed their deadline yet: open for
+     * submissions today or opening later (scheduled). Calls whose deadline is before
+     * {@code today} are never returned, so an expired call can neither be offered as
+     * open nor as upcoming. The order here is only a stable base - the service puts
+     * the open calls first and the upcoming ones by opening date.
+     */
+    List<ProposalAnnouncement> findByStatusAndEndDateGreaterThanEqualOrderByStartDateAscIdAsc(
+            String status, LocalDate today);
+
+    /**
      * Full announcement list for the ORPS Proposal Announcements page, newest first:
      * by Start Date descending, then by creation order (most recently created first)
      * so that announcements sharing the same Start Date keep a stable, predictable

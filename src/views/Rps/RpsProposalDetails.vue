@@ -86,7 +86,8 @@
                     <h4>Technology Roadmap</h4>
                     <p>{{ proposal.roadmapFileName }}</p>
                   </div>
-                  <button class="btn-download" @click="downloadFile(proposal.roadmapFileName)">Download</button>
+                  <button class="btn-download"
+                    @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">Download</button>
                 </div>
                 <div v-if="proposal.gadFileName" class="doc-item">
                   <div class="doc-icon">📄</div>
@@ -209,7 +210,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
-import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/utils/documentExport'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
@@ -326,13 +327,7 @@ const goBack = () => {
 }
 
 const downloadProposal = () => {
-  const p = proposal.value
-  const html = buildStandaloneHtml({
-    title: 'Research Proposal Form',
-    subtitle: p.projectTitle || 'Project Proposal',
-    body: buildProposalDocument(p)
-  })
-  printDocument({ title: 'Research Proposal Form', html })
+  downloadOfficialProposal(proposal.value)
 }
 
 const downloadFile = (fileName) => {

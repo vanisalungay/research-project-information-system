@@ -1,167 +1,287 @@
 <template>
-  <div class="qr-form">
-    <!-- Form title -->
-    <div class="qr-title">
-      <h2>MSUN INTERNALLY-FUNDED PROJECT</h2>
-      <h2>QUARTERLY PROGRESS REPORT</h2>
-      <p class="qr-subtitle">As of {{ yearLabel }}</p>
-    </div>
+  <div class="doc-scroll">
+    <!-- ==================== PAGE 1 ==================== -->
+    <!-- The proponent's 3-step report wizard renders one page at a time through
+         the `page` prop. The form state lives in this component's setup scope,
+         so hiding a page never clears what was already entered. -->
+    <section v-if="showsPage(1)" class="doc-sheet">
+      <div class="doc-header">
+        <span class="doc-ring doc-ring-1" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-2" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-3" aria-hidden="true"></span>
 
-    <!-- Reporting period -->
-    <div v-if="!readonly" class="qr-period-row">
-      <label v-if="!lockPeriod" class="period-field">
-        <span>Reporting Quarter</span>
-        <select v-model="form.period" class="qr-select">
-          <option value="Q1">Q1</option>
-          <option value="Q2">Q2</option>
-          <option value="Q3">Q3</option>
-          <option value="Q4">Q4</option>
-        </select>
-      </label>
-      <label v-else class="period-field">
-        <span>Reporting Quarter</span>
-        <span class="locked-period">{{ form.period }}</span>
-      </label>
-      <label class="period-field">
-        <span>Year</span>
-        <input v-model.number="form.year" type="number" class="qr-input" />
-      </label>
-    </div>
-    <div v-else class="qr-period-row readonly-period">
-      <span>Reporting Period: {{ form.period }} {{ form.year }}</span>
-    </div>
-
-    <!-- (1) Project Title -->
-    <div class="qr-field-row">
-      <label class="qr-field-label">(1) Project Title:</label>
-      <input v-model="form.projectTitle" class="qr-input" :readonly="readonly" />
-    </div>
-
-    <!-- (2) Project Leader / Gender -->
-    <div class="qr-field-row">
-      <label class="qr-field-label">(2) Project Leader/Gender:</label>
-      <div class="qr-inline-group">
-        <input v-model="form.projectLeader" class="qr-input" :readonly="readonly" placeholder="Project Leader" />
-        <select v-model="form.leaderGender" class="qr-select" :disabled="readonly">
-          <option value="">Select Gender</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Prefer not to say</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- (3) Site/s of Implementation -->
-    <div class="qr-field-row">
-      <label class="qr-field-label">(3) Site/s of Implementation</label>
-      <div class="qr-sub-fields">
-        <div class="qr-sub-field">
-          <span class="qr-sub-label">Base Station:</span>
-          <input v-model="form.baseStation" class="qr-input" :readonly="readonly" />
+        <div class="doc-header-left">
+          <span class="doc-emblem" aria-hidden="true"></span>
+          <div class="doc-header-text">
+            <span class="doc-eyebrow">MSUN Internally-Funded Project</span>
+            <h2 class="doc-title">Quarterly Progress Report</h2>
+          </div>
         </div>
-        <div class="qr-sub-field">
-          <span class="qr-sub-label">Site/s of Implementation:</span>
-          <input v-model="form.sitesOfImplementation" class="qr-input" :readonly="readonly" />
+
+        <div class="doc-header-right">
+          <span class="doc-badge">Reporting period: {{ periodLabel }}</span>
+          <span class="doc-badge-sub">As of {{ yearLabel }}</span>
         </div>
       </div>
-    </div>
+      <div class="doc-divider"></div>
 
-    <!-- (4) Duration, (5) Start, (6) End -->
-    <div class="qr-field-row">
-      <label class="qr-field-label">(4) Project Duration:</label>
-      <input v-model="form.projectDuration" class="qr-input" :readonly="readonly" />
-    </div>
-    <div class="qr-field-row">
-      <label class="qr-field-label">(5) Project Start Date:</label>
-      <input v-model="form.projectStartDate" type="date" class="qr-input" :readonly="readonly" />
-    </div>
-    <div class="qr-field-row">
-      <label class="qr-field-label">(6) Project End Date:</label>
-      <input v-model="form.projectEndDate" type="date" class="qr-input" :readonly="readonly" />
-    </div>
+      <div class="doc-body">
+        <!-- Reporting period controls: only when the host allows changing it. -->
+        <div v-if="!readonly && !lockPeriod" class="qr-period-row">
+          <label class="qr-period-field">
+            <span>Reporting Quarter</span>
+            <select v-model="form.period" class="qr-period-input">
+              <option value="Q1">Q1</option>
+              <option value="Q2">Q2</option>
+              <option value="Q3">Q3</option>
+              <option value="Q4">Q4</option>
+            </select>
+          </label>
+          <label class="qr-period-field">
+            <span>Year</span>
+            <input v-model.number="form.year" type="number" class="qr-period-input" />
+          </label>
+        </div>
 
-    <!-- (7) Major Accomplishments -->
-    <div class="qr-section-title">(7) Major Accomplishments</div>
+        <!-- (1)-(6) Project information -->
+        <table class="doc-info-table">
+          <tbody>
+            <tr>
+              <td class="doc-cream" colspan="6">
+                <span class="doc-label">(1) Project Title</span>
+                <span v-if="readonly" class="doc-value">{{ form.projectTitle }}</span>
+                <input v-else v-model="form.projectTitle" class="doc-cell-input" />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <span class="doc-label">(2) Project Leader</span>
+                <span v-if="readonly" class="doc-value">{{ form.projectLeader }}</span>
+                <input v-else v-model="form.projectLeader" class="doc-cell-input" />
+              </td>
+              <td colspan="3">
+                <span class="doc-label">Gender</span>
+                <span v-if="readonly" class="doc-value">{{ form.leaderGender || '—' }}</span>
+                <select v-else v-model="form.leaderGender" class="doc-cell-input">
+                  <option value="">—</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Prefer not to say</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <span class="doc-label">(3) Base Station</span>
+                <span v-if="readonly" class="doc-value">{{ form.baseStation }}</span>
+                <input v-else v-model="form.baseStation" class="doc-cell-input" />
+              </td>
+              <td colspan="3">
+                <span class="doc-label">Site/s of Implementation</span>
+                <span v-if="readonly" class="doc-value">{{ form.sitesOfImplementation }}</span>
+                <input v-else v-model="form.sitesOfImplementation" class="doc-cell-input" />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <span class="doc-label">(4) Project Duration</span>
+                <span v-if="readonly" class="doc-value">{{ form.projectDuration }}</span>
+                <input v-else v-model="form.projectDuration" class="doc-cell-input" />
+              </td>
+              <td colspan="2">
+                <span class="doc-label">(5) Start Date</span>
+                <span v-if="readonly" class="doc-value">{{ form.projectStartDate }}</span>
+                <input
+                  v-else
+                  v-model="form.projectStartDate"
+                  type="date"
+                  class="doc-cell-input"
+                />
+              </td>
+              <td colspan="2">
+                <span class="doc-label">(6) End Date</span>
+                <span v-if="readonly" class="doc-value">{{ form.projectEndDate }}</span>
+                <input
+                  v-else
+                  v-model="form.projectEndDate"
+                  type="date"
+                  class="doc-cell-input"
+                  :class="{ 'cell-invalid': !!errors.projectEndDate }"
+                />
+                <span v-if="errors.projectEndDate" class="field-error">{{ errors.projectEndDate }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-    <!-- A. Objectives table -->
-    <div class="qr-sub-section">
-      <p class="qr-sub-title">A. Actual accomplishment of the project (via-a-vis the objectives)</p>
-      <table class="qr-table objectives-table">
-        <thead>
-          <tr>
-            <th rowspan="2" class="col-objective">OBJECTIVES</th>
-            <th colspan="2">ACCOMPLISHMENTS</th>
-            <th colspan="2">PERCENTAGE (%)</th>
-          </tr>
-          <tr>
-            <th class="col-sm">TARGET</th>
-            <th class="col-sm">ACTUAL</th>
-            <th class="col-sm">FOR THE PERIOD</th>
-            <th class="col-sm">CUMULATIVE (FROM START)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, i) in form.objectives" :key="i">
-            <td><textarea v-model="row.objective" class="qr-cell-area" :readonly="readonly" rows="3"></textarea></td>
-            <td><textarea v-model="row.target" class="qr-cell-area" :readonly="readonly" rows="3"></textarea></td>
-            <td><textarea v-model="row.actual" class="qr-cell-area" :readonly="readonly" rows="3"></textarea></td>
-            <td><input v-model="row.percentagePeriod" class="qr-cell-input" :readonly="readonly" /></td>
-            <td><input v-model="row.percentageCumulative" class="qr-cell-input" :readonly="readonly" /></td>
-            <td v-if="!readonly" class="col-action">
-              <button class="row-remove" @click="removeObjective(i)" title="Remove row">✕</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button v-if="!readonly" class="qr-add-btn" @click="addObjective">+ Add Objective</button>
-    </div>
+        <!-- (7) Major accomplishments -->
+        <div class="doc-section">
+          <span class="doc-section-accent" aria-hidden="true"></span>
+          (7) Major accomplishments
+        </div>
 
-    <!-- B. Catch-up Plan -->
-    <div class="qr-sub-section">
-      <p class="qr-sub-title">B. Catch-up Plan</p>
-      <textarea v-model="form.catchUpPlan" class="qr-textarea" :readonly="readonly" rows="5"></textarea>
-    </div>
+        <p class="doc-subsection">A. Actual accomplishment of the project (vis-à-vis the objectives)</p>
 
-    <!-- C. Expected Outputs / 6Ps -->
-    <div class="qr-sub-section">
-      <p class="qr-sub-title">C. Expected Outputs / 6Ps (Expected Outputs should be measurable.)</p>
-      <table class="qr-table outputs-table">
-        <thead>
-          <tr>
-            <th class="col-type"></th>
-            <th>EXPECTED OUTPUTS</th>
-            <th>ACTUAL OUTPUTS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, i) in form.outputs" :key="i">
-            <td class="output-type">{{ row.outputType }}</td>
-            <td><textarea v-model="row.expectedOutput" class="qr-cell-area" :readonly="readonly" rows="2"></textarea></td>
-            <td><textarea v-model="row.actualOutput" class="qr-cell-area" :readonly="readonly" rows="2"></textarea></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <table class="doc-table objectives-table">
+          <colgroup>
+            <col class="col-objective" />
+            <col class="col-target" />
+            <col class="col-actual" />
+            <col class="col-period" />
+            <col class="col-cumulative" />
+            <col v-if="!readonly" class="col-action" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">OBJECTIVES</th>
+              <th colspan="2">ACCOMPLISHMENTS</th>
+              <th colspan="2">PERCENTAGE (%)</th>
+              <th v-if="!readonly" rowspan="2" class="col-action">—</th>
+            </tr>
+            <tr>
+              <th>TARGET</th>
+              <th>ACTUAL</th>
+              <th>FOR THE PERIOD</th>
+              <th>CUMULATIVE (FROM START)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, i) in form.objectives" :key="i">
+              <td>
+                <span v-if="readonly" class="qr-cell-text">{{ row.objective }}</span>
+                <textarea v-else v-model="row.objective" class="qr-cell-area" rows="3"></textarea>
+              </td>
+              <td>
+                <span v-if="readonly" class="qr-cell-text">{{ row.target }}</span>
+                <textarea v-else v-model="row.target" class="qr-cell-area" rows="3"></textarea>
+              </td>
+              <td>
+                <span v-if="readonly" class="qr-cell-text">{{ row.actual }}</span>
+                <textarea v-else v-model="row.actual" class="qr-cell-area" rows="3"></textarea>
+              </td>
+              <td>
+                <span v-if="readonly" class="qr-cell-value">{{ row.percentagePeriod }}</span>
+                <input v-else v-model="row.percentagePeriod" class="qr-cell-input" />
+              </td>
+              <td>
+                <span v-if="readonly" class="qr-cell-value">{{ row.percentageCumulative }}</span>
+                <input v-else v-model="row.percentageCumulative" class="qr-cell-input" />
+              </td>
+              <td v-if="!readonly" class="col-action">
+                <button type="button" class="row-remove" @click="removeObjective(i)" title="Remove row">✕</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button v-if="!readonly" type="button" class="qr-add-btn" @click="addObjective">+ Add Objective</button>
 
-    <!-- (8) Problems/Concerns -->
-    <div class="qr-sub-section">
-      <p class="qr-sub-title">(8) Problems/Concerns</p>
-      <textarea v-model="form.problemsConcerns" class="qr-textarea" :readonly="readonly" rows="4"></textarea>
-    </div>
+        <p class="doc-subsection">B. Catch-up plan</p>
+        <div class="doc-note">
+          <span v-if="readonly" class="qr-note-text">{{ form.catchUpPlan }}</span>
+          <textarea v-else v-model="form.catchUpPlan" class="qr-note-area" rows="3"></textarea>
+        </div>
+      </div>
 
-    <!-- (9) Suggested solutions -->
-    <div class="qr-sub-section">
-      <p class="qr-sub-title">(9) Suggested solutions to the above concerns</p>
-      <textarea v-model="form.suggestedSolutions" class="qr-textarea" :readonly="readonly" rows="4"></textarea>
-    </div>
+      <div class="doc-footer">
+        <span class="doc-footer-side">MSUN Internally-Funded Project &middot; Quarterly Progress Report</span>
+        <span class="doc-footer-center">{{ form.projectTitle || '—' }}</span>
+        <span class="doc-page-badge">Page 1 of 3</span>
+      </div>
+    </section>
 
-    <!-- Stage actions (Cancel / Save Draft / Submit Report) are rendered by the
-         parent page, below the interactive Project Workplan form. -->
+    <!-- ==================== PAGE 2 ==================== -->
+    <section v-if="showsPage(2)" class="doc-sheet">
+      <div class="doc-header">
+        <span class="doc-ring doc-ring-1" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-2" aria-hidden="true"></span>
+        <span class="doc-ring doc-ring-3" aria-hidden="true"></span>
+
+        <div class="doc-header-left">
+          <span class="doc-emblem" aria-hidden="true"></span>
+          <div class="doc-header-text">
+            <span class="doc-eyebrow">MSUN Internally-Funded Project</span>
+            <h2 class="doc-title">Quarterly Progress Report</h2>
+          </div>
+        </div>
+
+        <div class="doc-header-right">
+          <span class="doc-badge">Reporting period: {{ periodLabel }}</span>
+          <span class="doc-badge-sub">As of {{ yearLabel }}</span>
+        </div>
+      </div>
+      <div class="doc-divider"></div>
+
+      <div class="doc-body">
+        <!-- C. Expected outputs / 6Ps -->
+        <div class="doc-section">
+          <span class="doc-section-accent" aria-hidden="true"></span>
+          C. Expected outputs / 6Ps
+        </div>
+        <p class="doc-hint">Expected outputs should be measurable.</p>
+
+        <table class="doc-table outputs-table">
+          <colgroup>
+            <col class="col-type" />
+            <col class="col-expected" />
+            <col class="col-actual-out" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>6Ps</th>
+              <th>EXPECTED OUTPUTS</th>
+              <th>ACTUAL OUTPUTS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, i) in form.outputs" :key="i">
+              <td class="output-type doc-cell-cream">{{ row.outputType }}</td>
+              <td>
+                <span v-if="readonly" class="qr-cell-text">{{ row.expectedOutput }}</span>
+                <textarea v-else v-model="row.expectedOutput" class="qr-cell-area" rows="2"></textarea>
+              </td>
+              <td>
+                <span v-if="readonly" class="qr-cell-text">{{ row.actualOutput }}</span>
+                <textarea v-else v-model="row.actualOutput" class="qr-cell-area" rows="2"></textarea>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- (8) Problems / concerns -->
+        <div class="doc-section">
+          <span class="doc-section-accent" aria-hidden="true"></span>
+          (8) Problems / concerns
+        </div>
+        <div class="doc-note doc-note--yellow">
+          <span v-if="readonly" class="qr-note-text">{{ form.problemsConcerns }}</span>
+          <textarea v-else v-model="form.problemsConcerns" class="qr-note-area" rows="3"></textarea>
+        </div>
+
+        <!-- (9) Suggested solutions -->
+        <div class="doc-section">
+          <span class="doc-section-accent" aria-hidden="true"></span>
+          (9) Suggested solutions to the above concerns
+        </div>
+        <div class="doc-note doc-note--green">
+          <span v-if="readonly" class="qr-note-text">{{ form.suggestedSolutions }}</span>
+          <textarea v-else v-model="form.suggestedSolutions" class="qr-note-area" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        <span class="doc-footer-side">MSUN Internally-Funded Project &middot; Quarterly Progress Report</span>
+        <span class="doc-footer-center">{{ form.projectTitle || '—' }}</span>
+        <span class="doc-page-badge">Page 2 of 3</span>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { reactive, computed, watch } from 'vue'
+// Shared document shell (page, header, footer, tables, print rules) used by the
+// Quarterly Progress Report pages and the Project Workplan page.
+import '@/assets/reportDocument.css'
 
 const props = defineProps({
   report: { type: Object, default: null },
@@ -170,6 +290,15 @@ const props = defineProps({
   // When true the reporting quarter is fixed to the current reporting stage and
   // cannot be changed by the proponent (the backend validates the stage too).
   lockPeriod: { type: Boolean, default: false },
+  // Wizard page gating used by the proponent's 3-step report form:
+  //   1 = Quarterly Progress Report, 2 = continuation of the report.
+  // When null (the default, used by the read-only viewers) the complete
+  // document - both report pages - is rendered exactly as before.
+  page: { type: Number, default: null },
+  // Field-level validation messages shown next to the field they belong to,
+  // keyed by field name (e.g. { projectEndDate: '...' }). The rules themselves
+  // live in the host page, which owns the wizard navigation.
+  errors: { type: Object, default: () => ({}) },
 })
 const emit = defineEmits(['save-draft', 'submit', 'cancel'])
 
@@ -222,6 +351,15 @@ watch(() => props.report, (r) => applyReport(r), { immediate: true })
 
 const yearLabel = computed(() => form.year || new Date().getFullYear())
 
+// Reporting period shown in the document header badge, taken from the saved report.
+const periodLabel = computed(() => `${form.period || '—'} ${form.year || ''}`.trim())
+
+// Page gating for the proponent's 3-step report wizard. Without a `page` prop
+// (read-only viewers) the whole document is rendered, exactly as before.
+function showsPage(n) {
+  return props.page == null || props.page === n
+}
+
 function addObjective() {
   form.objectives.push(emptyObjective())
 }
@@ -253,359 +391,252 @@ function buildPayload() {
 
 // The stage action buttons (Cancel / Save Draft / Submit Report) are rendered by
 // the parent page below the Project Workplan form, so the parent reads the
-// current quarterly progress report payload through this exposed method.
-defineExpose({ buildPayload })
+// current quarterly progress report payload through this exposed method. The
+// reporting period label is exposed too so the wizard header can show the
+// quarter the proponent is reporting on without duplicating the form state.
+defineExpose({ buildPayload, periodLabel })
 </script>
 
 <style scoped>
-.qr-form {
-  background: #fff;
-  border: 2px solid #1c2145;
-  padding: 24px;
-  color: #0f172a;
-  font-family: Arial, sans-serif;
-}
-.qr-title {
-  text-align: center;
-  border-bottom: 2px solid #1c2145;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
-.qr-title h2 {
-  margin: 0;
-  font-size: 16px;
-  letter-spacing: 1px;
-  color: #1c2145;
-}
-.qr-subtitle {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: #444;
-}
+/* Reporting-period controls: only rendered when the host allows editing it. */
 .qr-period-row {
   display: flex;
-  gap: 20px;
-  margin-bottom: 14px;
-  padding: 10px 12px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-}
-.period-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.readonly-period {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1c2145;
-}
-.locked-period {
-  font-weight: 700;
-  color: #1c2145;
-}
-.qr-field-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #1c2145;
-  padding: 8px 10px;
-}
-.qr-field-label {
-  font-weight: 700;
-  font-size: 13px;
-  white-space: nowrap;
-  min-width: 180px;
-}
-.qr-input,
-.qr-select {
-  flex: 1;
-  border: none;
-  border-bottom: 1px solid #94a3b8;
-  padding: 6px 4px;
-  font-size: 14px;
-  outline: none;
-  background: transparent;
-}
-.qr-input[readonly],
-.qr-select:disabled {
-  border-bottom: none;
-  color: #0f172a;
-  background: transparent;
-}
-.qr-inline-group {
-  display: flex;
-  gap: 12px;
-  flex: 1;
-}
-.qr-sub-fields {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.qr-sub-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.qr-sub-label {
-  font-weight: 600;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.qr-section-title {
-  margin: 20px 0 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1c2145;
-  text-transform: uppercase;
-  border-bottom: 2px solid #1c2145;
-  padding-bottom: 4px;
-}
-.qr-sub-section {
-  margin: 14px 0;
-}
-.qr-sub-title {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 700;
-}
-.qr-table {
-  width: 100%;
-  border-collapse: collapse;
+  gap: 16px;
   margin-bottom: 8px;
-}
-.qr-table th,
-.qr-table td {
-  border: 1px solid #1c2145;
-  padding: 6px;
-  vertical-align: top;
-  text-align: left;
-}
-.qr-table th {
-  background: #eef2ff;
-  font-size: 12px;
-  text-align: center;
-  font-weight: 700;
-}
-.qr-cell-area {
-  width: 100%;
-  border: none;
-  resize: vertical;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  background: transparent;
-}
-.qr-cell-input {
-  width: 100%;
-  border: none;
-  font-size: 13px;
-  outline: none;
-  text-align: center;
-  background: transparent;
-}
-.output-type {
-  font-weight: 700;
-  font-size: 13px;
-  white-space: nowrap;
-  width: 150px;
-}
-.col-action {
-  width: 34px;
-  text-align: center;
-}
-.row-remove {
-  background: #fee2e2;
-  border: none;
-  color: #dc2626;
-  width: 26px;
-  height: 26px;
+  padding: 6px 8px;
+  border: 1px solid #d8d9e8;
   border-radius: 4px;
-  cursor: pointer;
+  background: #f1f0f8;
 }
-.qr-add-btn {
-  background: #eef2ff;
-  border: 1px dashed #1c2145;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-}
-.qr-textarea {
-  width: 100%;
-  border: 1px solid #1c2145;
-  padding: 10px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-}
-.qr-actions {
+
+.qr-period-field {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #25224f;
 }
-.btn-secondary {
-  background: #e2e8f0;
-  color: #1c2145;
+
+.qr-period-input {
+  padding: 1px 4px;
+  border: 1px solid #d8d9e8;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #202044;
+  font: inherit;
+  font-size: 10px;
+}
+
+/* Values inside the project-information table read as printed text while staying
+   editable inputs for the proponent. */
+.doc-cell-input {
+  display: block;
+  width: 100%;
+  margin-top: 1px;
+  padding: 0;
   border: none;
-  padding: 12px 22px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
+  background: transparent;
+  color: #202044;
+  font: inherit;
+  font-size: 10px;
+  outline: none;
 }
-.btn-draft {
-  background: #fff;
-  color: #1c2145;
-  border: 2px solid #1c2145;
-  padding: 12px 22px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
+
+.doc-cell-input:disabled {
+  color: #202044;
+  opacity: 1;
 }
-.btn-submit {
-  background: #ffd400;
-  color: #1c2145;
+
+/* ---------- Read-only display values ----------
+   The read-only interfaces (viewing a submitted report, reviewing it before
+   submission) render the saved values as printed text instead of editable
+   controls, keeping the same document look as the fields they replace. The
+   project-information cells reuse the shared .doc-value class (reportDocument.css,
+   the same pattern the Project Workplan already uses); the tables and the
+   narrative notes get the equivalents of .qr-cell-area / .qr-cell-input /
+   .qr-note-area. */
+.qr-cell-text {
+  display: block;
+  width: 100%;
+  color: #202044;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.qr-cell-value {
+  display: block;
+  width: 100%;
+  color: #202044;
+  font: inherit;
+  font-size: 9px;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.qr-note-text {
+  display: block;
+  width: 100%;
+  color: #202044;
+  font: inherit;
+  font-size: 9.5px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Field-level validation (page 1 of the wizard): the offending cell keeps the
+   printed-document look, so the marker is a red underline plus a short message
+   directly under the field it belongs to. */
+.doc-cell-input.cell-invalid {
+  border-bottom: 1px solid #dc2626;
+}
+
+.field-error {
+  display: block;
+  margin-top: 2px;
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #b91c1c;
+}
+
+/* (7) Accomplishments table column proportions. */
+.col-objective {
+  width: 32%;
+}
+
+.col-target {
+  width: 14%;
+}
+
+.col-actual {
+  width: 14%;
+}
+
+.col-period {
+  width: 14%;
+}
+
+.col-cumulative {
+  width: 18%;
+}
+
+.col-action {
+  width: 8%;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.qr-cell-area {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 0;
   border: none;
-  padding: 12px 22px;
-  border-radius: 8px;
-  font-weight: 700;
+  background: transparent;
+  color: #202044;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.3;
+  resize: vertical;
+  outline: none;
+}
+
+.qr-cell-input {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #202044;
+  font: inherit;
+  font-size: 9px;
+  text-align: center;
+  outline: none;
+}
+
+.row-remove {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 10px;
+  line-height: 1;
   cursor: pointer;
 }
-.btn-draft:disabled,
-.btn-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-/* ============================================================
-   Light "paper document" theme guard
-   The quarterly progress report is a printable MSUN form and must
-   always render as a light document, regardless of the OS-level
-   dark mode the rest of the app adapts to. These scoped !important
-   rules out-rank the global dark-mode overrides in
-   src/assets/css/base.css.
-   ============================================================ */
-.qr-form {
-  color-scheme: light;
-  background: #fff !important;
-  border: 2px solid #1c2145 !important;
-  color: #0f172a !important;
+
+.qr-add-btn {
+  margin-top: 5px;
+  padding: 4px 10px;
+  border: 1px dashed #25224f;
+  border-radius: 4px;
+  background: #f1f0f8;
+  color: #25224f;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-/* Dark, readable text everywhere in the document. */
-.qr-form h2,
-.qr-form p,
-.qr-form span,
-.qr-form label,
-.qr-form td,
-.qr-form th,
-.qr-form strong,
-.qr-form b,
-.qr-form i,
-.qr-form em {
-  color: #0f172a !important;
+/* (C) Expected outputs / 6Ps table column proportions. */
+.col-type {
+  width: 30%;
 }
 
-.qr-form .qr-title h2,
-.qr-form .qr-section-title {
-  color: #1c2145 !important;
+.col-expected {
+  width: 35%;
 }
 
-.qr-form .qr-subtitle {
-  color: #444 !important;
+.col-actual-out {
+  width: 35%;
 }
 
-/* Reset the dark-mode table/row/cell surfaces back to the white paper. */
-.qr-form table,
-.qr-form tr,
-.qr-form td {
-  background-color: transparent !important;
-  border-color: #1c2145 !important;
+.output-type {
+  font-weight: 600;
+  color: #25224f;
 }
 
-.qr-form tr:hover td {
-  background-color: transparent !important;
+/* Narrative areas: the bordered box provides the document styling while the
+   textarea inside stays the editable / saved value. */
+.qr-note-area {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #202044;
+  font: inherit;
+  font-size: 9.5px;
+  line-height: 1.35;
+  resize: vertical;
+  outline: none;
 }
 
-.qr-form .qr-table th {
-  background-color: #eef2ff !important;
-  color: #0f172a !important;
-}
+/* The row-remove column only exists while editing, so it is not part of the
+   printed document. */
+@media print {
+  .objectives-table th.col-action,
+  .objectives-table td.col-action {
+    display: none;
+  }
 
-.qr-form .qr-table th,
-.qr-form .qr-table td {
-  border: 1px solid #1c2145 !important;
-}
+  .qr-add-btn {
+    display: none;
+  }
 
-/* Form controls: transparent background + dark text, restore borders. */
-.qr-form input,
-.qr-form select,
-.qr-form textarea {
-  background: transparent !important;
-  color: #0f172a !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-
-.qr-form .qr-input,
-.qr-form .qr-select {
-  border: none !important;
-  border-bottom: 1px solid #94a3b8 !important;
-}
-
-.qr-form .qr-input[readonly],
-.qr-form .qr-select:disabled {
-  border-bottom: none !important;
-}
-
-.qr-form .qr-cell-input,
-.qr-form .qr-cell-area {
-  border: none !important;
-}
-
-.qr-form .qr-textarea {
-  border: 1px solid #1c2145 !important;
-}
-
-/* Light surfaces the global dark theme would otherwise force dark. */
-.qr-form .qr-period-row {
-  background: #f1f5f9 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-/* Buttons */
-.qr-form .qr-add-btn {
-  background: #eef2ff !important;
-  border: 1px dashed #1c2145 !important;
-  color: #1c2145 !important;
-}
-
-.qr-form .row-remove {
-  background: #fee2e2 !important;
-  color: #dc2626 !important;
-}
-
-.qr-form .btn-secondary {
-  background: #e2e8f0 !important;
-  color: #1c2145 !important;
-}
-
-.qr-form .btn-draft {
-  background: #fff !important;
-  color: #1c2145 !important;
-  border: 2px solid #1c2145 !important;
-}
-
-.qr-form .btn-submit {
-  background: #ffd400 !important;
-  color: #1c2145 !important;
+  /* Validation messages are an on-screen aid, never part of the document. */
+  .field-error {
+    display: none;
+  }
 }
 </style>

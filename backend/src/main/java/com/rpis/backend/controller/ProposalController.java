@@ -6,14 +6,17 @@ import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.dto.ProposalSectionRemarksResponse;
 import com.rpis.backend.dto.ProposalVersionResponse;
 import com.rpis.backend.dto.ReturnRevisionRequest;
+import com.rpis.backend.model.CooperatingAgency;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
+import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.ProposalReviewService;
 import com.rpis.backend.service.ProposalSectionRemarkService;
 import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.ProposalVersionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +40,7 @@ public class ProposalController {
     private final ProposalReviewService reviewService;
     private final ProposalVersionService proposalVersionService;
     private final ProposalSectionRemarkService sectionRemarkService;
+    private final CooperatingAgencyService cooperatingAgencyService;
 
     @GetMapping
     public ResponseEntity<List<Proposal>> getProposals(
@@ -53,6 +57,18 @@ public class ProposalController {
     @GetMapping("/{id}")
     public ResponseEntity<Proposal> getProposalById(@PathVariable Long id) {
         return ResponseEntity.ok(proposalService.getProposalByIdForCurrentUser(id));
+    }
+
+    /**
+     * The cooperating agencies (section 02) selected on a proposal, in directory
+     * order. The Create Proposal and Revision forms read this to restore the
+     * checklist when a saved proposal is edited. Ownership is enforced by the
+     * service, so a Proponent can only read the selection of their own proposal.
+     */
+    @GetMapping("/{id}/cooperating-agencies")
+    public ResponseEntity<List<CooperatingAgency>> getCooperatingAgencies(@PathVariable Long id) {
+        proposalService.getProposalByIdForCurrentUser(id);
+        return ResponseEntity.ok(cooperatingAgencyService.getSelection(id));
     }
 
     // ========== SUBMISSION & REVISION HISTORY ==========
@@ -83,6 +99,38 @@ public class ProposalController {
             @PathVariable Long id,
             @RequestBody ProposalRequest request) {
         Proposal saved = proposalService.saveProposal(request, id);
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * Technology Map image (section 13 of the Create Proposal form) upload.
+     * <p>
+     * The image is stored by the service and recorded on the proposal, so the
+     * proposal returned here is the one the form keeps working with. The same
+     * checks the form performs in the browser (PNG/JPEG only, at most 10 MB) are
+     * repeated server-side and reported as a 400 with the same message.
+     */
+    @PostMapping(value = "/{id}/technology-map", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Proposal> uploadTechnologyMap(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        Proposal saved = proposalService.attachTechnologyMap(id, file);
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * Line-Item Budget file (section 25 of the Create Proposal form) upload.
+     * <p>
+     * The filled-out budget is stored by the service and recorded on the proposal, so
+     * the proposal returned here is the one the form keeps working with. The same
+     * checks the form performs in the browser (PDF or DOCX only, at most 10 MB) are
+     * repeated server-side and reported as a 400 with the same message.
+     */
+    @PostMapping(value = "/{id}/budget-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Proposal> uploadBudgetFile(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        Proposal saved = proposalService.attachBudgetFile(id, file);
         return ResponseEntity.ok(saved);
     }
 
@@ -324,7 +372,9 @@ public class ProposalController {
     }
 
     // Invalid request data (e.g. a remark submitted for an unknown proposal section)
-    // fails cleanly with a readable 400 instead of a generic 500 error.
+    // fails cleanly with a readable 400 instead of a generic 500 error. The same
+    // handler reports an invalid or oversized Technology Map image (see
+    // ProposalService.attachTechnologyMap).
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleInvalidRequest(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

@@ -45,6 +45,20 @@ export const PROPOSAL_FIELD_SECTIONS = [
       { key: 'endDate', label: 'End Date', form: 'end_date' },
       { key: 'college', label: 'Implementing College / Department', form: 'department', full: true },
       { key: 'address', label: 'Address / Contact', form: 'address', full: true },
+      // Address and Contact are separate sections on the Create Proposal form;
+      // `address` above keeps the combined text every other screen shows.
+      { key: 'addressCountry', label: 'Address: Country', form: 'address_details.country' },
+      { key: 'addressRegion', label: 'Address: Region', form: 'address_details.region' },
+      { key: 'addressProvince', label: 'Address: Province', form: 'address_details.province' },
+      { key: 'addressDistrict', label: 'Address: District', form: 'address_details.district' },
+      {
+        key: 'addressMunicipality',
+        label: 'Address: Municipality / City',
+        form: 'address_details.municipality',
+      },
+      { key: 'addressBarangay', label: 'Address: Barangay', form: 'address_details.barangay' },
+      { key: 'contactType', label: 'Contact Type', form: 'contact_details.type' },
+      { key: 'contactValue', label: 'Contact', form: 'contact_details.value' },
     ],
   },
   {
@@ -52,7 +66,7 @@ export const PROPOSAL_FIELD_SECTIONS = [
     label: 'Cooperating Agencies',
     layout: FIELD_LAYOUTS.STACK,
     fields: [
-      { key: 'cooperatingAgencies', label: 'Name/s and Address/es', form: 'cooperating_agencies', kind: 'long' },
+      { key: 'cooperatingAgencies', label: 'Cooperating Agencies', form: 'cooperating_agencies', kind: 'long' },
     ],
   },
   {

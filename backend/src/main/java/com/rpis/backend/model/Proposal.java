@@ -66,6 +66,37 @@ public class Proposal {
     @Column(columnDefinition = "TEXT")
     private String address;
 
+    /**
+     * Structured address of the "Address *" section of the Create Proposal form
+     * (section 01). The combined {@link #address} text above is derived from
+     * these parts plus the contact, so every existing screen keeps working, while
+     * the parts stay individually reviewable and reportable.
+     */
+    @Column(name = "address_country", length = 120)
+    private String addressCountry;
+
+    @Column(name = "address_region", length = 120)
+    private String addressRegion;
+
+    @Column(name = "address_province", length = 120)
+    private String addressProvince;
+
+    @Column(name = "address_district", length = 120)
+    private String addressDistrict;
+
+    @Column(name = "address_municipality", length = 120)
+    private String addressMunicipality;
+
+    @Column(name = "address_barangay", length = 120)
+    private String addressBarangay;
+
+    /** Selected contact type of the "Contact *" section (CONTACT_NUMBER / EMAIL_ADDRESS). */
+    @Column(name = "contact_type", length = 30)
+    private String contactType;
+
+    @Column(name = "contact_value", length = 255)
+    private String contactValue;
+
     @Column(name = "cooperating_agencies", columnDefinition = "TEXT")
     private String cooperatingAgencies;
 
@@ -112,8 +143,21 @@ public class Proposal {
     @Column(columnDefinition = "TEXT")
     private String methodology;
 
+    /**
+     * Display name of the Technology Map image (section 13 of the Create Proposal
+     * form) - the file name the proponent selected.
+     */
     @Column(name = "roadmap_file_name")
     private String roadmapFileName;
+
+    /**
+     * Stored path of the Technology Map image, relative to the "uploads" directory
+     * (e.g. {@code technology-maps/<uuid>_technology-map.png}). Kept apart from
+     * {@link #roadmapFileName} so the screens can keep showing the proponent's own
+     * file name while the authorized download route resolves the real file.
+     */
+    @Column(name = "roadmap_file_path", length = 500)
+    private String roadmapFilePath;
 
     @Column(name = "technology_trl")
     private String technologyTrl;
@@ -136,6 +180,9 @@ public class Proposal {
     @Column(name = "beneficiaries_file_name")
     private String beneficiariesFileName;
 
+    @Column(name = "beneficiaries_file_path", length = 500)
+    private String beneficiariesFilePath;
+
     @Column(columnDefinition = "TEXT")
     private String sustainability;
 
@@ -150,6 +197,15 @@ public class Proposal {
 
     @Column(name = "references_text", columnDefinition = "TEXT")
     private String referencesText;
+
+    /**
+     * The structured literature-cited entries of the reference builder (a JSON array
+     * of {type, fields, text}) behind {@link #referencesText}. Null for a proposal
+     * saved before the builder existed or written by hand; the plain text above stays
+     * the value every screen reads.
+     */
+    @Column(name = "references_json", columnDefinition = "TEXT")
+    private String referencesJson;
 
     @Column(name = "other_projects_number")
     private String otherProjectsNumber;

@@ -1,11 +1,17 @@
 package com.rpis.backend.controller;
 
 import com.rpis.backend.model.User;
+import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.UserService;
+import com.rpis.backend.service.UserSignatureService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -15,6 +21,7 @@ import com.rpis.backend.service.TokenService;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,6 +30,8 @@ public class UserController {
 
     private final UserService userService;
     private final TokenService tokenService;
+    private final UserSignatureService signatureService;
+    private final CurrentUser currentUser;
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
@@ -205,5 +214,52 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // ===== Electronic signature (Manage Profile -> Electronic Signature) =====
+    // Every route is scoped to the authenticated caller: the user id is resolved
+    // from the bearer token (CurrentUser), never from the request, so one account
+    // can never read, replace or delete another account's signature.
+
+    /** Saves (or replaces) the caller's electronic signature. */
+    @PostMapping("/me/signature")
+    public ResponseEntity<?> saveMySignature(
+            @RequestParam(value = "signature", required = false) MultipartFile signature) {
+        try {
+            User saved = signatureService.saveSignature(currentUser.requireUserId(), signature);
+            return ResponseEntity.ok(Map.of(
+                    "hasSignature", true,
+                    "signatureFileName", saved.getSignatureFileName() == null
+                            ? ""
+                            : saved.getSignatureFileName()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** Serves the caller's own signature image; 404 when none is saved yet. */
+    @GetMapping("/me/signature")
+    public ResponseEntity<Resource> getMySignature() {
+        UserSignatureService.SignatureFile file =
+                signatureService.loadSignature(currentUser.requireUserId());
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                // A replaced signature must never be served from a stale cache.
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.fileName() + "\"")
+                .contentType(file.contentType())
+                .body(file.resource());
+    }
+
+    /** Removes the caller's saved signature; the account keeps working without it. */
+    @DeleteMapping("/me/signature")
+    public ResponseEntity<?> deleteMySignature() {
+        signatureService.deleteSignature(currentUser.requireUserId());
+        return ResponseEntity.ok(Map.of("hasSignature", false));
     }
 }

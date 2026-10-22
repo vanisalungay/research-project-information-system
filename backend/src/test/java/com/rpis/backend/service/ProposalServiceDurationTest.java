@@ -43,7 +43,7 @@ class ProposalServiceDurationTest {
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser());
+                new CurrentUser(), mock(CooperatingAgencyService.class));
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(1L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));

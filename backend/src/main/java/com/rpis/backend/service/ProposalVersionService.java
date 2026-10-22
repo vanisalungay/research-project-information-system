@@ -357,7 +357,11 @@ public class ProposalVersionService {
         // Uploaded / attached files (file names preserved per version).
         m.put("reviewFileName", p.getReviewFileName());
         m.put("roadmapFileName", p.getRoadmapFileName());
+        m.put("roadmapFilePath", p.getRoadmapFilePath());
         m.put("beneficiariesFileName", p.getBeneficiariesFileName());
+        m.put("beneficiariesFilePath", p.getBeneficiariesFilePath());
+        m.put("referencesText", p.getReferencesText());
+        m.put("referencesJson", p.getReferencesJson());
         m.put("gadFileName", p.getGadFileName());
 
         // Child collections (their `proposal` back-reference is @JsonIgnore).

@@ -93,6 +93,7 @@ import ProponentSubmitRev from '@/views/Proponent/ProponentSubmitRev.vue'
 import ProponentPropDetails from '../views/Proponent/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/Proponent/ProponentDetiailedProp.vue'
 import ProponentNotifications from '../views/Notifications/ProponentNotifications.vue'
+import ProponentAnnouncementDetails from '@/views/Proponent/ProponentAnnouncementDetails.vue'
 import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
 import ProponentQuarterlyReports from '@/views/Proponent/ProponentQuarterlyReports.vue'
 import ProponentQuarterlyReportForm from '@/views/Proponent/ProponentQuarterlyReportForm.vue'
@@ -186,6 +187,11 @@ const routes = [
       // ================= PROPONENT =================
       { path: 'proponent-dashboard', component: ProponentDashboard },
       { path: 'proponent-notification', component: NotificationPage },
+      {
+        path: 'proponent-announcement/:id',
+        name: 'ProponentAnnouncementDetails',
+        component: ProponentAnnouncementDetails,
+      },
       { path: 'proposals', component: ProponentProposals },
       { path: 'revisions', component: ProponentRevision },
       { path: 'evalCriteria', component: ProponentEvalCriteria },

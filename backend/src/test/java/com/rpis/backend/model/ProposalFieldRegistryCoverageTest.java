@@ -37,6 +37,13 @@ class ProposalFieldRegistryCoverageTest {
             "status", "reviewedBy", "reviewedByPosition", "remarks",
             // Special Order / budget decision metadata
             "soNumber", "soFileName", "soFilePath", "soUploadedAt", "needsBudget",
+            // uploaded-file storage metadata: the reviewable document is the file name
+            // above (the path only addresses the stored bytes)
+            "roadmapFilePath", "beneficiariesFilePath",
+            // structured literature-cited entries: the reviewable value is the plain
+            // text in `referencesText`, this column only keeps the builder's entries so
+            // the proponent can edit a reference again (and its italics survive)
+            "referencesJson",
             // return-for-revision routing metadata
             "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",

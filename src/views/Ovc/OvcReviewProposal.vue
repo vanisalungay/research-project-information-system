@@ -208,7 +208,8 @@
               </li>
               <li v-if="proposal.roadmapFileName" class="file-item">
                 <span>📄 Technology Roadmap</span>
-                <button class="download-btn" @click="downloadFile(proposal.roadmapFileName)">⬇️</button>
+                <button class="download-btn"
+                  @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">⬇️</button>
               </li>
               <li v-if="proposal.gadFileName" class="file-item">
                 <span>📄 GAD Score</span>

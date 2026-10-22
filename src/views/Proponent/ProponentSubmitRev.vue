@@ -172,10 +172,13 @@
               <SectionRemarksNotice :section-key="'02'" :remarks="remarksFor('02')" />
               <div class="section-card">
                 <div class="form-group">
-                  <label>Name/s and Address/es</label>
-                  <textarea v-model="proposal.cooperating_agencies"
-                    placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
-                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Name/s and Address/es" :remarks="remarksForField('cooperatingAgencies')" readonly />
+                  <label>Select all agencies that will collaborate on this research project</label>
+                  <!-- The same shared directory checklist as the Create Proposal form, so a
+                       revision edits the selection relationally instead of as free text. -->
+                  <CooperatingAgenciesChecklist v-model:selected="proposal.cooperating_agency_ids"
+                    v-model:names="proposal.cooperating_agency_names" :proposal-id="proposalId"
+                    :legacy-selection="proposal.cooperating_agencies" />
+                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Cooperating Agencies" :remarks="remarksForField('cooperatingAgencies')" readonly />
                 </div>
               </div>
             </section>
@@ -880,11 +883,13 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SectionRemarksNotice from '@/components/SectionRemarksNotice.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
+import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { PROPOSAL_SECTIONS, activeRemarksBySection, previousRounds, sectionLabel } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
 
 const route = useRoute()
 const router = useRouter()
@@ -982,7 +987,12 @@ const proposal = ref({
   end_date: '',
   department: '',
   address: '',
+  // Section 02: the free text a proposal saved before the checklist carries, plus the
+  // ids of the agencies selected from the shared directory and their names (used for
+  // the legacy text column).
   cooperating_agencies: '',
+  cooperating_agency_ids: [] as number[],
+  cooperating_agency_names: [] as string[],
   research_type: '',
   innovation_goals: '',
   sector_relevance: '',
@@ -1118,7 +1128,12 @@ const fetchProposal = async () => {
       end_date: data.endDate || '',
       department: data.college || '',
       address: data.address || '',
+      // Section 02: the free text of a proposal saved before the checklist is kept
+      // (the checklist shows it until the agencies are selected); the saved selection
+      // itself is restored by the checklist from the proposal's own endpoint.
       cooperating_agencies: data.cooperatingAgencies || '',
+      cooperating_agency_ids: [] as number[],
+      cooperating_agency_names: [] as string[],
       research_type: data.researchType || '',
       innovation_goals: data.innovationGoals || '',
       sector_relevance: data.sectorRelevance || '',
@@ -1258,7 +1273,11 @@ const submitRevision = async () => {
     endDate: data.end_date || '',
     college: data.department || '',
     address: data.address || '',
-    cooperatingAgencies: data.cooperating_agencies || '',
+    // Section 02: the checklist selection travels as directory ids and the legacy text
+    // column is derived from the selected names (the backend derives it from the ids
+    // again, so the text and the relation can never drift apart).
+    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
+    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
     reviewFileName: data.review_of_literature_file?.name || '',
     roadmapFileName: data.technology_roadmap_file?.name || '',
     gadFileName: data.gad_score_file?.name || '',

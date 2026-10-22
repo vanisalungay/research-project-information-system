@@ -5,7 +5,7 @@
       <header class="modal-header">
         <div class="header-left">
           <h2>Submit New Proposal</h2>
-          <span class="header-badge">Step 1 of 3</span>
+          <span class="header-badge">Step 2 of 4</span>
         </div>
         <div class="header-actions">
           <button class="btn-download" @click="downloadForm">
@@ -29,18 +29,25 @@
 
       <!-- PROGRESS BAR -->
       <div class="progress-bar">
-        <div class="progress-step active" @click="$emit('goToStep', 1)">
-          <span class="step-number">1</span>
-          <span class="step-label">Proposal Details</span>
+        <!-- Step 1 (the Call for Proposal) is already done: it can be reopened to
+             select a different call. -->
+        <div class="progress-step completed" @click="$emit('goToStep', 1)">
+          <span class="step-number">✓</span>
+          <span class="step-label">Call for Proposal</span>
         </div>
-        <div class="progress-line"></div>
-        <div class="progress-step" @click="$emit('goToStep', 2)">
+        <div class="progress-line filled"></div>
+        <div class="progress-step active">
           <span class="step-number">2</span>
-          <span class="step-label">Certification</span>
+          <span class="step-label">Proposal Details</span>
         </div>
         <div class="progress-line"></div>
         <div class="progress-step" @click="$emit('goToStep', 3)">
           <span class="step-number">3</span>
+          <span class="step-label">Certification</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" @click="$emit('goToStep', 4)">
+          <span class="step-number">4</span>
           <span class="step-label">Review & Submit</span>
         </div>
       </div>
@@ -60,6 +67,21 @@
 
       <!-- BODY -->
       <div class="modal-body" ref="modalBodyRef">
+        <!-- The call chosen in step 1. It stays visible so the proposal is always
+             prepared for the right call, and it can be changed from here. -->
+        <div v-if="selectedCallName" class="selected-call">
+          <div class="selected-call-info">
+            <span class="selected-call-label">Call for Proposal</span>
+            <span class="selected-call-name">{{ selectedCallName }}</span>
+            <span v-if="selectedCallDeadline" class="selected-call-deadline">
+              Deadline: {{ selectedCallDeadline }}
+            </span>
+          </div>
+          <button type="button" class="btn-change-call" @click="$emit('goToStep', 1)">
+            Change Call
+          </button>
+        </div>
+
         <!-- 1. Project Profile -->
         <section class="form-section" ref="section_project_profile">
           <div class="section-header">
@@ -159,11 +181,117 @@
               </span>
             </div>
             <div class="form-group" :class="{ 'has-error': showValidation && errors.address }">
-              <label>Address / Contact <span class="req">*</span></label>
-              <textarea v-model="proposal.address"
-                placeholder="Barangay, Municipality, District, Province, Region / Telephone / Fax / Email"
-                rows="3"></textarea>
+              <label>Address <span class="req">*</span></label>
+              <p v-if="proposal.legacy_address" class="field-note ac-note">
+                Address saved in the previous format: &ldquo;{{ proposal.legacy_address }}&rdquo;. Please select the
+                address parts below.
+              </p>
+              <div class="ac-grid">
+                <div class="ac-field">
+                  <label for="address-country">Country <span class="req">*</span></label>
+                  <select id="address-country" :value="addressDetails.country"
+                    @change="addressCascade.select('country', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.country }}</option>
+                    <option v-for="country in addressCascade.countries" :key="country.code" :value="country.name">
+                      {{ country.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="ac-field">
+                  <label for="address-region">Region <span class="req">*</span></label>
+                  <select v-if="!addressCascade.manual" id="address-region" :value="addressDetails.region"
+                    :disabled="!addressCascade.regionEnabled"
+                    @change="addressCascade.select('region', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.region }}</option>
+                    <option v-for="region in addressCascade.regionOptions" :key="region.code" :value="region.name">
+                      {{ regionLabel(region) }}
+                    </option>
+                  </select>
+                  <input v-else id="address-region" type="text" :value="addressDetails.region"
+                    placeholder="State / Region" @input="addressCascade.select('region', $event.target.value)" />
+                </div>
+                <div class="ac-field">
+                  <!-- Province is only required where the region actually has
+                       provinces (NCR has none, and an independent city has none
+                       either - the placeholder explains it). -->
+                  <label for="address-province">Province <span v-if="addressCascade.provinceEnabled"
+                      class="req">*</span></label>
+                  <select v-if="!addressCascade.manual" id="address-province" :value="addressDetails.province"
+                    :disabled="!addressCascade.provinceEnabled"
+                    @change="addressCascade.select('province', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.province }}</option>
+                    <option v-for="province in addressCascade.provinceOptions" :key="province.code"
+                      :value="province.name">{{ province.name }}</option>
+                  </select>
+                  <input v-else id="address-province" type="text" :value="addressDetails.province"
+                    placeholder="Province / Administrative area"
+                    @input="addressCascade.select('province', $event.target.value)" />
+                </div>
+                <div class="ac-field">
+                  <!-- A district only exists in a districted area (NCR): the marker
+                       follows the loaded hierarchy so it never claims a level that
+                       does not apply to the selected region. -->
+                  <label for="address-district">District <span v-if="addressCascade.districtEnabled"
+                      class="req">*</span></label>
+                  <select v-if="!addressCascade.manual" id="address-district" :value="addressDetails.district"
+                    :disabled="!addressCascade.districtEnabled"
+                    @change="addressCascade.select('district', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.district }}</option>
+                    <option v-for="district in addressCascade.districtOptions" :key="district.code"
+                      :value="district.name">{{ district.name }}</option>
+                  </select>
+                  <input v-else id="address-district" type="text" :value="addressDetails.district"
+                    placeholder="District (if any)" @input="addressCascade.select('district', $event.target.value)" />
+                </div>
+                <div class="ac-field">
+                  <label for="address-municipality">Municipality / City <span class="req">*</span></label>
+                  <select v-if="!addressCascade.manual" id="address-municipality" :value="addressDetails.municipality"
+                    :disabled="!addressCascade.cityEnabled"
+                    @change="addressCascade.select('municipality', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.municipality }}</option>
+                    <option v-for="city in addressCascade.cityOptions" :key="city.code" :value="city.name">
+                      {{ cityLabel(city) }}
+                    </option>
+                  </select>
+                  <input v-else id="address-municipality" type="text" :value="addressDetails.municipality"
+                    placeholder="City / Municipality"
+                    @input="addressCascade.select('municipality', $event.target.value)" />
+                </div>
+                <div class="ac-field">
+                  <label for="address-barangay">Barangay <span class="req">*</span></label>
+                  <select v-if="!addressCascade.manual && !addressCascade.manualBarangay" id="address-barangay"
+                    :value="addressDetails.barangay" :disabled="!addressCascade.barangayEnabled"
+                    @change="addressCascade.select('barangay', $event.target.value)">
+                    <option value="">{{ addressCascade.placeholders.barangay }}</option>
+                    <option v-for="barangay in addressCascade.barangayOptions" :key="barangay.code"
+                      :value="barangay.name">{{ barangay.name }}</option>
+                  </select>
+                  <input v-else id="address-barangay" type="text" :value="addressDetails.barangay"
+                    placeholder="Barangay" @input="addressCascade.select('barangay', $event.target.value)" />
+                </div>
+              </div>
+              <p v-if="addressCascade.notice" class="field-note ac-note">
+                {{ addressCascade.notice }}
+                <button v-if="addressCascade.retryable" type="button" class="ac-retry"
+                  @click="addressCascade.retry()">Retry</button>
+              </p>
               <span class="field-error" v-if="showValidation && errors.address">{{ errors.address }}</span>
+            </div>
+
+            <div class="form-group" :class="{ 'has-error': showValidation && errors.contact }">
+              <!-- The contact method dropdown is the field's own control: it sits
+                   directly under the "Contact *" heading (no separate label) and
+                   the value input appears below it once a method is selected. -->
+              <label for="contact-type">Contact <span class="req">*</span></label>
+              <select id="contact-type" :value="contactDetails.type"
+                @change="onContactTypeChange($event.target.value)">
+                <option value="">{{ CONTACT_METHOD_PLACEHOLDER }}</option>
+                <option v-for="type in CONTACT_TYPES" :key="type.value" :value="type.value">{{ type.label }}</option>
+              </select>
+              <input v-if="contactDetails.type" id="contact-value" class="contact-value-input"
+                v-bind="contactInputAttributes(contactDetails.type)" :value="contactDetails.value"
+                :placeholder="contactInputPlaceholder" :aria-label="contactInputLabel" @input="onContactValueInput" />
+              <span class="field-error" v-if="showValidation && errors.contact">{{ errors.contact }}</span>
             </div>
           </div>
         </section>
@@ -176,9 +304,13 @@
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.cooperating_agencies }">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.cooperating_agencies }">
-              <label>Name/s and Address/es <span class="req">*</span></label>
-              <textarea v-model="proposal.cooperating_agencies"
-                placeholder="List cooperating agencies and their addresses..." rows="3"></textarea>
+              <label>Select all agencies that will collaborate on this research project <span class="req">*</span></label>
+              <!-- The checklist is the shared backend directory: the agencies are
+                   never typed in per proposal and a new one is only stored when the
+                   proponent clicks Add Agency. -->
+              <CooperatingAgenciesChecklist v-model:selected="proposal.cooperating_agency_ids"
+                v-model:names="proposal.cooperating_agency_names" :proposal-id="proposal.proposal_id"
+                :legacy-selection="proposal.cooperating_agencies" />
               <span class="field-error" v-if="showValidation && errors.cooperating_agencies">{{
                 errors.cooperating_agencies }}</span>
             </div>
@@ -355,7 +487,7 @@
           </div>
           <div class="section-card">
             <div class="sub-section">
-              <h4>10.1 Rationale / Significance</h4>
+              <h4>Rationale / Significance</h4>
               <p class="field-note">Not to exceed 300 words</p>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.rationale }">
                 <textarea v-model="proposal.rationale" rows="4"></textarea>
@@ -363,7 +495,7 @@
               </div>
             </div>
             <div class="sub-section">
-              <h4>10.2 Scientific Basis / Theoretical Framework</h4>
+              <h4>Scientific Basis / Theoretical Framework</h4>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.theoretical_framework }">
                 <textarea v-model="proposal.theoretical_framework" rows="4"></textarea>
                 <span class="field-error" v-if="showValidation && errors.theoretical_framework">{{
@@ -371,7 +503,7 @@
               </div>
             </div>
             <div class="sub-section">
-              <h4>10.3 Objectives</h4>
+              <h4>Objectives</h4>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.general_objective }">
                 <label>General Objective: <span class="req">*</span></label>
                 <textarea v-model="proposal.general_objective" rows="3"></textarea>
@@ -428,21 +560,47 @@
             <span class="section-sub">(if applicable)</span>
           </div>
           <div class="section-card">
-            <div class="file-upload">
-              <div class="upload-area" @click="$refs.techFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="12" y1="18" x2="12" y2="12" />
-                  <line x1="9" y1="15" x2="15" y2="15" />
+            <!-- The technology map is uploaded as an image: the file is validated as
+                 soon as it is chosen, a preview shows which image will be attached,
+                 and the image is uploaded to this proposal when the form is saved. -->
+            <div class="file-upload technology-map" :class="{ 'has-error': Boolean(technologyMapError) }">
+              <label for="technology-map-input">{{ TECHNOLOGY_MAP_LABEL }}</label>
+              <p class="field-hint">{{ TECHNOLOGY_MAP_HINT }}</p>
+
+              <div class="upload-area" @click="chooseTechnologyMap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span>Upload technology roadmap</span>
+                <span>{{ technologyMapFile ? 'Replace your technology map' : 'No image selected yet' }}</span>
+                <button type="button" class="btn-choose-image" @click.stop="chooseTechnologyMap">
+                  Choose Image
+                </button>
               </div>
-              <input ref="techFile" type="file" @change="handleFileUpload('technology', $event)" hidden />
-              <div v-if="proposal.technology_roadmap_file" class="file-info">
-                <span>📄 {{ proposal.technology_roadmap_file.name }}</span>
-                <button class="btn-remove-file" @click="proposal.technology_roadmap_file = null">✕</button>
+              <input id="technology-map-input" ref="techFile" type="file"
+                accept="image/png,image/jpeg,.png,.jpg,.jpeg" @change="onTechnologyMapChange" hidden />
+
+              <div v-if="technologyMapFile" class="file-info">
+                <span class="file-name">🖼 {{ technologyMapFile.name }}</span>
+                <span class="file-size">{{ technologyMapSize }}</span>
+                <span class="file-actions">
+                  <button type="button" class="btn-replace-file" @click="chooseTechnologyMap">
+                    Replace Image
+                  </button>
+                  <button type="button" class="btn-remove-file" @click="removeTechnologyMap">
+                    Remove Image
+                  </button>
+                </span>
               </div>
+
+              <figure v-if="technologyMapPreviewUrl" class="technology-map-preview">
+                <img :src="technologyMapPreviewUrl"
+                  :alt="`Preview of ${technologyMapFile?.name || 'the technology map'}`" />
+              </figure>
+
+              <span class="field-error" v-if="technologyMapError">{{ technologyMapError }}</span>
             </div>
           </div>
         </section>
@@ -638,13 +796,35 @@
             <span class="section-number">23</span>
             <h3>Literature Cited</h3>
           </div>
-          <div class="section-card">
-            <div class="form-group" :class="{ 'has-error': showValidation && errors.literature_cited }">
-              <textarea v-model="proposal.literature_cited" placeholder="List your references in APA format..."
-                rows="5"></textarea>
-              <span class="field-error" v-if="showValidation && errors.literature_cited">{{ errors.literature_cited
-                }}</span>
-            </div>
+          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.literature_cited }">
+            <p class="reference-instruction">{{ REFERENCE_INSTRUCTION }}</p>
+
+            <!-- The references added so far. Each entry keeps its APA formatting
+                 (italics included) and can be edited or removed. -->
+            <ul v-if="references.length" class="reference-list">
+              <li v-for="(entry, index) in references" :key="entry.id" class="reference-entry">
+                <div class="reference-entry-main">
+                  <span class="reference-badge">{{ entryTypeLabel(entry) }}</span>
+                  <span class="reference-text" v-html="entryHtml(entry)"></span>
+                </div>
+                <div class="reference-actions">
+                  <button type="button" class="btn-replace-file" @click="editReference(index)">
+                    Edit
+                  </button>
+                  <button type="button" class="btn-remove-file" @click="removeReference(index)">
+                    Remove
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="field-note">No references added yet.</p>
+
+            <button type="button" class="btn-add" @click="openReferenceModal">
+              {{ ADD_REFERENCE_LABEL }}
+            </button>
+
+            <span class="field-error" v-if="showValidation && errors.literature_cited">{{
+              errors.literature_cited }}</span>
           </div>
         </section>
 
@@ -689,6 +869,19 @@
             <h3>Line-Item Budget Requirement</h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.line_item_budget_file }">
+            <!-- The official template must be followed, and it can be read in place
+                 (View Line-Item Budget Template) instead of being downloaded first. -->
+            <p class="budget-template-instruction">
+              <strong>Instruction:</strong> {{ LINE_ITEM_BUDGET_INSTRUCTION }}
+            </p>
+            <ul class="budget-file-rules">
+              <li>
+                <strong>{{ BUDGET_FILE_FORMATS_LABEL }}</strong> {{ BUDGET_FILE_FORMATS_VALUE }}
+              </li>
+              <li><strong>{{ BUDGET_FILE_SIZE_LABEL }}</strong> {{ BUDGET_FILE_SIZE_VALUE }}</li>
+            </ul>
+            <!-- The two template actions share one row; the upload control sits on
+                 its own row directly below them (see .budget-upload). -->
             <div class="budget-actions">
               <button class="btn-outline" @click="downloadBudgetFormat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -698,26 +891,47 @@
                 </svg>
                 Download Budget Template
               </button>
-              <div class="file-upload inline">
-                <div class="upload-area small" @click="$refs.budgetFile.click()">
+              <button class="btn-outline btn-view-template" @click="showBudgetTemplate = true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {{ LINE_ITEM_BUDGET_TEMPLATE_BUTTON_LABEL }}
+              </button>
+            </div>
+            <div class="budget-upload">
+              <!-- The filled-out budget is validated as soon as it is chosen, so an
+                   unsupported or oversized file never reaches the form; the file is
+                   uploaded to this proposal when the form is saved or submitted. -->
+              <div class="file-upload budget-file" :class="{ 'has-error': Boolean(budgetFileError) }">
+                <div class="upload-area small" @click="chooseBudgetFile">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="12" y1="18" x2="12" y2="12" />
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
-                  <span>Upload filled budget file</span>
+                  <span>{{ BUDGET_FILE_LABEL }}</span>
                 </div>
-                <input ref="budgetFile" type="file" accept=".pdf,.doc,.docx"
-                  @change="handleFileUpload('budget', $event)" hidden />
+                <input ref="budgetFileInput" type="file" accept=".pdf,.docx"
+                  @change="onBudgetFileChange" hidden />
               </div>
+              <div v-if="proposal.line_item_budget_file" class="file-info">
+                <span class="file-name">📄 {{ proposal.line_item_budget_file.name }}</span>
+                <span class="file-size">{{ budgetFileSize }}</span>
+                <span class="file-actions">
+                  <button type="button" class="btn-replace-file" @click="chooseBudgetFile">
+                    Replace File
+                  </button>
+                  <button type="button" class="btn-remove-file" @click="removeBudgetFile">
+                    Remove File
+                  </button>
+                </span>
+              </div>
+              <span class="field-error" v-if="budgetFileError">{{ budgetFileError }}</span>
+              <span class="field-error" v-else-if="showValidation && errors.line_item_budget_file">{{
+                errors.line_item_budget_file }}</span>
             </div>
-            <div v-if="proposal.line_item_budget_file" class="file-info">
-              <span>📄 {{ proposal.line_item_budget_file.name }}</span>
-              <button class="btn-remove-file" @click="proposal.line_item_budget_file = null">✕</button>
-            </div>
-            <span class="field-error" v-if="showValidation && errors.line_item_budget_file">{{
-              errors.line_item_budget_file }}</span>
           </div>
         </section>
 
@@ -731,7 +945,16 @@
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.other_projects_number }">
               <label>Number of other projects:</label>
-              <input v-model="proposal.other_projects_number" placeholder="e.g. 2" class="input-short" />
+              <input
+                v-model="proposal.other_projects_number"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                placeholder="e.g. 2"
+                class="input-short"
+                @input="onOtherProjectsNumberInput"
+              />
               <span class="field-error" v-if="showValidation && errors.other_projects_number">{{
                 errors.other_projects_number }}</span>
             </div>
@@ -811,17 +1034,31 @@
     </div>
   </div>
 
+  <!-- Official Line-Item Budget template (section 25). It is shown in place so
+       the proponent can follow its format without downloading the file; the
+       budget upload field and the rest of the form are untouched. -->
+  <LineItemBudgetTemplateModal v-if="showBudgetTemplate" @close="showBudgetTemplate = false" />
+
+  <!-- Reference builder for section 23 (Literature Cited): generate an APA 7th
+       edition reference or paste one that is already formatted. -->
+  <LiteratureReferenceModal v-if="showReferenceModal" :entry="editingReference" @save="saveReference"
+    @close="closeReferenceModal" />
+
   <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
     @cancel="dialogState.onCancel" @close="dialogState.show = false" />
 </template>
 
 <script setup>
-import { reactive, ref, computed, nextTick, watch, onMounted } from 'vue'
+import { reactive, ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
+import LineItemBudgetTemplateModal from '@/components/LineItemBudgetTemplateModal.vue'
+import LiteratureReferenceModal from '@/components/LiteratureReferenceModal.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import {
   buildStandaloneHtml,
   printDocument,
@@ -834,16 +1071,89 @@ import {
   sdgChecklistHtml
 } from '@/utils/documentExport'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
+import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import { useAddressCascade } from '@/composables/useAddressCascade'
+import {
+  cityLabel,
+  emptyAddressDetails,
+  formatAddressContact,
+  regionLabel,
+  validateAddress,
+} from '@/utils/philippineLocations'
+import {
+  CONTACT_METHOD_PLACEHOLDER,
+  CONTACT_NUMBER,
+  CONTACT_TYPES,
+  contactDetailsForType,
+  contactInputAttributes,
+  contactPlaceholder,
+  contactTypeLabel,
+  emptyContactDetails,
+  sanitizeContactNumber,
+  validateContact,
+} from '@/utils/contactDetails'
+import {
+  TECHNOLOGY_MAP_HINT,
+  TECHNOLOGY_MAP_LABEL,
+  clearedTechnologyMapSelection,
+  formatFileSize,
+  nextTechnologyMapSelection,
+  technologyMapKey,
+  technologyMapUploadError,
+  uploadTechnologyMap,
+  verifyTechnologyMapFile,
+} from '@/utils/technologyMap'
+import {
+  LINE_ITEM_BUDGET_INSTRUCTION,
+  LINE_ITEM_BUDGET_TEMPLATE_BUTTON_LABEL,
+  LINE_ITEM_BUDGET_TEMPLATE_URL,
+} from '@/utils/budgetTemplate'
+import {
+  BUDGET_FILE_FORMATS_LABEL,
+  BUDGET_FILE_FORMATS_VALUE,
+  BUDGET_FILE_LABEL,
+  BUDGET_FILE_SIZE_LABEL,
+  BUDGET_FILE_SIZE_VALUE,
+  budgetFileKey,
+  budgetFileSizeLabel,
+  budgetFileUploadError,
+  clearedBudgetFileSelection,
+  nextBudgetFileSelection,
+  uploadBudgetFile,
+  verifyBudgetFile,
+} from '@/utils/budgetFile'
+// Step 1 of the workflow: the selected Call for Proposal is shown on this step.
+import { callDeadlineLabel } from '@/utils/callForProposal'
+// Section 23: APA 7th edition reference builder.
+import {
+  ADD_REFERENCE_LABEL,
+  REFERENCE_INSTRUCTION,
+  entriesToJson,
+  entriesToText,
+  entryHtml,
+  entryText,
+  entryTypeLabel,
+  normalizeReferenceText,
+  parseReferenceEntries,
+} from '@/utils/apaReferences'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
-const props = defineProps({ modelValue: Boolean })
+const props = defineProps({
+  modelValue: Boolean,
+  /**
+   * The Call for Proposal selected in step 1 of the workflow. The real record (with
+   * its database id) is kept by the workflow, shown here and sent with the proposal.
+   */
+  selectedCall: { type: Object, default: null }
+})
 const emit = defineEmits(['update:modelValue', 'save', 'next'])
 
 const modalBodyRef = ref(null)
 const errorBannerRef = ref(null)
 const showValidation = ref(false)
 const showEvalCriteria = ref(false)
+const showBudgetTemplate = ref(false)
 const errors = reactive({})
 
 const sectionRefs = {
@@ -856,6 +1166,7 @@ const sectionRefs = {
   end_date: 'section_project_profile',
   department: 'section_project_profile',
   address: 'section_project_profile',
+  contact: 'section_project_profile',
   cooperating_agencies: 'section_cooperating_agencies',
   sites: 'section_sites',
   research_type: 'section_research_type',
@@ -972,9 +1283,16 @@ const getInitialProposal = () => ({
   start_date: '',
   end_date: '',
   department: '',
-  address: '',
+  address_details: emptyAddressDetails(),
+  contact_details: emptyContactDetails(),
+  legacy_address: '',
   other_projects_number: '',
+  // Section 02: the free text a proposal saved before the checklist still carries,
+  // plus the ids of the agencies selected from the shared directory and the names
+  // they map to (used for the legacy text column and the printout).
   cooperating_agencies: '',
+  cooperating_agency_ids: [],
+  cooperating_agency_names: [],
   sites: [{ country: '', region: '', province: '', district: '', municipality: '', barangay: '' }],
   research_type: '',
   priority_agendas: {
@@ -1010,8 +1328,22 @@ const getInitialProposal = () => ({
   risks_assumptions: '',
   review_of_literature: '',
   technology_roadmap_file: null,
+  // Name / stored path of the technology map already attached to the proposal (set by
+  // the upload, so the printout and a later save keep describing the same image).
+  roadmap_file_name: '',
+  roadmap_file_path: '',
   gad_score_file: null,
   line_item_budget_file: null,
+  // Name / stored path of the Line-Item Budget already attached to the proposal (set
+  // by the upload, so a later save keeps describing the same file).
+  budget_file_name: '',
+  budget_file_path: '',
+  // Step 1 of the workflow: the Call for Proposal this proposal is being prepared
+  // for. The id is the real announcement id the backend stores on the proposal.
+  proposal_announcement_id: null,
+  proposal_announcement_name: '',
+  // Section 23: the structured reference entries behind the literature cited list.
+  literature_json: '',
   supporting_documents: [],
   logical_framework: [{ outcome_indicator: '', output_indicator: '' }],
   literature_cited: '',
@@ -1021,6 +1353,161 @@ const getInitialProposal = () => ({
 
 const proposal = reactive(getInitialProposal())
 
+// The selected Call for Proposal is part of the proposal state, so it travels with
+// the form data through every step (and into the saved / submitted payload) without
+// changing any existing field of this form.
+watch(
+  () => props.selectedCall,
+  (call) => {
+    proposal.proposal_announcement_id = call?.id ?? null
+    proposal.proposal_announcement_name = call?.name || ''
+  },
+  { immediate: true }
+)
+
+/** The selected call's title, shown in the banner above the form. */
+const selectedCallName = computed(
+  () => props.selectedCall?.name || proposal.proposal_announcement_name || ''
+)
+
+/** The selected call's real saved deadline, shown in the same banner. */
+const selectedCallDeadline = computed(() =>
+  props.selectedCall ? callDeadlineLabel(props.selectedCall) : ''
+)
+
+// ===== LITERATURE CITED (section 23) =====
+// The references live as a list of entries (what the builder produces). The list is
+// mirrored into the proposal state twice: as plain text - the canonical value the API
+// stores and every other screen shows - and as the structured entries, so italics and
+// "Edit" still work after a save, a step change or a reload.
+const references = ref([])
+const showReferenceModal = ref(false)
+const editingReference = ref(null)
+const editingReferenceIndex = ref(-1)
+
+/** Keeps the proposal state in sync with the entry list. */
+const syncReferences = () => {
+  proposal.literature_cited = entriesToText(references.value)
+  proposal.literature_json = entriesToJson(references.value)
+}
+
+const openReferenceModal = () => {
+  editingReference.value = null
+  editingReferenceIndex.value = -1
+  showReferenceModal.value = true
+}
+
+const editReference = (index) => {
+  editingReference.value = references.value[index] || null
+  editingReferenceIndex.value = index
+  showReferenceModal.value = true
+}
+
+const closeReferenceModal = () => {
+  showReferenceModal.value = false
+  editingReference.value = null
+  editingReferenceIndex.value = -1
+}
+
+/** Adds (or updates) a reference; an identical one is never added twice. */
+const saveReference = async (entry) => {
+  const text = entryText(entry)
+  if (!text) return
+
+  const isDuplicate = references.value.some(
+    (existing, index) =>
+      index !== editingReferenceIndex.value &&
+      normalizeReferenceText(entryText(existing)) === normalizeReferenceText(text),
+  )
+  if (isDuplicate) {
+    await showAlert('That reference is already in your literature cited list.', {
+      type: 'warning',
+      title: 'Duplicate Reference'
+    })
+    return
+  }
+
+  if (editingReferenceIndex.value >= 0) {
+    references.value.splice(editingReferenceIndex.value, 1, entry)
+  } else {
+    references.value.push(entry)
+  }
+  syncReferences()
+  closeReferenceModal()
+}
+
+/** Removes a reference, after the proponent confirms it. */
+const removeReference = async (index) => {
+  const entry = references.value[index]
+  if (!entry) return
+  const confirmed = await showConfirm('Remove this reference from the literature cited?', {
+    type: 'warning',
+    title: 'Remove Reference',
+    confirmText: 'Remove'
+  })
+  if (!confirmed) return
+  references.value.splice(index, 1)
+  syncReferences()
+}
+
+// "Address *" and "Contact *" replace the old combined "Address / Contact"
+// field. The address is a cascading Philippine location selection (with manual
+// entry for any other country) and the contact is a type + value pair; both are
+// kept in the proposal state so they travel with the rest of the form.
+const addressDetails = computed({
+  get: () => proposal.address_details,
+  set: (value) => { proposal.address_details = value }
+})
+const contactDetails = computed({
+  get: () => proposal.contact_details,
+  set: (value) => { proposal.contact_details = value }
+})
+const addressCascade = useAddressCascade(addressDetails)
+
+/** Accessible name of the value input (its visible label is the heading above). */
+const contactInputLabel = computed(() => contactTypeLabel(contactDetails.value.type))
+const contactInputPlaceholder = computed(() => contactPlaceholder(contactDetails.value.type))
+const contactIsNumber = computed(() => contactDetails.value.type === CONTACT_NUMBER)
+
+// A new contact method starts empty: a phone number is not an email address, and
+// the input type and validation change with the method, so the value typed for
+// the previous one is dropped instead of being submitted as the wrong contact.
+const onContactTypeChange = (type) => {
+  contactDetails.value = contactDetailsForType(type)
+}
+
+// Contact numbers only accept characters a number can contain (letters and the
+// like are dropped as they are typed); email addresses are validated instead.
+const onContactValueInput = (event) => {
+  const raw = event.target.value
+  const value = contactIsNumber.value ? sanitizeContactNumber(raw) : raw
+  contactDetails.value = { ...contactDetails.value, value }
+  if (value !== raw) event.target.value = value
+}
+
+/**
+ * Maps the address / contact saved on a proposal back into the form.
+ *
+ * Proposals saved before the split only carry the combined `address` text. That
+ * text is never dropped: it is shown above the new fields (proposal.legacy_address)
+ * so the proponent can transfer it, while the structured columns simply start
+ * empty.
+ */
+const applySavedAddressAndContact = (data) => {
+  const saved = {
+    country: data.addressCountry || '',
+    region: data.addressRegion || '',
+    province: data.addressProvince || '',
+    district: data.addressDistrict || '',
+    municipality: data.addressMunicipality || '',
+    barangay: data.addressBarangay || ''
+  }
+  const hasStructured = Object.values(saved).some((value) => String(value ?? '').trim() !== '')
+  proposal.address_details = hasStructured ? saved : emptyAddressDetails()
+  proposal.legacy_address = hasStructured ? '' : (data.address || '')
+  proposal.contact_details = { type: data.contactType || '', value: data.contactValue || '' }
+}
+
 const resetForm = () => {
   const initial = getInitialProposal()
   Object.keys(initial).forEach(key => {
@@ -1029,6 +1516,13 @@ const resetForm = () => {
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
   programTitleChoice.value = ''
+  budgetFileError.value = ''
+  uploadedBudgetFileKey.value = ''
+  // Section 23: the reference list is part of the form state that is reset.
+  references.value = []
+  showReferenceModal.value = false
+  editingReference.value = null
+  editingReferenceIndex.value = -1
 }
 
 const loadProposal = (data) => {
@@ -1043,8 +1537,13 @@ const loadProposal = (data) => {
   proposal.start_date = data.startDate || ''
   proposal.end_date = data.endDate || ''
   proposal.department = data.college || ''
-  proposal.address = data.address || ''
+  applySavedAddressAndContact(data)
+  // Section 02: the free text of a proposal saved before the checklist is kept (the
+  // checklist shows it until the agencies are selected); the saved selection itself
+  // is restored by the checklist from the proposal's own endpoint.
   proposal.cooperating_agencies = data.cooperatingAgencies || ''
+  proposal.cooperating_agency_ids = []
+  proposal.cooperating_agency_names = []
   proposal.research_type = data.researchType || ''
   proposal.innovation_goals = data.innovationGoals || ''
   proposal.sector_relevance = data.sectorRelevance || ''
@@ -1065,7 +1564,17 @@ const loadProposal = (data) => {
   proposal.sustainability_plan = data.sustainability || ''
   proposal.risks_assumptions = data.risks || ''
   proposal.other_projects_number = data.otherProjectsNumber || ''
-  proposal.literature_cited = data.literatureCited || ''
+  // Section 23: the references are restored from the stored plain text and, when the
+  // proposal was built with the reference builder, from the structured entries too
+  // (which is what keeps the italics and "Edit" working).
+  proposal.literature_cited = data.referencesText || ''
+  proposal.literature_json = data.referencesJson || ''
+  references.value = parseReferenceEntries(proposal.literature_json, proposal.literature_cited)
+  // Section 25: the name / path of the Line-Item Budget already attached to this
+  // proposal. Only the reference is restored - the file itself stays on the server
+  // until the proponent uploads a replacement.
+  proposal.budget_file_name = data.beneficiariesFileName || ''
+  proposal.budget_file_path = data.beneficiariesFilePath || ''
 
   // Map sites
   if (data.sites && data.sites.length > 0) {
@@ -1185,25 +1694,278 @@ const addTableRow = (key) => {
 
 const removeTableRow = (key, index) => proposal[key].splice(index, 1)
 
+// "Number of other projects" is a count. A type="number" input already refuses
+// letters, but browsers still accept "e", "+", "-" and "." in one, so anything
+// that is not a digit is dropped here: the form state - and therefore the
+// submitted payload - always holds a whole, non-negative number, or is empty.
+const onOtherProjectsNumberInput = (event) => {
+  const digits = String(event.target.value || '').replace(/[^\d]/g, '')
+  event.target.value = digits
+  proposal.other_projects_number = digits
+}
+
 const handleFileUpload = (type, event) => {
   const file = event.target.files[0]
   if (!file) return
+  // The Line-Item Budget (section 25) and the Technology Map (section 13) have
+  // their own validated upload handlers - onBudgetFileChange / onTechnologyMapChange -
+  // so this generic one is left for the remaining fields.
   const map = {
-    technology: 'technology_roadmap_file',
-    gad: 'gad_score_file',
-    budget: 'line_item_budget_file'
+    gad: 'gad_score_file'
   }
   if (map[type]) proposal[map[type]] = file
   else if (type === 'supporting') proposal.supporting_documents.push(file)
 }
 
+// ===== TECHNOLOGY MAP (section 13) =====
+// The technology map is uploaded as an image (PNG or JPEG, at most 10 MB). The file
+// is validated the moment it is chosen - size, type and the real image signature - so
+// an unsupported file never reaches the form, a preview lets the proponent verify the
+// right image, and the image is uploaded to the proposal right after the proposal has
+// been saved, so it is attached to the correct record.
+const techFile = ref(null)
+const technologyMapError = ref('')
+const technologyMapPreviewUrl = ref('')
+const uploadedTechnologyMapKey = ref('')
+
+/** The image chosen on this form (a saved file name is not a file). */
+const technologyMapFile = computed(() => {
+  const file = proposal.technology_roadmap_file
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+/** The chosen file's size, shown next to its name. */
+const technologyMapSize = computed(() => formatFileSize(technologyMapFile.value?.size))
+
+const releaseTechnologyMapPreview = () => {
+  if (technologyMapPreviewUrl.value) {
+    URL.revokeObjectURL(technologyMapPreviewUrl.value)
+    technologyMapPreviewUrl.value = ''
+  }
+}
+
+/** Previews the chosen image so the proponent can verify the correct file. */
+const showTechnologyMapPreview = (file) => {
+  releaseTechnologyMapPreview()
+  technologyMapPreviewUrl.value = URL.createObjectURL(file)
+}
+
+const chooseTechnologyMap = () => techFile.value?.click()
+
+const onTechnologyMapChange = async (event) => {
+  const input = event.target
+  const file = input?.files?.[0]
+  // Clear the input so choosing the same file again still fires a change event.
+  if (input) input.value = ''
+  if (!file) return
+
+  const result = await verifyTechnologyMapFile(file)
+  // A valid image replaces the previous selection and clears the error; an invalid
+  // one is never accepted, so the previous selection stays and only the reason is
+  // reported under the field.
+  const next = nextTechnologyMapSelection(technologyMapFile.value, result, file)
+  technologyMapError.value = next.error
+  if (next.file !== file) return
+
+  proposal.technology_roadmap_file = file
+  uploadedTechnologyMapKey.value = ''
+  showTechnologyMapPreview(file)
+}
+
+const removeTechnologyMap = () => {
+  const next = clearedTechnologyMapSelection()
+  proposal.technology_roadmap_file = next.file
+  uploadedTechnologyMapKey.value = ''
+  technologyMapError.value = next.error
+  releaseTechnologyMapPreview()
+}
+
+/**
+ * Uploads the chosen image to the proposal it belongs to - once. The proposal has
+ * just been created or updated, so its id is known here.
+ */
+const uploadTechnologyMapIfNeeded = async (proposalId) => {
+  const file = technologyMapFile.value
+  if (!proposalId || !file) return
+  const key = technologyMapKey(file)
+  if (key === uploadedTechnologyMapKey.value) return
+
+  try {
+    const saved = await uploadTechnologyMap(proposalId, file)
+    uploadedTechnologyMapKey.value = key
+    // Keep the saved name / path, so the printout and a later save still describe the
+    // image that is attached to the proposal.
+    proposal.roadmap_file_name = saved?.roadmapFileName || ''
+    proposal.roadmap_file_path = saved?.roadmapFilePath || ''
+  } catch (err) {
+    // The proposal itself was saved; only the image could not be attached, so the
+    // failure is reported without hiding the successful save.
+    await showAlert(technologyMapUploadError(err), {
+      type: 'error',
+      title: 'Technology Map Not Uploaded'
+    })
+  }
+}
+
+onBeforeUnmount(releaseTechnologyMapPreview)
+
+// ===== LINE-ITEM BUDGET FILE (section 25) =====
+// The proponent uploads the filled-out line-item budget instead of entering the
+// budget details into the form. The file is validated the moment it is chosen -
+// size, format and the real file signature - so an unsupported file never reaches
+// the form, and it is uploaded to the proposal right after the proposal has been
+// saved, so it is attached to the correct record.
+const budgetFileInput = ref(null)
+const budgetFileError = ref('')
+const uploadedBudgetFileKey = ref('')
+
+/** The chosen file, if any (a saved file name is not a file). */
+const budgetFileToUpload = computed(() => {
+  const file = proposal.line_item_budget_file
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+/** The chosen file's size, shown next to its name. */
+const budgetFileSize = computed(() => budgetFileSizeLabel(budgetFileToUpload.value?.size))
+
+const chooseBudgetFile = () => budgetFileInput.value?.click()
+
+const onBudgetFileChange = async (event) => {
+  const input = event.target
+  const file = input?.files?.[0]
+  // Clear the input so choosing the same file again still fires a change event.
+  if (input) input.value = ''
+  if (!file) return
+
+  const result = await verifyBudgetFile(file)
+  // A valid file replaces the previous selection and clears the error; an invalid
+  // one is never accepted, so the previous selection stays and only the reason is
+  // reported under the field.
+  const next = nextBudgetFileSelection(proposal.line_item_budget_file, result, file)
+  proposal.line_item_budget_file = next.file
+  budgetFileError.value = next.error
+  uploadedBudgetFileKey.value = ''
+}
+
+const removeBudgetFile = () => {
+  const next = clearedBudgetFileSelection()
+  proposal.line_item_budget_file = next.file
+  budgetFileError.value = next.error
+  uploadedBudgetFileKey.value = ''
+  if (budgetFileInput.value) budgetFileInput.value.value = ''
+}
+
+/**
+ * Uploads the chosen file to the proposal it belongs to - once. The proposal has
+ * just been created or updated, so its id is known here.
+ */
+const uploadBudgetFileIfNeeded = async (proposalId) => {
+  const file = budgetFileToUpload.value
+  if (!proposalId || !file) return
+  const key = budgetFileKey(file)
+  if (key === uploadedBudgetFileKey.value) return
+
+  try {
+    const saved = await uploadBudgetFile(proposalId, file)
+    uploadedBudgetFileKey.value = key
+    // Keep the stored name / path, so the printout and a later save still describe
+    // the file that is attached to the proposal.
+    proposal.budget_file_name = saved?.beneficiariesFileName || ''
+    proposal.budget_file_path = saved?.beneficiariesFilePath || ''
+  } catch (err) {
+    // The proposal itself was saved; only the file could not be attached, so the
+    // failure is reported without hiding the successful save.
+    await showAlert(budgetFileUploadError(err), {
+      type: 'error',
+      title: 'Budget File Not Uploaded'
+    })
+  }
+}
+
+/**
+ * This page holds its own draft (snake_case) shape, so map it onto the field
+ * names the official form renderer expects. Nothing is invented: any key with
+ * no draft counterpart is simply left blank on the form.
+ */
+const toOfficialProposal = () => {
+  const d = proposal
+  const fileName = (file) => (file && file.name ? file.name : file ? String(file) : '')
+  const agendas = Object.entries(d.priority_agendas || {}).map(([agendaKey, v]) => ({
+    agendaKey,
+    selected: Boolean(v && v.selected),
+    value: (v && v.value) || ''
+  }))
+  const outputs = Object.values(d.expected_outputs || {})
+    .map((o) => (o && o.value ? o.value : ''))
+    .filter(Boolean)
+    .join('\n')
+  return {
+    programTitle: d.program_title,
+    projectTitle: d.project_title,
+    projectLeader: d.project_leader,
+    projectLeaderSex: d.project_leader_sex,
+    duration: d.duration,
+    startDate: d.start_date,
+    endDate: d.end_date,
+    college: d.department,
+    // The official form still has a single "Address / Contact" line: it is fed
+    // the combined value of the two new sections.
+    address: formatAddressContact(d.address_details, d.contact_details),
+    cooperatingAgencies: joinAgencyNames(d.cooperating_agency_names) || d.cooperating_agencies,
+    sites: d.sites,
+    researchType: d.research_type,
+    priorityAgendas: agendas,
+    innovationGoals: d.innovation_goals,
+    sectorRelevance: d.sector_relevance,
+    sdg: d.sustainable_development_goals,
+    executiveSummary: d.executive_summary,
+    rationale: d.rationale,
+    framework: d.theoretical_framework,
+    objectivesGeneral: d.general_objective,
+    objectivesSpecific: d.specific_objectives,
+    review: d.review_of_literature,
+    methodology: d.methodology,
+    outputs,
+    outcomes: d.potential_outcomes,
+    impactEconomic: d.economic_impact,
+    impactSocial: d.social_ethical_impact,
+    beneficiaries: d.target_beneficiaries,
+    sustainability: d.sustainability_plan,
+    limitationsText: d.limitations,
+    risks: d.risks_assumptions,
+    referencesText: d.literature_cited || '',
+    // Section 23: the structured entries behind the list (italics + editing). Sent
+    // together with the plain text; the backend stores both.
+    referencesJson: d.literature_json || '',
+    logFrames: (d.logical_framework || []).map((r) => ({
+      outcome: r.outcome_indicator,
+      output: r.output_indicator
+    })),
+    personnel: (d.personnel_requirements || []).map((r) => ({
+      position: r.position,
+      timeDevoted: r.effort,
+      responsibilities: r.responsibilities
+    })),
+    otherProjectsNumber: d.other_projects_number,
+    otherProjects: (d.other_projects || []).map((r) => ({
+      title: r.project_title,
+      agency: r.funding_agency,
+      involvement: r.involvement
+    })),
+    roadmapFileName: fileName(d.technology_roadmap_file) || d.roadmap_file_name || '',
+    gadFileName: fileName(d.gad_score_file),
+    // Section 25: the Line-Item Budget document. The stored name (set by the upload)
+    // wins, so a re-save never overwrites it with a local file name.
+    beneficiariesFileName: d.budget_file_name || fileName(d.line_item_budget_file),
+    supportingDocuments: [
+      fileName(d.line_item_budget_file),
+      ...(d.supporting_documents || []).map(fileName)
+    ].filter(Boolean)
+  }
+}
+
 const downloadForm = () => {
-  const html = buildStandaloneHtml({
-    title: 'Research Proposal Form',
-    subtitle: proposal.project_title || 'Project Proposal',
-    body: proposalDocumentBody()
-  })
-  printDocument({ title: 'Research Proposal Form', html })
+  downloadOfficialProposal(toOfficialProposal())
 }
 
 const proposalDocumentBody = () => {
@@ -1256,12 +2018,12 @@ const proposalSectionsA = () => {
           ${field('End Date', p.end_date)}
           ${field('Implementing College / Department', p.department)}
         </div>
-        ${textBlock('Address / Contact', p.address)}`
+        ${textBlock('Address / Contact', formatAddressContact(p.address_details, p.contact_details))}`
     }),
     section({
       number: '02',
       title: 'Cooperating Agencies',
-      body: textBlock('Name/s and Address/es', p.cooperating_agencies)
+      body: textBlock('Cooperating Agencies', joinAgencyNames(p.cooperating_agency_names) || p.cooperating_agencies)
     }),
     section({
       number: '03',
@@ -1445,10 +2207,27 @@ const validateStep1 = () => {
   if (isBlank(proposal.start_date)) errors.start_date = 'Start Date is required.'
   if (isBlank(proposal.end_date)) errors.end_date = 'End Date is required.'
   if (isBlank(proposal.department)) errors.department = 'Implementing College/Department is required.'
-  if (isBlank(proposal.address)) errors.address = 'Address / Contact is required.'
+  // 01 - Address and Contact (replacing the old combined "Address / Contact"):
+  // the address must be complete for the selected administrative hierarchy and
+  // the contact must match its selected type.
+  const addressError = validateAddress(proposal.address_details, {
+    hasProvinces: addressCascade.provinceOptions.length > 0,
+    hasDistricts: addressCascade.districtOptions.length > 0,
+    manual: addressCascade.manual,
+    manualBarangay: addressCascade.manualBarangay,
+    // An independent city (City of Isabela, City of Cotabato) belongs to no
+    // province and no district, so neither level is required for its address.
+    independentCity: addressCascade.independentCity
+  })
+  if (addressError) errors.address = addressError
+  const contactError = validateContact(proposal.contact_details)
+  if (contactError) errors.contact = contactError
 
-  // 02 - Cooperating Agencies
-  if (isBlank(proposal.cooperating_agencies)) errors.cooperating_agencies = 'Cooperating Agencies is required.'
+  // 02 - Cooperating Agencies: at least one agency from the shared directory. A
+  // proposal saved before the checklist (free text only) keeps the previous rule.
+  if (!normalizeSelectedIds(proposal.cooperating_agency_ids).length && isBlank(proposal.cooperating_agencies)) {
+    errors.cooperating_agencies = 'Please select at least one cooperating agency.'
+  }
 
   // 03 - Sites of Implementation
   if (!proposal.sites.length) {
@@ -1588,7 +2367,14 @@ const saveAsDraft = async () => {
     } else {
       // Create new draft
       res = await api.post('/api/proposals', payload)
+      // Keep the id of the draft that was just created: the technology map is attached
+      // to it, and saving again updates the draft instead of creating a second one.
+      proposal.proposal_id = res.data?.id ?? proposal.proposal_id
     }
+    // The image is uploaded after the proposal exists, so it is attached to this draft.
+    await uploadTechnologyMapIfNeeded(proposal.proposal_id)
+    // The filled-out Line-Item Budget is attached to the same draft.
+    await uploadBudgetFileIfNeeded(proposal.proposal_id)
     await showAlert('Draft saved successfully!', { type: 'success', title: 'Draft Saved' })
     emit('save', res.data)
     emit('update:modelValue', false)
@@ -1621,11 +2407,17 @@ const goNext = async () => {
   emit('next', { ...proposal })
 }
 
-const downloadBudgetFormat = () => window.open('/templates/Project-Line-Item-Budget.docx')
+// Section 25: the same official template the modal previews can still be saved
+// to disk (it used to point at a file that was not shipped with the app).
+const downloadBudgetFormat = () => window.open(LINE_ITEM_BUDGET_TEMPLATE_URL)
 
 const mapFormToDTO = (data, proponentId, status) => {
   return {
     proponentId,
+    // Step 1 of the workflow: the Call for Proposal the proponent selected. The
+    // backend attaches the proposal to that exact call, and refuses it when the call
+    // is no longer open for submissions.
+    proposalAnnouncementId: data.proposal_announcement_id || null,
     programTitle: data.program_title || '',
     projectTitle: data.project_title || '',
     projectLeader: data.project_leader || '',
@@ -1634,8 +2426,22 @@ const mapFormToDTO = (data, proponentId, status) => {
     startDate: data.start_date || '',
     endDate: data.end_date || '',
     college: data.department || '',
-    address: data.address || '',
-    cooperatingAgencies: data.cooperating_agencies || '',
+    // The combined "Address / Contact" column is kept up to date from the two
+    // new sections, so every existing screen and export still shows both.
+    address: formatAddressContact(data.address_details, data.contact_details),
+    addressCountry: data.address_details?.country || '',
+    addressRegion: data.address_details?.region || '',
+    addressProvince: data.address_details?.province || '',
+    addressDistrict: data.address_details?.district || '',
+    addressMunicipality: data.address_details?.municipality || '',
+    addressBarangay: data.address_details?.barangay || '',
+    contactType: data.contact_details?.type || '',
+    contactValue: (data.contact_details?.value || '').trim(),
+    // Section 02: the selection travels as directory ids, and the legacy text column
+    // is derived from the selected names (the backend derives it from the ids again,
+    // so the text and the relation can never drift apart).
+    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
+    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
@@ -1850,6 +2656,26 @@ watch(() => props.modelValue, (isOpen) => {
   font-weight: 600;
 }
 
+/* The steps already completed (step 1 once a call has been selected). */
+.progress-step.completed .step-number {
+  background: #10b981;
+  color: #fff;
+  font-size: 12px;
+}
+
+.progress-step.completed .step-label {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.progress-step.completed {
+  cursor: pointer;
+}
+
+.progress-line.filled {
+  background: #10b981;
+}
+
 .progress-line {
   width: 60px;
   height: 2px;
@@ -1922,6 +2748,147 @@ watch(() => props.modelValue, (isOpen) => {
 /* ===== FORM SECTIONS ===== */
 .form-section {
   margin-bottom: 28px;
+}
+
+/* ===== SECTION 23: LITERATURE CITED ===== */
+/* The instruction sits above the list, clearly apart from the Add Reference button. */
+.reference-instruction {
+  margin: 0 0 14px 0;
+  padding: 10px 14px;
+  background: #f8faff;
+  border-left: 4px solid #4f46e5;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.reference-list {
+  margin: 0 0 14px 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reference-entry {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.reference-entry-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reference-badge {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* APA uses a hanging indent: the first line starts at the margin, the rest are
+   indented. */
+.reference-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #1e293b;
+  padding-left: 2em;
+  text-indent: -2em;
+  overflow-wrap: anywhere;
+}
+
+.reference-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .reference-entry {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reference-actions {
+    justify-content: flex-end;
+  }
+}
+
+/* Step 1 selection carried into this step: a slim strip that names the Call for
+   Proposal this proposal is being prepared for, with the action to change it. */
+.selected-call {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+}
+
+.selected-call-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.selected-call-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4f46e5;
+}
+
+.selected-call-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.selected-call-deadline {
+  font-size: 12px;
+  color: #475569;
+}
+
+.btn-change-call {
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #c7d2fe;
+  color: #4f46e5;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-change-call:hover {
+  background: #e0e7ff;
+  border-color: #4f46e5;
 }
 
 .section-header {
@@ -2066,6 +3033,49 @@ watch(() => props.modelValue, (isOpen) => {
 
 .form-row.three-col {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Address (section 01): six cascading location controls, spaced like every other
+   row of the form. The Contact section has no grid of its own - its dropdown and
+   value input stack inside one .form-group under the "Contact *" heading. */
+.ac-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ac-field {
+  min-width: 0;
+}
+
+/* The Contact value input sits directly below the contact-method dropdown. */
+.contact-value-input {
+  margin-top: 8px;
+}
+
+.ac-note {
+  margin: 0 0 10px 0;
+}
+
+.ac-retry {
+  margin-left: 6px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .ac-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ac-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .form-group {
@@ -2468,6 +3478,112 @@ select {
   color: #94a3b8;
 }
 
+/* ===== TECHNOLOGY MAP (section 13) ===== */
+/* The upload field is labelled and documented like every other form field, but it
+   sits inside the section card rather than inside a .form-group, so its label is
+   styled here. */
+.technology-map label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.technology-map .upload-area {
+  gap: 8px;
+}
+
+.technology-map .file-info {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.technology-map .file-name {
+  font-weight: 500;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.technology-map .file-size {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-choose-image {
+  margin-top: 4px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4f46e5;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-choose-image:hover {
+  background: #e0e7ff;
+  border-color: #4f46e5;
+}
+
+.btn-replace-file {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #475569;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-replace-file:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.technology-map .btn-remove-file {
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.technology-map-preview {
+  margin: 12px 0 0;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+}
+
+.technology-map-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  margin: 0 auto;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.technology-map.has-error .upload-area {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .file-info {
   display: flex;
   align-items: center;
@@ -2486,6 +3602,121 @@ select {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* Section 25: the upload control sits on its own row directly below the two
+   template buttons, with vertical breathing room between the rows. */
+.budget-upload {
+  margin-top: 16px;
+}
+
+/* The upload control never overflows the card on narrow screens. */
+.budget-upload .upload-area.small {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+/* Section 25: the two rule lines under the instruction - the accepted formats and
+   the maximum file size. */
+.budget-file-rules {
+  margin: 0 0 12px 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.budget-file-rules strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* The selected budget file: its name and size, then Replace / Remove. */
+.budget-file .file-info {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.budget-file .file-name {
+  font-weight: 500;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.budget-file .file-size {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.budget-file .btn-remove-file {
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* A file that was rejected (wrong format or too large) is reported on the control
+   itself, so the proponent sees immediately which field is wrong. */
+.budget-file.has-error .upload-area {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Very narrow screens: the two template buttons stack full width (no horizontal
+   overflow) and the upload control spans the row, which reads as the three
+   stacked actions of the section. */
+@media (max-width: 560px) {
+  .budget-actions {
+    gap: 10px;
+  }
+
+  .budget-actions .btn-outline {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .budget-upload .upload-area.small {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Section 25: the instruction reads as a note (accent bar + tinted panel) so it
+   is clearly distinguished from the buttons below it, above all from the
+   "View Line-Item Budget Template" button that opens the viewer modal. */
+.budget-template-instruction {
+  margin: 0 0 12px 0;
+  padding: 10px 14px;
+  background: #f8faff;
+  border-left: 4px solid #4f46e5;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.budget-template-instruction strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* The template viewer is the primary action of the section: it keeps the
+   .btn-outline shape but carries the design system's indigo accent. */
+.btn-view-template {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.btn-view-template:hover {
+  border-color: #4f46e5;
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 .btn-outline {

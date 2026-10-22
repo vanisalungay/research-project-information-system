@@ -3,6 +3,7 @@ package com.rpis.backend.dto;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Request payload for creating/updating a Proposal Announcement.
@@ -14,4 +15,20 @@ public class ProposalAnnouncementRequest {
     private LocalDate endDate;
     /** DRAFT | ACTIVE | CLOSED. Defaults to DRAFT when omitted. */
     private String status;
+
+    /**
+     * Stable RIIDE priority-agenda program keys (for example {@code dagat}).
+     * Optional: an announcement may be created with no agenda selected.
+     */
+    private List<String> priorityAgendas;
+
+    /**
+     * Stable ids of the standard announcement reminders. {@code null} on create
+     * means "use the standard reminder defaults"; {@code null} on update means
+     * "keep the saved selection".
+     */
+    private List<String> reminderIds;
+
+    /** Optional free-text announcement body. */
+    private String additionalAnnouncement;
 }

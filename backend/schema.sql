@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS proposal_personnel CASCADE;
 DROP TABLE IF EXISTS proposal_log_frames CASCADE;
 DROP TABLE IF EXISTS proposal_sites CASCADE;
 DROP TABLE IF EXISTS proposal_versions CASCADE;
+DROP TABLE IF EXISTS proposal_cooperating_agencies CASCADE;
+DROP TABLE IF EXISTS cooperating_agencies CASCADE;
 DROP TABLE IF EXISTS proposals CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
@@ -43,6 +45,17 @@ CREATE TABLE proposals (
     end_date DATE,
     college VARCHAR(255),
     address TEXT,
+    -- Structured address + contact of the Create Proposal form's "Address *" and
+    -- "Contact *" sections (section 01). `address` above keeps the combined
+    -- "Address / Contact" text so every existing screen keeps working.
+    address_country VARCHAR(120),
+    address_region VARCHAR(120),
+    address_province VARCHAR(120),
+    address_district VARCHAR(120),
+    address_municipality VARCHAR(120),
+    address_barangay VARCHAR(120),
+    contact_type VARCHAR(30),
+    contact_value VARCHAR(255),
     cooperating_agencies TEXT,
     research_type VARCHAR(50),
     innovation_goals TEXT,
@@ -57,6 +70,7 @@ CREATE TABLE proposals (
     review_file_name VARCHAR(255),
     methodology TEXT,
     roadmap_file_name VARCHAR(255),
+    roadmap_file_path VARCHAR(500),         -- stored Technology Map image, relative to "uploads"
     technology_trl VARCHAR(50),
     outputs TEXT,
     outcomes TEXT,
@@ -64,11 +78,13 @@ CREATE TABLE proposals (
     impact_social TEXT,
     beneficiaries TEXT,
     beneficiaries_file_name VARCHAR(255),
+    beneficiaries_file_path VARCHAR(500),   -- stored Line-Item Budget file, relative to "uploads"
     sustainability TEXT,
     gad_score DECIMAL(5,2),
     gad_file_name VARCHAR(255),
     risks TEXT,
     references_text TEXT,
+    references_json TEXT,                   -- structured entries behind the literature cited (JSON)
     other_projects_number VARCHAR(50),
     status VARCHAR(50) DEFAULT 'DRAFT',
     reviewed_by VARCHAR(255),
@@ -208,6 +224,10 @@ CREATE TABLE notifications (
     title VARCHAR(255) NOT NULL,
     type VARCHAR(100),
     proposal_id BIGINT,
+    -- Call for Proposals (proposal announcement) this notification refers to, when the
+    -- notification was raised for an announcement instead of for a proposal. Nullable:
+    -- every other notification keeps NULL and simply has no announcement to open.
+    proposal_announcement_id BIGINT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -262,6 +282,12 @@ CREATE TABLE proposal_announcements (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT', -- DRAFT | ACTIVE | CLOSED
+    -- RIIDE priority-agenda program keys and standard reminder ids selected for
+    -- this call (JSON arrays of stable identifiers, e.g. ["dagat","punla"] and
+    -- ["research-plan","collaboration"]), plus the optional announcement body.
+    priority_agendas TEXT,
+    reminder_ids TEXT,
+    additional_announcement TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_announcement_dates CHECK (end_date >= start_date),
@@ -348,3 +374,32 @@ CREATE TABLE quarterly_progress_reports (
     -- Legacy uploaded workplan files above are preserved for old reports.
     workplan_json TEXT
 );
+
+-- 18. Cooperating Agencies Table (shared directory of section 02 of the Create
+-- Proposal form). One row per agency, reusable by every proposal. The
+-- case-insensitive unique index is the database-level guarantee that the same
+-- agency cannot be stored twice; it is also created idempotently on startup by
+-- CooperatingAgencyInitializer, which seeds the 21 default agencies (and never
+-- inserts a seed record twice).
+CREATE TABLE cooperating_agencies (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uk_cooperating_agencies_name_lower ON cooperating_agencies (LOWER(name));
+
+-- 19. Proposal Cooperating Agencies Table (join table). One row per agency
+-- selected on one proposal, so a proposal can name any number of agencies and an
+-- agency is reused by every proposal that selects it. Rows are replaced when the
+-- proposal is saved and removed when the proposal is deleted; the directory itself
+-- is never touched by either operation.
+CREATE TABLE proposal_cooperating_agencies (
+    id BIGSERIAL PRIMARY KEY,
+    proposal_id BIGINT NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    cooperating_agency_id BIGINT NOT NULL REFERENCES cooperating_agencies(id),
+    CONSTRAINT uk_proposal_cooperating_agency UNIQUE (proposal_id, cooperating_agency_id)
+);
+
+CREATE INDEX idx_proposal_cooperating_agencies_proposal ON proposal_cooperating_agencies (proposal_id);
+

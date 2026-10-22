@@ -4,15 +4,19 @@
       <h2>myProjects</h2>
       <div class="top-bar-actions">
         <button class="btn-revisions" @click="openRevisions">Revisions</button>
-        <button class="btn-new" :disabled="checkingAnnouncement" @click="openNewProposal">
-          {{ checkingAnnouncement ? 'Checking...' : '+ Submit New Proposal' }}
+        <button class="btn-new" @click="openNewProposal">
+          + Create New Proposal
         </button>
       </div>
     </div>
 
     <!-- MODALS -->
-    <ProponentSubmitProp ref="step1Ref" v-model="showModal" @save="handleSave" @next="goToStep2"
-      @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
+    <!-- Step 1: the Call for Proposal the proponent responds to -->
+    <ProponentCallForProposal v-if="showCallModal" @select="handleCallSelected"
+      @close="showCallModal = false" />
+
+    <ProponentSubmitProp ref="step1Ref" v-model="showModal" :selected-call="selectedCall" @save="handleSave"
+      @next="goToStep2" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
     <ProponentSubmitProp2 ref="step2Ref" v-if="showModal2" :open="showModal2"
       @close="showModal2 = false; refreshOnClose()" @openPrevious="goBackToStep1" @openCriteria="openCriteriaModal"
@@ -72,7 +76,7 @@
             <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
             <button v-if="isDuplicable(proposal.status)" class="btn-duplicate" :disabled="duplicatingId === proposal.id"
               @click="duplicateProposal(proposal)">
-              {{ duplicatingId === proposal.id ? 'Duplicating...' : 'Duplicate' }}
+              {{ duplicatingId === proposal.id ? 'Copying...' : 'Make a Copy' }}
             </button>
             <button v-if="proposal.status === 'DRAFT'" class="btn-delete"
               @click="deleteProposal(proposal.id)">Delete</button>
@@ -97,6 +101,7 @@ import { useDialog } from '@/composables/useDialog'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
+import ProponentCallForProposal from './ProponentCallForProposal.vue'
 import ProponentSubmitProp from './ProponentSubmitProp.vue'
 import ProponentSubmitProp2 from './ProponentSubmitProp2.vue'
 import ProponentSubmitProp3 from './ProponentSubmitProp3.vue'
@@ -115,50 +120,60 @@ const showModal2 = ref(false)
 const showCriteria = ref(false)
 const proposalData = ref({})
 
+// Step 1 of the workflow: the Call for Proposal the proponent is responding to. The
+// real call (with its database id) is kept here for the whole workflow, so every step
+// keeps working with the same call and the submitted proposal is attached to it.
+const showCallModal = ref(false)
+const selectedCall = ref(null)
+
 const step1Ref = ref(null)
 const step2Ref = ref(null)
 const step3Ref = ref(null)
+
+/**
+ * The selected call in the shape the workflow already passes between steps, so it
+ * travels with the proposal data and reaches the submission payload.
+ */
+const callSelectionFields = (call) =>
+  call ? { proposal_announcement_id: call.id, proposal_announcement_name: call.name } : {}
 
 const resetAllForms = () => {
   step1Ref.value?.resetForm()
   step2Ref.value?.resetForm()
   step3Ref.value?.resetForm()
   proposalData.value = {}
+  selectedCall.value = null
 }
-
-const checkingAnnouncement = ref(false)
 
 const openRevisions = () => {
   router.push('/revisions')
 }
 
-// Pre-check gatekeeper: a new proposal can only be started while a
-// Proposal Announcement is ACTIVE and today falls within its date range.
-const openNewProposal = async () => {
-  if (checkingAnnouncement.value) return
-  checkingAnnouncement.value = true
-  try {
-    // Success path: an active proposal announcement exists -> open the form
-    await api.get('/api/proposal-announcements/active')
-    resetAllForms()
-    showModal.value = true
-  } catch (err) {
-    console.error('Proposal announcement pre-check failed:', err)
-    if (err.response && err.response.status === 404) {
-      // Error path: no active proposal announcement (or it has expired)
-      await showAlert(
-        'Submissions are currently closed. There is no active proposal announcement at this time.',
-        { type: 'error', title: 'Submissions Closed' }
-      )
-    } else {
-      await showAlert(
-        'Unable to verify the proposal announcement status. Please check your connection and try again.',
-        { type: 'error', title: 'Verification Failed' }
-      )
-    }
-  } finally {
-    checkingAnnouncement.value = false
-  }
+/**
+ * The Create Proposal workflow always starts with the Call for Proposal step: the
+ * proponent picks the open call they are responding to before the proposal details.
+ * The step itself loads the open calls and shows the empty state when there is
+ * nothing to respond to.
+ */
+const openNewProposal = () => {
+  resetAllForms()
+  showCallModal.value = true
+}
+
+/** The proponent selected a call: keep it and continue with the proposal details. */
+const handleCallSelected = (call) => {
+  selectedCall.value = call
+  proposalData.value = { ...proposalData.value, ...callSelectionFields(call) }
+  showCallModal.value = false
+  showModal.value = true
+}
+
+/** Back to the Call for Proposal step, so a different call can be selected. */
+const openCallSelection = () => {
+  showModal.value = false
+  showModal2.value = false
+  showCriteria.value = false
+  showCallModal.value = true
 }
 
 const fetchProposals = async () => {
@@ -202,6 +217,12 @@ const openDraftForEdit = async (id) => {
     // Open the modal and load the proposal data
     resetAllForms()
     await nextTick()
+    // The draft already belongs to a Call for Proposal: keep that call as the
+    // selection, so the workflow shows it and the submission stays under the same
+    // call instead of being re-attached to whatever call is currently active.
+    if (proposalData.proposalAnnouncementId) {
+      selectedCall.value = { id: proposalData.proposalAnnouncementId, name: '' }
+    }
     step1Ref.value?.loadProposal(proposalData)
     showModal.value = true
     // Clean up the URL so refreshing doesn't re-open the modal
@@ -239,17 +260,18 @@ const viewProposal = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })
 }
 
-// ===== Duplicate a completed proposal =====
-// The backend creates a new DRAFT with its own proposal code / document id and
-// only the reusable content of the source proposal. The new draft is opened for
-// editing right away so the proponent can adjust it before submitting.
+// ===== Make a Copy of a rejected proposal =====
+// The backend creates a brand-new DRAFT with its own proposal code / document id
+// and only the reusable content of the rejected proposal. Attachments are not
+// carried over (the uploaded files belong to the original), so the copy is opened
+// for editing right away and the proponent re-uploads the files before submitting.
 const duplicatingId = ref(null)
 
 const duplicateProposal = async (proposal) => {
   const title = proposal.projectTitle || proposal.title || 'this proposal'
   const confirmed = await showConfirm(
-    `Create a new draft proposal from "${title}"? You can edit the copy before submitting it.`,
-    { title: 'Duplicate Proposal', type: 'info', confirmText: 'Duplicate' }
+    `Create a new draft from the rejected proposal "${title}"? You can reuse its content, edit what you need, and submit it as a new proposal.`,
+    { title: 'Make a Copy', type: 'info', confirmText: 'Make a Copy' }
   )
   if (!confirmed) return
 
@@ -258,8 +280,8 @@ const duplicateProposal = async (proposal) => {
     const res = await api.post(`/api/proposals/${proposal.id}/duplicate`)
     const created = res.data || {}
     await showAlert(
-      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Edit it and submit it when ready.`,
-      { type: 'success', title: 'Proposal Duplicated' }
+      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
+      { type: 'success', title: 'Copy Created' }
     )
     await fetchProposals()
     if (created.id) {
@@ -270,8 +292,8 @@ const duplicateProposal = async (proposal) => {
     const body = err.response?.data
     const message =
       (body && typeof body === 'object' ? body.error : body) ||
-      'Failed to duplicate the proposal. Please try again.'
-    await showAlert(String(message), { type: 'error', title: 'Duplicate Failed' })
+      'Failed to create a copy of the proposal. Please try again.'
+    await showAlert(String(message), { type: 'error', title: 'Copy Failed' })
   } finally {
     duplicatingId.value = null
   }
@@ -295,23 +317,35 @@ const deleteProposal = async (id) => {
 }
 
 // ===== MODAL FLOW WITH DATA PASSING =====
+// Step numbering of the 4-step Create Proposal workflow:
+//   1 Call for Proposal   2 Proposal Details   3 Certification   4 Review & Submit
 
 const handleSave = (formData) => {
-  // Save form data from Step 1
-  proposalData.value = { ...formData }
+  // Save form data from Step 2 (Proposal Details)
+  proposalData.value = { ...formData, ...callSelectionFields(selectedCall.value) }
   showModal.value = false
 }
 
+/**
+ * Jumps to another step. Steps 2-4 are only reachable once a call has been selected,
+ * so a request for a later step without a selection opens the Call for Proposal step
+ * instead - the proponent can never reach the proposal form without a valid call.
+ */
 const handleGoToStep = (step) => {
-  if (step === 1) {
+  if (step <= 1 || !selectedCall.value) {
+    openCallSelection()
+  } else if (step === 2) {
+    showCallModal.value = false
     showModal2.value = false
     showCriteria.value = false
     showModal.value = true
-  } else if (step === 2) {
+  } else if (step === 3) {
+    showCallModal.value = false
     showModal.value = false
     showCriteria.value = false
     showModal2.value = true
-  } else if (step === 3) {
+  } else if (step === 4) {
+    showCallModal.value = false
     showModal.value = false
     showModal2.value = false
     showCriteria.value = true
@@ -319,8 +353,15 @@ const handleGoToStep = (step) => {
 }
 
 const goToStep2 = (formData) => {
-  // Save data from Step 1 and open Step 2
-  if (formData) proposalData.value = { ...proposalData.value, ...formData }
+  // Save data from Step 2 (Proposal Details) and open Step 3 (Certification). The
+  // selected call travels with the proposal data.
+  if (formData) {
+    proposalData.value = {
+      ...proposalData.value,
+      ...formData,
+      ...callSelectionFields(selectedCall.value)
+    }
+  }
   showModal.value = false
   showModal2.value = true
 }
@@ -339,6 +380,8 @@ const handleStep2Submit = (certificationData) => {
       signatureFiles: certificationData.signatureFiles
     }
   }
+  // The selected call is kept until the proposal is submitted.
+  proposalData.value = { ...proposalData.value, ...callSelectionFields(selectedCall.value) }
   showModal2.value = false
   showCriteria.value = true
 }

@@ -122,12 +122,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import {
+  ANNOUNCEMENT_DETAILS_ROUTE,
+  announcementIdFromNotification,
+} from '@/utils/notificationTarget'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
+
+const router = useRouter()
 
 const userStore = useUserDataStore()
 
@@ -210,11 +217,19 @@ const markAllAsRead = async () => {
 }
 
 const handleNotificationClick = (notification) => {
-  // Mark as read when clicked
+  // Mark as read when clicked. The request is not awaited: the read-state update is
+  // best-effort and must never block or cancel the navigation below.
   if (!notification.isRead) {
     markAsRead(notification.id)
   }
-  
+
+  // Call for Proposals notification: open the exact announcement it refers to.
+  const announcementId = announcementIdFromNotification(notification)
+  if (announcementId) {
+    router.push({ name: ANNOUNCEMENT_DETAILS_ROUTE, params: { id: announcementId } })
+    return
+  }
+
   // Navigate to related proposal if available
   if (notification.proposalId) {
     // You can customize the navigation based on user role

@@ -9,7 +9,7 @@
 
       <div class="revision-count">
         <span class="count-dot"></span>
-        {{ revisions.length }} proposals need revision
+        {{ actionableRevisions.length }} proposals need revision
       </div>
     </div>
 
@@ -178,6 +178,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
+import {
+  compareRevisionDeadlines,
+  isRevisionDeadlinePassed,
+  revisionDaysLeft,
+} from '@/utils/revisionDeadline'
 
 const router = useRouter()
 
@@ -198,21 +203,6 @@ function formatDeadline(value) {
   if (!value) return 'No deadline set'
   const d = new Date(value)
   return isNaN(d.getTime()) ? String(value) : d.toLocaleString()
-}
-
-function isOverdue(value) {
-  if (!value) return false
-  const d = new Date(value)
-  return !isNaN(d.getTime()) && d.getTime() < Date.now()
-}
-
-// Compute whole days remaining until the revision deadline (same countdown
-// logic used elsewhere in the system).
-function computeDaysLeft(value) {
-  if (!value) return 0
-  const d = new Date(value)
-  if (isNaN(d.getTime())) return 0
-  return Math.max(0, Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
 // Build a lowercased, searchable representation of a revision's deadline using
@@ -248,6 +238,16 @@ const filteredRevisions = computed(() => {
   })
 })
 
+// Header summary: only the revision requests the proponent can still revise and resubmit.
+// The queue already holds just the RPS-forwarded revision requests (the status rule in
+// fetchRevisions), so the remaining condition is the deadline: a request whose deadline
+// has passed is no longer counted, even though it stays visible further down the list.
+// `overdue` is set from the shared deadline rule, so the count, the ordering and the
+// expired card styling all agree.
+const actionableRevisions = computed(() =>
+  revisions.value.filter(revision => !revision.overdue)
+)
+
 async function fetchRevisions() {
   loading.value = true
   error.value = null
@@ -276,22 +276,19 @@ async function fetchRevisions() {
         rpsNote: p.revisionNotes || null,
         deadline: p.revisionDeadline ? formatDeadline(p.revisionDeadline) : 'No deadline set',
         deadlineRaw: p.revisionDeadline || null,
-        overdue: isOverdue(p.revisionDeadline),
+        overdue: isRevisionDeadlinePassed(p.revisionDeadline),
         status: p.status,
-        daysLeft: computeDaysLeft(p.revisionDeadline),
+        daysLeft: revisionDaysLeft(p.revisionDeadline),
         deadlineTs: p.revisionDeadline ? new Date(p.revisionDeadline).getTime() : NaN
       }))
 
-      // Sort by revision deadline (earliest first), so the nearest deadline
-      // appears at the top. Missing/invalid deadlines sort last.
-      revisions.value.sort((a, b) => {
-        const aValid = !isNaN(a.deadlineTs)
-        const bValid = !isNaN(b.deadlineTs)
-        if (!aValid && !bValid) return 0
-        if (!aValid) return 1
-        if (!bValid) return -1
-        return a.deadlineTs - b.deadlineTs
-      })
+      // Display order for the proponent: revision requests that can still be revised and
+      // resubmitted come first (nearest deadline first), followed by deadline-expired
+      // requests (most recently expired first). The shared deadline rule decides what
+      // counts as expired, and a copy is sorted so the fetched data is never modified.
+      revisions.value = revisions.value
+        .slice()
+        .sort((a, b) => compareRevisionDeadlines(a.deadlineRaw, b.deadlineRaw))
 
       // Visual emphasis only: identify the revision with the nearest upcoming
       // deadline (does not change the displayed order).

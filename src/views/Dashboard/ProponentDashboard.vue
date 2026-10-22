@@ -38,7 +38,7 @@
     <!-- CREATE NEW PROPOSAL -->
     <div class="dashboard-actions">
       <button class="btn-new" @click="goToProposals">
-        SUBMIT NEW PROPOSAL
+        CREATE NEW PROPOSAL
       </button>
     </div>
 
@@ -75,7 +75,7 @@
 
       <div class="deadline-right">
         <strong class="deadline-days">
-          {{ revisionDeadline.daysLeft }} days left
+          {{ revisionDaysLeftLabel(revisionDeadline.daysLeft) }}
         </strong>
 
         <button
@@ -231,6 +231,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
+import {
+  PENDING_REVISION_STATUSES,
+  countPendingRevisions,
+  revisionDaysLeft,
+  revisionDaysLeftLabel,
+} from '@/utils/revisionDeadline'
 
 const router = useRouter()
 
@@ -255,9 +261,6 @@ const recentProposals = ref([])
 
 // Proposal monitoring
 const monitoringProposals = ref([])
-
-// Statuses that mean a proposal has been returned to the proponent and needs revision.
-const REVISION_STATUSES = ['RPS_RETURNED', 'REC_REVISION', 'REVISION']
 
 // Statuses excluded from the Recent Proposals list (finalized + drafts).
 const RECENT_EXCLUDED_STATUSES = ['REJECTED', 'REC_REJECTED', 'COMPLETED', 'APPROVED', 'DRAFT']
@@ -297,14 +300,6 @@ function mapProposalItem(p) {
 // Loading
 const loading = ref(false)
 
-// Compute whole days remaining until the revision deadline.
-function computeDaysLeft(deadlineValue) {
-  if (!deadlineValue) return 0
-  const deadline = new Date(deadlineValue)
-  if (isNaN(deadline.getTime())) return 0
-  return Math.max(0, Math.floor((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-}
-
 // Fetch dashboard data
 async function fetchDashboard() {
   loading.value = true
@@ -339,9 +334,11 @@ async function fetchDashboard() {
         p.status === 'SUBMITTED' || p.status === 'ENDORSED' || p.status === 'UNDER_REVIEW' || p.status === 'REC_APPROVED'
       ).length
 
-      statistics.value.pendingRevisions = myProposals.filter(p => 
-        REVISION_STATUSES.includes(p.status)
-      ).length
+      // Pending revisions: only the requests the proponent can still revise and resubmit.
+      // A revision whose RPS-set deadline has already passed no longer counts, even though
+      // its stored status is still a revision status (the same rule the backend enforces on
+      // revision resubmission, so the count matches what the proponent can actually do).
+      statistics.value.pendingRevisions = countPendingRevisions(myProposals)
 
       statistics.value.approvedProposals = myProposals.filter(p => 
         p.status === 'APPROVED' || p.status === 'RELEASED'
@@ -370,10 +367,10 @@ async function fetchDashboard() {
       // highlights the next upcoming deadline.
       const nowTs = Date.now()
       const revisionItems = myProposals.filter(p => {
-        if (!REVISION_STATUSES.includes(p.status)) return false
+        if (!PENDING_REVISION_STATUSES.includes(p.status)) return false
         const deadlineTime = p.revisionDeadline ? new Date(p.revisionDeadline).getTime() : NaN
         if (isNaN(deadlineTime) || deadlineTime <= nowTs) return false
-        return computeDaysLeft(p.revisionDeadline) > 0
+        return revisionDaysLeft(p.revisionDeadline) > 0
       })
       if (revisionItems.length > 0) {
         // Sort pending revisions by deadline (ascending) so the nearest/closest
@@ -393,10 +390,11 @@ async function fetchDashboard() {
 
         const nearest = sortedRevisions[0]
         revisionDeadline.value = {
-          pendingCount: revisionItems.length,
+          // Same pending count as the dashboard stat: revisions still eligible to revise.
+          pendingCount: statistics.value.pendingRevisions,
           title: nearest.projectTitle || 'Project Revision Required',
           proposalId: nearest.documentId || nearest.proposalCode || '—',
-          daysLeft: computeDaysLeft(nearest.revisionDeadline)
+          daysLeft: revisionDaysLeft(nearest.revisionDeadline)
         }
       } else {
         revisionDeadline.value = null

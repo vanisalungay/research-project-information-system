@@ -23,6 +23,16 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Quarterly reporting is only available to approved, SO-issued
+             projects (the same rule the backend enforces). -->
+        <button
+          v-if="canCreateQuarterlyReport"
+          class="btn-primary"
+          :disabled="openingReport"
+          @click="createQuarterlyReport"
+        >
+          {{ openingReport ? 'Opening…' : 'Create Quarterly Report' }}
+        </button>
         <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft" @click="editDraft">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -37,7 +47,7 @@
           :disabled="duplicating"
           @click="duplicateProposal"
         >
-          {{ duplicating ? 'Duplicating...' : 'Duplicate Proposal' }}
+          {{ duplicating ? 'Copying...' : 'Make a Copy' }}
         </button>
       </div>
     </header>
@@ -124,7 +134,7 @@
             </div>
             <div class="card-body">
               <p class="text-content">{{ proposal.cooperatingAgencies || 'Not provided' }}</p>
-              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Name/s and Address/es" :remarks="remarksForField('cooperatingAgencies')" readonly />
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Cooperating Agencies" :remarks="remarksForField('cooperatingAgencies')" readonly />
             </div>
           </section>
 
@@ -323,7 +333,7 @@
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'13'" :field-key="'roadmapFileName'" field-label="Technology Roadmap (document)" :remarks="remarksForField('roadmapFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.roadmapFileName)">Download</button>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">Download</button>
               </div>
               <p v-else class="empty-text">No file uploaded.</p>
             </div>
@@ -426,24 +436,26 @@
             <div class="card-body">
               <p class="text-content">{{ proposal.limitationsText || 'Not provided' }}</p>
               <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="'limitationsText'" field-label="Limitations of the Project" :remarks="remarksForField('limitationsText')" readonly />
-              <table v-if="proposal.limitations && proposal.limitations.length" class="data-table" style="margin-top:8px;">
-                <thead>
-                  <tr><th>#</th><th>Limitation</th><th>Remarks</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(row, index) in proposal.limitations" :key="row.id ?? index">
-                    <td>{{ index + 1 }}</td>
-                    <td>
-                      {{ row.limitation || '-' }}
-                      <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].limitation`" :field-label="`Limitation #${index + 1}`" :remarks="remarksForField(`limitations[${index}].limitation`)" readonly />
-                    </td>
-                    <td>
-                      {{ row.remarks || '-' }}
-                      <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].remarks`" :field-label="`Limitation #${index + 1} — Remarks`" :remarks="remarksForField(`limitations[${index}].remarks`)" readonly />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-if="proposal.limitations && proposal.limitations.length" class="table-wrapper" style="margin-top:8px;">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>#</th><th>Limitation</th><th>Remarks</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.limitations" :key="row.id ?? index">
+                      <td>{{ index + 1 }}</td>
+                      <td>
+                        {{ row.limitation || '-' }}
+                        <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].limitation`" :field-label="`Limitation #${index + 1}`" :remarks="remarksForField(`limitations[${index}].limitation`)" readonly />
+                      </td>
+                      <td>
+                        {{ row.remarks || '-' }}
+                        <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].remarks`" :field-label="`Limitation #${index + 1} — Remarks`" :remarks="remarksForField(`limitations[${index}].remarks`)" readonly />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -656,7 +668,7 @@
               </div>
               <div v-if="proposal.roadmapFileName" class="doc-item">
                 <span>📄 Technology Roadmap</span>
-                <button @click="downloadFile(proposal.roadmapFileName)">⬇</button>
+                <button @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">⬇</button>
               </div>
               <div v-if="proposal.gadFileName" class="doc-item">
                 <span>📄 GAD Score</span>
@@ -683,7 +695,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { buildStandaloneHtml, printDocument, buildProposalDocument } from '@/utils/documentExport'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
@@ -691,6 +703,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import { useDialog } from '@/composables/useDialog'
 import { isDuplicable } from '@/utils/proposalStatus'
+import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
@@ -718,14 +731,15 @@ const fetchFieldRemarks = async (proposalId) => {
 const { dialogState, showAlert, showConfirm } = useDialog()
 const duplicating = ref(false)
 
-// Creates a new DRAFT from this completed proposal. The backend allocates a new
-// proposal code / document id and copies only the reusable content; the copy is
-// then opened in the proposal form for editing before it is submitted.
+// Creates a new DRAFT from this rejected proposal. The backend allocates a new
+// proposal code / document id and copies only the reusable content; attachments are
+// not carried over, so the copy is opened in the proposal form for review, edits and
+// re-upload before it is submitted.
 const duplicateProposal = async () => {
   const title = proposal.value.projectTitle || 'this proposal'
   const confirmed = await showConfirm(
-    `Create a new draft proposal from "${title}"? You can edit the copy before submitting it.`,
-    { title: 'Duplicate Proposal', type: 'info', confirmText: 'Duplicate' }
+    `Create a new draft from the rejected proposal "${title}"? You can reuse its content, edit what you need, and submit it as a new proposal.`,
+    { title: 'Make a Copy', type: 'info', confirmText: 'Make a Copy' }
   )
   if (!confirmed) return
 
@@ -734,8 +748,8 @@ const duplicateProposal = async () => {
     const res = await api.post(`/api/proposals/${proposal.value.id}/duplicate`)
     const created = res.data || {}
     await showAlert(
-      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Edit it and submit it when ready.`,
-      { type: 'success', title: 'Proposal Duplicated' }
+      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
+      { type: 'success', title: 'Copy Created' }
     )
     if (created.id) {
       router.push({ path: '/proposals', query: { edit: created.id } })
@@ -745,8 +759,8 @@ const duplicateProposal = async () => {
     const body = err.response?.data
     const message =
       (body && typeof body === 'object' ? body.error : body) ||
-      'Failed to duplicate the proposal. Please try again.'
-    await showAlert(String(message), { type: 'error', title: 'Duplicate Failed' })
+      'Failed to create a copy of the proposal. Please try again.'
+    await showAlert(String(message), { type: 'error', title: 'Copy Failed' })
   } finally {
     duplicating.value = false
   }
@@ -793,17 +807,54 @@ const downloadFile = (fileName) => {
 }
 
 const printProposal = () => {
-  const p = proposal.value
-  const html = buildStandaloneHtml({
-    title: 'Research Proposal Form',
-    subtitle: p.projectTitle || 'Project Proposal',
-    body: buildProposalDocument(p)
-  })
-  printDocument({ title: 'Research Proposal Form', html })
+  downloadOfficialProposal(proposal.value)
 }
 
 const editDraft = () => {
   router.push({ path: '/proposals', query: { edit: proposal.value.id } })
+}
+
+// Quarterly reporting is only offered to projects that satisfy the same rule the
+// backend enforces: approved for implementation with an issued Special Order.
+const canCreateQuarterlyReport = computed(() => isQuarterlyReportEligible(proposal.value))
+const openingReport = ref(false)
+
+// Opens the existing quarterly progress report workflow for this project. The
+// next required stage is resolved through the existing endpoint the Quarterly
+// Reports page also uses, so an unfinished draft is continued instead of starting
+// a second one, and a project whose reporting is already complete says so instead
+// of opening an empty form. Nothing is created here - the report record is only
+// written when the proponent saves or submits the form itself.
+const createQuarterlyReport = async () => {
+  const proposalId = proposal.value.id
+  if (!proposalId || !canCreateQuarterlyReport.value || openingReport.value) return
+
+  openingReport.value = true
+  try {
+    const res = await api.get(`/api/quarterly-reports/next-stage/${proposalId}`)
+    if (res.data?.allStagesComplete) {
+      await showAlert('All required reports for this project have already been submitted.', {
+        type: 'info',
+        title: 'Quarterly Reporting'
+      })
+      return
+    }
+    const draftId = res.data?.draftReportId
+    router.push(
+      draftId
+        ? `/quarterly-reports/${proposalId}/edit/${draftId}`
+        : `/quarterly-reports/${proposalId}/new`
+    )
+  } catch (err) {
+    console.error(err)
+    const body = err.response?.data
+    const message =
+      (body && typeof body === 'object' ? body.error : body) ||
+      'Quarterly reporting is not available for this project.'
+    await showAlert(String(message), { type: 'error', title: 'Quarterly Report' })
+  } finally {
+    openingReport.value = false
+  }
 }
 
 const formatReviewerPosition = (position) => {
@@ -821,11 +872,14 @@ const formatReviewerPosition = (position) => {
   padding: 24px;
   background: #f8fafc;
   min-height: 100vh;
+  /* The page only ever scrolls vertically: the containers below can shrink and
+     long values wrap (see the overflow safety rules at the end of this block). */
 }
 
 /* HEADER */
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 24px;
@@ -836,7 +890,10 @@ const formatReviewerPosition = (position) => {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  flex: 1;
+  /* Wide enough for the back button and title; below that the action buttons
+     wrap onto their own line instead of squeezing the title. */
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .back-btn {
@@ -862,6 +919,7 @@ const formatReviewerPosition = (position) => {
 
 .header-info {
   flex: 1;
+  min-width: 0;
 }
 
 .header-info h1 {
@@ -873,6 +931,7 @@ const formatReviewerPosition = (position) => {
 
 .header-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
 }
@@ -939,7 +998,9 @@ const formatReviewerPosition = (position) => {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .btn-secondary {
@@ -1009,6 +1070,11 @@ const formatReviewerPosition = (position) => {
   cursor: pointer;
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* LOADING & ERROR */
 .loading-state,
 .error-state {
@@ -1043,7 +1109,9 @@ const formatReviewerPosition = (position) => {
 /* CONTENT GRID */
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  /* minmax(0, …) lets the main column shrink below the natural width of its
+     content, so a long value or a wide table can never widen the whole page. */
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 24px;
 }
 
@@ -1051,6 +1119,7 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 /* CONTENT CARD */
@@ -1098,7 +1167,9 @@ const formatReviewerPosition = (position) => {
 /* INFO GRID */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, …) keeps both columns inside the card: long values wrap inside
+     their field instead of widening the grid. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   /* Keep each field at its natural height so a remark on one field can never
      stretch its row partner and misalign the neighbouring column. */
@@ -1109,6 +1180,7 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .info-item.full-width {
@@ -1283,6 +1355,7 @@ const formatReviewerPosition = (position) => {
 
 .file-info {
   flex: 1;
+  min-width: 0;
 }
 
 .file-name {
@@ -1319,6 +1392,7 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 .sidebar-card {
@@ -1512,6 +1586,25 @@ const formatReviewerPosition = (position) => {
   background: #dcfce7;
   color: #166534;
   width: fit-content;
+  max-width: 100%;
+}
+
+/* OVERFLOW SAFETY
+   Project details are free text (titles, descriptions, names, identifiers,
+   remarks) and can contain very long unbroken values. They wrap inside their own
+   container instead of widening the card or the page. */
+.header-info h1,
+.document-id,
+.info-item p,
+.text-content,
+.agenda-item strong,
+.agenda-item span,
+.file-name,
+.file-type,
+.info-value,
+.review-info-value,
+.status-text {
+  overflow-wrap: anywhere;
 }
 
 /* RESPONSIVE */

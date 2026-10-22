@@ -30,6 +30,17 @@ public class NotificationService {
     }
 
     public Notification createNotification(Long userId, String message, String title, String type, Long proposalId) {
+        return createNotification(userId, message, title, type, proposalId, null);
+    }
+
+    /**
+     * Creates an in-app notification that may also point at the Proposal Announcement
+     * (Call for Proposals) it was raised for. {@code proposalAnnouncementId} is null for
+     * every notification that is not about an announcement; the notification listing then
+     * simply carries no announcement to open.
+     */
+    public Notification createNotification(Long userId, String message, String title, String type,
+            Long proposalId, Long proposalAnnouncementId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         Notification notification = new Notification();
@@ -38,6 +49,7 @@ public class NotificationService {
         notification.setTitle(title != null ? title : "Notification");
         notification.setType(type);
         notification.setProposalId(proposalId);
+        notification.setProposalAnnouncementId(proposalAnnouncementId);
         notification.setIsRead(false);
         return notificationRepository.save(notification);
     }
