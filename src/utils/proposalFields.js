@@ -27,6 +27,7 @@ export const FIELD_LAYOUTS = {
   STACK: 'stack',
   TABLE: 'table',
   SDG: 'sdg',
+  AGENDA: 'agenda',
   NOTE: 'note',
 }
 
@@ -509,6 +510,34 @@ export function fieldValue(proposal, field) {
   const value = proposal[key]
   if (value === null || value === undefined) return ''
   return value
+}
+
+/**
+ * The Priority Agenda fields of a proposal (section 05): the registry's default
+ * agendas, plus every agenda the proposal itself stores. An agenda an administrator
+ * added later - or one that has since been deactivated - therefore still gets its
+ * value and its own remark control. The registry keeps the original five keys, so a
+ * proposal written before the agendas became configurable stays covered.
+ */
+export function agendaFieldsFor(proposal, section) {
+  const fields = Array.isArray(section?.fields) ? [...section.fields] : []
+  const known = new Set(
+    fields.map((field) =>
+      String(field.key).replace(/^priorityAgenda\./, '').replace(/\.value$/, '')
+    )
+  )
+  const rows = Array.isArray(proposal?.priorityAgendas) ? proposal.priorityAgendas : []
+  for (const row of rows) {
+    const agendaKey = row?.agendaKey
+    if (!agendaKey || known.has(agendaKey)) continue
+    known.add(agendaKey)
+    fields.push({
+      key: `priorityAgenda.${agendaKey}.value`,
+      label: row.name || String(agendaKey).toUpperCase(),
+      form: `priority_agendas.${agendaKey}.value`,
+    })
+  }
+  return fields
 }
 
 /** True when the priority-agenda field is selected (so it should be displayed). */

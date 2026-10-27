@@ -28,6 +28,7 @@ import ProfileInformation from '../views/Shared/ProfileInformation.vue'
 import UserAccounts from '@/views/Admin/UserAccounts.vue'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ProposalAnnouncements from '@/views/Admin/ProposalAnnouncements.vue'
+import PriorityAgendas from '@/views/Admin/PriorityAgendas.vue'
 
 /* OVCRIGE */
 import OvcReviewProposal from '../views/Ovc/OvcReviewProposal.vue'
@@ -114,6 +115,7 @@ const routes = [
       { path: '/user-accounts', name: 'UserAccounts', component: UserAccounts },
       { path: '/create-user-modal', name: 'CreateUserModal', component: CreateUserModal },
       { path: '/proposal-announcements', name: 'ProposalAnnouncements', component: ProposalAnnouncements },
+      { path: '/priority-agendas', name: 'PriorityAgendas', component: PriorityAgendas },
 
       // ================= RPS =================
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },

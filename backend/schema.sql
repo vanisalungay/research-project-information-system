@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS proposal_reviews CASCADE;
 DROP TABLE IF EXISTS proposal_section_remarks CASCADE;
 DROP TABLE IF EXISTS proposal_limitations CASCADE;
+DROP TABLE IF EXISTS priority_agendas CASCADE;
+DROP TABLE IF EXISTS priority_agenda_sets CASCADE;
 DROP TABLE IF EXISTS proposal_priority_agendas CASCADE;
 DROP TABLE IF EXISTS proposal_other_projects CASCADE;
 DROP TABLE IF EXISTS proposal_budget CASCADE;
@@ -176,6 +178,70 @@ CREATE TABLE proposal_priority_agendas (
     selected BOOLEAN DEFAULT FALSE,
     value VARCHAR(255)
 );
+
+-- 8b. Priority Agenda framework (agenda set) and its agenda items.
+-- Section 05 of the Create Proposal form used to hard-code the framework label
+-- ("based on MSUN RIIDE 2025-2028") and the list of five agenda programs. Both are
+-- master data now, maintained by an administrator. Exactly one set may be active
+-- for new submissions (partial unique index uk_priority_agenda_set_single_active);
+-- sets and items are only deactivated, never deleted, and agenda_key is immutable
+-- because it is what proposal_priority_agendas.agenda_key stores.
+CREATE TABLE priority_agenda_sets (
+    id BIGSERIAL PRIMARY KEY,
+    framework_name VARCHAR(150) NOT NULL,
+    coverage_start_year INT NOT NULL,
+    coverage_end_year INT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_priority_agenda_period CHECK (coverage_end_year >= coverage_start_year)
+);
+
+CREATE UNIQUE INDEX uk_priority_agenda_set_framework_period
+    ON priority_agenda_sets (LOWER(framework_name), coverage_start_year, coverage_end_year);
+CREATE UNIQUE INDEX uk_priority_agenda_set_single_active
+    ON priority_agenda_sets (active) WHERE active = TRUE;
+
+CREATE TABLE priority_agendas (
+    id BIGSERIAL PRIMARY KEY,
+    agenda_set_id BIGINT NOT NULL REFERENCES priority_agenda_sets(id),
+    agenda_key VARCHAR(50) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    sub_label VARCHAR(80),
+    description TEXT,
+    display_order INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uk_priority_agendas_set_key ON priority_agendas (agenda_set_id, LOWER(agenda_key));
+CREATE UNIQUE INDEX uk_priority_agendas_set_name_lower ON priority_agendas (agenda_set_id, LOWER(name));
+CREATE INDEX idx_priority_agendas_set_active ON priority_agendas (agenda_set_id, active, display_order);
+
+-- Seed the framework the form used to hard-code (PriorityAgendaInitializer does the
+-- same idempotently on startup, so the feature works on an existing database too).
+INSERT INTO priority_agenda_sets (framework_name, coverage_start_year, coverage_end_year, active)
+VALUES ('MSUN RIIDE', 2025, 2028, TRUE);
+
+INSERT INTO priority_agendas (agenda_set_id, agenda_key, name, sub_label, description, display_order)
+SELECT s.id, a.agenda_key, a.name, a.sub_label, a.description, a.display_order
+FROM priority_agenda_sets s
+CROSS JOIN (VALUES
+    ('dagat', 'DAGAT Program', 'Commodity',
+     'Development of Aquatic Governance and Advanced Technologies', 1),
+    ('punla', 'PUNLA Program', 'Priority Topic',
+     'Progressive Upliftment for Nutrition, Livelihood, and Agriculture', 2),
+    ('kalikasan', 'KALIKASAN Program', 'Sector',
+     'Knowledge and Actions for Lasting Impact: Keeping Atmospheres, Seas, and Nature Sustainable', 3),
+    ('negosyo', 'NEGOSYO Program', 'Sector',
+     'Nurturing Entrepreneurship and Growth through Outstanding Strategic Yielding Opportunities', 4),
+    ('tanglaw', 'TANGLAW Program', 'Sector',
+     'Transforming Academia through Nurturing Growth, Leadership, Advancement, and Wisdom', 5)
+) AS a(agenda_key, name, sub_label, description, display_order)
+WHERE LOWER(s.framework_name) = LOWER('MSUN RIIDE')
+  AND s.coverage_start_year = 2025
+  AND s.coverage_end_year = 2028;
 
 -- 9. Proposal Limitations Table
 CREATE TABLE proposal_limitations (

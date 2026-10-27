@@ -33,6 +33,7 @@ public class ProposalAnnouncementService {
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final PriorityAgendaService priorityAgendaService;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
@@ -239,10 +240,12 @@ public class ProposalAnnouncementService {
                 : normalizeStatus(request.getStatus());
         announcement.setStatus(status);
 
-        // RIIDE priority agendas are optional: an announcement may be created with
-        // none selected, and only known program keys are persisted.
-        announcement.setPriorityAgendas(
-                ProposalAnnouncementCatalog.normalizeProgramKeys(request.getPriorityAgendas()));
+        // Priority agendas are optional: an announcement may be created with none
+        // selected, and only the keys of the currently active Priority Agenda items are
+        // persisted. The allowed keys come from the master data (section 05), so a
+        // framework an administrator configures is selectable here without a code change.
+        announcement.setPriorityAgendas(ProposalAnnouncementCatalog.normalizeProgramKeys(
+                request.getPriorityAgendas(), new ArrayList<>(priorityAgendaService.activeAgendaKeys())));
         // A brand-new announcement starts from the standard reminder set; when the
         // client sends an explicit selection (including an empty one) that selection
         // is stored exactly as sent.

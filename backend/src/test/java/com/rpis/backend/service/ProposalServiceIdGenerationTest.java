@@ -55,7 +55,7 @@ class ProposalServiceIdGenerationTest {
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
 
         AtomicLong sequence = new AtomicLong(FIRST_SEQUENCE_VALUE);
         when(proposalRepository.nextProposalCodeSequence()).thenAnswer(inv -> sequence.incrementAndGet());

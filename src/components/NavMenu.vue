@@ -110,6 +110,13 @@ const allNavItems = [
     section: 'main',
   },
   {
+    iconKey: 'evalCriteria',
+    text: 'Priority Agendas',
+    path: '/priority-agendas',
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    section: 'main',
+  },
+  {
     iconKey: 'notification',
     text: 'Notifications',
     path: '/notifications',

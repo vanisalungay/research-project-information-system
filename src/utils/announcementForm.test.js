@@ -17,6 +17,13 @@ import {
   announcementUpdatePayload,
 } from './announcementForm.js'
 
+/**
+ * The agenda keys of the active framework. They are master data now (the Priority
+ * Agenda admin page), so the caller passes them in instead of the module hard-coding
+ * the five programs.
+ */
+const AGENDA_KEYS = ['dagat', 'punla', 'kalikasan', 'negosyo', 'tanglaw']
+
 /** The state of the modal when an existing call is being updated. */
 const updateForm = {
   name: 'FY 2026 - 1st Call for Proposals',
@@ -107,7 +114,7 @@ test('an update payload can never replace a restricted field', () => {
 })
 
 test('a create payload carries the complete announcement', () => {
-  const payload = announcementCreatePayload(updateForm)
+  const payload = announcementCreatePayload(updateForm, AGENDA_KEYS)
 
   assert.deepEqual(payload, {
     name: 'FY 2026 - 1st Call for Proposals',
@@ -121,20 +128,37 @@ test('a create payload carries the complete announcement', () => {
 })
 
 test('a create payload trims the name and normalises the selections', () => {
-  const payload = announcementCreatePayload({
-    name: '  Trimmed Call  ',
-    startDate: '2026-10-01',
-    endDate: '2026-10-31',
-    status: 'ACTIVE',
-    priorityAgendas: ['DAGAT', 'dagat', 'not-a-program'],
-    reminderIds: ['COLLABORATION', 'bogus-reminder'],
-    additionalAnnouncement: '  Body.  ',
-  })
+  const payload = announcementCreatePayload(
+    {
+      name: '  Trimmed Call  ',
+      startDate: '2026-10-01',
+      endDate: '2026-10-31',
+      status: 'ACTIVE',
+      priorityAgendas: ['DAGAT', 'dagat', 'not-a-program'],
+      reminderIds: ['COLLABORATION', 'bogus-reminder'],
+      additionalAnnouncement: '  Body.  ',
+    },
+    AGENDA_KEYS,
+  )
 
   assert.equal(payload.name, 'Trimmed Call')
   assert.deepEqual(payload.priorityAgendas, ['dagat'])
   assert.deepEqual(payload.reminderIds, ['collaboration'])
   assert.equal(payload.additionalAnnouncement, 'Body.')
+})
+
+test('a create payload keeps only the agendas of the active framework', () => {
+  // An agenda the administrator has not configured (or has deactivated) is dropped,
+  // never silently persisted on a new call.
+  const payload = announcementCreatePayload(
+    { ...updateForm, priorityAgendas: ['dagat', 'blue-economy'] },
+    ['blue-economy'],
+  )
+
+  assert.deepEqual(payload.priorityAgendas, ['blue-economy'])
+
+  // Without the master data loaded yet, nothing is accepted rather than everything.
+  assert.deepEqual(announcementCreatePayload(updateForm).priorityAgendas, [])
 })
 
 test('a missing form state is handled without throwing', () => {

@@ -47,6 +47,7 @@ public class ProposalService {
     private final ProposalSectionRemarkService proposalSectionRemarkService;
     private final CurrentUser currentUser;
     private final CooperatingAgencyService cooperatingAgencyService;
+    private final PriorityAgendaService priorityAgendaService;
 
     /**
      * Project durations (in months) a proponent may select for an internally funded
@@ -446,6 +447,15 @@ public class ProposalService {
             proposal.setReferencesText(sb.toString().trim());
         }
 
+        // Priority Agendas (section 05): the keys the proposal already stores are
+        // captured before the child list is cleared below. They are what lets a revision
+        // resubmit an agenda that belongs to an older (now deactivated) framework
+        // without ever letting a client introduce an unknown or inactive key.
+        List<String> storedAgendaKeys = proposal.getPriorityAgendas().stream()
+                .map(ProposalPriorityAgenda::getAgendaKey)
+                .filter(Objects::nonNull)
+                .toList();
+
         // Clear existing child lists to overwrite (cascade all + orphan removal takes
         // care of orphans). The limitations table is handled separately below: only
         // the forms that actually edit it send it, so clearing it here would silently
@@ -529,11 +539,23 @@ public class ProposalService {
             }
         }
 
-        // Priority Agendas
+        // Priority Agendas (section 05). Every submitted key is validated against the
+        // configured master data: the active framework's active agendas plus the agendas
+        // this proposal already stores (so a revision of a proposal submitted under an
+        // older framework keeps working). An unknown or inactive key is rejected with a
+        // readable 400 instead of being persisted.
         if (request.getPriorityAgenda() != null) {
+            Set<String> allowedAgendaKeys = priorityAgendaService.allowedProposalKeys(storedAgendaKeys);
             for (Map.Entry<String, ProposalRequest.PriorityAgendaDTO> entry : request.getPriorityAgenda().entrySet()) {
+                String agendaKey = entry.getKey() == null ? "" : entry.getKey().trim();
+                if (agendaKey.isEmpty()
+                        || allowedAgendaKeys == null
+                        || !allowedAgendaKeys.contains(agendaKey.toLowerCase(Locale.ROOT))) {
+                    throw new IllegalArgumentException(
+                            "Unknown or inactive priority agenda: " + entry.getKey());
+                }
                 ProposalRequest.PriorityAgendaDTO val = entry.getValue();
-                ProposalPriorityAgenda agenda = new ProposalPriorityAgenda(null, proposal, entry.getKey(),
+                ProposalPriorityAgenda agenda = new ProposalPriorityAgenda(null, proposal, agendaKey,
                         val.getSelected(), val.getValue());
                 proposal.getPriorityAgendas().add(agenda);
             }

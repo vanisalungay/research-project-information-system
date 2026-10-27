@@ -8,6 +8,7 @@ import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
+import com.rpis.backend.service.PriorityAgendaService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
 import com.rpis.backend.service.ProposalSectionRemarkService;
@@ -61,7 +62,7 @@ class ProposalControllerAddressContactTest {
         ProposalService service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class), new CurrentUser(),
-                mock(CooperatingAgencyService.class));
+                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
         ProposalController controller = new ProposalController(service,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class), mock(CooperatingAgencyService.class));

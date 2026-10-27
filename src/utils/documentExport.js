@@ -407,12 +407,17 @@ export function printDocument({ title, html }) {
 
 // ===== Proposal document builder (backend `Proposal` DTO shape) =====
 
-const AGENDA_LABELS = {
-  dagat: 'DAGAT Program (Commodity)',
-  punla: 'PUNLA Program (Priority Topic)',
-  kalikasan: 'KALIKASAN Program (Sector)',
-  negosyo: 'NEGOSYO Program (Sector)',
-  tanglaw: 'TANGLAW Program (Sector)'
+/**
+ * The label of one agenda row. The display name comes from the caller's
+ * `agendaLabels` map ({ agendaKey: { name, subLabel } }), which is resolved from the
+ * Priority Agenda master data - so a framework an administrator configured later, and
+ * an agenda that has since been deactivated, both print correctly. Without the map the
+ * stable key is used; no program name or coverage period is ever hard-coded here.
+ */
+function agendaLabelFor(agendaLabels, agendaKey) {
+  const meta = (agendaLabels && agendaLabels[agendaKey]) || {}
+  const name = meta.name || String(agendaKey || 'Priority Agenda')
+  return meta.subLabel ? `${name} (${meta.subLabel})` : name
 }
 
 /** Normalize a value that may be an array or a plain object into an array. */
@@ -470,7 +475,7 @@ export function buildProposalDocument(p = {}) {
 
   const agendaBody = asList(p.priorityAgendas)
     .filter((a) => a && a.selected)
-    .map((a) => field(AGENDA_LABELS[a.agendaKey] || a.agendaKey || 'Priority Agenda', a.value || ''))
+    .map((a) => field(agendaLabelFor(p.agendaLabels, a.agendaKey || a.agenda), a.value || ''))
     .join('')
 
   const sitesRows = asList(p.sites).map((s) => [
@@ -523,7 +528,7 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '05',
       title: 'Priority Agenda',
-      sub: '(based on MSUN RIIDE 2025–2028)',
+      sub: p.agendaFrameworkLabel || '',
       body: agendaBody || textBlock('Priority Agenda', '')
     }),
     section({

@@ -429,29 +429,51 @@
           </div>
         </section>
 
-        <!-- 5. Priority Agenda -->
+        <!-- 5. Priority Agenda. The framework heading and the agenda list are master
+             data configured by an administrator (Priority Agendas page), so they are
+             read from the backend - never hard-coded. -->
         <section class="form-section" ref="section_priority_agendas">
           <div class="section-header">
             <span class="section-number">05</span>
             <h3>Priority Agenda</h3>
-            <span class="section-sub">(based on MSUN RIIDE 2025–2028)</span>
+            <span v-if="agendaLabel" class="section-sub">{{ agendaLabel }}</span>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.priority_agendas }">
-            <div class="agenda-grid">
-              <div v-for="program in programList" :key="program.key" class="agenda-item"
-                :class="{ selected: proposal.priority_agendas[program.key].selected }">
+            <p v-if="agendaLoading" class="agenda-state">Loading priority agendas…</p>
+            <p v-else-if="agendaError" class="agenda-state agenda-state-error">{{ agendaError }}</p>
+            <p v-else-if="!agendaPrograms.length" class="agenda-state">
+              No priority agenda is configured yet. Please contact the Research and Publication
+              Services office.
+            </p>
+            <div v-else class="agenda-grid">
+              <div v-for="program in agendaPrograms" :key="program.key" class="agenda-item"
+                :class="{ selected: isAgendaSelected(program.key) }">
                 <label class="agenda-checkbox">
-                  <input type="checkbox" v-model="proposal.priority_agendas[program.key].selected" />
+                  <input type="checkbox" :checked="isAgendaSelected(program.key)"
+                    @change="toggleAgenda(program.key, $event.target.checked)" />
                   <span class="checkmark"></span>
                   <span class="agenda-label">{{ program.label }}</span>
                 </label>
-                <div class="agenda-value" v-if="proposal.priority_agendas[program.key].selected">
+                <div class="agenda-value" v-if="isAgendaSelected(program.key)">
                   <span class="agenda-sub">{{ program.subLabel }}:</span>
                   <input v-model="proposal.priority_agendas[program.key].value"
-                    :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
+                    :placeholder="`Enter ${(program.subLabel || 'details').toLowerCase()}...`" />
                 </div>
               </div>
             </div>
+
+            <!-- Selections saved on this proposal whose framework is no longer offered.
+                 They are kept exactly as stored (nothing is silently dropped) and are
+                 still submitted, but they cannot be newly selected. -->
+            <div v-if="historicalAgendas.length" class="agenda-historical">
+              <p class="agenda-historical-title">Saved agendas no longer offered for new proposals</p>
+              <ul>
+                <li v-for="item in historicalAgendas" :key="item.key">
+                  <strong>{{ item.key.toUpperCase() }}:</strong> {{ item.value || '—' }}
+                </li>
+              </ul>
+            </div>
+
             <span class="field-error" v-if="showValidation && errors.priority_agendas">{{ errors.priority_agendas
               }}</span>
           </div>
@@ -1216,6 +1238,13 @@ import {
 } from '@/utils/budgetFile'
 // Step 1 of the workflow: the selected Call for Proposal is shown on this step.
 import { callDeadlineLabel } from '@/utils/callForProposal'
+// Section 05: the framework heading and the agenda list are administrator-managed
+// master data read from the backend (see the Priority Agendas admin page).
+import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
+import {
+  agendaPayload,
+  mergeAgendaState,
+} from '@/utils/priorityAgendas'
 // Section 23: APA 7th edition reference builder.
 import {
   ADD_REFERENCE_LABEL,
@@ -1418,13 +1447,9 @@ const getInitialProposal = () => ({
   cooperating_agency_names: [],
   sites: [{ country: '', region: '', province: '', district: '', municipality: '', barangay: '' }],
   research_type: '',
-  priority_agendas: {
-    dagat: { selected: false, value: '' },
-    punla: { selected: false, value: '' },
-    kalikasan: { selected: false, value: '' },
-    negosyo: { selected: false, value: '' },
-    tanglaw: { selected: false, value: '' }
-  },
+  // Section 05: filled from the Priority Agenda master data (see resetAgendaState);
+  // never a hard-coded list of programs.
+  priority_agendas: {},
   innovation_goals: '',
   sector_relevance: '',
   sustainable_development_goals: [],
@@ -1475,6 +1500,54 @@ const getInitialProposal = () => ({
 })
 
 const proposal = reactive(getInitialProposal())
+
+/* ===== PRIORITY AGENDA (section 05) =====
+   The framework heading and the agenda checkboxes come from the Priority Agenda master
+   data an administrator maintains on the Priority Agendas page. Nothing here is
+   hard-coded: activating another framework (its name, coverage period and agenda list)
+   changes this section without any source change. A failed load shows an error and never
+   falls back to a built-in list. */
+const {
+  agendaPrograms,
+  agendaLabel,
+  loading: agendaLoading,
+  error: agendaError,
+  load: loadAgendaConfig,
+} = usePriorityAgenda()
+
+/** True while the agenda of this key is checked (false when it is not rendered at all). */
+const isAgendaSelected = (key) => Boolean(proposal.priority_agendas?.[key]?.selected)
+
+/** Checks / unchecks one agenda, creating its entry when it is missing. */
+const toggleAgenda = (key, checked) => {
+  if (!proposal.priority_agendas[key]) {
+    proposal.priority_agendas[key] = { selected: false, value: '' }
+  }
+  proposal.priority_agendas[key].selected = Boolean(checked)
+}
+
+/**
+ * The selections saved on this proposal whose framework is no longer offered. They stay
+ * in the submitted payload (so history is never silently rewritten) but are shown
+ * read-only, because an inactive agenda must not be selectable for a new submission.
+ */
+const historicalAgendas = computed(() => {
+  const activeKeys = new Set(agendaPrograms.value.map((program) => program.key))
+  return Object.entries(proposal.priority_agendas || {})
+    .filter(([key]) => !activeKeys.has(key))
+    .map(([key, value]) => ({ key, value: value?.value || '' }))
+})
+
+/** Rebuilds the agenda state from the active configuration, keeping saved selections. */
+const resetAgendaState = (savedRows) => {
+  proposal.priority_agendas = mergeAgendaState(agendaPrograms.value, savedRows)
+}
+
+// When the master data arrives (or is refreshed) after the form was opened, the state is
+// re-merged so every configured agenda has an entry while the current selection is kept.
+watch(agendaPrograms, () => {
+  resetAgendaState({ ...proposal.priority_agendas })
+})
 
 /* ===== END DATE (section 01) =====
    The End Date is not chosen by the proponent: it is calculated by adding the selected
@@ -1669,6 +1742,9 @@ const resetForm = () => {
   Object.keys(initial).forEach(key => {
     proposal[key] = initial[key]
   })
+  // Section 05: the agenda state is rebuilt from the active configuration (nothing is
+  // selected on a brand-new proposal).
+  resetAgendaState([])
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
   programTitleChoice.value = ''
@@ -1749,15 +1825,10 @@ const loadProposal = (data) => {
     }))
   }
 
-  // Map priority agendas
-  if (data.priorityAgendas) {
-    Object.keys(data.priorityAgendas).forEach(key => {
-      if (proposal.priority_agendas[key]) {
-        proposal.priority_agendas[key].selected = data.priorityAgendas[key].selected || false
-        proposal.priority_agendas[key].value = data.priorityAgendas[key].value || ''
-      }
-    })
-  }
+  // Map priority agendas (section 05). The active configuration is merged with the
+  // proposal's own rows, so an agenda saved under an older framework is preserved even
+  // when it is no longer offered.
+  resetAgendaState(data.priorityAgendas)
 
   // Map logical framework
   if (data.logFrames && data.logFrames.length > 0) {
@@ -1791,14 +1862,6 @@ const loadProposal = (data) => {
 }
 
 defineExpose({ resetForm, loadProposal })
-
-const programList = [
-  { key: 'dagat', label: 'DAGAT Program', subLabel: 'Commodity' },
-  { key: 'punla', label: 'PUNLA Program', subLabel: 'Priority Topic' },
-  { key: 'kalikasan', label: 'KALIKASAN Program', subLabel: 'Sector' },
-  { key: 'negosyo', label: 'NEGOSYO Program', subLabel: 'Sector' },
-  { key: 'tanglaw', label: 'TANGLAW Program', subLabel: 'Sector' },
-]
 
 const sixPsList = [
   { key: 'publications', label: 'Publications', placeholder: 'Describe the expected publication/output...' },
@@ -2056,6 +2119,14 @@ const toOfficialProposal = () => {
     selected: Boolean(v && v.selected),
     value: (v && v.value) || ''
   }))
+  // Section 05: the display names of the agendas come from the loaded master data, so
+  // the printout never uses a hard-coded program name or coverage period.
+  const agendaLabels = Object.fromEntries(
+    agendaPrograms.value.map((program) => [
+      program.key,
+      { name: program.label, subLabel: program.subLabel }
+    ])
+  )
   const outputs = Object.values(d.expected_outputs || {})
     .map((o) => (o && o.value ? o.value : ''))
     .filter(Boolean)
@@ -2076,6 +2147,9 @@ const toOfficialProposal = () => {
     sites: d.sites,
     researchType: d.research_type,
     priorityAgendas: agendas,
+    // Section 05 display metadata for the printout (resolved from the master data).
+    agendaLabels,
+    agendaFrameworkLabel: agendaLabel.value,
     innovationGoals: d.innovation_goals,
     sectorRelevance: d.sector_relevance,
     sdg: d.sustainable_development_goals,
@@ -2143,11 +2217,16 @@ const proposalSectionsA = () => {
         ? 'Applied Research'
         : p.research_type
 
-  const agendaBody = programList
-    .filter((prog) => p.priority_agendas && p.priority_agendas[prog.key] && p.priority_agendas[prog.key].selected)
-    .map((prog) => {
-      const item = p.priority_agendas[prog.key]
-      return field(`${prog.label} (${prog.subLabel})`, item.value || '')
+  // Section 05: the labels come from the loaded master data (a saved agenda whose
+  // framework is no longer offered falls back to its stable key).
+  const agendaBody = Object.entries(p.priority_agendas || {})
+    .filter(([, item]) => item && item.selected)
+    .map(([key, item]) => {
+      const program = agendaPrograms.value.find((entry) => entry.key === key)
+      const label = program
+        ? (program.subLabel ? `${program.label} (${program.subLabel})` : program.label)
+        : key.toUpperCase()
+      return field(label, item.value || '')
     })
     .join('')
 
@@ -2202,7 +2281,7 @@ const proposalSectionsA = () => {
     section({
       number: '05',
       title: 'Priority Agenda',
-      sub: '(based on MSUN RIIDE 2025–2028)',
+      sub: agendaLabel.value || '',
       body: agendaBody || textBlock('Priority Agenda', '')
     }),
     section({
@@ -2708,12 +2787,10 @@ const mapFormToDTO = (data, proponentId, status) => {
       municipality: s.municipality || '',
       barangay: s.barangay || ''
     })),
-    priorityAgenda: Object.fromEntries(
-      Object.entries(data.priority_agendas || {}).map(([key, val]) => [
-        key,
-        { selected: val.selected || false, value: val.value || '' }
-      ])
-    ),
+    // Section 05: every rendered agenda is sent (selected or not), so unchecking one
+    // stores an explicit "not selected" instead of leaving a stale row behind. The
+    // backend validates each key against the active master data.
+    priorityAgenda: agendaPayload(data.priority_agendas),
     logFrame: (data.logical_framework || []).map(lf => ({
       outcome: lf.outcome_indicator || '',
       output: lf.output_indicator || ''
@@ -2733,9 +2810,16 @@ const mapFormToDTO = (data, proponentId, status) => {
 
 // Load the reusable program titles once, then refresh them whenever the form is
 // (re)opened so a title created in the meantime is available in the dropdown.
-onMounted(fetchExistingProgramTitles)
+onMounted(() => {
+  fetchExistingProgramTitles()
+  // Section 05: the framework heading and the agenda list come from the master data.
+  loadAgendaConfig()
+})
 watch(() => props.modelValue, (isOpen) => {
-  if (isOpen) fetchExistingProgramTitles()
+  if (isOpen) {
+    fetchExistingProgramTitles()
+    loadAgendaConfig()
+  }
 })
 </script>
 
@@ -3738,6 +3822,38 @@ select {
 }
 
 /* ===== AGENDA ===== */
+.agenda-state {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.agenda-state-error {
+  color: #dc2626;
+}
+
+.agenda-historical {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.agenda-historical-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.agenda-historical ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: #334155;
+}
+
 .agenda-grid {
   display: grid;
   gap: 10px;

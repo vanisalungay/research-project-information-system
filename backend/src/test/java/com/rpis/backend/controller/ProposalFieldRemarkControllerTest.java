@@ -9,6 +9,7 @@ import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
+import com.rpis.backend.service.PriorityAgendaService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
 import com.rpis.backend.service.ProposalSectionRemarkService;
@@ -63,7 +64,7 @@ class ProposalFieldRemarkControllerTest {
         ProposalService proposalService = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class), remarkService, currentUser,
-                mock(CooperatingAgencyService.class));
+                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
         ProposalController controller = new ProposalController(proposalService,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class), remarkService,
                 mock(CooperatingAgencyService.class));

@@ -77,6 +77,22 @@
       <p v-else class="pf-empty">No entries provided.</p>
     </template>
 
+    <!-- Keyed agenda entries (Priority Agenda, section 05): the registry's default
+         agendas plus every agenda the proposal itself stores, so an agenda that is no
+         longer offered still shows its value and its own remark control. -->
+    <template v-else-if="section.layout === 'agenda'">
+      <div v-for="field in agendaFields" :key="field.key" class="pf-field">
+        <h4 class="pf-subhead">{{ field.label }}</h4>
+        <p class="pf-value">{{ displayValue(field) || 'Not provided' }}</p>
+        <FieldRemarkControl
+          v-bind="controlProps(field.key, field.label)"
+          :remarks="remarksFor(field.key)"
+          @saved="onSaved"
+          @removed="onRemoved(field.key, $event)"
+        />
+      </div>
+    </template>
+
     <!-- SDG checklist -->
     <template v-else-if="section.layout === 'sdg'">
       <SdgChecklist :value="proposal.sdg" />
@@ -159,6 +175,7 @@ import { computed, ref } from 'vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import {
+  agendaFieldsFor,
   buildEntrySnapshot,
   cellKey as cellKeyOf,
   collectionRows,
@@ -166,7 +183,6 @@ import {
   entryKey as entryKeyOf,
   fieldLabel as labelOf,
   fieldValue,
-  isAgendaSelected,
   resolveRemarkEntry,
 } from '@/utils/proposalFields'
 
@@ -189,6 +205,9 @@ const overrides = ref({})
 const removedIds = ref([])
 
 const index = computed(() => ({ ...props.remarkIndex, ...overrides.value }))
+
+/** Section 05: the registry's default agendas plus the proposal's own agenda rows. */
+const agendaFields = computed(() => agendaFieldsFor(props.proposal, props.section))
 
 const remarksFor = (fieldKey) => {
   const items = index.value[fieldKey] || []

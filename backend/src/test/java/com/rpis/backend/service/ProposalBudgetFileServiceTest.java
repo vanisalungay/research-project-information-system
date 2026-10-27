@@ -69,7 +69,8 @@ class ProposalBudgetFileServiceTest {
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),
                 currentUser,
-                mock(CooperatingAgencyService.class));
+                mock(CooperatingAgencyService.class),
+                mock(PriorityAgendaService.class));
 
         proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);

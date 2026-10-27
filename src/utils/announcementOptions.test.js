@@ -11,9 +11,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  RIIDE_PROGRAMS,
   ANNOUNCEMENT_REMINDERS,
-  PROGRAM_KEYS,
   REMINDER_KEYS,
   defaultReminderKeys,
   normalizeProgramKeys,
@@ -22,27 +20,21 @@ import {
   toggleAllSelection,
 } from './announcementOptions.js'
 
-test('the five RIIDE programs use stable identifiers and the official text', () => {
-  assert.deepEqual(PROGRAM_KEYS, ['dagat', 'punla', 'kalikasan', 'negosyo', 'tanglaw'])
-  assert.deepEqual(
-    RIIDE_PROGRAMS.map((program) => [program.label, program.description]),
-    [
-      ['DAGAT Program', 'Development of Aquatic Governance and Advanced Technologies'],
-      ['PUNLA Program', 'Progressive Upliftment for Nutrition, Livelihood, and Agriculture'],
-      [
-        'KALIKASAN Program',
-        'Knowledge and Actions for Lasting Impact: Keeping Atmospheres, Seas, and Nature Sustainable',
-      ],
-      [
-        'NEGOSYO Program',
-        'Nurturing Entrepreneurship and Growth through Outstanding Strategic Yielding Opportunities',
-      ],
-      [
-        'TANGLAW Program',
-        'Transforming Academia through Nurturing Growth, Leadership, Advancement, and Wisdom',
-      ],
-    ]
-  )
+/**
+ * The agenda keys of the currently active framework. They are master data now (the
+ * Priority Agenda admin page), so every helper takes them as an argument - the module
+ * no longer hard-codes the five programs.
+ */
+const AGENDA_KEYS = ['dagat', 'punla', 'kalikasan', 'negosyo', 'tanglaw']
+
+test('the agenda list is no longer hard-coded in this module', () => {
+  // Without the master data the helpers accept nothing, instead of silently falling
+  // back to a built-in list.
+  assert.deepEqual(normalizeProgramKeys(['dagat', 'punla']), [])
+  assert.deepEqual(normalizeProgramKeys(undefined), [])
+  assert.deepEqual(normalizeProgramKeys(null), [])
+  assert.equal(isAllSelected(['dagat'], []), false)
+  assert.deepEqual(toggleAllSelection([], []), [])
 })
 
 test('the three standard reminders keep their exact text and stable identifiers', () => {
@@ -59,40 +51,47 @@ test('the three standard reminders keep their exact text and stable identifiers'
 
 test('a new announcement selects all three reminders and no agenda', () => {
   assert.deepEqual(defaultReminderKeys(), REMINDER_KEYS)
-  assert.deepEqual(normalizeProgramKeys(undefined), [])
-  assert.deepEqual(normalizeProgramKeys(null), [])
+  assert.deepEqual(normalizeProgramKeys(undefined, AGENDA_KEYS), [])
+  assert.deepEqual(normalizeProgramKeys(null, AGENDA_KEYS), [])
 })
 
 test('selecting a single program keeps exactly its identifier', () => {
-  assert.deepEqual(normalizeProgramKeys(['dagat']), ['dagat'])
+  assert.deepEqual(normalizeProgramKeys(['dagat'], AGENDA_KEYS), ['dagat'])
 })
 
 test('selecting multiple programs keeps every identifier', () => {
-  assert.deepEqual(normalizeProgramKeys(['dagat', 'kalikasan', 'tanglaw']), [
+  assert.deepEqual(normalizeProgramKeys(['dagat', 'kalikasan', 'tanglaw'], AGENDA_KEYS), [
     'dagat',
     'kalikasan',
     'tanglaw',
   ])
 })
 
-test('check all selects all five programs and uncheck all clears them', () => {
-  const all = toggleAllSelection([], PROGRAM_KEYS)
-  assert.deepEqual(all, PROGRAM_KEYS)
+test('a program outside the active framework is dropped', () => {
+  // An agenda an administrator has not configured (or has deactivated) can never be
+  // selected on a call, whatever the client sends.
+  assert.deepEqual(normalizeProgramKeys(['dagat', 'blue-economy'], AGENDA_KEYS), ['dagat'])
+  assert.deepEqual(normalizeProgramKeys(['blue-economy'], ['blue-economy']), ['blue-economy'])
+})
 
-  const cleared = toggleAllSelection(all, PROGRAM_KEYS)
+test('check all selects every active program and uncheck all clears them', () => {
+  const all = toggleAllSelection([], AGENDA_KEYS)
+  assert.deepEqual(all, AGENDA_KEYS)
+
+  const cleared = toggleAllSelection(all, AGENDA_KEYS)
   assert.deepEqual(cleared, [])
 })
 
 test('the check-all label follows individual selections', () => {
   // Label is derived from isAllSelected: false -> "Check All", true -> "Uncheck All".
-  assert.equal(isAllSelected([], PROGRAM_KEYS), false)
-  assert.equal(isAllSelected(['dagat'], PROGRAM_KEYS), false)
-  assert.equal(isAllSelected(['dagat', 'punla', 'kalikasan', 'negosyo'], PROGRAM_KEYS), false)
-  assert.equal(isAllSelected(PROGRAM_KEYS, PROGRAM_KEYS), true)
+  assert.equal(isAllSelected([], AGENDA_KEYS), false)
+  assert.equal(isAllSelected(['dagat'], AGENDA_KEYS), false)
+  assert.equal(isAllSelected(['dagat', 'punla', 'kalikasan', 'negosyo'], AGENDA_KEYS), false)
+  assert.equal(isAllSelected(AGENDA_KEYS, AGENDA_KEYS), true)
 
   // Partially selected + "Check All" -> everything selected -> label flips to Uncheck All.
-  const afterCheckAll = toggleAllSelection(['dagat', 'punla'], PROGRAM_KEYS)
-  assert.equal(isAllSelected(afterCheckAll, PROGRAM_KEYS), true)
+  const afterCheckAll = toggleAllSelection(['dagat', 'punla'], AGENDA_KEYS)
+  assert.equal(isAllSelected(afterCheckAll, AGENDA_KEYS), true)
 })
 
 test('reminders can be deselected independently', () => {
@@ -104,9 +103,9 @@ test('reminders can be deselected independently', () => {
 })
 
 test('stored selections are normalized (case, duplicates, unknown ids, legacy strings)', () => {
-  assert.deepEqual(normalizeProgramKeys(['DAGAT', 'dagat', 'not-a-program']), ['dagat'])
-  assert.deepEqual(normalizeProgramKeys('dagat; punla'), ['dagat', 'punla'])
-  assert.deepEqual(normalizeProgramKeys('dagat,punla'), ['dagat', 'punla'])
+  assert.deepEqual(normalizeProgramKeys(['DAGAT', 'dagat', 'not-a-program'], AGENDA_KEYS), ['dagat'])
+  assert.deepEqual(normalizeProgramKeys('dagat; punla', AGENDA_KEYS), ['dagat', 'punla'])
+  assert.deepEqual(normalizeProgramKeys('dagat,punla', AGENDA_KEYS), ['dagat', 'punla'])
   assert.deepEqual(normalizeReminderKeys(['RESEARCH-PLAN', 'nope']), ['research-plan'])
   assert.deepEqual(normalizeReminderKeys('collaboration\nresearch-plan'), [
     'research-plan',

@@ -212,12 +212,8 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { announcementStatus, localTodayISO } from '@/utils/announcementStatus'
 import { extensionNotice } from '@/utils/announcementUpdates'
-import {
-  RIIDE_PROGRAMS,
-  ANNOUNCEMENT_REMINDERS,
-  normalizeProgramKeys,
-  normalizeReminderKeys,
-} from '@/utils/announcementOptions'
+import { ANNOUNCEMENT_REMINDERS, normalizeReminderKeys } from '@/utils/announcementOptions'
+import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
 
 const route = useRoute()
 const router = useRouter()
@@ -262,11 +258,22 @@ const statusClass = computed(() => {
  */
 const extension = computed(() => extensionNotice(announcement.value))
 
-/** The saved RIIDE programs, resolved to their display labels. */
-const priorityAgendaPrograms = computed(() => {
-  const keys = normalizeProgramKeys(announcement.value?.priorityAgendas)
-  return RIIDE_PROGRAMS.filter((program) => keys.includes(program.key))
-})
+/**
+ * The saved priority agendas, resolved to their display names. The names come from the
+ * Priority Agenda master data (through the lookup API), so an agenda that has since
+ * been deactivated still shows the name it was stored with - and a call created under
+ * a new framework shows that framework's agendas, never a hard-coded list.
+ */
+const { resolveLabels } = usePriorityAgenda()
+const programLabels = ref({})
+
+const priorityAgendaPrograms = computed(() =>
+  (announcement.value?.priorityAgendas || []).map((key) => ({
+    key,
+    label: programLabels.value[key]?.name || key,
+    description: programLabels.value[key]?.description || '',
+  }))
+)
 
 /** The saved standard reminders, resolved to their text. */
 const reminderTexts = computed(() => {
@@ -435,6 +442,11 @@ async function loadAnnouncement() {
       return
     }
     announcement.value = data
+    // Resolve the saved agenda names from the master data (a deactivated agenda keeps
+    // showing the name it was stored with; a failure degrades to the raw key).
+    resolveLabels(data.priorityAgendas).then((index) => {
+      programLabels.value = index
+    })
   } catch (err) {
     console.error(err)
     announcement.value = null

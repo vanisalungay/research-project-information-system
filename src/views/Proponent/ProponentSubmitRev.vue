@@ -258,30 +258,49 @@
               </div>
             </section>
 
-            <!-- 5. Priority Agenda -->
+            <!-- 5. Priority Agenda. The framework heading and the agenda list are master
+                 data configured by an administrator, so they are read from the backend. -->
             <section class="form-section">
               <div class="section-header">
                 <span class="section-number">05</span>
                 <h3>Priority Agenda</h3>
-                <span class="section-sub">(based on MSUN RIIDE 2025–2028)</span>
+                <span v-if="agendaLabel" class="section-sub">{{ agendaLabel }}</span>
               </div>
               <SectionRemarksNotice :section-key="'05'" :remarks="remarksFor('05')" />
               <div class="section-card">
-                <div class="agenda-grid">
-                  <div v-for="program in programList" :key="program.key" class="agenda-item"
-                    :class="{ selected: proposal.priority_agendas[program.key].selected }">
+                <p v-if="agendaLoading" class="agenda-state">Loading priority agendas…</p>
+                <p v-else-if="agendaError" class="agenda-state agenda-state-error">{{ agendaError }}</p>
+                <p v-else-if="!agendaPrograms.length" class="agenda-state">
+                  No priority agenda is configured yet. Please contact the Research and Publication
+                  Services office.
+                </p>
+                <div v-else class="agenda-grid">
+                  <div v-for="program in agendaPrograms" :key="program.key" class="agenda-item"
+                    :class="{ selected: isAgendaSelected(program.key) }">
                     <label class="agenda-checkbox">
-                      <input type="checkbox" v-model="proposal.priority_agendas[program.key].selected" />
+                      <input type="checkbox" :checked="isAgendaSelected(program.key)"
+                        @change="toggleAgenda(program.key, $event.target.checked)" />
                       <span class="checkmark"></span>
                       <span class="agenda-label">{{ program.label }}</span>
                     </label>
-                    <div class="agenda-value" v-if="proposal.priority_agendas[program.key].selected">
+                    <div class="agenda-value" v-if="isAgendaSelected(program.key)">
                       <span class="agenda-sub">{{ program.subLabel }}:</span>
                       <input v-model="proposal.priority_agendas[program.key].value"
-                        :placeholder="`Enter ${program.subLabel.toLowerCase()}...`" />
+                        :placeholder="`Enter ${(program.subLabel || 'details').toLowerCase()}...`" />
                   <FieldRemarkControl :proposal-id="proposalId" :section-key="'05'" :field-key="`priorityAgenda.${program.key}.value`" field-label="Priority Agenda" :remarks="remarksForField(`priorityAgenda.${program.key}.value`)" readonly />
                     </div>
                   </div>
+                </div>
+
+                <!-- Selections saved on this proposal whose framework is no longer offered:
+                     kept exactly as stored and still submitted, shown read-only. -->
+                <div v-if="historicalAgendas.length" class="agenda-historical">
+                  <p class="agenda-historical-title">Saved agendas no longer offered for new proposals</p>
+                  <ul>
+                    <li v-for="item in historicalAgendas" :key="item.key">
+                      <strong>{{ item.key.toUpperCase() }}:</strong> {{ item.value || '—' }}
+                    </li>
+                  </ul>
                 </div>
               </div>
             </section>
@@ -877,7 +896,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -890,6 +909,10 @@ import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { PROPOSAL_SECTIONS, activeRemarksBySection, previousRounds, sectionLabel } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+// Section 05: the framework heading and the agenda list are administrator-managed
+// master data read from the backend (see the Priority Agendas admin page).
+import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
+import { agendaPayload, mergeAgendaState } from '@/utils/priorityAgendas'
 
 const route = useRoute()
 const router = useRouter()
@@ -1034,13 +1057,8 @@ const proposal = ref({
   personnel_requirements: [],
   other_projects: [],
 
-  priority_agendas: {
-    dagat: { selected: false, value: '' },
-    punla: { selected: false, value: '' },
-    kalikasan: { selected: false, value: '' },
-    negosyo: { selected: false, value: '' },
-    tanglaw: { selected: false, value: '' }
-  }
+  // Section 05: populated from the Priority Agenda master data (see resetAgendaState).
+  priority_agendas: {}
 })
 
 const addSite = () => {
@@ -1053,33 +1071,51 @@ const addSite = () => {
   })
 }
 
-const programList = [
-  {
-    key: 'dagat',
-    label: 'DAGAT Program',
-    subLabel: 'Commodity'
-  },
-  {
-    key: 'punla',
-    label: 'PUNLA Program',
-    subLabel: 'Priority Topic'
-  },
-  {
-    key: 'kalikasan',
-    label: 'KALIKASAN Program',
-    subLabel: 'Sector'
-  },
-  {
-    key: 'negosyo',
-    label: 'NEGOSYO Program',
-    subLabel: 'Sector'
-  },
-  {
-    key: 'tanglaw',
-    label: 'TANGLAW Program',
-    subLabel: 'Sector'
+/* ===== PRIORITY AGENDA (section 05) =====
+   The framework heading and the agenda checkboxes come from the Priority Agenda master
+   data an administrator maintains on the Priority Agendas page - never a hard-coded
+   list. A failed load shows an error and never falls back to built-in agendas. */
+const {
+  agendaPrograms,
+  agendaLabel,
+  loading: agendaLoading,
+  error: agendaError,
+  load: loadAgendaConfig,
+} = usePriorityAgenda()
+
+/** True while the agenda of this key is checked (false when it is not rendered at all). */
+const isAgendaSelected = (key) => Boolean(proposal.value.priority_agendas?.[key]?.selected)
+
+/** Checks / unchecks one agenda, creating its entry when it is missing. */
+const toggleAgenda = (key, checked) => {
+  if (!proposal.value.priority_agendas[key]) {
+    proposal.value.priority_agendas[key] = { selected: false, value: '' }
   }
-]
+  proposal.value.priority_agendas[key].selected = Boolean(checked)
+}
+
+/**
+ * The selections saved on this proposal whose framework is no longer offered. They stay
+ * in the submitted payload (history is never silently rewritten) but are shown
+ * read-only, because an inactive agenda must not be selectable for a new submission.
+ */
+const historicalAgendas = computed(() => {
+  const activeKeys = new Set(agendaPrograms.value.map((program) => program.key))
+  return Object.entries(proposal.value.priority_agendas || {})
+    .filter(([key]) => !activeKeys.has(key))
+    .map(([key, value]) => ({ key, value: value?.value || '' }))
+})
+
+/** Rebuilds the agenda state from the active configuration, keeping saved selections. */
+const resetAgendaState = (savedRows) => {
+  proposal.value.priority_agendas = mergeAgendaState(agendaPrograms.value, savedRows)
+}
+
+// When the master data arrives (or is refreshed) after the page was opened, the state is
+// re-merged so every configured agenda has an entry while the current selection is kept.
+watch(agendaPrograms, () => {
+  resetAgendaState({ ...proposal.value.priority_agendas })
+})
 
 const removeSite = (index: number) => {
   proposal.value.sites.splice(index, 1)
@@ -1209,22 +1245,12 @@ const fetchProposal = async () => {
           }))
           : [],
 
-      priority_agendas: {
-        dagat: { selected: false, value: '' },
-        punla: { selected: false, value: '' },
-        kalikasan: { selected: false, value: '' },
-        negosyo: { selected: false, value: '' },
-        tanglaw: { selected: false, value: '' },
-        ...(Array.isArray(data.priorityAgendas)
-          ? Object.fromEntries(
-            data.priorityAgendas.map(pa => [
-              pa.agendaKey || pa.agenda,
-              { selected: pa.selected || false, value: pa.value || '' }
-            ])
-          )
-          : {})
-      }
+      // Section 05: rebuilt below, once the active configuration is merged with the
+      // proposal's own saved rows (so an agenda of an older framework is preserved).
+      priority_agendas: {}
     }
+    // Section 05: merge the proposal's saved rows with the active configuration.
+    resetAgendaState(data.priorityAgendas)
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load proposal details.'
@@ -1311,12 +1337,9 @@ const submitRevision = async () => {
       municipality: s.municipality || '',
       barangay: s.barangay || ''
     })),
-    priorityAgenda: Object.fromEntries(
-      Object.entries(data.priority_agendas || {}).map(([key, val]) => [
-        key,
-        { selected: val.selected || false, value: val.value || '' }
-      ])
-    ),
+    // Section 05: every rendered agenda is sent (selected or not); the backend validates
+    // each key against the active master data.
+    priorityAgenda: agendaPayload(data.priority_agendas),
     logFrame: (data.logical_framework || []).map(lf => ({
       outcome: lf.outcome_indicator || '',
       output: lf.output_indicator || ''
@@ -1363,6 +1386,8 @@ const goBack = () => {
 onMounted(() => {
   fetchProposal()
   fetchSectionRemarks()
+  // Section 05: the framework heading and the agenda list come from the master data.
+  loadAgendaConfig()
 })
 </script>
 
@@ -2350,6 +2375,38 @@ onMounted(() => {
   font-size: 13px;
   color: #64748b;
   margin-top: 4px;
+}
+
+.agenda-state {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.agenda-state-error {
+  color: #dc2626;
+}
+
+.agenda-historical {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.agenda-historical-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.agenda-historical ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: #334155;
 }
 
 .agenda-grid {

@@ -1,47 +1,16 @@
 /**
  * announcementOptions.js
  * Central definition of the extra information a Proposal Announcement carries:
- * the MSUN RIIDE 2025-2028 priority-agenda programs and the standard
- * announcement reminders.
+ * the priority-agenda programs of the currently active Priority Agenda framework
+ * (section 05) and the standard announcement reminders.
  *
- * The program keys ('dagat', 'punla', 'kalikasan', 'negosyo', 'tanglaw') are the
- * same stable identifiers the proponent proposal form uses for its Priority
- * Agenda section (ProponentSubmitProp.vue) and the ones persisted with every
- * announcement - never array positions and never the display labels. The backend
- * mirrors them in ProposalAnnouncementCatalog, which is what validates and
- * stores a selection.
+ * The program keys are NOT hard-coded any more. They are the stable identifiers of
+ * the Priority Agenda master data, read from `GET /api/priority-agendas/active`, so a
+ * framework an administrator configures - "MSUN RIDE 2029-2032", for example - is
+ * selectable on a new call without any source change. The backend mirrors the rule in
+ * ProposalAnnouncementCatalog, which is what validates and stores a selection; the
+ * keys here are never array positions and never the display labels.
  */
-
-export const RIIDE_PROGRAMS = [
-  {
-    key: 'dagat',
-    label: 'DAGAT Program',
-    description: 'Development of Aquatic Governance and Advanced Technologies',
-  },
-  {
-    key: 'punla',
-    label: 'PUNLA Program',
-    description: 'Progressive Upliftment for Nutrition, Livelihood, and Agriculture',
-  },
-  {
-    key: 'kalikasan',
-    label: 'KALIKASAN Program',
-    description:
-      'Knowledge and Actions for Lasting Impact: Keeping Atmospheres, Seas, and Nature Sustainable',
-  },
-  {
-    key: 'negosyo',
-    label: 'NEGOSYO Program',
-    description:
-      'Nurturing Entrepreneurship and Growth through Outstanding Strategic Yielding Opportunities',
-  },
-  {
-    key: 'tanglaw',
-    label: 'TANGLAW Program',
-    description:
-      'Transforming Academia through Nurturing Growth, Leadership, Advancement, and Wisdom',
-  },
-]
 
 export const ANNOUNCEMENT_REMINDERS = [
   {
@@ -57,9 +26,6 @@ export const ANNOUNCEMENT_REMINDERS = [
     text: 'Collaborative and interdisciplinary projects are highly encouraged.',
   },
 ]
-
-/** Stable program identifiers, in display order. */
-export const PROGRAM_KEYS = RIIDE_PROGRAMS.map((program) => program.key)
 
 /** Stable reminder identifiers, in display order. */
 export const REMINDER_KEYS = ANNOUNCEMENT_REMINDERS.map((reminder) => reminder.key)
@@ -94,9 +60,14 @@ export function normalizeKeys(value, allowedKeys) {
   return allowed.filter((key) => requested.has(key))
 }
 
-/** Normalizes a stored RIIDE priority-agenda selection. */
-export function normalizeProgramKeys(value) {
-  return normalizeKeys(value, PROGRAM_KEYS)
+/**
+ * Normalizes a stored or edited priority-agenda selection against the allowed keys
+ * (the active framework's active agenda items). A caller that has not loaded the
+ * master data yet passes no keys, which yields an empty selection rather than
+ * silently accepting an unknown identifier.
+ */
+export function normalizeProgramKeys(value, allowedKeys) {
+  return normalizeKeys(value, allowedKeys || [])
 }
 
 /** Normalizes a stored announcement reminder selection. */
@@ -106,7 +77,7 @@ export function normalizeReminderKeys(value) {
 
 /** True when every allowed identifier is currently selected. */
 export function isAllSelected(selectedKeys, allowedKeys) {
-  const allowed = allowedKeys || PROGRAM_KEYS
+  const allowed = allowedKeys || []
   const selected = new Set(normalizeKeys(selectedKeys, allowed))
   return allowed.length > 0 && allowed.every((key) => selected.has(key))
 }
@@ -117,6 +88,6 @@ export function isAllSelected(selectedKeys, allowedKeys) {
  * label from {@link isAllSelected} so the label always follows the checkboxes.
  */
 export function toggleAllSelection(selectedKeys, allowedKeys) {
-  const allowed = allowedKeys || PROGRAM_KEYS
+  const allowed = allowedKeys || []
   return isAllSelected(selectedKeys, allowed) ? [] : [...allowed]
 }

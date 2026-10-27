@@ -169,25 +169,33 @@
               <p v-else class="readonly-value">No priority program is selected for this call.</p>
             </template>
             <template v-else>
-              <div class="selection-row">
-                <p class="selection-counter" aria-live="polite">
-                  {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected
-                </p>
-                <button type="button" class="check-all-btn" @click="toggleAllPrograms">
-                  {{ allProgramsSelected ? 'Uncheck All' : 'Check All' }}
-                </button>
-              </div>
-              <div class="option-list">
-                <label v-for="program in RIIDE_PROGRAMS" :key="program.key" class="option-item"
-                  :class="{ selected: form.priorityAgendas.includes(program.key) }">
-                  <input type="checkbox" :value="program.key" v-model="form.priorityAgendas" />
-                  <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
-                  <span class="option-text">
-                    <span class="option-label">{{ program.label }}</span>
-                    <span class="option-description">{{ program.description }}</span>
-                  </span>
-                </label>
-              </div>
+              <p v-if="agendaLoading" class="readonly-value">Loading priority agendas…</p>
+              <p v-else-if="agendaError" class="error-text">{{ agendaError }}</p>
+              <p v-else-if="!agendaPrograms.length" class="readonly-value">
+                No priority agenda is configured yet. Add one under Priority Agendas before
+                selecting programs for this call.
+              </p>
+              <template v-else>
+                <div class="selection-row">
+                  <p class="selection-counter" aria-live="polite">
+                    {{ selectedProgramCount }} of {{ agendaPrograms.length }} programs selected
+                  </p>
+                  <button type="button" class="check-all-btn" @click="toggleAllPrograms">
+                    {{ allProgramsSelected ? 'Uncheck All' : 'Check All' }}
+                  </button>
+                </div>
+                <div class="option-list">
+                  <label v-for="program in agendaPrograms" :key="program.key" class="option-item"
+                    :class="{ selected: form.priorityAgendas.includes(program.key) }">
+                    <input type="checkbox" :value="program.key" v-model="form.priorityAgendas" />
+                    <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
+                    <span class="option-text">
+                      <span class="option-label">{{ program.label }}</span>
+                      <span class="option-description">{{ program.description }}</span>
+                    </span>
+                  </label>
+                </div>
+              </template>
             </template>
           </section>
 
@@ -247,7 +255,7 @@
         <!-- Footer: selection/status summary left, actions right -->
         <footer class="modal-footer">
           <p class="footer-summary">
-            {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected · Status: {{ formStatusLabel }}
+            {{ selectedProgramCount }} of {{ agendaPrograms.length }} programs selected · Status: {{ formStatusLabel }}
           </p>
           <div class="modal-actions">
             <button class="cancel-btn" @click="closeModal" :disabled="saving">Cancel</button>
@@ -280,15 +288,13 @@ import {
   announcementUpdatePayload,
 } from '@/utils/announcementForm'
 import {
-  RIIDE_PROGRAMS,
   ANNOUNCEMENT_REMINDERS,
-  PROGRAM_KEYS,
   defaultReminderKeys,
-  normalizeProgramKeys,
   normalizeReminderKeys,
   isAllSelected,
   toggleAllSelection,
 } from '@/utils/announcementOptions'
+import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -302,6 +308,36 @@ const editingId = ref(null)
 const saving = ref(false)
 const formError = ref(null)
 const form = ref(emptyForm())
+
+// Priority Agenda master data (section 05): the framework and the agenda list are
+// administrator-managed, so they are read from the backend - never hard-coded.
+const {
+  agendaPrograms,
+  loading: agendaLoading,
+  error: agendaError,
+  load: loadAgendaConfig,
+  resolveLabels,
+} = usePriorityAgenda()
+
+/** The keys of the currently active agendas: what a new call may select. */
+const agendaKeys = computed(() => agendaPrograms.value.map((program) => program.key))
+
+/** Display metadata of the saved keys of the call being edited (may be inactive). */
+const lookupIndex = ref({})
+const programIndex = computed(() => {
+  const index = {}
+  for (const program of agendaPrograms.value) {
+    index[program.key] = {
+      name: program.label,
+      subLabel: program.subLabel,
+      description: program.description,
+    }
+  }
+  for (const [key, item] of Object.entries(lookupIndex.value)) {
+    if (!index[key]) index[key] = item
+  }
+  return index
+})
 
 function emptyForm() {
   return {
@@ -318,15 +354,22 @@ function emptyForm() {
 }
 
 // The Check All button label always follows the actual checkbox selection.
-const allProgramsSelected = computed(() => isAllSelected(form.value.priorityAgendas, PROGRAM_KEYS))
+const allProgramsSelected = computed(() =>
+  isAllSelected(form.value.priorityAgendas, agendaKeys.value)
+)
 
 // Selection counter shown under the section heading, derived from the same state.
-const selectedProgramCount = computed(() => normalizeProgramKeys(form.value.priorityAgendas).length)
+const selectedProgramCount = computed(() => (form.value.priorityAgendas || []).length)
 
 // Saved selections of the call being edited, resolved to their display text so the
-// read-only sections show exactly what is stored (no editing control is rendered).
+// read-only sections show exactly what is stored - including an agenda that belongs to
+// a framework which has since been deactivated (resolved through the lookup API).
 const selectedPrograms = computed(() =>
-  RIIDE_PROGRAMS.filter((program) => form.value.priorityAgendas.includes(program.key))
+  (form.value.priorityAgendas || []).map((key) => ({
+    key,
+    label: programIndex.value[key]?.name || key,
+    description: programIndex.value[key]?.description || '',
+  }))
 )
 const selectedReminders = computed(() =>
   ANNOUNCEMENT_REMINDERS.filter((reminder) => form.value.reminderIds.includes(reminder.key))
@@ -343,7 +386,7 @@ const formStatusLabel = computed(() =>
 )
 
 function toggleAllPrograms() {
-  form.value.priorityAgendas = toggleAllSelection(form.value.priorityAgendas, PROGRAM_KEYS)
+  form.value.priorityAgendas = toggleAllSelection(form.value.priorityAgendas, agendaKeys.value)
 }
 
 // ===== HELPERS =====
@@ -424,7 +467,10 @@ async function loadAnnouncements() {
   }
 }
 
-onMounted(loadAnnouncements)
+onMounted(async () => {
+  // The announcement list and the priority-agenda master data are independent reads.
+  await Promise.all([loadAnnouncements(), loadAgendaConfig()])
+})
 
 // ===== CREATE / EDIT =====
 
@@ -446,14 +492,21 @@ function openEditModal(announcement) {
     startDate: announcement.startDate,
     endDate: announcement.endDate,
     status: announcement.status,
-    // Restore the saved selection (never the new-announcement defaults); legacy
-    // announcements without these values load as an empty selection / empty text.
-    priorityAgendas: normalizeProgramKeys(announcement.priorityAgendas),
+    // The saved keys are shown read-only: they are kept exactly as stored (even when
+    // their framework has since been deactivated) and resolved for display through the
+    // lookup API, so an old call never shows a blank or a renamed agenda.
+    priorityAgendas: Array.isArray(announcement.priorityAgendas)
+      ? [...announcement.priorityAgendas]
+      : [],
     reminderIds: normalizeReminderKeys(announcement.reminderIds),
     additionalAnnouncement: announcement.additionalAnnouncement || '',
   }
   formError.value = null
   showModal.value = true
+  // Resolve any saved key that is not part of the active framework (deactivated agenda).
+  resolveLabels(form.value.priorityAgendas).then((index) => {
+    lookupIndex.value = index
+  })
 }
 
 function closeModal() {
@@ -483,7 +536,7 @@ async function saveAnnouncement() {
         announcementUpdatePayload(form.value)
       )
     } else {
-      await api.post('/api/proposal-announcements', announcementCreatePayload(form.value))
+      await api.post('/api/proposal-announcements', announcementCreatePayload(form.value, agendaKeys.value))
     }
 
     const becameActive = form.value.status === 'ACTIVE'

@@ -3,11 +3,14 @@
  * ---------------------------------------------------------------------------
  * Validation and payload rules of the ORPS Call for Proposal modal.
  *
- * Creating a call sends the complete announcement (name, submission window, RIIDE priority
+ * Creating a call sends the complete announcement (name, submission window, priority
  * agenda, announcement reminders, additional text), so a new call requires an announcement
  * name. Updating an existing call sends only the submission window and the status: the name
  * and the other restricted fields are not editable any more and are never part of an update
  * payload, so an update never asks the ORPS user for the announcement name again.
+ *
+ * The priority-agenda selection is normalized against the agenda keys of the currently
+ * active framework, which the caller passes in (they are master data now, not a constant).
  *
  * The rules live here (instead of inside the view) so they can be verified without a
  * browser - see announcementForm.test.js.
@@ -56,14 +59,18 @@ export function announcementUpdatePayload(form) {
   }
 }
 
-/** The payload of a new call: the complete announcement, with normalised selections. */
-export function announcementCreatePayload(form) {
+/**
+ * The payload of a new call: the complete announcement, with normalised selections.
+ * {@code allowedProgramKeys} is the key list of the currently active Priority Agenda
+ * framework; an identifier outside it is dropped rather than persisted.
+ */
+export function announcementCreatePayload(form, allowedProgramKeys) {
   return {
     name: (form?.name || '').trim(),
     startDate: form?.startDate,
     endDate: form?.endDate,
     status: form?.status,
-    priorityAgendas: normalizeProgramKeys(form?.priorityAgendas),
+    priorityAgendas: normalizeProgramKeys(form?.priorityAgendas, allowedProgramKeys),
     reminderIds: normalizeReminderKeys(form?.reminderIds),
     additionalAnnouncement: (form?.additionalAnnouncement || '').trim(),
   }

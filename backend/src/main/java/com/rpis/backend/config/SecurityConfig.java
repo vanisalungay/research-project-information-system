@@ -86,6 +86,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/*/details")
                             .hasRole("PROPONENT")
 
+                        // Priority Agenda master data (section 05 of the Create Proposal
+                        // form): the two read endpoints are available to any authenticated
+                        // caller (the Proponent form and the historical labels of a saved
+                        // proposal), while every management operation is administrator-only.
+                        // The specific GETs must precede the catch-all below, exactly like
+                        // the announcement gatekeeper rule above.
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/priority-agendas/active", "/api/priority-agendas/lookup")
+                            .authenticated()
+                        .requestMatchers("/api/priority-agendas/**")
+                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+
                         // Proposal Announcement management (RPS_ADMIN & RPS_STAFF only)
                         .requestMatchers("/api/proposal-announcements/**").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 

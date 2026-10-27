@@ -332,23 +332,36 @@ function section3(p) {
   return fullRow(`${head('(3) SITE(S) OF IMPLEMENTATION')}${grid}`, '33.5mm')
 }
 
+/**
+ * Section 5 prints the agendas the proposal itself stores, so a framework an
+ * administrator configured later - or an agenda that has since been deactivated - is
+ * rendered correctly. Display names come from `p.agendaLabels`
+ * ({ agendaKey: { name, subLabel } }) when the caller resolved them from the master
+ * data; otherwise the stable key is used. Nothing here is hard-coded: the coverage
+ * period note comes from `p.agendaFrameworkLabel`.
+ */
 function section4and5(p) {
   const type = (p.researchType || '').trim()
   const left = `${head('(4) TYPE OF RESEARCH')}
     <div class="val-line">${tick(type.toLowerCase() === 'basic')} Basic</div>
     <div class="val-line">${tick(type.toLowerCase() === 'applied')} Applied</div>`
-  const agendas = list(p.priorityAgendas)
-  const findAgenda = (key) => {
-    const row = agendas.find((a) => (a.agendaKey || '').toLowerCase() === key)
-    return row && row.value ? row.value : ''
-  }
+
+  const labels = p.agendaLabels && typeof p.agendaLabels === 'object' ? p.agendaLabels : {}
+  const note = esc(String(p.agendaFrameworkLabel || '').trim())
+  const rows = list(p.priorityAgendas)
+    .filter((row) => row && row.selected)
+    .map((row) => {
+      const key = row.agendaKey || row.agenda || ''
+      const meta = labels[key] || {}
+      const name = meta.name || String(key).toUpperCase()
+      const sub = meta.subLabel ? ` ${meta.subLabel}` : ''
+      return line(`____ ${name}${sub}:`, row.value || '')
+    })
+    .join('')
+
   const right = `${head('(5) Priority Agenda')}
-    <div class="sec-note">(based on MSUN RIIDE 2025-2028)</div>
-    ${line('____ DAGAT Program Commodity:', findAgenda('dagat'))}
-    ${line('____ PUNLA Program Priority Topic:', findAgenda('punla'))}
-    ${line('____ KALIKASAN Program Sector:', findAgenda('kalikasan'))}
-    ${line('____ NEGOSYO Program Sector:', findAgenda('negosyo'))}
-    ${line('____ TANGLAW Program Sector:', findAgenda('tanglaw'))}`
+    ${note ? `<div class="sec-note">${note}</div>` : ''}
+    ${rows || '<div class="val-line">No priority agenda selected.</div>'}`
   return splitRow(left, right, '52.9mm')
 }
 
