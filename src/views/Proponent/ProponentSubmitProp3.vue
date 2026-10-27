@@ -221,6 +221,9 @@ import { budgetFileKey, budgetFileUploadError, uploadBudgetFile } from '@/utils/
 // Section 23: the references shown on the review come from the same entry list the
 // form uses (plain text + the structured entries of the reference builder).
 import { entryHtml, parseReferenceEntries } from '@/utils/apaReferences'
+// The endorsement workflow: the proposal is linked to the endorsement it was started
+// from, so the two records are associated by a foreign key and never by title.
+import { linkEndorsementToProposal } from '@/utils/endorsement.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -229,6 +232,17 @@ const props = defineProps({
   proposalData: {
     type: Object,
     default: () => ({})
+  },
+  /**
+   * The approved Dean endorsement this proposal was started from, when the
+   * Proponent arrived through the endorsement workflow ("Continue to Proposal
+   * Submission"). After the proposal is saved it is linked to that endorsement with
+   * a stable database relationship, never by matching titles. Null for every other
+   * proposal, which keeps working exactly as before.
+   */
+  endorsementRequestId: {
+    type: [Number, String],
+    default: null
   }
 })
 const emit = defineEmits(['update:modelValue', 'back', 'savedraft', 'goToStep'])
@@ -637,8 +651,28 @@ const saveOrUpdateProposal = async (status) => {
   // saved, so the image is attached to this exact proposal.
   await uploadTechnologyMapIfNeeded(proposalId)
 
+  // The proposal was started from an approved endorsement: link the two records. The
+  // backend validates the ownership, the approval and that one endorsement backs at
+  // most one proposal; a failure here never invalidates the saved proposal, so it is
+  // reported without blocking the submission.
+  await linkEndorsementIfNeeded(proposalId)
+
   // The filled-out Line-Item Budget (section 25) is attached to the same proposal.
   await uploadBudgetFileIfNeeded(proposalId)
+}
+
+/**
+ * Links the approved endorsement the Proponent continued from, when there is one.
+ * Idempotent on the backend, so re-saving the proposal never duplicates the link.
+ */
+async function linkEndorsementIfNeeded(proposalId) {
+  const endorsementId = props.endorsementRequestId
+  if (!endorsementId || !proposalId) return
+  try {
+    await linkEndorsementToProposal(endorsementId, proposalId)
+  } catch (err) {
+    console.warn('The endorsement could not be linked to the proposal.', err)
+  }
 }
 </script>
 

@@ -8,6 +8,7 @@
     <RpsAdminDashboard v-if="loggedInUser.role === UserRole.RPS_ADMIN"></RpsAdminDashboard>
     <OvcafDashboard v-if="loggedInUser.role === UserRole.OVCAF"></OvcafDashboard>
     <OCDashboard v-if="loggedInUser.role === UserRole.OC"></OCDashboard>
+    <DeanDashboard v-if="loggedInUser.role === UserRole.RPS_DEAN"></DeanDashboard>
   </div>
 </template>
 
@@ -23,6 +24,7 @@ const RpsStaffDashboard = defineAsyncComponent(() => import('./RpsStaffDashboard
 const RpsAdminDashboard = defineAsyncComponent(() => import('./RpsAdminDashboard.vue'))
 const OvcafDashboard = defineAsyncComponent(() => import('./OvcafDashboard.vue'))
 const OCDashboard = defineAsyncComponent(() => import('./OCDashboard.vue'))
+const DeanDashboard = defineAsyncComponent(() => import('./DeanDashboard.vue'))
 
 const useUser = useUserDataStore()
 

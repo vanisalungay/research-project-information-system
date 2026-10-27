@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserDataStore } from '../stores/userData'
+import { UserRole, useUserDataStore } from '../stores/userData'
 
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import NoNavLayout from '../layouts/NoNavLayout.vue'
@@ -98,7 +98,17 @@ import ProponentAnnouncementDetails from '@/views/Proponent/ProponentAnnouncemen
 import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
 import ProponentQuarterlyReports from '@/views/Proponent/ProponentQuarterlyReports.vue'
 import ProponentQuarterlyReportForm from '@/views/Proponent/ProponentQuarterlyReportForm.vue'
+import ProponentEndorsementRequestForm from '@/views/Proponent/ProponentEndorsementRequestForm.vue'
+import ProponentEndorsements from '@/views/Proponent/ProponentEndorsements.vue'
+import ProponentEndorsementDetails from '@/views/Proponent/ProponentEndorsementDetails.vue'
+import ProponentCertifications from '@/views/Proponent/ProponentCertifications.vue'
 import QuarterlyReportsMaster from '@/components/QuarterlyReportsMaster.vue'
+
+/* DEAN / DEPARTMENT CHAIR */
+import DeanDashboard from '../views/Dashboard/DeanDashboard.vue'
+import DeanEndorsementRequests from '@/views/Dean/DeanEndorsementRequests.vue'
+import DeanEndorsementReview from '@/views/Dean/DeanEndorsementReview.vue'
+import EndorsementLetterSettings from '@/views/Dean/EndorsementLetterSettings.vue'
 
 const routes = [
   {
@@ -195,6 +205,29 @@ const routes = [
         component: ProponentAnnouncementDetails,
       },
       { path: 'proposals', component: ProponentProposals },
+      {
+        // The Request for Endorsement the Proponent raises before starting the full
+        // proposal submission.
+        path: 'request-endorsement',
+        name: 'ProponentEndorsementRequestForm',
+        component: ProponentEndorsementRequestForm,
+      },
+      {
+        path: 'endorsements',
+        name: 'ProponentEndorsements',
+        component: ProponentEndorsements,
+      },
+      {
+        path: 'endorsements/:id',
+        name: 'ProponentEndorsementDetails',
+        component: ProponentEndorsementDetails,
+      },
+      {
+        // The issued endorsement letters, filed automatically after the Dean approves.
+        path: 'certifications',
+        name: 'ProponentCertifications',
+        component: ProponentCertifications,
+      },
       { path: 'revisions', component: ProponentRevision },
       { path: 'evalCriteria', component: ProponentEvalCriteria },
       { path: 'proponent-feedback', component: ProponentFeedback },
@@ -231,6 +264,21 @@ const routes = [
       { path: 'oc-notification', component: NotificationPage },
       { path: 'oc-detailed', component: OcDetailedProposal },
       { path: 'oc/final-approval/:id', name: 'OCFinalApproval', component: OCFinalApproval },
+
+      // ================= DEAN / DEPARTMENT CHAIR =================
+      { path: 'dean-dashboard', name: 'DeanDashboard', component: DeanDashboard },
+      { path: 'dean-requests', name: 'DeanEndorsementRequests', component: DeanEndorsementRequests },
+      {
+        path: 'dean-requests/:id',
+        name: 'DeanEndorsementReview',
+        component: DeanEndorsementReview,
+      },
+      {
+        path: 'dean-endorsement-settings',
+        name: 'DeanEndorsementSettings',
+        component: EndorsementLetterSettings,
+      },
+      { path: 'dean-notification', component: NotificationPage },
     ],
   },
 
@@ -272,6 +320,38 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  next()
+})
+
+/**
+ * Routes that only specific roles may open. The guard is a convenience - it keeps a
+ * signed-in user from landing on a page that is not theirs - and never a security
+ * boundary: every endpoint behind these pages re-checks the caller's role, the
+ * ownership of the record and the Dean's authorized scope on the backend.
+ */
+const ROLE_ONLY_ROUTES = [
+  {
+    match: (path) =>
+      path.startsWith('/dean-dashboard') ||
+      path.startsWith('/dean-requests') ||
+      path.startsWith('/dean-endorsement-settings'),
+    roles: [UserRole.RPS_DEAN, UserRole.RPS_ADMIN],
+  },
+  {
+    match: (path) =>
+      path.startsWith('/request-endorsement') ||
+      path.startsWith('/endorsements') ||
+      path.startsWith('/certifications'),
+    roles: [UserRole.PROPONENT],
+  },
+]
+
+router.beforeEach((to, from, next) => {
+  const restricted = ROLE_ONLY_ROUTES.find((rule) => rule.match(to.path))
+  if (restricted && !restricted.roles.includes(useUserDataStore().user?.role)) {
+    // Send the user to the dashboard their own role owns instead of a blank page.
+    return next('/home')
+  }
   next()
 })
 

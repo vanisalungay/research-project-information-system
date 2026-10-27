@@ -691,6 +691,57 @@ public class ProposalService {
      * Also dispatches notifications based on the current status.
      */
     @Transactional
+    /**
+     * Records the Dean endorsement the proposal was submitted under, when the
+     * Proponent arrived through the endorsement workflow.
+     *
+     * <p>The association is the {@code proposals.endorsement_request_id} foreign key,
+     * never a title match. It is <em>optional</em>: the current application does not
+     * require an endorsement before submission, so a proposal written without one
+     * keeps working exactly as before - nothing new is imposed here. When an id is
+     * supplied it is validated: the endorsement must exist, be approved, belong to the
+     * same Proponent and not already back another proposal.
+     */
+    private void applyEndorsementLink(Proposal proposal, ProposalRequest request) {
+        Long endorsementId = request.getEndorsementRequestId();
+        if (endorsementId == null || endorsementId.equals(proposal.getEndorsementRequestId())) {
+            return;
+        }
+        EndorsementRequest endorsement = endorsementRequestRepository.findById(endorsementId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Endorsement request not found: " + endorsementId));
+        if (!EndorsementRequest.STATUS_APPROVED.equals(endorsement.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Only an approved endorsement can be attached to a proposal.");
+        }
+        Long endorsementOwner = endorsement.getProponent() != null
+                ? endorsement.getProponent().getId()
+                : null;
+        Long proposalOwner = proposal.getProponent() != null
+                ? proposal.getProponent().getId()
+                : null;
+        if (endorsementOwner == null || proposalOwner == null
+                || !endorsementOwner.equals(proposalOwner)) {
+            throw new IllegalArgumentException("The endorsement belongs to another account.");
+        }
+        if (endorsement.getProposalId() != null
+                && !endorsement.getProposalId().equals(proposal.getId())) {
+            throw new IllegalArgumentException(
+                    "That endorsement is already linked to another proposal.");
+        }
+        if (proposal.getEndorsementRequestId() != null) {
+            throw new IllegalArgumentException(
+                    "This proposal is already linked to another endorsement.");
+        }
+
+        proposal.setEndorsementRequestId(endorsementId);
+        proposalRepository.save(proposal);
+
+        endorsement.setProposalId(proposal.getId());
+        endorsementRequestRepository.save(endorsement);
+        certificationService.linkProposal(endorsement);
+    }
+
     public Proposal saveProposalDirect(Proposal proposal) {
         proposal = proposalRepository.save(proposal);
         notifySubscribedRoles(proposal, null);

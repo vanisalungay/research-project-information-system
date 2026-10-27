@@ -26,12 +26,8 @@
       <div class="nav-divider" aria-hidden="true"></div>
 
       <ul class="nav-list">
-        <li
-          v-for="item in bottomNavItems"
-          :key="item.path"
-          class="profile-item"
-          :class="{ active: isSelected(item.path) }"
-        >
+        <li v-for="item in bottomNavItems" :key="item.path" class="profile-item"
+          :class="{ active: isSelected(item.path) }">
           <router-link :to="item.path" class="nav-link profile-link" :title="collapsed ? item.text : null">
             <span class="nav-icon" v-html="getIcon(item.iconKey)"></span>
             <span class="nav-text">{{ item.text }}</span>
@@ -155,11 +151,57 @@ const allNavItems = [
     section: 'main',
   },
 
+  // Dean / Department Chair: reviews and decides the endorsement requests of their
+  // own college. Shown in the sidebar so the endorsement workflow is reachable from
+  // the main navigation, as the monitoring pages are.
+  {
+    iconKey: 'endorse',
+    text: 'Endorsement Requests',
+    path: '/dean-requests',
+    roles: [UserRole.RPS_DEAN],
+    section: 'main',
+  },
+  {
+    iconKey: 'notification',
+    text: 'Notifications',
+    path: '/notifications',
+    roles: [UserRole.RPS_DEAN],
+    section: 'main',
+  },
+  {
+    iconKey: 'settings',
+    text: 'Endorsement Letter Settings',
+    path: '/dean-endorsement-settings',
+    roles: [UserRole.RPS_DEAN, UserRole.RPS_ADMIN],
+    section: 'main',
+  },
+
   // PROPONENT
   {
     iconKey: 'proposals',
     text: 'My Projects',
     path: '/proposals',
+    roles: [UserRole.PROPONENT],
+    section: 'main',
+  },
+  {
+    iconKey: 'endorse',
+    text: 'Request for Endorsement',
+    path: '/request-endorsement',
+    roles: [UserRole.PROPONENT],
+    section: 'main',
+  },
+  {
+    iconKey: 'endorse',
+    text: 'My Endorsements',
+    path: '/endorsements',
+    roles: [UserRole.PROPONENT],
+    section: 'main',
+  },
+  {
+    iconKey: 'proposals',
+    text: 'Certifications',
+    path: '/certifications',
     roles: [UserRole.PROPONENT],
     section: 'main',
   },
@@ -250,12 +292,14 @@ const allNavItems = [
     section: 'main',
   },
 
-  // Shared: Profile Settings (bottom section)
+  // Shared: Profile Settings (bottom section). Every role keeps it, the Dean included:
+  // Manage Profile -> Electronic Signature is where a Dean saves the signature the
+  // official endorsement letter is signed with.
   {
     iconKey: 'settings',
     text: 'Profile Settings',
     path: '/manage-profile',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.RPS_DEAN, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
     section: 'bottom',
   },
 ]
@@ -548,5 +592,3 @@ li.active .nav-link {
   padding: 0;
 }
 </style>
-
-

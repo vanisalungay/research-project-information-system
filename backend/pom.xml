@@ -73,6 +73,17 @@
             <version>2.4.1</version>
         </dependency>
 
+        <!-- OpenPDF: server-side generation of the official endorsement letter PDF.
+             The RPIS had no PDF engine of its own (every existing "Download PDF" was the
+             browser's print dialog), so the endorsement workflow needs one on the server
+             to store the issued letter, serve it from an authorized endpoint and make the
+             previewed document identical to the downloaded one. -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>

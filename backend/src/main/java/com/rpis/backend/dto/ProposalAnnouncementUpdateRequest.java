@@ -27,4 +27,15 @@ public class ProposalAnnouncementUpdateRequest {
 
     /** New stored status (DRAFT / ACTIVE / CLOSED). Omitted means "keep the stored status". */
     private String status;
+
+    /**
+     * Funding program (call type) of the call, as a stable key (for example
+     * {@code IFP}). Omitted keeps the stored program.
+     *
+     * <p>This is a deliberate extension of the allow-list above: the program decides
+     * which official endorsement letter the call may use, and a call created with the
+     * wrong program must be correctable by an administrator. Changing it never touches
+     * the submission window or the published announcement text.
+     */
+    private String fundingProgram;
 }

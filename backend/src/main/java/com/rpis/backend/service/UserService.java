@@ -51,6 +51,17 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists.");
         }
 
+        // The Dean role is deliberately NOT creatable through the general account
+        // route: it carries an endorsement scope and may only be granted by an
+        // RPS_ADMIN through the Dean account endpoints (DeanAccountService), which also
+        // records the assignment in the audit trail. Everything else keeps working as
+        // before.
+        if (DeanAccountService.ROLE_DEAN.equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException(
+                    "The Dean role cannot be assigned here. Use the Dean accounts action, which "
+                            + "only an RPS administrator may perform.");
+        }
+
         user.setStatus("APPROVED");
         user.setEmailVerified(true);
         user.setDateRegistered(java.time.LocalDate.now());

@@ -1,0 +1,383 @@
+/**
+ * endorsement.css
+ * ---------------------------------------------------------------------------
+ * The shared look of the Dean endorsement workflow screens (Proponent request,
+ * Dean review, Certifications). Every class is prefixed with "end-" so it cannot
+ * collide with the styles of the existing pages, and the palette matches the rest
+ * of the application (navy #1e293b headings, blue #2452ff primary action).
+ *
+ * Imported by the endorsement pages only.
+ */
+.end-page {
+  max-width: 1040px;
+}
+
+.end-page-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  color: #1e293b;
+}
+
+.end-subtitle {
+  margin: 0 0 24px;
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.end-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.end-card + .end-card {
+  margin-top: 18px;
+}
+
+.end-card.is-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.end-card.is-empty {
+  text-align: center;
+  color: #64748b;
+}
+
+.end-section-title {
+  margin: 0 0 14px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.end-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.end-field label,
+.end-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.end-value {
+  font-size: 0.9375rem;
+  color: #1f2937;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.end-req {
+  color: #dc2626;
+}
+
+.end-input,
+.end-select,
+.end-textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.end-textarea {
+  resize: vertical;
+}
+
+.end-input:focus,
+.end-select:focus,
+.end-textarea:focus {
+  outline: none;
+  border-color: #2452ff;
+  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.15);
+}
+
+.end-field-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.end-note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.end-note.is-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.end-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.end-banner.is-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.end-banner.is-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.end-banner.is-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.end-banner-link {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.end-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.end-badge.is-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.end-badge.is-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.end-badge.is-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.end-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.end-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.end-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.end-btn.is-primary {
+  background: #2452ff;
+  border-color: #2452ff;
+  color: #ffffff;
+}
+
+.end-btn.is-approve {
+  background: #047857;
+  border-color: #047857;
+  color: #ffffff;
+}
+
+.end-btn.is-danger {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
+.end-btn.is-link {
+  border-color: transparent;
+  background: transparent;
+  color: #2452ff;
+  padding: 6px 8px;
+}
+
+.end-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.end-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.end-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1f2937;
+  vertical-align: top;
+}
+
+.end-table tr:last-child td {
+  border-bottom: none;
+}
+
+.end-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.end-toolbar .end-select {
+  width: auto;
+  min-width: 190px;
+}
+
+.end-muted {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+}
+
+.end-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.end-timeline li {
+  position: relative;
+  padding: 0 0 16px 20px;
+  border-left: 2px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.end-timeline li:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.end-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2452ff;
+}
+
+.end-timeline-title {
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+}
+
+.end-preview {
+  width: 100%;
+  height: 560px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.end-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.end-stat {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.end-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.end-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-stat.is-pending .end-stat-value {
+  color: #b45309;
+}
+
+.end-stat.is-approved .end-stat-value {
+  color: #047857;
+}
+
+.end-stat.is-rejected .end-stat-value {
+  color: #b91c1c;
+}

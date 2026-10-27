@@ -255,6 +255,7 @@ public class ProposalAnnouncementService {
                         : request.getReminderIds()));
         announcement.setAdditionalAnnouncement(
                 normalizeAdditionalAnnouncement(request.getAdditionalAnnouncement()));
+        announcement.setFundingProgram(normalizeFundingProgram(request.getFundingProgram()));
 
         ProposalAnnouncement saved = announcementRepository.save(announcement);
 
@@ -326,10 +327,16 @@ public class ProposalAnnouncementService {
                 : normalizeStatus(requestedStatus);
 
         // Only the permitted fields are written. Every restricted field keeps the value it
-        // was saved with.
+        // was saved with. The funding program is part of the allow-list because a call can
+        // be created with the wrong program and an administrator must be able to correct
+        // it; correcting it only changes which official endorsement letter the call may
+        // use, never the stored submission window.
         announcement.setStartDate(newStartDate);
         announcement.setEndDate(newEndDate);
         announcement.setStatus(newStatus);
+        if (request.getFundingProgram() != null && !request.getFundingProgram().isBlank()) {
+            announcement.setFundingProgram(normalizeFundingProgram(request.getFundingProgram()));
+        }
 
         ProposalAnnouncement saved = announcementRepository.save(announcement);
 
@@ -464,6 +471,28 @@ public class ProposalAnnouncementService {
         if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date cannot be earlier than the start date.");
         }
+    }
+
+    /**
+     * Normalizes the funding program (call type) of a Call for Proposal. A missing or
+     * blank value means the default Internally Funded Project (IFP) program, so a
+     * client that does not send the field keeps working. Only a plain program key is
+     * accepted; the set of programs that actually have an official endorsement letter
+     * is defined by {@link EndorsementLetterTemplates}, and a program without one is
+     * refused at endorsement time rather than at call creation (an administrator may
+     * legitimately open a call whose letter is still pending).
+     */
+    private String normalizeFundingProgram(String fundingProgram) {
+        if (fundingProgram == null || fundingProgram.isBlank()) {
+            return ProposalAnnouncement.FUNDING_PROGRAM_IFP;
+        }
+        String key = fundingProgram.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!key.matches("[A-Z0-9_]{2,40}")) {
+            throw new IllegalArgumentException(
+                    "The funding program must be a plain program key (letters, digits and "
+                            + "underscores, for example IFP).");
+        }
+        return key;
     }
 
     private String normalizeStatus(String status) {

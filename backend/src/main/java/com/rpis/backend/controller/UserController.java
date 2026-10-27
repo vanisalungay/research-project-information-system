@@ -1,14 +1,15 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.dto.DeanAccountRequest;
 import com.rpis.backend.model.User;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.service.DeanAccountService;
 import com.rpis.backend.service.UserService;
 import com.rpis.backend.service.UserSignatureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
     private final UserSignatureService signatureService;
+    private final DeanAccountService deanAccountService;
     private final CurrentUser currentUser;
 
     @GetMapping
@@ -203,6 +205,45 @@ public class UserController {
                     return ResponseEntity.ok(user);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ===== Dean / Department Chair accounts (RPS_ADMIN only) =====
+    // The Dean is an ordinary RPIS account with the Dean role, so these routes extend
+    // the existing account management instead of introducing a second account system.
+    // SecurityConfig restricts them to RPS_ADMIN and the service re-checks the role,
+    // so the Dean role can never be granted through the general account routes.
+
+    /** The Dean accounts, for the administrator's list. */
+    @GetMapping("/deans")
+    public ResponseEntity<List<User>> getDeans() {
+        List<User> deans = deanAccountService.listDeans();
+        deans.forEach(dean -> dean.setPassword(null));
+        return ResponseEntity.ok(deans);
+    }
+
+    /**
+     * Creates a Dean account, or assigns the Dean role (with its designation and
+     * college scope) to an existing account when {@code userId} is supplied.
+     */
+    @PostMapping("/deans")
+    public ResponseEntity<User> saveDean(@RequestBody DeanAccountRequest request) {
+        try {
+            User dean = deanAccountService.save(request, currentUser.requireUserId(),
+                    currentUser.getRole());
+            dean.setPassword(null);
+            return new ResponseEntity<>(dean, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /** Revokes the Dean role; the account keeps working as a Faculty Proponent. */
+    @DeleteMapping("/deans/{id}")
+    public ResponseEntity<User> revokeDean(@PathVariable Long id) {
+        User user = deanAccountService.revoke(id, currentUser.requireUserId(),
+                currentUser.getRole());
+        user.setPassword(null);
+        return ResponseEntity.ok(user);
     }
 
     @PutMapping("/{id}")

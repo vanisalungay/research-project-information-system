@@ -50,6 +50,21 @@ public class User {
     private String specialization;
 
     /**
+     * Designation / title of the account, printed on documents the account issues
+     * (for example "Dean" or "Department Chair" on the official endorsement letter).
+     * Optional for every other role.
+     */
+    private String designation;
+
+    /**
+     * The college the account is authorized to act for. Only meaningful for the Dean
+     * role: an endorsement request is routed to the Dean assigned to its college.
+     * Null means no college is configured yet, which the endorsement service treats
+     * as the institution-wide fallback and records in the audit trail.
+     */
+    private String assignedCollege;
+
+    /**
      * Electronic signature of the account (Manage Profile -> Electronic
      * Signature). The image is stored as a file under uploads/signatures/ - the
      * existing upload convention - so only its original file name and stored path

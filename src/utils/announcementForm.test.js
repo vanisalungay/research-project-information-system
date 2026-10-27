@@ -81,13 +81,16 @@ test('the submission window rules are the same for both flows', () => {
   assert.equal(announcementFormError(updateForm, { isEditing: true }), '')
 })
 
-test('an update payload carries the submission window and the status only', () => {
+test('an update payload carries the submission window, the status and the funding program', () => {
   const payload = announcementUpdatePayload(updateForm)
 
   assert.deepEqual(payload, {
     startDate: '2026-10-01',
     endDate: '2026-10-31',
     status: 'ACTIVE',
+    // The funding program decides which official endorsement letter the call may use,
+    // so it is part of the allow-list of an update as well.
+    fundingProgram: 'IFP',
   })
   assert.deepEqual(Object.keys(payload).sort(), [...ANNOUNCEMENT_UPDATE_FIELDS].sort())
 })
@@ -124,6 +127,9 @@ test('a create payload carries the complete announcement', () => {
     priorityAgendas: ['dagat'],
     reminderIds: ['research-plan'],
     additionalAnnouncement: 'Original body.',
+    // The funding program (call type) of the call; IFP is the only program whose
+    // official endorsement letter exists, so it is the default.
+    fundingProgram: 'IFP',
   })
 })
 
@@ -174,5 +180,6 @@ test('a missing form state is handled without throwing', () => {
     startDate: undefined,
     endDate: undefined,
     status: undefined,
+    fundingProgram: 'IFP',
   })
 })

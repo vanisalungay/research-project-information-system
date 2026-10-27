@@ -44,6 +44,16 @@ public class Proposal {
     @Column(name = "proposal_announcement_id")
     private Long proposalAnnouncementId;
 
+    /**
+     * The Dean endorsement this proposal was submitted under, when the Proponent
+     * arrived through the endorsement workflow. A stable foreign-key association -
+     * never a title match - so two proposals with the same title can never be
+     * confused. Null for a proposal written without an endorsement, which the
+     * current application still allows.
+     */
+    @Column(name = "endorsement_request_id")
+    private Long endorsementRequestId;
+
     @Column(name = "program_title")
     private String programTitle;
 

@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      
+
       <!-- Left Panel: Branding & High-Contrast Visuals -->
       <div class="left-panel">
         <div class="glow-effect"></div>
@@ -28,31 +28,34 @@
 
           <!-- Role Selection Cards Grid -->
           <div class="role-grid">
-            <div
-              v-for="role in roles"
-              :key="role.name"
-              class="role-card"
-              :class="{ active: selectedRole === role.value }"
-              @click="selectedRole = role.value"
-            >
+            <div v-for="role in roles" :key="role.name" class="role-card"
+              :class="{ active: selectedRole === role.value }" @click="selectedRole = role.value">
               <div class="role-icon-placeholder">
-                <svg v-if="role.value === UserRole.PROPONENT" class="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V5a2 2 0 00-2-2H4a2 2 0 00-2 2v6a13.91 13.91 0 003.44 9.16l.054.09m3.44-2.04A13.916 13.916 0 009 11M9 11h6" />
-                  <path d="M12 11c0 3.517 1.009 6.799 2.753 9.571M12 11V5a2 2 0 012-2h3a2 2 0 012 2v6c0 3.14-.82 6.09-2.258 8.641" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg v-if="role.value === UserRole.PROPONENT" class="role-icon" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V5a2 2 0 00-2-2H4a2 2 0 00-2 2v6a13.91 13.91 0 003.44 9.16l.054.09m3.44-2.04A13.916 13.916 0 009 11M9 11h6" />
+                  <path
+                    d="M12 11c0 3.517 1.009 6.799 2.753 9.571M12 11V5a2 2 0 012-2h3a2 2 0 012 2v6c0 3.14-.82 6.09-2.258 8.641"
+                    stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
-                <svg v-else-if="role.value === UserRole.RPS_STAFF" class="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else-if="role.value === UserRole.RPS_STAFF" class="role-icon" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 00-3-3.87" />
                   <path d="M16 3.13a4 4 0 010 7.75" />
                 </svg>
-                <svg v-else-if="role.value === UserRole.OVCRIGE" class="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else-if="role.value === UserRole.OVCRIGE" class="role-icon" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
-                <svg v-else-if="role.value === UserRole.REC" class="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else-if="role.value === UserRole.REC" class="role-icon" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <svg v-else-if="role.value === UserRole.OVCAF" class="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else-if="role.value === UserRole.OVCAF" class="role-icon" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                   <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
                 </svg>
@@ -79,16 +82,10 @@
 
           <!-- Inputs Form -->
           <form class="login-form" @submit.prevent="handleLogin">
-            
+
             <div class="input-group">
               <label for="email">Email Address</label>
-              <input 
-                id="email" 
-                type="email" 
-                v-model="email" 
-                placeholder="you@msunaawan.edu.ph" 
-                required
-              />
+              <input id="email" type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
             </div>
 
             <div class="input-group">
@@ -96,13 +93,7 @@
                 <label for="password">Password</label>
                 <a href="/register" class="forgot-link">Forgot password?</a>
               </div>
-              <input 
-                id="password" 
-                type="password" 
-                v-model="password" 
-                placeholder="••••••••" 
-                required
-              />
+              <input id="password" type="password" v-model="password" placeholder="••••••••" required />
             </div>
 
             <div class="form-actions">
@@ -136,11 +127,12 @@ const errorMessage = ref('')
 
 const roles = [
   { name: 'Proponent', desc: 'Faculty Submitter', value: UserRole.PROPONENT, next: '/proponent-dashboard' },
+  { name: 'Dean', desc: 'College Endorsement', value: UserRole._DEAN, next: '/dean-dashboard' },
   { name: 'ORPS', desc: 'Technical & Admin Services', value: UserRole.RPS_STAFF, next: '/proponent-dashboard' },
-  { name: 'OVCRIGE', desc: 'Research Vice Chancellor', value: UserRole.OVCRIGE, next: '/proponent-dashboard'  },
-  { name: 'REC', desc: 'Evaluation Committee', value: UserRole.REC, next: '/proponent-dashboard'  },
-  { name: 'OVCAF', desc: 'Finance Vice Chancellor', value: UserRole.OVCAF, next: '/proponent-dashboard'  },
-  { name: 'Chancellor (OC)', desc: 'Office of the Chancellor', value: UserRole.OC, next: '/proponent-dashboard'  },
+  { name: 'OVCRIGE', desc: 'Research Vice Chancellor', value: UserRole.OVCRIGE, next: '/proponent-dashboard' },
+  { name: 'REC', desc: 'Evaluation Committee', value: UserRole.REC, next: '/proponent-dashboard' },
+  { name: 'OVCAF', desc: 'Finance Vice Chancellor', value: UserRole.OVCAF, next: '/proponent-dashboard' },
+  { name: 'Chancellor (OC)', desc: 'Office of the Chancellor', value: UserRole.OC, next: '/proponent-dashboard' },
 ]
 
 const selectedRole = ref(UserRole.RPS_STAFF)
@@ -168,7 +160,7 @@ const handleLogin = async () => {
 const handleGoogleLogin = async (response) => {
   try {
     errorMessage.value = ''
-    
+
     const isLoggedIn = await userStore.googleLogin(
       response.credential,
       selectedRole.value
@@ -570,11 +562,13 @@ input:focus {
     min-height: 100vh;
     overflow-y: auto;
   }
+
   .login-card {
     flex-direction: column;
     height: auto;
     min-height: 100vh;
   }
+
   .left-panel {
     width: 100%;
     height: auto;
@@ -583,23 +577,28 @@ input:focus {
     border-right: none;
     border-bottom: 1px solid var(--color-border, #e2e8f0);
   }
+
   .school-logo {
     margin-bottom: 16px;
   }
+
   .title {
     font-size: 1.875rem;
     text-align: center;
     margin-bottom: 16px;
   }
+
   .school-name {
     text-align: center;
     padding-top: 16px;
   }
+
   .right-panel {
     width: 100%;
     height: auto;
     padding: 40px 24px;
   }
+
   .role-grid {
     grid-template-columns: repeat(2, 1fr);
   }

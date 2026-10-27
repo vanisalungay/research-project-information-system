@@ -14,4 +14,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByStatus(String status);
 
     List<User> findByRoleAndStatus(String role, String status);
+
+    /**
+     * The Dean accounts of one college, by name. Used to route an endorsement
+     * request to the Dean authorized for its college.
+     */
+    List<User> findByRoleAndAssignedCollegeIgnoreCaseAndStatusOrderByNameAsc(
+            String role, String assignedCollege, String status);
+
+    /** Dean accounts with no college configured yet (institution-wide fallback). */
+    List<User> findByRoleAndAssignedCollegeIsNullAndStatusOrderByNameAsc(String role, String status);
+
+    /** Every Dean account, by name. */
+    List<User> findByRoleOrderByNameAsc(String role);
 }

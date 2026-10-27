@@ -48,6 +48,10 @@ class ProposalFieldRegistryCoverageTest {
             "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",
             "revisionForwardedByUserId", "revisionNotes",
+            // the Dean endorsement this proposal was submitted under: a structural link to
+            // the endorsement record (the endorsement letter itself is reviewed in the
+            // Certifications section), not a field of the proposal form
+            "endorsementRequestId",
             // timestamps
             "createdAt", "updatedAt",
             // repeated collections: covered through their columns below

@@ -29,6 +29,16 @@ public class ProposalAnnouncementRequest {
      */
     private List<String> reminderIds;
 
-    /** Optional free-text announcement body. */
+    /**
+     * Optional free-text announcement body.
+     */
     private String additionalAnnouncement;
+
+    /**
+     * Funding program (call type) of this Call for Proposal, as a stable key.
+     * Omitted or blank means the default Internally Funded Project (IFP) program, so
+     * every existing client keeps working. The endorsement workflow uses it to choose
+     * the official endorsement-letter template.
+     */
+    private String fundingProgram;
 }

@@ -27,6 +27,9 @@ public class ProposalAnnouncement {
     public static final String STATUS_ACTIVE = "ACTIVE";
     public static final String STATUS_CLOSED = "CLOSED";
 
+    /** Internally Funded Project: the default funding program of a Call for Proposal. */
+    public static final String FUNDING_PROGRAM_IFP = "IFP";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -68,6 +71,22 @@ public class ProposalAnnouncement {
      */
     @Column(name = "additional_announcement", columnDefinition = "TEXT")
     private String additionalAnnouncement;
+
+    /**
+     * Funding program (call type) of this Call for Proposal, as a stable key. The
+     * endorsement workflow uses it to choose the official endorsement-letter
+     * template: the only template issued today is the Internally Funded Project
+     * Proposal (IFP) letter, so a call for any other program cannot be endorsed
+     * until its own official wording is configured (see
+     * {@code EndorsementLetterTemplates}).
+     *
+     * <p>The column carries the documented default so a row inserted without the
+     * field (a legacy client, a maintenance script, an existing record) is treated as
+     * an IFP call instead of failing the not-null constraint.
+     */
+    @Column(name = "funding_program", nullable = false,
+            columnDefinition = "VARCHAR(40) NOT NULL DEFAULT 'IFP'")
+    private String fundingProgram = FUNDING_PROGRAM_IFP;
 
     /**
      * Computed (not persisted) flag set when loading the announcement list:

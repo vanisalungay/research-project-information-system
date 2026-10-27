@@ -208,50 +208,85 @@
               <span class="section-sub">(Department Chair / Dean)</span>
             </div>
             <div class="section-card">
-              <div class="form-row">
-                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_name }">
-                  <label>Full Name of Endorser <span class="req">*</span></label>
-                  <input type="text" v-model="certification.endorsed_name"
-                    placeholder="Enter name of department chair or dean" />
-                  <span class="field-error" v-if="showValidation && errors.endorsed_name">{{
-                    errors.endorsed_name }}</span>
+              <!-- When the proposal is continued from an approved Dean endorsement the
+                   section is filled from that record and locked: the endorser, the
+                   designation and the date belong to the issued official letter, and
+                   the Proponent may not change them or upload a signature. -->
+              <div v-if="endorsedFromRecord" class="endorsed-record">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Full Name of Endorser</label>
+                    <input type="text" :value="certification.endorsed_name" readonly disabled />
+                  </div>
+                  <div class="form-group">
+                    <label>Designation / Title</label>
+                    <input
+                      type="text"
+                      :value="certification.endorsed_designation"
+                      readonly
+                      disabled
+                    />
+                  </div>
                 </div>
-                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_designation }">
-                  <label>Designation / Title <span class="req">*</span></label>
-                  <input type="text" v-model="certification.endorsed_designation" placeholder="e.g. Department Chair" />
-                  <span class="field-error" v-if="showValidation && errors.endorsed_designation">{{
-                    errors.endorsed_designation }}</span>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" :value="certification.endorsed_date" readonly disabled />
+                  </div>
                 </div>
+                <p class="endorsed-note">
+                  These details come from the official endorsement letter issued by the
+                  Dean and cannot be edited here. The signed letter is filed in your
+                  <router-link to="/certifications">Certifications</router-link>.
+                </p>
               </div>
-              <div class="form-row">
-                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_date }">
-                  <label>Date <span class="req">*</span></label>
-                  <input type="date" v-model="certification.endorsed_date" />
-                  <span class="field-error" v-if="showValidation && errors.endorsed_date">{{
-                    errors.endorsed_date }}</span>
+
+              <template v-else>
+                <div class="form-row">
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_name }">
+                    <label>Full Name of Endorser <span class="req">*</span></label>
+                    <input type="text" v-model="certification.endorsed_name"
+                      placeholder="Enter name of department chair or dean" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_name">{{
+                      errors.endorsed_name }}</span>
+                  </div>
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_designation }">
+                    <label>Designation / Title <span class="req">*</span></label>
+                    <input type="text" v-model="certification.endorsed_designation" placeholder="e.g. Department Chair" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_designation">{{
+                      errors.endorsed_designation }}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_signature }">
-                <label>Signature <span class="req">*</span></label>
-                <div class="upload-area" @click="triggerUpload('endorsed')">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="12" y1="18" x2="12" y2="12" />
-                    <line x1="9" y1="15" x2="15" y2="15" />
-                  </svg>
-                  <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image'
-                  }}</span>
+                <div class="form-row">
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_date }">
+                    <label>Date <span class="req">*</span></label>
+                    <input type="date" v-model="certification.endorsed_date" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_date">{{
+                      errors.endorsed_date }}</span>
+                  </div>
                 </div>
-                <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
-                  accept="image/*,.pdf" />
-                <span class="field-error" v-if="showValidation && errors.endorsed_signature">{{
-                  errors.endorsed_signature }}</span>
-              </div>
-              <div v-if="uploadedFiles.endorsed" class="file-info">
-                <span>📄 {{ uploadedFiles.endorsed.name }}</span>
-                <button class="btn-remove-file" @click="uploadedFiles.endorsed = null">✕</button>
-              </div>
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_signature }">
+                  <label>Signature <span class="req">*</span></label>
+                  <div class="upload-area" @click="triggerUpload('endorsed')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image'
+                    }}</span>
+                  </div>
+                  <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
+                    accept="image/*,.pdf" />
+                  <span class="field-error" v-if="showValidation && errors.endorsed_signature">{{
+                    errors.endorsed_signature }}</span>
+                </div>
+                <div v-if="uploadedFiles.endorsed" class="file-info">
+                  <span>📄 {{ uploadedFiles.endorsed.name }}</span>
+                  <button class="btn-remove-file" @click="uploadedFiles.endorsed = null">✕</button>
+                </div>
+              </template>
             </div>
           </section>
         </div>
@@ -322,7 +357,18 @@ const props = defineProps({
    * the steps are navigated, so going back to this step keeps the selection (an
    * uploaded replacement included) instead of starting over from the account.
    */
-  savedSignature: { type: Object, default: null }
+  savedSignature: { type: Object, default: null },
+  /**
+   * The approved Dean endorsement this proposal is being continued from, or null.
+   *
+   * When it is present the "Endorsed By" section is filled from that record and
+   * becomes read-only: the endorser's identity, designation and date belong to the
+   * issued official endorsement letter, and the Proponent must never be able to
+   * alter them or upload/substitute the Dean's signature. When it is absent the
+   * section behaves exactly as before (a different endorsement authority, e.g. a
+   * Department Chair for a project that does not go through the Dean workflow).
+   */
+  endorsement: { type: Object, default: null }
 })
 const emit = defineEmits([
   'close',
@@ -346,6 +392,36 @@ const certification = reactive({
   endorsed_designation: '',
   endorsed_date: ''
 })
+
+/**
+ * True when the "Endorsed By" section is filled from an approved Dean endorsement
+ * instead of being typed in by the Proponent. The values then come from the record
+ * the official endorsement letter was issued from.
+ */
+const endorsedFromRecord = computed(() => Boolean(props.endorsement))
+
+/** A date value as YYYY-MM-DD, the format the date input and the form use. */
+const toDateInputValue = (value) => {
+  const text = String(value ?? '').trim()
+  if (!text) return ''
+  return text.length > 10 ? text.slice(0, 10) : text
+}
+
+/**
+ * Copies the approved endorsement into the section and keeps it in step if the
+ * endorsement is (re)loaded. The Proponent cannot edit the copied values - the
+ * inputs are disabled while an endorsement is present.
+ */
+watch(
+  () => props.endorsement,
+  (endorsement) => {
+    if (!endorsement) return
+    certification.endorsed_name = endorsement.decidedByName || ''
+    certification.endorsed_designation = endorsement.decidedByDesignation || ''
+    certification.endorsed_date = toDateInputValue(endorsement.endorsementDate)
+  },
+  { immediate: true },
+)
 
 const close = () => emit('close')
 
@@ -589,11 +665,16 @@ const validateStep2 = () => {
   if (isBlank(certification.submitted_date)) errors.submitted_date = 'Date (Submitted By) is required.'
   if (!uploadedFiles.submitted) errors.submitted_signature = 'Signature file (Submitted By) is required.'
 
-  // Endorsed By
-  if (isBlank(certification.endorsed_name)) errors.endorsed_name = 'Full Name (Endorsed By) is required.'
-  if (isBlank(certification.endorsed_designation)) errors.endorsed_designation = 'Designation (Endorsed By) is required.'
-  if (isBlank(certification.endorsed_date)) errors.endorsed_date = 'Date (Endorsed By) is required.'
-  if (!uploadedFiles.endorsed) errors.endorsed_signature = 'Signature file (Endorsed By) is required.'
+  // Endorsed By. When the proposal is continued from an approved Dean endorsement the
+  // section is filled from that record and locked, so there is nothing for the
+  // Proponent to complete (and no signature for them to upload - the Dean's signature
+  // belongs to the issued official letter).
+  if (!endorsedFromRecord.value) {
+    if (isBlank(certification.endorsed_name)) errors.endorsed_name = 'Full Name (Endorsed By) is required.'
+    if (isBlank(certification.endorsed_designation)) errors.endorsed_designation = 'Designation (Endorsed By) is required.'
+    if (isBlank(certification.endorsed_date)) errors.endorsed_date = 'Date (Endorsed By) is required.'
+    if (!uploadedFiles.endorsed) errors.endorsed_signature = 'Signature file (Endorsed By) is required.'
+  }
 
   return Object.keys(errors).length === 0
 }
@@ -1328,5 +1409,30 @@ input[type="date"] {
 
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+/* ===== Endorsed By filled from an approved Dean endorsement =====
+   The section is read-only: the endorser's identity, designation and date belong to
+   the issued official endorsement letter, so the inputs are disabled and the note
+   points at the letter itself. */
+.endorsed-record input:disabled {
+  background: #f1f5f9;
+  color: #334155;
+  cursor: not-allowed;
+}
+
+.endorsed-note {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #475569;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.endorsed-note a {
+  color: #1e40af;
+  font-weight: 600;
 }
 </style>

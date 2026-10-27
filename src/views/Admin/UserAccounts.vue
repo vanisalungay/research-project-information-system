@@ -6,6 +6,9 @@
       <button class="create-btn" @click="showModal = true">
         + Create Account
       </button>
+      <button class="dean-btn" @click="showDeanModal = true">
+        Dean Accounts
+      </button>
     </div>
 
     <!-- Search -->
@@ -74,6 +77,14 @@
       @created="loadUsers"
     />
 
+    <!-- Dean / Department Chair accounts: an administrator grants or revokes the
+         Dean role and sets the college the Dean endorses for. -->
+    <DeanAccountsModal
+      v-if="showDeanModal"
+      @close="showDeanModal = false"
+      @changed="loadUsers"
+    />
+
     <!-- Reset Password Modal -->
     <div v-if="showResetModal" class="modal-overlay" @click.self="closeResetModal">
       <div class="modal-box">
@@ -127,9 +138,11 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
+import DeanAccountsModal from '@/views/Admin/DeanAccountsModal.vue'
 
 const users = ref([])
 const showModal = ref(false)
+const showDeanModal = ref(false)
 const loading = ref(false)
 const error = ref(null)
 const search = ref('')
@@ -287,6 +300,23 @@ onMounted(loadUsers)
 
 .create-btn:hover {
   background: #1b44d6;
+}
+
+/* The Dean accounts action sits beside Create Account: it opens the administrative
+   screen that grants or revokes the Dean role. */
+.dean-btn {
+  margin-left: 10px;
+  padding: 10px 18px;
+  background: #ffffff;
+  color: #2452ff;
+  border: 1px solid #2452ff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dean-btn:hover {
+  background: #eff6ff;
 }
 
 .toolbar {

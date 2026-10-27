@@ -35,8 +35,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Public endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users/google-login", "/api/users/seed").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // User Sign-up/Registration is public
+                        .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users/google-login",
+                                "/api/users/seed")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // User Sign-up/Registration is
+                                                                                    // public
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/error").permitAll()
 
@@ -45,8 +48,33 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/files/**").authenticated()
 
                         // Administrative endpoints (RPS_ADMIN & RPS_STAFF)
-                        .requestMatchers("/api/users/pending", "/api/users/*/approve", "/api/users/*/reject", "/api/users/admin/create").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+                        .requestMatchers("/api/users/pending", "/api/users/*/approve", "/api/users/*/reject",
+                                "/api/users/admin/create")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+
+                        // Dean / Department Chair account management: RPS_ADMIN only.
+                        // Granting the Dean role is an administrative act (it carries an
+                        // endorsement scope), so it is deliberately narrower than the
+                        // general staff account routes and the service re-checks the role.
+                        .requestMatchers("/api/users/deans", "/api/users/deans/**").hasRole("RPS_ADMIN")
+
+                        // Dean endorsement workflow. The requesting Proponent raises the
+                        // request; only a Dean may approve, reject or reissue it; the
+                        // letter settings are writable by an RPS_ADMIN only. Every route
+                        // is additionally scoped in EndorsementRequestService, so the
+                        // frontend never decides who may see or decide what.
+                        .requestMatchers(HttpMethod.POST, "/api/endorsements").hasRole("PROPONENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/endorsements/*/approve").hasRole("DEAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/endorsements/*/reject").hasRole("DEAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/endorsements/*/reissue")
+                        .hasAnyRole("DEAN", "RPS_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/endorsements/letter-settings").hasRole("RPS_ADMIN")
+                        .requestMatchers("/api/endorsements/**", "/api/endorsements").authenticated()
+
+                        // Certifications: the Proponent's own documents (the service
+                        // resolves the owner from the token) and the document download.
+                        .requestMatchers("/api/certifications", "/api/certifications/**").authenticated()
 
                         // Electronic signature (Manage Profile): the authenticated user's own
                         // signature only. The account is taken from the bearer token, so the
@@ -84,7 +112,7 @@ public class SecurityConfig {
                         // announcement notification: read-only and proponents only. Draft
                         // announcements remain hidden (the service answers 404 for them).
                         .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/*/details")
-                            .hasRole("PROPONENT")
+                        .hasRole("PROPONENT")
 
                         // Priority Agenda master data (section 05 of the Create Proposal
                         // form): the two read endpoints are available to any authenticated
@@ -94,9 +122,9 @@ public class SecurityConfig {
                         // the announcement gatekeeper rule above.
                         .requestMatchers(HttpMethod.GET,
                                 "/api/priority-agendas/active", "/api/priority-agendas/lookup")
-                            .authenticated()
+                        .authenticated()
                         .requestMatchers("/api/priority-agendas/**")
-                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
                         // Proposal Announcement management (RPS_ADMIN & RPS_STAFF only)
                         .requestMatchers("/api/proposal-announcements/**").hasAnyRole("RPS_ADMIN", "RPS_STAFF")
@@ -104,9 +132,9 @@ public class SecurityConfig {
                         // Return-for-Revision: authorized reviewing offices return to RPS first;
                         // only RPS can forward the revision request and set the deadline.
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-revision")
-                            .hasAnyRole("REC", "OVCRIGE", "RPS_ADMIN", "RPS_STAFF")
+                        .hasAnyRole("REC", "OVCRIGE", "RPS_ADMIN", "RPS_STAFF")
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
-                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
                         // Make a Copy of a rejected proposal: proponent-only. The service
                         // additionally enforces that the caller owns the source proposal.
@@ -125,19 +153,21 @@ public class SecurityConfig {
                         // Field-level revision remarks: reviewer roles only. A Proponent must
                         // never be able to write review feedback on their own proposal.
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/field-remarks")
-                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
                         .requestMatchers(HttpMethod.DELETE, "/api/proposals/*/field-remarks/*")
-                            .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC")
 
                         // Quarterly Progress Reports (implementation-phase reporting)
-                        .requestMatchers(HttpMethod.POST, "/api/quarterly-reports", "/api/quarterly-reports/**").hasRole("PROPONENT")
+                        .requestMatchers(HttpMethod.POST, "/api/quarterly-reports", "/api/quarterly-reports/**")
+                        .hasRole("PROPONENT")
                         .requestMatchers(HttpMethod.PUT, "/api/quarterly-reports/*").hasRole("PROPONENT")
-                        .requestMatchers(HttpMethod.GET, "/api/quarterly-reports/**").hasAnyRole("PROPONENT", "RPS_ADMIN", "RPS_STAFF", "OVCRIGE")
+                        .requestMatchers(HttpMethod.GET, "/api/quarterly-reports/**")
+                        .hasAnyRole("PROPONENT", "RPS_ADMIN", "RPS_STAFF", "OVCRIGE")
 
                         // All other API requests require authentication
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(new TokenAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class);
+                        .anyRequest().authenticated())
+                .addFilterBefore(new TokenAuthenticationFilter(tokenService),
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -18,7 +18,7 @@
 import { normalizeProgramKeys, normalizeReminderKeys } from './announcementOptions.js'
 
 /** The only fields an update of an existing call may send. */
-export const ANNOUNCEMENT_UPDATE_FIELDS = ['startDate', 'endDate', 'status']
+export const ANNOUNCEMENT_UPDATE_FIELDS = ['startDate', 'endDate', 'status', 'fundingProgram']
 
 /** True for a missing, non-string or whitespace-only value. */
 function isBlank(value) {
@@ -56,8 +56,33 @@ export function announcementUpdatePayload(form) {
     startDate: form?.startDate,
     endDate: form?.endDate,
     status: form?.status,
+    // The funding program decides which official endorsement letter the call may use,
+    // so an administrator can correct it after the call was created. Omitted keeps the
+    // stored program.
+    fundingProgram: normalizeFundingProgram(form?.fundingProgram),
   }
 }
+
+/**
+ * The funding program (call type) of a call, as a stable key. The only program whose
+ * official endorsement letter exists today is the Internally Funded Project (IFP), so
+ * it is the default and an empty selection means IFP.
+ */
+export function normalizeFundingProgram(value) {
+  const key = String(value ?? '')
+    .trim()
+    .toUpperCase()
+  return key || 'IFP'
+}
+
+/**
+ * The funding programs an administrator may select. Only the wording of the IFP
+ * endorsement letter exists, so a call for another program cannot be endorsed until
+ * the university supplies that program's official letter.
+ */
+export const FUNDING_PROGRAMS = [
+  { key: 'IFP', label: 'Internally Funded Project (IFP)', letterAvailable: true },
+]
 
 /**
  * The payload of a new call: the complete announcement, with normalised selections.
@@ -73,5 +98,6 @@ export function announcementCreatePayload(form, allowedProgramKeys) {
     priorityAgendas: normalizeProgramKeys(form?.priorityAgendas, allowedProgramKeys),
     reminderIds: normalizeReminderKeys(form?.reminderIds),
     additionalAnnouncement: (form?.additionalAnnouncement || '').trim(),
+    fundingProgram: normalizeFundingProgram(form?.fundingProgram),
   }
 }

@@ -249,6 +249,25 @@
             </div>
           </section>
 
+          <section class="form-section">
+            <div class="section-head">
+              <h4 class="section-title"><span class="section-badge">6</span>Funding program (Optional)</h4>
+              <p class="section-note">
+                The funding program decides which official endorsement letter the Dean
+                issues for this call. Only the Internally Funded Project (IFP) letter is
+                configured today; a call for another program cannot be endorsed until the
+                university supplies that program's official wording.
+              </p>
+            </div>
+            <div class="form-group">
+              <select v-model="form.fundingProgram" class="form-input">
+                <option v-for="program in fundingPrograms" :key="program.key" :value="program.key">
+                  {{ program.label }}
+                </option>
+              </select>
+            </div>
+          </section>
+
           <p v-if="formError" class="error-text form-error">{{ formError }}</p>
         </div>
 
@@ -283,6 +302,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { announcementStatus } from '@/utils/announcementStatus'
 import {
+  FUNDING_PROGRAMS,
   announcementCreatePayload,
   announcementFormError,
   announcementUpdatePayload,
@@ -308,6 +328,13 @@ const editingId = ref(null)
 const saving = ref(false)
 const formError = ref(null)
 const form = ref(emptyForm())
+
+/**
+ * The funding programs an administrator may attach to a call. Only the Internally
+ * Funded Project (IFP) has an official endorsement letter, so it is the only option;
+ * the endorsement workflow refuses to issue the IFP letter for any other program.
+ */
+const fundingPrograms = FUNDING_PROGRAMS
 
 // Priority Agenda master data (section 05): the framework and the agenda list are
 // administrator-managed, so they are read from the backend - never hard-coded.
@@ -350,6 +377,9 @@ function emptyForm() {
     priorityAgendas: [],
     reminderIds: defaultReminderKeys(),
     additionalAnnouncement: '',
+    // The funding program (call type) of the call. IFP is the only program whose
+    // official endorsement letter exists, so it is the default.
+    fundingProgram: 'IFP',
   }
 }
 
@@ -500,6 +530,7 @@ function openEditModal(announcement) {
       : [],
     reminderIds: normalizeReminderKeys(announcement.reminderIds),
     additionalAnnouncement: announcement.additionalAnnouncement || '',
+    fundingProgram: announcement.fundingProgram || 'IFP',
   }
   formError.value = null
   showModal.value = true

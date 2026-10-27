@@ -20,11 +20,13 @@
 
     <ProponentSubmitProp2 ref="step2Ref" v-if="showModal2" :open="showModal2"
       :saved-signature="proposalData.certificationSignature"
+      :endorsement="endorsementRecord"
       @update:signature="proposalData.certificationSignature = $event"
       @close="showModal2 = false; refreshOnClose()" @openPrevious="goBackToStep1" @openCriteria="openCriteriaModal"
       @submitProposal="handleStep2Submit" @goToStep="handleGoToStep" />
 
-    <ProponentSubmitProp3 ref="step3Ref" v-model="showCriteria" :proposalData="proposalData" @back="goBackToStep2"
+    <ProponentSubmitProp3 ref="step3Ref" v-model="showCriteria" :proposalData="proposalData"
+      :endorsement-request-id="endorsementRequestId" @back="goBackToStep2"
       @savedraft="handleSaveDraft" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
     <p class="subtitle">
@@ -92,6 +94,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+// The Dean endorsement the proposal is being continued from, when the Proponent
+// arrived through "Continue to Proposal Submission".
+import { fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -116,6 +121,16 @@ const showModal = ref(false)
 const showModal2 = ref(false)
 const showCriteria = ref(false)
 const proposalData = ref({})
+/**
+ * The approved endorsement the proposal is being continued from, or null. It is
+ * passed to the Review & Submit step, which links the saved proposal to it.
+ */
+const endorsementRequestId = ref(null)
+/**
+ * The approved endorsement record itself, so the Certification & Endorsement step can
+ * fill its "Endorsed By" section from it and lock it.
+ */
+const endorsementRecord = ref(null)
 
 // Step 1 of the workflow: the Call for Proposal the proponent is responding to. The
 // real call (with its database id) is kept here for the whole workflow, so every step
@@ -198,8 +213,58 @@ onMounted(async () => {
   const editId = route.query.edit
   if (editId) {
     await openDraftForEdit(editId)
+    return
+  }
+  // Arriving from an approved endorsement ("Continue to Proposal Submission"): the
+  // title, the Call for Proposal and the college are prepopulated from the
+  // endorsement record, and the resulting proposal is linked to it once it is saved.
+  const endorsementId = route.query.endorsement
+  if (endorsementId) {
+    await openEndorsedProposal(endorsementId)
   }
 })
+
+/**
+ * Opens the Create Proposal workflow for an approved endorsement. The endorsement is
+ * read from the backend (never from the query string), so the Proponent can only
+ * continue from their own approved endorsement, and the full proposal form still has
+ * to be completed and validated before it can be submitted.
+ */
+const openEndorsedProposal = async (id) => {
+  try {
+    const endorsement = await fetchEndorsementRequest(id)
+    if (!isApproved(endorsement?.status)) {
+      await showAlert('Only an approved endorsement can be continued to a proposal.', {
+        type: 'warning',
+        title: 'Not Endorsed',
+      })
+      router.replace({ path: '/proposals' })
+      return
+    }
+
+    resetAllForms()
+    await nextTick()
+    endorsementRequestId.value = endorsement.id
+    endorsementRecord.value = endorsement
+    if (endorsement.proposalAnnouncementId) {
+      selectedCall.value = {
+        id: endorsement.proposalAnnouncementId,
+        name: endorsement.proposalAnnouncementName || '',
+      }
+    }
+    step1Ref.value?.loadProposal({
+      project_title: endorsement.proposalTitle,
+      college: endorsement.college,
+      proposal_announcement_id: endorsement.proposalAnnouncementId,
+    })
+    showModal.value = true
+    router.replace({ path: '/proposals' })
+  } catch (err) {
+    console.error(err)
+    await showAlert('The endorsement could not be loaded.', { type: 'error', title: 'Load Failed' })
+    router.replace({ path: '/proposals' })
+  }
+}
 
 const openDraftForEdit = async (id) => {
   try {

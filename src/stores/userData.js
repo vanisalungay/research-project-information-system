@@ -7,6 +7,11 @@ export const UserRole = {
   PROPONENT: 'PROPONENT',
   RPS_ADMIN: 'RPS_ADMIN',
   RPS_STAFF: 'RPS_STAFF',
+  // Dean / Department Chair: an ordinary RPIS account with the Dean role. It is
+  // created or assigned by an RPS administrator (Dean accounts) and authenticates
+  // through this same login. It is deliberately not a privileged role: a Dean only
+  // reaches the endorsement requests inside their authorized college.
+  RPS_DEAN: 'RPS_DEAN',
   OVCRIGE: 'OVCRIGE',
   OVCAF: 'OVCAF',
   REC: 'REC',
