@@ -1,0 +1,34 @@
+-- Migration: structured Terminal Report content (reporting stage 4)
+-- ---------------------------------------------------------------------------
+-- The Terminal Report used to be an uploaded file only. Proponents now complete it in RPIS
+-- as a structured document that follows the official MSUN-Naawan terminal report format:
+--
+--   cover page (program/project/study title, project team, collaborators, implementing and
+--   funding agencies, month and year of submission)
+--   summary sheet (Project Information rows, objectives/accomplishments, financial
+--   information)
+--   acknowledgment, abstract with keywords
+--   table of contents and the lists of tables, figures, graphs, appendices and acronyms
+--   body sections 1-7 (Introduction, Review of Related Literature, Methodology, Results and
+--   Discussion, Conclusions and Recommendations, Literature Cited, Appendix) each with its
+--   own numbered subsections and captioned tables
+--   body sections 8-10 required by RPIS (Problems Encountered, Output, Utilization)
+--
+-- The JSON is stored on the same quarterly_progress_reports row - exactly like the
+-- structured Project Workplan (workplan_json) of reporting stages 1-3 - so no new table is
+-- introduced:
+--
+--   terminal_report_json   The structured Terminal Report of a TERMINAL_REPORT row.
+--                          NULL for stages 1-3 and for legacy terminal rows that only
+--                          hold an uploaded file (terminal_report_file_name/_path).
+--
+-- Existing terminal reports and their uploaded files are untouched: the file columns stay
+-- and a legacy uploaded file is still a valid way to satisfy the stage.
+--
+-- Safe to run on existing databases: the change is additive and nullable.
+--
+-- Note: with spring.jpa.hibernate.ddl-auto=update Hibernate also adds this column
+-- automatically; this script documents/keeps the DDL explicit.
+
+ALTER TABLE quarterly_progress_reports
+    ADD COLUMN IF NOT EXISTS terminal_report_json TEXT;

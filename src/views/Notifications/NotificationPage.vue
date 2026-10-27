@@ -69,6 +69,27 @@
               <h3 class="notification-title">{{ notification.title }}</h3>
               <span class="notification-time">{{ formatDate(notification.createdAt) }}</span>
             </div>
+
+            <!-- Call for Proposal notification: the call it is about, with its CURRENT
+                 status (Open = green, Closed = red, Scheduled = blue). The status label is
+                 always shown next to the colour, so the status never depends on colour. -->
+            <div
+              v-if="callStatus(notification) || notification.proposalAnnouncementName"
+              class="notification-call"
+            >
+              <span
+                v-if="callStatus(notification)"
+                class="call-status"
+                :class="`call-status--${callStatus(notification).tone}`"
+              >
+                <span class="call-status-dot" aria-hidden="true"></span
+                >{{ callStatus(notification).label }}
+              </span>
+              <span v-if="notification.proposalAnnouncementName" class="call-name">
+                {{ notification.proposalAnnouncementName }}
+              </span>
+            </div>
+
             <p class="notification-message">{{ notification.message }}</p>
             <div class="notification-footer">
               <span class="notification-type" :class="getTypeClass(notification.type)">
@@ -131,6 +152,7 @@ import {
   ANNOUNCEMENT_DETAILS_ROUTE,
   announcementIdFromNotification,
 } from '@/utils/notificationTarget'
+import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -274,6 +296,20 @@ const getTypeClass = (type) => {
     'FUNDING': 'type-funding'
   }
   return typeMap[type] || 'type-default'
+}
+
+/**
+ * The status badge of a Call for Proposals notification, or null when the notification is
+ * not about a call. The status is the one the backend derived at read time from the saved
+ * call (stored status plus its current dates), so an extended call that is still open
+ * reads as "Open" rather than the status it had when the notification was raised. The
+ * label is always rendered together with the colour, so the status never relies on colour
+ * alone.
+ */
+const callStatus = (notification) => {
+  const label = announcementStatusLabel(notification?.proposalAnnouncementStatus)
+  const tone = announcementStatusTone(notification?.proposalAnnouncementStatus)
+  return label && tone ? { label, tone } : null
 }
 
 onMounted(() => {
@@ -517,6 +553,63 @@ onMounted(() => {
   color: #475569;
   line-height: 1.6;
   margin: 0 0 12px 0;
+}
+
+/* CALL FOR PROPOSAL STATUS */
+.notification-call {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.call-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.call-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Open - green */
+.call-status--open {
+  background: #d9fbe7;
+  color: #16834b;
+}
+
+/* Closed - red */
+.call-status--closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Scheduled - blue */
+.call-status--scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Draft - neutral */
+.call-status--draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.call-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
 }
 
 .notification-footer {

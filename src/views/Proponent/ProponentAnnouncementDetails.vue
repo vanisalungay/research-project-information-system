@@ -89,6 +89,27 @@
           </div>
         </div>
       </section>
+
+      <!-- DEADLINE EXTENSION NOTICE
+           Shown only when the call has a recorded deadline extension AND is still open
+           under its current (extended) deadline, so an officially extended call is never
+           reported as closed just because its original deadline has passed. -->
+      <section v-if="extension" class="extension-notice">
+        <span class="extension-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7.5 12 12 15.5 14" />
+          </svg>
+        </span>
+        <div class="extension-text">
+          <p class="extension-message">{{ extension.message }}</p>
+          <p v-if="extension.previousDeadlineMessage" class="extension-previous">
+            {{ extension.previousDeadlineMessage }}
+          </p>
+        </div>
+      </section>
+
       <!-- CONTENT PANELS -->
       <div class="panels">
         <section class="panel panel-agenda">
@@ -190,6 +211,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { announcementStatus, localTodayISO } from '@/utils/announcementStatus'
+import { extensionNotice } from '@/utils/announcementUpdates'
 import {
   RIIDE_PROGRAMS,
   ANNOUNCEMENT_REMINDERS,
@@ -231,6 +253,14 @@ const statusClass = computed(() => {
   }
   return classes[displayStatus.value] || ''
 })
+
+/**
+ * The deadline extension notice, or null when there is nothing to announce. It is shown
+ * only while the call is genuinely open under its current (extended) deadline, so an
+ * extended call is never reported as closed because its superseded deadline has passed.
+ * Its "previous deadline" is the deadline the latest recorded extension replaced.
+ */
+const extension = computed(() => extensionNotice(announcement.value))
 
 /** The saved RIIDE programs, resolved to their display labels. */
 const priorityAgendaPrograms = computed(() => {
@@ -1052,6 +1082,49 @@ onMounted(loadAnnouncement)
   font-size: var(--font-body);
   line-height: 1.5;
   white-space: pre-line;
+}
+
+/* DEADLINE EXTENSION NOTICE */
+.extension-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-sizing: border-box;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #fff7ed;
+  border: 1px solid #fcd9a4;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+}
+
+.extension-icon {
+  flex-shrink: 0;
+  color: #b45309;
+}
+
+.extension-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.extension-text {
+  min-width: 0;
+}
+
+.extension-message {
+  margin: 0;
+  color: #7c3a06;
+  font-size: var(--font-body);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.extension-previous {
+  margin: 2px 0 0;
+  color: #92620c;
+  font-size: var(--font-secondary);
+  line-height: 1.4;
 }
 
 /* READ-ONLY DISCLAIMER */

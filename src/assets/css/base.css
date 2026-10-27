@@ -46,6 +46,32 @@
   --color-brand-navy: #262342;
   --color-brand-yellow: #ffd803;
 
+  /* ===== Application shell (header + sidebar) =====
+     The reference design of the RPIS shell: a dark navy header with a continuous
+     yellow bottom border, a dark indigo sidebar and a light lavender content area.
+     Kept as tokens so the header, the sidebar and the layout share one definition. */
+  --rpis-header-bg: #262342;
+  --rpis-header-height: 67px;
+  --rpis-header-border: #ffd000;
+  --rpis-header-border-height: 3px;
+  --rpis-sidebar-bg: #1c1a3c;
+  --rpis-sidebar-width: 261px;
+  --rpis-sidebar-collapsed-width: 84px;
+  --rpis-accent: #ffd000;
+  --rpis-accent-hover: #ffc400;
+  --rpis-on-dark: #ffffff;
+  --rpis-on-dark-soft: #c8c8e8;
+  --rpis-on-dark-muted: #9999c4;
+  --rpis-icon: #d8d8ef;
+  --rpis-surface-control: #302d59;
+  --rpis-surface-control-hover: #3a3668;
+  --rpis-separator: #464260;
+  --rpis-divider: #383553;
+  --rpis-help-bg: #2d2a5b;
+  --rpis-help-border: #403b75;
+  --rpis-badge: #315bff;
+  --rpis-content-bg: #f5f5fc;
+
   /* Card surface */
   --color-card-background: #ffffff;
 
@@ -138,7 +164,7 @@ body {
   div[class*="login-container"],
   div[class*="register-container"],
   section,
-  aside:not(.sidebar), /* Maintain signature brand sidebar */
+  aside:not(.sidebar):not(.app-sidebar), /* Maintain signature brand sidebar */
   main,
   table,
   tr,
@@ -223,4 +249,94 @@ body {
   .submit-btn {
     color: #000000 !important;
   }
+
+/* ============================================================
+   Application shell in dark mode
+
+   The reference shell is already a dark navy header with a dark indigo sidebar and a
+   yellow accent, so it keeps that exact palette whatever the system theme is - the
+   automatic dark overrides above are meant for page content, not for the shell. Page
+   content keeps the dark-mode behaviour it already had.
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: var(--rpis-header-bg) !important;
+    border-bottom-color: var(--rpis-header-border) !important;
+  }
+
+  .app-sidebar {
+    background-color: var(--rpis-sidebar-bg) !important;
+  }
+
+  /* Sidebar rows stay transparent; only the yellow Profile Settings control is filled. */
+  .app-sidebar li,
+  .app-sidebar .nav-list li:hover {
+    background-color: transparent !important;
+  }
+
+  .app-sidebar li.active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .app-sidebar .nav-link {
+    color: var(--rpis-icon) !important;
+  }
+
+  .app-sidebar li.active .nav-link,
+  .app-sidebar .nav-link:hover {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-sidebar .menu-label {
+    color: var(--rpis-on-dark-muted) !important;
+  }
+
+  .app-sidebar .help-card {
+    background-color: var(--rpis-help-bg) !important;
+    border-color: var(--rpis-help-border) !important;
+  }
+
+  .app-sidebar .help-title {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-sidebar .help-text {
+    color: var(--rpis-on-dark-soft) !important;
+  }
+
+  .app-sidebar .profile-item {
+    background-color: var(--rpis-accent) !important;
+  }
+
+  .app-sidebar .profile-item:hover,
+  .app-sidebar .profile-item.active {
+    background-color: var(--rpis-accent-hover) !important;
+  }
+
+  .app-sidebar .profile-link,
+  .app-sidebar .profile-link .nav-text {
+    color: #1c1a3c !important;
+  }
+
+  .app-sidebar .nav-badge {
+    background-color: var(--rpis-badge) !important;
+    color: #ffffff !important;
+  }
+
+  /* Header text keeps the two-tone brand and the yellow role line. */
+  .app-header .brand-research,
+  .app-header .user-name {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-header .brand-project,
+  .app-header .user-role {
+    color: var(--rpis-accent) !important;
+  }
+
+  .app-header .brand-subtitle {
+    color: var(--rpis-on-dark-soft) !important;
+  }
+}
+
 }

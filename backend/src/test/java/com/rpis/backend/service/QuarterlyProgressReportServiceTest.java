@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -289,6 +290,95 @@ class QuarterlyProgressReportServiceTest {
         wp.setObjectives(List.of(new WorkplanObjective(objective, List.of("Process PRs", ""), "100%")));
         wp.setRemarks("On track.");
         return wp;
+    }
+
+    // ===== "Create a Copy" traceability =====
+
+    /** A submitted Q1 report that a copy may be started from. */
+    private QuarterlyProgressReport submittedQuarterOne() {
+        QuarterlyProgressReport q1 = report("QUARTERLY_PROGRESS", "Q1", "SUBMITTED");
+        q1.setId(11L);
+        q1.setProjectTitle("Q1 title");
+        when(reportRepository.findById(11L)).thenReturn(Optional.of(q1));
+        stubReports(q1);
+        return q1;
+    }
+
+    @Test
+    void createStoresTheReportACopyWasStartedFrom() {
+        submittedQuarterOne();
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        req.setCopiedFromReportId(11L);
+
+        QuarterlyProgressReport saved = service.create(req);
+
+        assertEquals("Q2", saved.getPeriod(), "the copy targets the next required stage");
+        assertEquals("DRAFT", saved.getStatus());
+        assertEquals(11L, saved.getCopiedFromReportId());
+    }
+
+    @Test
+    void aReportWrittenFromScratchHasNoCopyReference() {
+        stubReports();
+        QuarterlyProgressReport saved = service.create(request("QUARTERLY_PROGRESS", "Q1", "DRAFT"));
+        assertNull(saved.getCopiedFromReportId());
+    }
+
+    @Test
+    void aCopyReferenceToAnotherProjectsReportIsIgnored() {
+        QuarterlyProgressReport foreign = submittedQuarterOne();
+        foreign.setProposalId(999L);
+
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        req.setCopiedFromReportId(11L);
+
+        assertNull(service.create(req).getCopiedFromReportId());
+    }
+
+    @Test
+    void anUnknownCopyReferenceIsIgnored() {
+        submittedQuarterOne();
+        when(reportRepository.findById(404L)).thenReturn(Optional.empty());
+
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        req.setCopiedFromReportId(404L);
+
+        assertNull(service.create(req).getCopiedFromReportId());
+    }
+
+    @Test
+    void copyingCreatesANewRecordAndNeverTouchesTheSourceReport() {
+        QuarterlyProgressReport source = submittedQuarterOne();
+
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        req.setCopiedFromReportId(11L);
+        req.setProjectTitle("Q2 title");
+        service.create(req);
+
+        // The source keeps its own status, period and content.
+        assertEquals("SUBMITTED", source.getStatus());
+        assertEquals("Q1", source.getPeriod());
+        assertEquals("Q1 title", source.getProjectTitle());
+        // Only the new report is saved.
+        verify(reportRepository, times(1)).save(any(QuarterlyProgressReport.class));
+    }
+
+    @Test
+    void anExistingDraftIsResumedAndKeepsItsCopyReference() {
+        QuarterlyProgressReport q1 = submittedQuarterOne();
+        QuarterlyProgressReport draft = report("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        draft.setId(20L);
+        draft.setCopiedFromReportId(11L);
+        // Q1 is submitted, so the next required stage is Q2 - where a draft already exists.
+        stubReports(q1, draft);
+        when(reportRepository.findById(20L)).thenReturn(Optional.of(draft));
+
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q2", "DRAFT");
+        req.setCopiedFromReportId(11L);
+        QuarterlyProgressReport saved = service.create(req);
+
+        assertEquals(20L, saved.getId(), "the existing draft is reused, never duplicated");
+        assertEquals(11L, saved.getCopiedFromReportId(), "its recorded source report stays");
     }
 }
 

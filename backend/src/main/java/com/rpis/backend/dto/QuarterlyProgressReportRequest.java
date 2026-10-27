@@ -2,6 +2,7 @@ package com.rpis.backend.dto;
 
 import com.rpis.backend.model.QuarterlyObjective;
 import com.rpis.backend.model.QuarterlyOutput;
+import com.rpis.backend.model.TerminalReportData;
 import com.rpis.backend.model.WorkplanData;
 import lombok.Data;
 
@@ -37,4 +38,16 @@ public class QuarterlyProgressReportRequest {
     // Structured Project Workplan (reporting stages 1-3). Optional: omitted for
     // the terminal stage, which has no workplan.
     private WorkplanData workplan;
+
+    // Structured Terminal Report content (reporting stage 4). Optional: omitted for
+    // stages 1-3, and for a terminal submission that only carries a legacy uploaded
+    // file.
+    private TerminalReportData terminalReport;
+
+    /**
+     * The report the proponent chose as the starting point of this one ("Create a Copy").
+     * Optional and only honoured when a brand-new record is created: the service stores it
+     * for traceability and only when it is a report of the same project.
+     */
+    private Long copiedFromReportId;
 }

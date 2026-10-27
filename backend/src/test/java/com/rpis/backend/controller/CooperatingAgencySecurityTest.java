@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,9 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Authorization of the cooperating agency directory, exercised through the real
  * Spring Security filter chain: an anonymous caller can neither read nor change the
- * directory, while any authenticated user (here a Faculty Proponent, the role the
- * Create Proposal form is used with) can read it and add a missing agency. A
- * proponent can only read the saved selection of their own proposal.
+ * directory, an authenticated user (here a Faculty Proponent, the role the Create
+ * Proposal form is used with) can read it but can never add an agency, and an
+ * administrator (RPS_ADMIN / RPS_STAFF) can still manage the list. A proponent can
+ * only read the saved selection of their own proposal.
  * <p>
  * Runs against the isolated {@code rpis_test} database only.
  */
@@ -78,6 +80,17 @@ class CooperatingAgencySecurityTest {
         return userRepository.saveAndFlush(user);
     }
 
+    /** An administrator: one of the RPS roles that manage the agency directory. */
+    private User administrator(String role) {
+        User user = new User();
+        user.setName(role + " Administrator");
+        user.setEmail(role.toLowerCase() + ".agency@msunaawan.edu.ph");
+        user.setPassword("secret");
+        user.setRole(role);
+        user.setStatus("APPROVED");
+        return userRepository.saveAndFlush(user);
+    }
+
     private Proposal proposal(String title, User owner) {
         Proposal proposal = new Proposal();
         proposal.setProponent(owner);
@@ -108,26 +121,48 @@ class CooperatingAgencySecurityTest {
     }
 
     @Test
-    void anAuthenticatedProponentCanReadTheDirectoryAndAddAnAgency() throws Exception {
+    void anAuthenticatedProponentCanReadTheDirectory() throws Exception {
         mockMvc.perform(get("/api/cooperating-agencies")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Commission on Higher Education (CHED)"));
+    }
+
+    @Test
+    void aProponentCannotAddAnAgency() throws Exception {
+        int before = cooperatingAgencyRepository.findAll().size();
 
         mockMvc.perform(post("/api/cooperating-agencies")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("{\"name\":\"Bureau of Fisheries and Aquatic Resources (BFAR)\"}")))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.name").value("Bureau of Fisheries and Aquatic Resources (BFAR)"));
+                .andExpect(status().isForbidden());
 
-        // Adding the same agency again in another case is a conflict, not a new row.
-        mockMvc.perform(post("/api/cooperating-agencies")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body("{\"name\":\"bureau of fisheries and aquatic resources (bfar)\"}")))
-                .andExpect(status().isConflict());
+        // The directory is administrator-managed: nothing was stored for the proponent.
+        assertEquals(before, cooperatingAgencyRepository.findAll().size());
+    }
+
+    @Test
+    void anAdministratorCanStillManageTheDirectory() throws Exception {
+        for (String role : List.of("RPS_ADMIN", "RPS_STAFF")) {
+            String token = tokenService.generateToken(administrator(role).getId(), role);
+            String agency = "Agency for " + role;
+
+            mockMvc.perform(post("/api/cooperating-agencies")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body("{\"name\":\"" + agency + "\"}")))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").isNumber())
+                    .andExpect(jsonPath("$.name").value(agency));
+
+            // Adding the same agency again in another case is a conflict, not a new row.
+            mockMvc.perform(post("/api/cooperating-agencies")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body("{\"name\":\"" + agency.toLowerCase() + "\"}")))
+                    .andExpect(status().isConflict());
+        }
     }
 
     @Test

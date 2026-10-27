@@ -41,14 +41,6 @@
           Edit Draft
         </button>
         <button class="btn-secondary" @click="printProposal">Print</button>
-        <button
-          v-if="isDuplicable(proposal.status)"
-          class="btn-duplicate"
-          :disabled="duplicating"
-          @click="duplicateProposal"
-        >
-          {{ duplicating ? 'Copying...' : 'Make a Copy' }}
-        </button>
       </div>
     </header>
 
@@ -66,6 +58,24 @@
 
     <!-- Content -->
     <template v-else-if="proposal.id">
+      <!-- Make a Copy: above the details and visually separate from them, so it is
+           never read as part of the proposal record. It is offered for a proposal in
+           any status (see utils/proposalStatus.js) because the copy is a brand-new
+           draft that inherits no workflow state. -->
+      <section v-if="isDuplicable(proposal.status)" class="copy-action-bar">
+        <div class="copy-action-text">
+          <h2>Make a Copy</h2>
+          <p>
+            Reuse this proposal's details as a new draft. The original proposal is not changed and
+            the copy is not submitted — you choose the call for proposal it belongs to, then review
+            and edit it first.
+          </p>
+        </div>
+        <button class="btn-duplicate" :disabled="duplicating || showCallPicker" @click="startProposalCopy">
+          {{ duplicating ? 'Copying...' : 'Make a Copy' }}
+        </button>
+      </section>
+
       <div class="content-grid">
         <!-- LEFT COLUMN: Main Info -->
         <div class="main-content">
@@ -686,6 +696,12 @@
       <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
     </template>
 
+    <!-- Step 1 of "Make a Copy": the same Call for Proposal step the Create Proposal
+         workflow uses. No draft is created until an open call is selected here; closing
+         it cancels the copy. -->
+    <ProponentCallForProposal v-if="showCallPicker" @select="createProposalCopy"
+      @close="cancelProposalCopy" />
+
     <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
       @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
@@ -698,6 +714,7 @@ import api from '@/utils/api'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
+import ProponentCallForProposal from './ProponentCallForProposal.vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
@@ -728,27 +745,54 @@ const fetchFieldRemarks = async (proposalId) => {
   }
 }
 
-const { dialogState, showAlert, showConfirm } = useDialog()
+const { dialogState, showAlert } = useDialog()
 const duplicating = ref(false)
+/** True while the Call for Proposal picker of "Make a Copy" is open. */
+const showCallPicker = ref(false)
 
-// Creates a new DRAFT from this rejected proposal. The backend allocates a new
-// proposal code / document id and copies only the reusable content; attachments are
-// not carried over, so the copy is opened in the proposal form for review, edits and
-// re-upload before it is submitted.
-const duplicateProposal = async () => {
-  const title = proposal.value.projectTitle || 'this proposal'
-  const confirmed = await showConfirm(
-    `Create a new draft from the rejected proposal "${title}"? You can reuse its content, edit what you need, and submit it as a new proposal.`,
-    { title: 'Make a Copy', type: 'info', confirmText: 'Make a Copy' }
-  )
-  if (!confirmed) return
+/**
+ * "Make a Copy" - step 1: the proponent picks the Call for Proposal the copy belongs
+ * to. Nothing is created yet: the same Call for Proposal step the Create Proposal
+ * workflow uses is shown, and the draft is only created once an open call is selected.
+ * A second click while the picker is open (or while a copy is being created) never
+ * starts a second copy.
+ */
+const startProposalCopy = () => {
+  if (duplicating.value || showCallPicker.value) return
+  showCallPicker.value = true
+}
+
+/** Closing the picker cancels the copy: no draft is created. */
+const cancelProposalCopy = () => {
+  showCallPicker.value = false
+}
+
+/**
+ * "Make a Copy" - step 2: a valid open call was selected, so the draft is created under
+ * it. The backend re-validates the call (it must still be open) and copies only the
+ * reusable content - a new draft with its own identifier, never a submission - and the
+ * original proposal is not modified. The copy is opened in the proposal form so the
+ * proponent can review it, edit it and upload the required attachments.
+ */
+const createProposalCopy = async (call) => {
+  showCallPicker.value = false
+  if (!call?.id) {
+    await showAlert('Please select an open call for proposal before making a copy.', {
+      type: 'warning',
+      title: 'Select a Call for Proposal'
+    })
+    return
+  }
+  if (duplicating.value) return
 
   duplicating.value = true
   try {
-    const res = await api.post(`/api/proposals/${proposal.value.id}/duplicate`)
+    const res = await api.post(`/api/proposals/${proposal.value.id}/duplicate`, {
+      proposalAnnouncementId: call.id
+    })
     const created = res.data || {}
     await showAlert(
-      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
+      `A new draft was created from this proposal under "${call.name}" (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
       { type: 'success', title: 'Copy Created' }
     )
     if (created.id) {
@@ -1038,6 +1082,39 @@ const formatReviewerPosition = (position) => {
 .btn-duplicate:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* MAKE A COPY — sits above the details, visually separate from the record below. */
+.copy-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.copy-action-text h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.copy-action-text p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.copy-action-bar .btn-duplicate {
+  flex-shrink: 0;
 }
 
 .btn-edit-draft {
@@ -1626,6 +1703,16 @@ const formatReviewerPosition = (position) => {
   .header-meta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* The copy action stacks so the button stays a comfortable tap target. */
+  .copy-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .copy-action-bar .btn-duplicate {
+    width: 100%;
   }
 }
 </style>

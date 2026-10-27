@@ -4,6 +4,8 @@ import com.rpis.backend.dto.NextReportStageResponse;
 import com.rpis.backend.dto.QuarterlyProgressReportRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.QuarterlyProgressReport;
+import com.rpis.backend.model.TerminalReportData;
+import com.rpis.backend.model.TerminalReportSection;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
@@ -40,6 +42,8 @@ public class QuarterlyProgressReportService {
     private static final List<String> QUARTERLY_PERIODS = List.of("Q1", "Q2", "Q3");
     /** Period marker used for the terminal reporting stage. */
     private static final String TERMINAL_PERIOD = "TERMINAL";
+    /** One-page limit of the Terminal Report abstract (official ORPS format). */
+    public static final int MAX_ABSTRACT_WORDS = 350;
 
     /** Document type keys accepted by the download endpoint. */
     public static final String DOC_WORKPLAN = "workplan";
@@ -143,6 +147,10 @@ public class QuarterlyProgressReportService {
             report = new QuarterlyProgressReport();
             report.setProposalId(proposal.getId());
             report.setCreatedBy(proponentId(proposal));
+            // "Create a Copy" traceability: which report this one was started from. Only a
+            // report of this same project is ever stored; anything else is ignored.
+            report.setCopiedFromReportId(
+                    resolveCopySource(proposal.getId(), request.getCopiedFromReportId()));
         }
 
         report.setReportType(type);
@@ -239,9 +247,20 @@ public class QuarterlyProgressReportService {
 
     private void validateRequiredDocuments(QuarterlyProgressReport report) {
         if (TYPE_TERMINAL.equals(typeOf(report))) {
-            if (isBlank(report.getTerminalReportFilePath())) {
+            // The Terminal Report is completed in RPIS as a structured document. Reports
+            // created before the in-system form existed may still hold a legacy uploaded
+            // file; that stays a valid compatibility path so historical drafts can still
+            // submit.
+            boolean hasStructuredReport = hasTerminalReportContent(report.getTerminalReport());
+            boolean hasLegacyTerminalFile = !isBlank(report.getTerminalReportFilePath());
+            if (!hasStructuredReport && !hasLegacyTerminalFile) {
                 throw new IllegalStateException(
-                        "The completed Terminal Report file is required before this report can be submitted.");
+                        "The Terminal Report content is required before this report can be submitted. "
+                                + "Please complete the Terminal Report form (report title, abstract, "
+                                + "introduction and results and discussion).");
+            }
+            if (hasStructuredReport) {
+                validateTerminalReportContent(report.getTerminalReport());
             }
         } else {
             // Stages 1-3 require a Project Workplan, which is now an interactive
@@ -268,6 +287,53 @@ public class QuarterlyProgressReportService {
                 .anyMatch(o -> o != null && o.getObjective() != null && !o.getObjective().isBlank());
     }
 
+    /**
+     * True when the structured Terminal Report carries the core content the official format
+     * requires: the report title, the abstract, the introduction and the results and
+     * discussion.
+     *
+     * <p>The remaining sections (review of related literature, methodology, conclusions and
+     * recommendations, literature cited, appendix, problems, output, utilization, the
+     * preliminary lists) are optional, exactly as in the printed format.</p>
+     */
+    public boolean hasTerminalReportContent(TerminalReportData report) {
+        return report != null
+                && !isBlank(report.getProjectTitle())
+                && !isBlank(report.getAbstractText())
+                && hasSectionText(report.getIntroduction())
+                && hasSectionText(report.getResultsAndDiscussion());
+    }
+
+    /**
+     * True when a body section holds text, either in the section itself or in one of its
+     * subsections (the official format writes most of the body as numbered subsections).
+     */
+    private boolean hasSectionText(TerminalReportSection section) {
+        return section != null && section.hasText();
+    }
+
+    /**
+     * Content rules of the structured Terminal Report, enforced when it is submitted:
+     * the core sections must be present and the abstract may not exceed the one-page
+     * limit of the official format. Drafts are not blocked by these rules - a draft may
+     * be saved while it is still incomplete.
+     */
+    private void validateTerminalReportContent(TerminalReportData report) {
+        int words = wordCount(report.getAbstractText());
+        if (words > MAX_ABSTRACT_WORDS) {
+            throw new IllegalStateException("The abstract must not exceed " + MAX_ABSTRACT_WORDS
+                    + " words (currently " + words + " words). Please shorten it before submitting.");
+        }
+    }
+
+    /** Words in a narrative field: whitespace-separated tokens, ignoring extra spacing. */
+    private static int wordCount(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        return text.trim().split("\\s+").length;
+    }
+
     private void submit(QuarterlyProgressReport report, Proposal proposal) {
         report.setStatus("SUBMITTED");
         report.setSubmittedAt(LocalDateTime.now());
@@ -276,6 +342,22 @@ public class QuarterlyProgressReportService {
 
     private Long proponentId(Proposal proposal) {
         return proposal.getProponent() != null ? proposal.getProponent().getId() : null;
+    }
+
+    /**
+     * The report a brand-new draft was copied from, for traceability. Only a report that
+     * exists and belongs to the same project is stored - a missing id or another project's
+     * report is ignored rather than failing the proponent's save, because the reference is
+     * informational and never affects the copied content.
+     */
+    private Long resolveCopySource(Long proposalId, Long copiedFromReportId) {
+        if (copiedFromReportId == null) {
+            return null;
+        }
+        return reportRepository.findById(copiedFromReportId)
+                .filter(source -> proposalId.equals(source.getProposalId()))
+                .map(QuarterlyProgressReport::getId)
+                .orElse(null);
     }
 
     private Proposal getEligibleProposal(Long proposalId) {
@@ -327,6 +409,12 @@ public class QuarterlyProgressReportService {
         // so unrelated updates (e.g. the terminal stage) never wipe it.
         if (request.getWorkplan() != null) {
             report.setWorkplan(request.getWorkplan());
+        }
+        // Same for the structured Terminal Report: an update that does not carry it
+        // (for example a stage 1-3 save, or a terminal draft that only attaches a file)
+        // never wipes the content the proponent already entered.
+        if (request.getTerminalReport() != null) {
+            report.setTerminalReport(request.getTerminalReport());
         }
     }
 

@@ -1,18 +1,20 @@
 /**
  * countries.js
  * ---------------------------------------------------------------------------
- * ISO 3166-1 country list for the Create Proposal form's Address section.
+ * The country of the Philippines, and the ISO 3166-1 list that name comes from.
  *
- * Only the Philippines has a structured (cascading) administrative hierarchy in
- * RPIS, so the form asks for a manually typed address for every other country
- * instead of offering Philippine regions, provinces or barangays under a
- * foreign country (see src/utils/philippineLocations.js and
- * src/components/AddressContactFields.vue).
+ * The Create Proposal form's Address section is Philippine-only: it has no country
+ * control, and every address it creates is stored as "Philippines" (see
+ * src/utils/philippineLocations.js). The full list is kept because it is still the
+ * source of the country names the backend address catalog is generated from
+ * (scripts/build-backend-location-catalog.mjs -> ph-address-catalog.json), and
+ * because a proposal saved while the country control still existed may store one of
+ * these names, which has to keep being recognised.
  *
  * Source: ISO 3166-1 alpha-2 codes with their English short names, as published
  * in the `country-list` package data (https://www.npmjs.com/package/country-list
  * data.json), which mirrors the ISO 3166-1 / CLDR country list. The list is
- * bundled so the dropdown keeps working without internet access.
+ * bundled so it keeps working without internet access.
  */
 
 /** Country code of the Philippines - the only country with structured data. */

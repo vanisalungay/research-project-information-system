@@ -52,13 +52,35 @@
         </div>
       </div>
 
+      <!-- PROGRESS WITHIN PROPOSAL DETAILS -->
+      <!-- The four main steps above are unchanged; this bar only shows how far the
+           proponent is inside step 2, and lets them step back to a page already seen. -->
+      <div class="substep-bar">
+        <div class="substep-info">
+          <span class="substep-title">Proposal Details</span>
+          <span class="substep-count">Substep {{ currentSubstep }} of {{ substepCount }}</span>
+        </div>
+        <ol class="substep-dots"
+          :aria-label="`Proposal details progress: substep ${currentSubstep} of ${substepCount}`">
+          <li v-for="(substep, index) in SUBSTEPS" :key="substep.id">
+            <button type="button" class="substep-dot"
+              :class="{ 'is-active': currentSubstep === index + 1, 'is-done': currentSubstep > index + 1 }"
+              :disabled="index + 1 >= currentSubstep"
+              :aria-current="currentSubstep === index + 1 ? 'step' : undefined"
+              :aria-label="`Substep ${index + 1} of ${substepCount}: ${substep.title}`"
+              @click="goToSubstep(index + 1)">{{ index + 1 }}</button>
+          </li>
+        </ol>
+        <span class="substep-name">{{ currentSubstepName }}</span>
+      </div>
+
       <!-- VALIDATION ERROR BANNER -->
-      <div v-if="showValidation && errorList.length > 0" class="validation-banner" ref="errorBannerRef">
+      <div v-if="showValidation && visibleErrorList.length > 0" class="validation-banner" ref="errorBannerRef">
         <div class="banner-icon">⚠</div>
         <div class="banner-content">
           <strong>Please complete all required fields before proceeding.</strong>
           <ul>
-            <li v-for="(err, i) in errorList" :key="i">
+            <li v-for="(err, i) in visibleErrorList" :key="i">
               <a href="#" @click.prevent="scrollToField(err.field)">{{ err.message }}</a>
             </li>
           </ul>
@@ -82,6 +104,10 @@
           </button>
         </div>
 
+        <!-- ===================== SUBSTEP 1 of 6: Project Profile =====================
+             Step 2 is completed a page at a time. The panels below are consecutive
+             slices of the existing sections: no field was moved, renamed or removed. -->
+        <div v-show="currentSubstep === 1" class="substep-panel" data-substep="1">
         <!-- 1. Project Profile -->
         <section class="form-section" ref="section_project_profile">
           <div class="section-header">
@@ -90,22 +116,27 @@
           </div>
           <div class="section-card">
             <div class="form-row">
-              <div class="form-group" :class="{ 'has-error': showValidation && errors.program_title }">
+              <div class="form-group form-group--program-title">
+                <!-- Optional: the proponent may leave this empty. The control is the
+                     form's own dropdown (a native select could not reliably show the
+                     blue create option, and its popup would swallow a double click);
+                     a double click - or the blue option - opens the existing inline
+                     "new program title" input below. -->
                 <label>Program Title</label>
-                <select v-model="programTitleChoice" :disabled="programTitlesLoading"
-                  @change="onProgramTitleChoiceChange">
-                  <option value="">Select a program title</option>
-                  <option :value="CREATE_NEW_PROGRAM_TITLE">Create New Program Title</option>
-                  <option v-for="title in existingProgramTitles" :key="title" :value="title">{{ title }}</option>
-                </select>
-                <input v-if="programTitleChoice === CREATE_NEW_PROGRAM_TITLE" class="program-title-new-input"
-                  v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                <ProgramTitleSelect v-model="programTitleChoice" :titles="existingProgramTitles"
+                  :loading="programTitlesLoading" @change="onProgramTitleChoiceChange"
+                  @create="startProgramTitleCreation" />
+                <div v-if="programTitleChoice === CREATE_NEW_PROGRAM_TITLE" class="program-title-new-row">
+                  <input ref="newProgramTitleInput" class="program-title-new-input"
+                    v-model="proposal.program_title" placeholder="e.g. Community Development Program" />
+                  <button type="button" class="program-title-new-cancel" @click="cancelProgramTitleCreation">
+                    Cancel
+                  </button>
+                </div>
                 <small v-if="programTitlesError" class="field-hint field-hint-error">{{ programTitlesError }}</small>
                 <small v-else-if="programTitlesEmpty" class="field-hint">
                   No previously submitted program titles yet — choose "Create New Program Title" to add one.
                 </small>
-                <span class="field-error" v-if="showValidation && errors.program_title">{{ errors.program_title
-                  }}</span>
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.project_title }">
                 <label>Project Title <span class="req">*</span></label>
@@ -150,7 +181,14 @@
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.end_date }">
                 <label>End Date <span class="req">*</span></label>
-                <input type="date" v-model="proposal.end_date" />
+                <input
+                  type="date"
+                  v-model="proposal.end_date"
+                  readonly
+                  aria-readonly="true"
+                  :class="{ 'input-calculated': calculatedEndDate }"
+                />
+                <small v-if="endDateMessage" class="field-hint">{{ endDateMessage }}</small>
                 <span class="field-error" v-if="showValidation && errors.end_date">{{ errors.end_date }}</span>
               </div>
             </div>
@@ -187,15 +225,18 @@
                 address parts below.
               </p>
               <div class="ac-grid">
+                <!-- The Address section is Philippine-only: the country is part of the
+                     form state (addressDetails.country) and is always the Philippines.
+                     It stays visible so the address reads as a complete one, but there
+                     is nothing to choose: the field is read-only, it is not in the tab
+                     order and the proponent is never asked to touch it. Region is the
+                     first control they answer. -->
                 <div class="ac-field">
-                  <label for="address-country">Country <span class="req">*</span></label>
-                  <select id="address-country" :value="addressDetails.country"
-                    @change="addressCascade.select('country', $event.target.value)">
-                    <option value="">{{ addressCascade.placeholders.country }}</option>
-                    <option v-for="country in addressCascade.countries" :key="country.code" :value="country.name">
-                      {{ country.name }}
-                    </option>
-                  </select>
+                  <label for="address-country">Country</label>
+                  <input id="address-country" class="ac-readonly" type="text"
+                    :value="addressDetails.country || PHILIPPINES.name" readonly aria-readonly="true"
+                    tabindex="-1" />
+                  <small class="field-hint">Set automatically.</small>
                 </div>
                 <div class="ac-field">
                   <label for="address-region">Region <span class="req">*</span></label>
@@ -296,6 +337,10 @@
           </div>
         </section>
 
+        </div>
+
+        <!-- ============ SUBSTEP 2 of 6: Agencies, Sites & Research Focus ============ -->
+        <div v-show="currentSubstep === 2" class="substep-panel" data-substep="2">
         <!-- 2. Cooperating Agency/ies -->
         <section class="form-section" ref="section_cooperating_agencies">
           <div class="section-header">
@@ -412,6 +457,10 @@
           </div>
         </section>
 
+        </div>
+
+        <!-- ================= SUBSTEP 3 of 6: Project Background ================== -->
+        <div v-show="currentSubstep === 3" class="substep-panel" data-substep="3">
         <!-- 6–9: Text Sections -->
         <section class="form-section" ref="section_innovation_goals">
           <div class="section-header">
@@ -520,6 +569,10 @@
           </div>
         </section>
 
+        </div>
+
+        <!-- ================ SUBSTEP 4 of 6: Methodology & Roadmap ================= -->
+        <div v-show="currentSubstep === 4" class="substep-panel" data-substep="4">
         <!-- 11. Review of Literature -->
         <section class="form-section" ref="section_review_of_literature">
           <div class="section-header">
@@ -667,6 +720,10 @@
           </div>
         </section>
 
+        </div>
+
+        <!-- ============== SUBSTEP 5 of 6: Beneficiaries, GAD & Plans =============== -->
+        <div v-show="currentSubstep === 5" class="substep-panel" data-substep="5">
         <!-- 17. Target Beneficiaries -->
         <section class="form-section" ref="section_target_beneficiaries">
           <div class="section-header">
@@ -790,6 +847,10 @@
           </div>
         </section>
 
+        </div>
+
+        <!-- =============== SUBSTEP 6 of 6: References, Team & Budget =============== -->
+        <div v-show="currentSubstep === 6" class="substep-panel" data-substep="6">
         <!-- 23. Literature Cited -->
         <section class="form-section" ref="section_literature_cited">
           <div class="section-header">
@@ -984,7 +1045,7 @@
         </section>
 
         <!-- 27. Other Supporting Documents -->
-        <section class="form-section">
+        <section class="form-section" ref="section_supporting_documents">
           <div class="section-header">
             <span class="section-number">27</span>
             <h3>Other Supporting Documents</h3>
@@ -993,12 +1054,21 @@
             <p class="field-note">Please refer to the next page for additional necessary documents.</p>
           </div>
         </section>
+        </div>
       </div>
 
       <!-- FOOTER -->
       <footer class="modal-footer">
         <button class="btn-secondary" @click="close">Cancel</button>
         <div class="footer-right">
+          <!-- Previous is only offered from the second page on; the first page of the
+               step has nothing before it. -->
+          <button v-if="!isFirstSubstep" class="btn-outline" @click="goToPreviousSubstep">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Previous
+          </button>
           <button class="btn-outline" @click="saveAsDraft">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -1007,8 +1077,10 @@
             </svg>
             Save as Draft
           </button>
-          <button class="btn-primary" @click="goNext">
-            Next Step
+          <!-- The last page hands over to the existing step 3 instead of advancing a
+               substep further. -->
+          <button class="btn-primary" @click="goToNextSubstepOrContinue">
+            {{ isLastSubstep ? 'Continue to Certification & Endorsement' : 'Next' }}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6" />
             </svg>
@@ -1056,6 +1128,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
 import LineItemBudgetTemplateModal from '@/components/LineItemBudgetTemplateModal.vue'
 import LiteratureReferenceModal from '@/components/LiteratureReferenceModal.vue'
+import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
@@ -1072,12 +1145,31 @@ import {
 } from '@/utils/documentExport'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import { CREATE_NEW_PROGRAM_TITLE } from '@/utils/programTitleOptions'
+import {
+  PROJECT_DURATION_OPTIONS,
+  PROJECT_END_DATE_HINT,
+  PROJECT_PERIOD_HINT,
+  projectEndDate,
+  projectEndDateError
+} from '@/utils/projectDates'
 import { useAddressCascade } from '@/composables/useAddressCascade'
 import {
+  PROPOSAL_SUBSTEPS,
+  PROPOSAL_SUBSTEP_COUNT,
+  clampSubstep,
+  errorsOfSubstep,
+  fieldsOfSubstep,
+  substepOfField,
+  substepTitle
+} from '@/utils/proposalSubsteps'
+import {
+  PHILIPPINES,
   cityLabel,
   emptyAddressDetails,
   formatAddressContact,
   regionLabel,
+  savedAddressDetails,
   validateAddress,
 } from '@/utils/philippineLocations'
 import {
@@ -1199,18 +1291,22 @@ const sectionRefs = {
 
 const sectionElementRefs = {}
 
-// Selectable project durations (months) for internally funded proposals.
-const DURATION_OPTIONS = ['12', '24', '36']
+// Selectable project durations (months) for internally funded proposals. The same list is
+// what the End Date calculation uses (utils/projectDates.js).
+const DURATION_OPTIONS = PROJECT_DURATION_OPTIONS
 
-// ===== PROGRAM TITLE (reuse an existing title or create a new one) =====
-// A Proponent may pick a program title from their own previously submitted
-// proposals or create a brand new one. This sentinel distinguishes the
-// "create new" choice from the empty placeholder option in the dropdown.
-const CREATE_NEW_PROGRAM_TITLE = '__CREATE_NEW_PROGRAM_TITLE__'
+// ===== PROGRAM TITLE (optional: reuse an existing title or create a new one) =====
+// A Proponent may leave this field empty, pick one of their own previously submitted
+// program titles, or create a brand new one. The sentinel that marks the "create new"
+// choice and the option list itself live in utils/programTitleOptions.js, shared with
+// the control that renders them.
 const programTitleChoice = ref('')
 const existingProgramTitles = ref([])
 const programTitlesLoading = ref(false)
 const programTitlesError = ref('')
+const newProgramTitleInput = ref(null)
+// What the field held before the inline creation started, so cancelling restores it.
+const programTitleBeforeCreation = ref(null)
 
 // Loads the distinct program titles the proponent is allowed to reuse. This reuses
 // the existing proposal-list endpoint (which already returns only the caller's own
@@ -1248,7 +1344,7 @@ const programTitlesEmpty = computed(
   () => !programTitlesLoading.value && !programTitlesError.value && existingProgramTitles.value.length === 0
 )
 
-// Keeps the submitted value (proposal.program_title) in sync with the dropdown.
+// Keeps the submitted value (proposal.program_title) in sync with the control.
 // Switching to "Create New Program Title" clears any previously selected existing
 // title so a stale value can never be submitted.
 const onProgramTitleChoiceChange = () => {
@@ -1257,6 +1353,33 @@ const onProgramTitleChoiceChange = () => {
   } else {
     proposal.program_title = programTitleChoice.value || ''
   }
+}
+
+/**
+ * Opens the existing inline "new program title" flow (the input under the field). It
+ * is reached by choosing the blue option, by double clicking the control, or from the
+ * keyboard through the highlighted option. Opening it twice is harmless: the flow is
+ * already showing, so the proponent keeps what they typed and only the focus moves.
+ */
+const startProgramTitleCreation = () => {
+  if (programTitleChoice.value === CREATE_NEW_PROGRAM_TITLE) {
+    newProgramTitleInput.value?.focus()
+    return
+  }
+  programTitleBeforeCreation.value = {
+    choice: programTitleChoice.value,
+    title: proposal.program_title
+  }
+  programTitleChoice.value = CREATE_NEW_PROGRAM_TITLE
+  onProgramTitleChoiceChange()
+  nextTick(() => newProgramTitleInput.value?.focus())
+}
+
+/** Cancels the creation: the field goes back to what it held, nothing else changes. */
+const cancelProgramTitleCreation = () => {
+  programTitleChoice.value = programTitleBeforeCreation.value?.choice ?? ''
+  proposal.program_title = programTitleBeforeCreation.value?.title ?? ''
+  programTitleBeforeCreation.value = null
 }
 
 // Reflects an already-saved program title (draft/revision) back into the dropdown
@@ -1352,6 +1475,33 @@ const getInitialProposal = () => ({
 })
 
 const proposal = reactive(getInitialProposal())
+
+/* ===== END DATE (section 01) =====
+   The End Date is not chosen by the proponent: it is calculated by adding the selected
+   duration to the start date (October 2026 + 12 months = October 2027), keeping the day of
+   the month and using the last valid day when the target month is shorter. The rule lives in
+   utils/projectDates.js and is enforced again by the backend (ProposalService), so the form
+   and the server always agree. */
+const calculatedEndDate = computed(() => projectEndDate(proposal.start_date, proposal.duration))
+
+/** Helper text of the End Date field: why it is still empty, or that it is calculated. */
+const endDateMessage = computed(() =>
+  calculatedEndDate.value ? PROJECT_END_DATE_HINT : PROJECT_PERIOD_HINT
+)
+
+// The field is derived state: a new start date or duration recalculates it, and a value that
+// does not match the calculation - a manually edited field, or a value saved before this rule
+// existed - is replaced by the calculated one, so the End Date can never disagree with the
+// duration. The field itself is read-only; this keeps the rule true even for a modified
+// client. `immediate` also normalizes the value of a proposal that was just loaded.
+watch(
+  [() => proposal.start_date, () => proposal.duration, () => proposal.end_date],
+  () => {
+    const calculated = projectEndDate(proposal.start_date, proposal.duration)
+    if (proposal.end_date !== calculated) proposal.end_date = calculated
+  },
+  { immediate: true }
+)
 
 // The selected Call for Proposal is part of the proposal state, so it travels with
 // the form data through every step (and into the saved / submitted payload) without
@@ -1492,6 +1642,12 @@ const onContactValueInput = (event) => {
  * text is never dropped: it is shown above the new fields (proposal.legacy_address)
  * so the proponent can transfer it, while the structured columns simply start
  * empty.
+ *
+ * The Address section is Philippine-only, so the country of a loaded record is the
+ * Philippines (see `savedAddressDetails`): a record that carries address parts but
+ * no country is completed with it instead of losing the rest of the address, and
+ * only a record that stored a foreign country together with its own parts keeps
+ * that country, so opening an old draft never erases an address.
  */
 const applySavedAddressAndContact = (data) => {
   const saved = {
@@ -1503,7 +1659,7 @@ const applySavedAddressAndContact = (data) => {
     barangay: data.addressBarangay || ''
   }
   const hasStructured = Object.values(saved).some((value) => String(value ?? '').trim() !== '')
-  proposal.address_details = hasStructured ? saved : emptyAddressDetails()
+  proposal.address_details = hasStructured ? savedAddressDetails(saved) : emptyAddressDetails()
   proposal.legacy_address = hasStructured ? '' : (data.address || '')
   proposal.contact_details = { type: data.contactType || '', value: data.contactValue || '' }
 }
@@ -1516,8 +1672,11 @@ const resetForm = () => {
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
   programTitleChoice.value = ''
+  programTitleBeforeCreation.value = null
   budgetFileError.value = ''
   uploadedBudgetFileKey.value = ''
+  // The guided form starts again on its first page.
+  currentSubstep.value = 1
   // Section 23: the reference list is part of the form state that is reset.
   references.value = []
   showReferenceModal.value = false
@@ -1535,6 +1694,8 @@ const loadProposal = (data) => {
   // Preserve the proposal's saved duration (12, 24 or 36 months).
   proposal.duration = DURATION_OPTIONS.includes(String(data.duration)) ? String(data.duration) : '12'
   proposal.start_date = data.startDate || ''
+  // A saved End Date is kept only while it is the date the duration produces; the derived
+  // End Date rule recalculates it otherwise (see the END DATE block above).
   proposal.end_date = data.endDate || ''
   proposal.department = data.college || ''
   applySavedAddressAndContact(data)
@@ -2193,19 +2354,21 @@ const validateStep1 = () => {
   Object.keys(errors).forEach(key => delete errors[key])
 
   // 01 - Project Profile
-  // Program Title is now chosen from a dropdown (existing title) or entered as a
-  // new one, so an empty/whitespace-only value is rejected either way.
-  if (isBlank(proposal.program_title)) {
-    errors.program_title = programTitleChoice.value === CREATE_NEW_PROGRAM_TITLE
-      ? 'Please enter a new Program Title.'
-      : 'Please select a program title or create a new one.'
-  }
+  // Program Title is optional: the proponent may leave it empty, reuse one of their
+  // own titles or create a new one, so nothing here blocks the form when it is empty.
   if (isBlank(proposal.project_title)) errors.project_title = 'Project Title is required.'
   if (isBlank(proposal.project_leader)) errors.project_leader = 'Project Leader is required.'
   if (isBlank(proposal.project_leader_sex)) errors.project_leader_sex = 'Please select a sex.'
   if (!DURATION_OPTIONS.includes(String(proposal.duration))) errors.duration = 'Please select a valid project duration (12, 24, or 36 months).'
   if (isBlank(proposal.start_date)) errors.start_date = 'Start Date is required.'
-  if (isBlank(proposal.end_date)) errors.end_date = 'End Date is required.'
+  if (isBlank(proposal.end_date)) {
+    errors.end_date = 'End Date is required.'
+  } else {
+    // The End Date is calculated from the start date and the duration. The field is
+    // read-only, so this only reports a value that reached the form from somewhere else.
+    const endDateError = projectEndDateError(proposal.start_date, proposal.duration, proposal.end_date)
+    if (endDateError) errors.end_date = endDateError
+  }
   if (isBlank(proposal.department)) errors.department = 'Implementing College/Department is required.'
   // 01 - Address and Contact (replacing the old combined "Address / Contact"):
   // the address must be complete for the selected administrative hierarchy and
@@ -2351,6 +2514,26 @@ const scrollToField = (fieldName) => {
   }
 }
 
+// ===== SUBSTEPS OF STEP 2 (PROPOSAL DETAILS) =====
+// The 27 sections of this step are presented as consecutive pages ("substeps") so a
+// proponent completes a small group of fields at a time instead of scrolling one very
+// long form. The pages are defined in utils/proposalSubsteps.js as slices of the
+// existing section order - no field is moved, renamed or removed - and the four main
+// steps of the workflow are unchanged.
+const substepCount = PROPOSAL_SUBSTEP_COUNT
+// The pages themselves live in utils/proposalSubsteps.js; the template only renders
+// them (the dots) and the panels are shown by their number.
+const SUBSTEPS = PROPOSAL_SUBSTEPS
+const currentSubstep = ref(1)
+const isFirstSubstep = computed(() => currentSubstep.value === 1)
+const isLastSubstep = computed(() => currentSubstep.value === substepCount)
+const currentSubstepName = computed(() => substepTitle(currentSubstep.value))
+
+/** The validation errors of the page on screen (the banner lists only those). */
+const pageErrorsOf = (number) => errorsOfSubstep(errorList.value, sectionRefs, number)
+
+const visibleErrorList = computed(() => pageErrorsOf(currentSubstep.value))
+
 const saveAsDraft = async () => {
   try {
     const userStore = useUserDataStore()
@@ -2388,16 +2571,17 @@ const goNext = async () => {
   showValidation.value = true
   const isValid = validateStep1()
   if (!isValid) {
-    // Scroll to error banner
-    await nextTick()
-    if (errorBannerRef.value) {
-      errorBannerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else if (modalBodyRef.value) {
-      const firstError = modalBodyRef.value.querySelector('.has-error')
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
+    // A missing field can sit on a page the proponent has already left: that page is
+    // brought back (with its own errors) instead of leaving them on a page they cannot
+    // fix from here.
+    const firstProblem = errorList.value.find(
+      (entry) => !fieldsOfSubstep(sectionRefs, currentSubstep.value).includes(entry.field)
+    )
+    const targetSubstep = firstProblem ? substepOfField(sectionRefs, firstProblem.field) : null
+    if (targetSubstep && targetSubstep !== currentSubstep.value) {
+      goToSubstep(targetSubstep, { keepValidation: true })
     }
+    await scrollToFirstPageError(pageErrorsOf(currentSubstep.value))
     await showAlert(
       `Please fill in all ${errorList.value.length} required field(s) before proceeding to the next step.`,
       { type: 'warning', title: 'Incomplete Proposal' }
@@ -2405,6 +2589,57 @@ const goNext = async () => {
     return
   }
   emit('next', { ...proposal })
+}
+
+/** Shows a page: its content returns to the top and the red state starts clean. */
+const goToSubstep = (number, { keepValidation = false } = {}) => {
+  currentSubstep.value = clampSubstep(number)
+  if (!keepValidation) showValidation.value = false
+  nextTick(() => {
+    modalBodyRef.value?.scrollTo({ top: 0, behavior: 'auto' })
+  })
+}
+
+const goToPreviousSubstep = () => {
+  if (!isFirstSubstep.value) goToSubstep(currentSubstep.value - 1)
+}
+
+/** Brings the first error of the page on screen into view. */
+const scrollToFirstPageError = async (pageErrors) => {
+  await nextTick()
+  const field = pageErrors[0]?.field
+  if (field) {
+    scrollToField(field)
+    return
+  }
+  if (errorBannerRef.value) {
+    errorBannerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+/**
+ * The footer's primary action. On every page but the last it advances one page, and
+ * only once that page is complete: the pages after it ask for their own fields in
+ * turn. On the last page it runs the existing "continue to step 3" flow, which still
+ * validates the whole form before handing over to Certification & Endorsement.
+ */
+const goToNextSubstepOrContinue = async () => {
+  if (isLastSubstep.value) {
+    await goNext()
+    return
+  }
+  showValidation.value = true
+  validateStep1()
+  const pageErrors = pageErrorsOf(currentSubstep.value)
+  if (pageErrors.length === 0) {
+    goToSubstep(currentSubstep.value + 1)
+    return
+  }
+  await scrollToFirstPageError(pageErrors)
+  await showAlert(
+    `Please complete the ${pageErrors.length} required field(s) on this page before continuing.`,
+    { type: 'warning', title: 'Incomplete Section' }
+  )
 }
 
 // Section 25: the same official template the modal previews can still be saved
@@ -2429,7 +2664,9 @@ const mapFormToDTO = (data, proponentId, status) => {
     // The combined "Address / Contact" column is kept up to date from the two
     // new sections, so every existing screen and export still shows both.
     address: formatAddressContact(data.address_details, data.contact_details),
-    addressCountry: data.address_details?.country || '',
+    // The Address section is Philippine-only: the country is never asked for, so it
+    // is filled in here (a stored country - a legacy record - is kept as it is).
+    addressCountry: data.address_details?.country || PHILIPPINES.name,
     addressRegion: data.address_details?.region || '',
     addressProvince: data.address_details?.province || '',
     addressDistrict: data.address_details?.district || '',
@@ -2681,6 +2918,95 @@ watch(() => props.modelValue, (isOpen) => {
   height: 2px;
   background: #e2e8f0;
   margin: 0 12px;
+}
+
+/* ===== SUBSTEP BAR (progress inside step 2) ===== */
+/* Sits under the four-step bar and only describes the pages of this step, so the two
+   are never confused: the main steps stay exactly as they were. */
+.substep-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 28px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.substep-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.substep-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.substep-count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4338ca;
+  white-space: nowrap;
+}
+
+.substep-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.substep-dot {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.substep-dot:hover:not(:disabled) {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+/* A page already visited can be reopened; the current and the coming pages cannot
+   (they are reached through Next, which validates the page on screen). */
+.substep-dot:disabled {
+  cursor: default;
+}
+
+.substep-dot.is-done {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.substep-dot.is-active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+
+.substep-name {
+  margin-left: auto;
+  font-size: 12px;
+  color: #64748b;
 }
 
 /* ===== VALIDATION BANNER ===== */
@@ -2977,9 +3303,73 @@ watch(() => props.modelValue, (isOpen) => {
   color: #b45309;
 }
 
+/* The End Date is calculated by the system. The read-only field is presented as a value the
+   proponent does not edit (not as an unavailable field), and the native picker indicator is
+   hidden so the calendar is not offered for a date that cannot be changed. */
+.input-calculated {
+  background: #f8fafc;
+  color: #1c2145;
+  cursor: default;
+}
+
+.input-calculated::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 /* The "Create New Program Title" text input sits below its dropdown. */
 .program-title-new-input {
   margin-top: 8px;
+}
+
+/* The inline "new program title" flow: the existing input plus a Cancel action that
+   returns the field to what it held before the creation started. */
+.program-title-new-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.program-title-new-row .program-title-new-input {
+  flex: 1;
+  min-width: 0;
+  margin-top: 8px;
+}
+
+.program-title-new-cancel {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.program-title-new-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+/* The field's placeholder is a full sentence: on a narrow screen it gets the whole
+   row so the text stays readable, without affecting any other field. */
+@media (max-width: 640px) {
+  .form-group--program-title {
+    grid-column: 1 / -1;
+  }
+
+  .program-title-new-row {
+    flex-wrap: wrap;
+  }
+
+  .program-title-new-row .program-title-new-input,
+  .program-title-new-cancel {
+    flex: 1 1 100%;
+  }
 }
 
 .sdg-checkbox-list {
@@ -3064,6 +3454,21 @@ watch(() => props.modelValue, (isOpen) => {
   font-weight: 600;
   color: #4f46e5;
   text-decoration: underline;
+}
+
+/* The country is not a question: the Address section is Philippine-only, so the
+   field shows the value the form stores ("Philippines") and is presented as a value
+   the proponent does not edit - the same treatment the calculated End Date gets. */
+.ac-readonly {
+  background: #f8fafc;
+  color: #1c2145;
+  cursor: default;
+}
+
+.ac-readonly:focus {
+  outline: none;
+  border-color: #d1d5db;
+  box-shadow: none;
 }
 
 @media (max-width: 900px) {
@@ -3754,6 +4159,36 @@ select {
 .footer-right {
   display: flex;
   gap: 10px;
+}
+
+/* The footer keeps the step's navigation (Previous / Next) next to the existing
+   actions, and wraps on a narrow screen instead of overflowing. */
+@media (max-width: 640px) {
+  .substep-bar {
+    padding: 12px 18px;
+  }
+
+  .substep-name {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .footer-right {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .footer-right .btn-primary,
+  .footer-right .btn-outline,
+  .modal-footer > .btn-secondary {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 .btn-secondary {

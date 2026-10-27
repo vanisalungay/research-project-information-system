@@ -372,7 +372,15 @@ CREATE TABLE quarterly_progress_reports (
     -- Structured interactive Project Workplan (stages 1-3): objectives with
     -- monthly target activities/accomplishments, totals, remarks, "As of" date.
     -- Legacy uploaded workplan files above are preserved for old reports.
-    workplan_json TEXT
+    workplan_json TEXT,
+    -- Structured Terminal Report (stage 4) completed in RPIS: title page, summary
+    -- sheet, abstract, acknowledgment, table of contents and lists, text sections,
+    -- literature cited, appendices, problems, outputs and utilization. Legacy
+    -- uploaded terminal report files above are preserved for old reports.
+    terminal_report_json TEXT,
+    -- Report this one was started from through "Create a Copy" (traceability only; the
+    -- source report is never modified). NULL for every report written from scratch.
+    copied_from_report_id BIGINT
 );
 
 -- 18. Cooperating Agencies Table (shared directory of section 02 of the Create
@@ -402,4 +410,33 @@ CREATE TABLE proposal_cooperating_agencies (
 );
 
 CREATE INDEX idx_proposal_cooperating_agencies_proposal ON proposal_cooperating_agencies (proposal_id);
+
+-- 20. Proposal Announcement Updates Table (Call for Proposal update history).
+-- A Call for Proposal keeps only its current values, so every significant,
+-- public-facing change is appended here instead of overwriting the previous
+-- values. This lets the Proponent Side review the original deadline and each
+-- announced change (for example a deadline extension) in chronological order.
+-- The foreign key cascades, so deleting a call removes its history too.
+CREATE TABLE proposal_announcement_updates (
+    id BIGSERIAL PRIMARY KEY,
+    announcement_id BIGINT NOT NULL REFERENCES proposal_announcements(id) ON DELETE CASCADE,
+    update_type VARCHAR(30) NOT NULL, -- PUBLISHED | DEADLINE_EXTENDED | DEADLINE_CHANGED | STATUS_CHANGED | DETAILS_UPDATED
+    previous_status VARCHAR(20),
+    previous_start_date DATE,
+    previous_end_date DATE,
+    new_status VARCHAR(20),
+    new_start_date DATE,
+    new_end_date DATE,
+    effective_date DATE,
+    -- Optional public-facing announcement/explanation provided by the administrator.
+    explanation TEXT,
+    -- Administrator/source responsible for the change, when available.
+    actor_id BIGINT,
+    actor_name VARCHAR(255),
+    actor_role VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_proposal_announcement_updates_announcement
+    ON proposal_announcement_updates (announcement_id, created_at);
 

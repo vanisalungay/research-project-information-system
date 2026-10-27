@@ -94,15 +94,20 @@
         </header>
 
         <div class="modal-body">
-          <!-- 1. Announcement details -->
+          <!-- 1. Announcement details. The name is part of the published announcement, so
+               it is shown read-only when an existing call is updated. -->
           <section class="form-section">
             <div class="section-head">
               <h4 class="section-title"><span class="section-badge">1</span>Announcement details</h4>
+              <p v-if="isEditing" class="section-note">
+                The announcement name cannot be changed after the call is created.
+              </p>
             </div>
             <div class="form-group">
               <label>Announcement name</label>
-              <input v-model="form.name" type="text" class="form-input"
+              <input v-if="!isEditing" v-model="form.name" type="text" class="form-input"
                 placeholder="e.g., FY 2026 - 1st Call for Proposals" />
+              <p v-else class="readonly-value">{{ form.name || '—' }}</p>
             </div>
           </section>
 
@@ -142,39 +147,71 @@
             </p>
           </section>
 
-          <!-- 3. Priority agenda -->
+          <!-- 3. Priority agenda: chosen when the call is created. Updating an existing
+               call shows the saved selection read-only. -->
           <section class="form-section">
             <div class="section-head">
               <h4 class="section-title"><span class="section-badge">3</span>Priority agenda</h4>
-            </div>
-            <div class="selection-row">
-              <p class="selection-counter" aria-live="polite">
-                {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected
+              <p v-if="isEditing" class="section-note">
+                The priority agenda cannot be changed after the call is created.
               </p>
-              <button type="button" class="check-all-btn" @click="toggleAllPrograms">
-                {{ allProgramsSelected ? 'Uncheck All' : 'Check All' }}
-              </button>
             </div>
-            <div class="option-list">
-              <label v-for="program in RIIDE_PROGRAMS" :key="program.key" class="option-item"
-                :class="{ selected: form.priorityAgendas.includes(program.key) }">
-                <input type="checkbox" :value="program.key" v-model="form.priorityAgendas" />
-                <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
-                <span class="option-text">
-                  <span class="option-label">{{ program.label }}</span>
-                  <span class="option-description">{{ program.description }}</span>
-                </span>
-              </label>
-            </div>
+            <template v-if="isEditing">
+              <ul v-if="selectedPrograms.length" class="readonly-list">
+                <li v-for="program in selectedPrograms" :key="program.key" class="readonly-item">
+                  <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
+                  <span class="option-text">
+                    <span class="option-label">{{ program.label }}</span>
+                    <span class="option-description">{{ program.description }}</span>
+                  </span>
+                </li>
+              </ul>
+              <p v-else class="readonly-value">No priority program is selected for this call.</p>
+            </template>
+            <template v-else>
+              <div class="selection-row">
+                <p class="selection-counter" aria-live="polite">
+                  {{ selectedProgramCount }} of {{ PROGRAM_KEYS.length }} programs selected
+                </p>
+                <button type="button" class="check-all-btn" @click="toggleAllPrograms">
+                  {{ allProgramsSelected ? 'Uncheck All' : 'Check All' }}
+                </button>
+              </div>
+              <div class="option-list">
+                <label v-for="program in RIIDE_PROGRAMS" :key="program.key" class="option-item"
+                  :class="{ selected: form.priorityAgendas.includes(program.key) }">
+                  <input type="checkbox" :value="program.key" v-model="form.priorityAgendas" />
+                  <span class="program-badge" aria-hidden="true">{{ program.key.charAt(0).toUpperCase() }}</span>
+                  <span class="option-text">
+                    <span class="option-label">{{ program.label }}</span>
+                    <span class="option-description">{{ program.description }}</span>
+                  </span>
+                </label>
+              </div>
+            </template>
           </section>
 
-          <!-- 4. Announcement reminders -->
+          <!-- 4. Announcement reminders: chosen when the call is created. Updating an
+               existing call shows the saved reminders read-only. -->
           <section class="form-section">
             <div class="section-head">
               <h4 class="section-title"><span class="section-badge">4</span>Announcement reminders</h4>
-              <p class="section-note">Select the reminders to include in the announcement.</p>
+              <p v-if="isEditing" class="section-note">
+                The announcement reminders cannot be changed after the call is created.
+              </p>
+              <p v-else class="section-note">Select the reminders to include in the announcement.</p>
             </div>
-            <div class="option-list">
+            <template v-if="isEditing">
+              <ul v-if="selectedReminders.length" class="readonly-list">
+                <li v-for="reminder in selectedReminders" :key="reminder.key" class="readonly-item">
+                  <span class="option-text">
+                    <span class="reminder-text">{{ reminder.text }}</span>
+                  </span>
+                </li>
+              </ul>
+              <p v-else class="readonly-value">No reminder is included in this call.</p>
+            </template>
+            <div v-else class="option-list">
               <label v-for="reminder in ANNOUNCEMENT_REMINDERS" :key="reminder.key"
                 class="option-item reminder-item"
                 :class="{ selected: form.reminderIds.includes(reminder.key) }">
@@ -186,14 +223,21 @@
             </div>
           </section>
 
-          <!-- 5. Additional announcement (existing optional text area) -->
+          <!-- 5. Additional announcement: written when the call is created. Updating an
+               existing call shows the saved text read-only. -->
           <section class="form-section">
             <div class="section-head">
               <h4 class="section-title"><span class="section-badge">5</span>Additional announcement (Optional)</h4>
+              <p v-if="isEditing" class="section-note">
+                The additional announcement cannot be changed after the call is created.
+              </p>
             </div>
             <div class="form-group">
-              <textarea v-model="form.additionalAnnouncement" class="form-input form-textarea" rows="4"
+              <textarea v-if="!isEditing" v-model="form.additionalAnnouncement" class="form-input form-textarea" rows="4"
                 placeholder="Add special instructions, funding details, submission links, contact information, or other information for this call..."></textarea>
+              <p v-else class="readonly-value readonly-value--multiline">
+                {{ form.additionalAnnouncement || 'No additional announcement was added to this call.' }}
+              </p>
             </div>
           </section>
 
@@ -230,6 +274,11 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { announcementStatus } from '@/utils/announcementStatus'
+import {
+  announcementCreatePayload,
+  announcementFormError,
+  announcementUpdatePayload,
+} from '@/utils/announcementForm'
 import {
   RIIDE_PROGRAMS,
   ANNOUNCEMENT_REMINDERS,
@@ -273,6 +322,15 @@ const allProgramsSelected = computed(() => isAllSelected(form.value.priorityAgen
 
 // Selection counter shown under the section heading, derived from the same state.
 const selectedProgramCount = computed(() => normalizeProgramKeys(form.value.priorityAgendas).length)
+
+// Saved selections of the call being edited, resolved to their display text so the
+// read-only sections show exactly what is stored (no editing control is rendered).
+const selectedPrograms = computed(() =>
+  RIIDE_PROGRAMS.filter((program) => form.value.priorityAgendas.includes(program.key))
+)
+const selectedReminders = computed(() =>
+  ANNOUNCEMENT_REMINDERS.filter((reminder) => form.value.reminderIds.includes(reminder.key))
+)
 
 // Footer summary label: reuses the existing announcement status helper, so the
 // displayed status always matches the table's Draft / Scheduled / Open / Closed.
@@ -382,6 +440,8 @@ function openEditModal(announcement) {
   isEditing.value = true
   editingId.value = announcement.id
   form.value = {
+    // Only the submission window and the status can be updated; the remaining fields are
+    // loaded so the modal can show the saved call information read-only.
     name: announcement.name,
     startDate: announcement.startDate,
     endDate: announcement.endDate,
@@ -402,41 +462,31 @@ function closeModal() {
 }
 
 async function saveAnnouncement() {
-  // Client-side validation (backend re-validates everything)
-  if (!form.value.name.trim()) {
-    formError.value = 'Announcement name is required.'
-    return
-  }
-  if (!form.value.startDate || !form.value.endDate) {
-    formError.value = 'Start date and end date are required.'
-    return
-  }
-  if (form.value.endDate < form.value.startDate) {
-    formError.value = 'End date cannot be earlier than the start date.'
+  // Client-side validation (the backend re-validates everything). Only a NEW call requires
+  // the announcement name: an existing call already has one, the update never sends it, and
+  // the restricted fields are never asked for again (utils/announcementForm.js).
+  const invalid = announcementFormError(form.value, { isEditing: isEditing.value })
+  if (invalid) {
+    formError.value = invalid
     return
   }
 
   saving.value = true
   formError.value = null
   try {
-    const payload = {
-      name: form.value.name.trim(),
-      startDate: form.value.startDate,
-      endDate: form.value.endDate,
-      status: form.value.status,
-      // Stable identifiers only; the backend re-validates and stores them.
-      priorityAgendas: normalizeProgramKeys(form.value.priorityAgendas),
-      reminderIds: normalizeReminderKeys(form.value.reminderIds),
-      additionalAnnouncement: (form.value.additionalAnnouncement || '').trim(),
-    }
-
     if (isEditing.value) {
-      await api.put(`/api/proposal-announcements/${editingId.value}`, payload)
+      // Updating an existing call sends the submission window and the status only: the
+      // name, priority agenda, announcement reminders and additional announcement keep the
+      // values they were created with (the backend only accepts these three fields anyway).
+      await api.put(
+        `/api/proposal-announcements/${editingId.value}`,
+        announcementUpdatePayload(form.value)
+      )
     } else {
-      await api.post('/api/proposal-announcements', payload)
+      await api.post('/api/proposal-announcements', announcementCreatePayload(form.value))
     }
 
-    const becameActive = payload.status === 'ACTIVE'
+    const becameActive = form.value.status === 'ACTIVE'
     closeModal()
     await loadAnnouncements()
     await showAlert(
@@ -881,6 +931,45 @@ td {
   font-size: 11.5px;
   line-height: 1.45;
   color: #77758f;
+  text-align: left;
+}
+
+/* Read-only information of an existing call: the restricted fields are displayed as
+   plain text (no input, textarea, select or checkbox is rendered for them). */
+.readonly-value {
+  margin: 0;
+  padding: 10px 12px;
+  background: #f7f7fb;
+  border: 1px solid #e0e0ea;
+  border-radius: 8px;
+  color: #33314f;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-line;
+}
+
+.readonly-value--multiline {
+  min-height: 44px;
+}
+
+.readonly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readonly-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 11px;
+  background: #f7f7fb;
+  border: 1px solid #e0e0ea;
+  border-radius: 8px;
   text-align: left;
 }
 

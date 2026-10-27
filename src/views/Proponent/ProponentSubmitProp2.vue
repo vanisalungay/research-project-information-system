@@ -114,24 +114,88 @@
               </div>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_signature }">
                 <label>Signature <span class="req">*</span></label>
-                <div class="upload-area" @click="triggerUpload('submitted')">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="12" y1="18" x2="12" y2="12" />
-                    <line x1="9" y1="15" x2="15" y2="15" />
-                  </svg>
-                  <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image'
-                  }}</span>
+
+                <!-- The signature saved on the proponent's account is offered here
+                     automatically, so the same image is not uploaded for every
+                     proposal. It can be changed, removed or replaced for this
+                     proposal only - nothing in this form writes to the account. -->
+                <p v-if="signatureLoading" class="signature-state" role="status">
+                  Loading your saved signature…
+                </p>
+
+                <div v-if="selectedSignature" class="signature-selected">
+                  <img class="signature-preview" :src="selectedSignature.previewUrl" alt="Selected signature" />
+                  <p class="signature-note">{{ selectedSignatureLabel }}</p>
+                  <div class="signature-actions">
+                    <button type="button" class="btn-outline" :aria-expanded="signaturePickerOpen"
+                      aria-controls="signature-picker" @click="toggleSignaturePicker">
+                      Change Signature
+                    </button>
+                    <button type="button" class="btn-outline btn-outline-danger" @click="removeSignature">
+                      Remove Signature
+                    </button>
+                  </div>
                 </div>
+
+                <template v-else>
+                  <div class="upload-area" @click="triggerUpload('submitted')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image'
+                    }}</span>
+                  </div>
+                  <button v-if="defaultSignature" type="button" class="btn-outline signature-use-saved"
+                    @click="useSavedSignature(defaultSignature)">
+                    Use my saved signature
+                  </button>
+                </template>
+
                 <input type="file" ref="submittedFile" @change="handleFile('submitted', $event)" hidden
                   accept="image/*,.pdf" />
+
+                <p v-if="signatureError" class="signature-error" role="alert">
+                  {{ signatureError }}
+                  <button type="button" class="signature-retry" @click="loadSavedSignatures">Retry</button>
+                </p>
+
+                <!-- The saved signatures, shown as previews so the right one can be
+                     identified; choosing one updates the field immediately. -->
+                <div v-if="signaturePickerOpen" id="signature-picker" class="signature-picker" role="group"
+                  aria-label="Your saved signatures">
+                  <p v-if="accountSignatures.length === 0" class="signature-note">
+                    You have no saved signature yet. Upload an image here, or save one in Manage Profile →
+                    Electronic Signature to reuse it in your next proposals.
+                  </p>
+                  <button v-for="signature in accountSignatures" :key="signatureKey(signature)" type="button"
+                    class="signature-option"
+                    :class="{ 'is-selected': isSameSignature(signature, selectedSignature) }"
+                    :aria-pressed="isSameSignature(signature, selectedSignature)" @click="selectSignature(signature)">
+                    <img class="signature-option-image" :src="signature.previewUrl"
+                      :alt="`Saved signature ${signature.fileName}`" />
+                    <span class="signature-option-name">{{ signature.fileName }}</span>
+                    <span v-if="isSameSignature(signature, selectedSignature)" class="signature-option-badge">
+                      Currently selected
+                    </span>
+                  </button>
+                  <div class="signature-picker-actions">
+                    <button type="button" class="btn-outline" @click="triggerUpload('submitted')">
+                      Upload signature image
+                    </button>
+                    <button type="button" class="btn-outline" @click="cancelSignaturePicker">Cancel</button>
+                  </div>
+                </div>
+
                 <span class="field-error" v-if="showValidation && errors.submitted_signature">{{
                   errors.submitted_signature }}</span>
               </div>
               <div v-if="uploadedFiles.submitted" class="file-info">
                 <span>📄 {{ uploadedFiles.submitted.name }}</span>
-                <button class="btn-remove-file" @click="uploadedFiles.submitted = null">✕</button>
+                <button class="btn-remove-file" aria-label="Remove the selected signature"
+                  @click="removeSignature">✕</button>
               </div>
             </div>
           </section>
@@ -230,7 +294,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, nextTick } from 'vue'
+import { reactive, ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import {
   buildStandaloneHtml,
   printDocument,
@@ -239,9 +303,35 @@ import {
   signatureBlock,
   readFileAsDataUrl
 } from '@/utils/documentExport'
+import {
+  SIGNATURE_SOURCES,
+  isSameSignature,
+  loadAccountSignatures,
+  normalizeSignatureRecord,
+  pickDefaultSignature,
+  signatureAsFile,
+  signatureKey,
+  signatureLabel
+} from '@/utils/proposalSignature'
 
-defineProps({ open: Boolean, modalId: String })
-const emit = defineEmits(['close', 'openPrevious', 'openCriteria', 'submitProposal', 'goToStep'])
+const props = defineProps({
+  open: Boolean,
+  modalId: String,
+  /**
+   * The signature already chosen for this proposal. It is kept by the parent while
+   * the steps are navigated, so going back to this step keeps the selection (an
+   * uploaded replacement included) instead of starting over from the account.
+   */
+  savedSignature: { type: Object, default: null }
+})
+const emit = defineEmits([
+  'close',
+  'openPrevious',
+  'openCriteria',
+  'submitProposal',
+  'goToStep',
+  'update:signature'
+])
 
 const modalBodyRef = ref(null)
 const errorBannerRef = ref(null)
@@ -322,10 +412,157 @@ const triggerUpload = (type) => {
 
 const handleFile = (type, event) => {
   const file = event.target.files[0]
-  if (file) uploadedFiles[type] = file
+  // Allow choosing the same file again after a replace.
+  event.target.value = ''
+  if (!file) return
+  if (type === 'submitted') {
+    // A replacement uploaded here is used for this proposal only: it is never added
+    // to - or saved over - the signature on the proponent's account.
+    setSignature({
+      source: SIGNATURE_SOURCES.upload,
+      id: null,
+      fileName: file.name,
+      blob: file,
+      createdAt: null
+    })
+    signaturePickerOpen.value = false
+    return
+  }
+  uploadedFiles[type] = file
 }
 
+// ===== SUBMITTED BY - SIGNATURE =====
+// The signature saved on the proponent's account is offered as the default, so it
+// does not have to be uploaded for every proposal. The selection is mirrored into
+// the form's signature slot (uploadedFiles.submitted), which is what the
+// required-field check, the file row and the printed certification form read - so
+// the rest of the step is unchanged.
+const accountSignatures = ref([])
+const signatureLoading = ref(false)
+const signatureError = ref('')
+const selectedSignature = ref(null)
+const signaturePickerOpen = ref(false)
+
+/** The signature the proponent created first: the default of a new proposal. */
+const defaultSignature = computed(() => pickDefaultSignature(accountSignatures.value))
+const selectedSignatureLabel = computed(() => signatureLabel(selectedSignature.value))
+
+/** A record with its own object URL, so the preview never depends on a temp file. */
+const withPreviewUrl = (signature) =>
+  signature?.blob ? { ...signature, previewUrl: URL.createObjectURL(signature.blob) } : signature
+
+const releaseSignatureUrls = (signatures) => {
+  ;(Array.isArray(signatures) ? signatures : [signatures]).forEach((signature) => {
+    if (signature?.previewUrl) URL.revokeObjectURL(signature.previewUrl)
+  })
+}
+
+/** What the parent keeps while the steps are navigated (no temporary URL). */
+const selectionPayload = (signature) =>
+  signature
+    ? {
+        source: signature.source,
+        id: signature.id,
+        fileName: signature.fileName,
+        blob: signature.blob,
+        createdAt: signature.createdAt
+      }
+    : null
+
+/** Applies a selection (or clears it) and mirrors it into the form's slot. */
+const setSignature = (signature) => {
+  releaseSignatureUrls(selectedSignature.value)
+  selectedSignature.value = signature ? withPreviewUrl(normalizeSignatureRecord(signature)) : null
+  uploadedFiles.submitted = selectedSignature.value ? signatureAsFile(selectedSignature.value) : null
+  if (signature) signatureError.value = ''
+  emit('update:signature', selectionPayload(selectedSignature.value))
+}
+
+/** Loads the proponent's own saved signature(s) and selects the first-created one. */
+const loadSavedSignatures = async () => {
+  signatureLoading.value = true
+  signatureError.value = ''
+  try {
+    releaseSignatureUrls(accountSignatures.value)
+    const loaded = await loadAccountSignatures()
+    accountSignatures.value = loaded.map(withPreviewUrl)
+    const fallback = pickDefaultSignature(accountSignatures.value)
+    if (fallback) setSignature({ ...fallback, source: SIGNATURE_SOURCES.account })
+  } catch (error) {
+    console.error(
+      'Failed to load the saved signature:',
+      error?.response?.status,
+      error?.response?.data || error?.message
+    )
+    accountSignatures.value = []
+    signatureError.value =
+      'Your saved signature could not be loaded. You can still upload a signature image below.'
+  } finally {
+    signatureLoading.value = false
+  }
+}
+
+/** A signature already chosen for this proposal wins over the account default. */
+const restoreSavedSelection = () => {
+  if (!props.savedSignature?.blob) return false
+  setSignature({ ...props.savedSignature })
+  return true
+}
+
+const initialiseSignature = async () => {
+  signaturePickerOpen.value = false
+  if (restoreSavedSelection()) return
+  setSignature(null)
+  await loadSavedSignatures()
+}
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) initialiseSignature()
+  },
+  { immediate: true }
+)
+
+/** Selecting one of the saved signatures updates the field immediately. */
+const selectSignature = (signature) => {
+  setSignature({ ...signature, source: SIGNATURE_SOURCES.account })
+  signaturePickerOpen.value = false
+}
+
+const useSavedSignature = (signature) => selectSignature(signature)
+
+const toggleSignaturePicker = () => {
+  signaturePickerOpen.value = !signaturePickerOpen.value
+}
+
+/** Closes the picker without touching the current selection. */
+const cancelSignaturePicker = () => {
+  signaturePickerOpen.value = false
+}
+
+/**
+ * Clears the signature of this proposal only. The signature saved on the account is
+ * never deleted or replaced from here, and the field stays required until another
+ * saved signature is selected or a replacement is uploaded.
+ */
+const removeSignature = () => {
+  setSignature(null)
+  signaturePickerOpen.value = false
+}
+
+onBeforeUnmount(() => {
+  releaseSignatureUrls(accountSignatures.value)
+  releaseSignatureUrls(selectedSignature.value)
+})
+
 const resetForm = () => {
+  setSignature(null)
+  releaseSignatureUrls(accountSignatures.value)
+  accountSignatures.value = []
+  signatureError.value = ''
+  signatureLoading.value = false
+  signaturePickerOpen.value = false
   uploadedFiles.submitted = null
   uploadedFiles.endorsed = null
   certification.submitted_name = ''
@@ -389,7 +626,10 @@ const submitForm = async () => {
     signatureFiles: {
       submitted: uploadedFiles.submitted,
       endorsed: uploadedFiles.endorsed
-    }
+    },
+    // The signature chosen in this step travels with the proposal, so returning to
+    // this step keeps it (the parent hands it back as `savedSignature`).
+    certificationSignature: selectionPayload(selectedSignature.value)
   })
 }
 
@@ -825,6 +1065,174 @@ input[type="date"] {
 
 .btn-remove-file:hover {
   color: #dc2626;
+}
+
+/* ===== SUBMITTED BY - SIGNATURE ===== */
+/* The saved signature is shown as a preview with its own controls; the upload
+   area above stays the same dashed control the step already used. */
+.signature-state {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.signature-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.signature-preview {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: 140px;
+  object-fit: contain;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.signature-note {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.signature-actions,
+.signature-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.signature-use-saved {
+  margin-top: 8px;
+}
+
+.signature-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.signature-retry {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signature-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.signature-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.signature-option:hover {
+  border-color: #4f46e5;
+  background: #f8faff;
+}
+
+.signature-option.is-selected {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.signature-option-image {
+  flex-shrink: 0;
+  width: 120px;
+  max-height: 56px;
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.signature-option-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signature-option-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4338ca;
+  background: #e0e7ff;
+  white-space: nowrap;
+}
+
+.btn-outline-danger {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-outline-danger:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+/* The controls stack on a phone so every button stays a comfortable tap target. */
+@media (max-width: 640px) {
+  .signature-actions,
+  .signature-picker-actions {
+    flex-direction: column;
+  }
+
+  .signature-actions .btn-outline,
+  .signature-picker-actions .btn-outline,
+  .signature-use-saved {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .signature-option {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .signature-preview {
+    max-width: 100%;
+  }
 }
 
 /* ===== FOOTER ===== */

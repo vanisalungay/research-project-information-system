@@ -44,6 +44,24 @@ public class Notification {
     @Column(name = "proposal_announcement_id")
     private Long proposalAnnouncementId;
 
+    /**
+     * Computed (not persisted) name of the Call for Proposals this notification is
+     * about, filled by the notification service from the referenced announcement so
+     * the Proponent notification list can show the call title.
+     */
+    @Transient
+    private String proposalAnnouncementName;
+
+    /**
+     * Computed (not persisted) current status of the Call for Proposals this
+     * notification is about: DRAFT, SCHEDULED, OPEN or CLOSED. Derived from the
+     * saved status plus the saved dates at read time (so a Scheduled call that has
+     * since opened reads as OPEN), which lets the Proponent notification list show
+     * the colored status indicator. Null when the notification has no announcement.
+     */
+    @Transient
+    private String proposalAnnouncementStatus;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

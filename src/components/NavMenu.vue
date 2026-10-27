@@ -1,23 +1,38 @@
 <template>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" :class="{ 'is-collapsed': collapsed }">
+    <!-- Section label -->
+    <p class="menu-label">Menu</p>
+
     <!-- Main Navigation Items -->
     <ul class="nav-list">
       <li v-for="item in mainNavItems" :key="item.path" :class="{ active: isSelected(item.path) }">
-        <router-link :to="item.path" class="nav-link">
+        <router-link :to="item.path" class="nav-link" :title="collapsed ? item.text : null">
           <span class="nav-icon" v-html="getIcon(item.iconKey)"></span>
           <span class="nav-text">{{ item.text }}</span>
+          <!-- The unread count is real data (same source as the notifications page). -->
+          <span v-if="badgeFor(item)" class="nav-badge">{{ badgeFor(item) }}</span>
         </router-link>
       </li>
     </ul>
 
-    <!-- Bottom Section: Profile Settings -->
+    <!-- Bottom Section: help card, divider, Profile Settings -->
     <div class="nav-bottom">
-      <div class="nav-divider">
-        <span class="divider-label">Account</span>
+      <!-- The help card describes the proponent workflow, so only proponents see it. -->
+      <div v-if="showHelpCard" class="help-card">
+        <p class="help-title">Need a hand?</p>
+        <p class="help-text">Check your proposal status or reach the research office.</p>
       </div>
+
+      <div class="nav-divider" aria-hidden="true"></div>
+
       <ul class="nav-list">
-        <li v-for="item in bottomNavItems" :key="item.path" :class="{ active: isSelected(item.path) }">
-          <router-link :to="item.path" class="nav-link">
+        <li
+          v-for="item in bottomNavItems"
+          :key="item.path"
+          class="profile-item"
+          :class="{ active: isSelected(item.path) }"
+        >
+          <router-link :to="item.path" class="nav-link profile-link" :title="collapsed ? item.text : null">
             <span class="nav-icon" v-html="getIcon(item.iconKey)"></span>
             <span class="nav-text">{{ item.text }}</span>
           </router-link>
@@ -31,9 +46,17 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { UserRole, useUserDataStore } from '@/stores/userData'
+import { useNotificationStore } from '@/stores/notifications'
+import { unreadBadgeLabel } from '@/utils/notifications'
+
+const props = defineProps({
+  /** True while the shell shows the narrow icon rail instead of the full sidebar. */
+  collapsed: { type: Boolean, default: false },
+})
 
 const route = useRoute()
 const userStore = useUserDataStore()
+const notificationStore = useNotificationStore()
 
 // SVG icon definitions
 const icons = {
@@ -238,15 +261,51 @@ const filteredItems = computed(() => {
 const mainNavItems = computed(() => filteredItems.value.filter(item => item.section === 'main'))
 const bottomNavItems = computed(() => filteredItems.value.filter(item => item.section === 'bottom'))
 
+/**
+ * Roles that see the help card. Its text is about the proponent workflow ("check your
+ * proposal status"), so it is limited to proponents - the same role identifier the
+ * navigation items and the store use. Everyone else simply does not render it, so no
+ * empty card or gap is left behind; the divider and Profile Settings stay in place.
+ */
+const HELP_CARD_ROLES = [UserRole.PROPONENT]
+
+const showHelpCard = computed(
+  () => !props.collapsed && HELP_CARD_ROLES.includes(userStore.user?.role),
+)
+
 const isSelected = (path) => route.path === path
+
+/**
+ * The unread count badge. It is attached to the Notifications link only and comes from
+ * the shared notification store, so it matches the header bell and the notifications
+ * page - nothing is hardcoded and nothing is shown when the count is zero.
+ */
+const isNotificationsItem = (item) => item.text === 'Notifications'
+
+const badgeFor = (item) =>
+  isNotificationsItem(item) ? unreadBadgeLabel(notificationStore.unreadCount) : ''
 </script>
 
 <style scoped>
+/* ===== Sidebar container =====
+   The shell paints the panel background; the nav fills it and keeps the main links at
+   the top while the help card and Profile Settings stay at the bottom. */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 20px 0 20px 12px;
+  min-height: 100%;
+  padding: 22px 0 16px;
+  background: var(--rpis-sidebar-bg);
+}
+
+/* Section label */
+.menu-label {
+  margin: 0 0 18px;
+  padding: 0 24px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--rpis-on-dark-muted);
 }
 
 .nav-list {
@@ -255,89 +314,232 @@ const isSelected = (path) => route.path === path
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .nav-bottom {
   margin-top: auto;
-}
-
-/* Divider */
-.nav-divider {
   display: flex;
-  align-items: center;
-  padding: 16px 12px 8px;
+  flex-direction: column;
 }
 
-.divider-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: rgba(255, 216, 3, 0.4);
-}
-
-/* Nav Items */
+/* ===== Nav items ===== */
 li {
-  background: #262342;
-  border-radius: 10px;
-  transition: all 0.15s ease;
   position: relative;
-  margin-right: 12px;
+  background: transparent;
+  transition: background 0.18s ease;
 }
 
 li:hover {
-  background: #332f5a;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 li.active {
-  background: #ffffff;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-right: 0;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-li.active:hover {
-  background: #ffffff;
+/* The active route is marked with a thin yellow edge instead of the yellow fill that
+   belongs to the Profile Settings button. */
+li.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--rpis-accent);
 }
 
-/* Nav Link */
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 15px;
+  min-height: 51px;
+  padding: 0 20px 0 26px;
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffd803;
-  letter-spacing: 0.2px;
-  transition: color 0.15s ease;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--rpis-icon);
+  transition: color 0.18s ease;
+}
+
+.nav-link:hover {
+  color: var(--rpis-on-dark);
 }
 
 li.active .nav-link {
-  color: #262342;
+  color: var(--rpis-on-dark);
+  font-weight: 600;
 }
 
-/* Icon */
+.nav-link:focus-visible {
+  outline: 2px solid var(--rpis-accent);
+  outline-offset: -2px;
+}
+
+/* Icons */
 .nav-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: inherit;
 }
 
 .nav-icon :deep(svg) {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.6;
 }
 
 /* Text */
 .nav-text {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ===== Unread count badge (real count, capped at 99+) ===== */
+.nav-badge {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  margin-left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--rpis-badge);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+
+/* ===== Help card ===== */
+.help-card {
+  margin: 0 16px 0 13px;
+  padding: 16px;
+  border-radius: 17px;
+  background: var(--rpis-help-bg);
+  border: 1px solid var(--rpis-help-border);
+}
+
+.help-title {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--rpis-on-dark);
+}
+
+.help-text {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 17.5px;
+  color: var(--rpis-on-dark-soft);
+}
+
+/* ===== Divider ===== */
+.nav-divider {
+  height: 1px;
+  margin: 13px 12px;
+  background: var(--rpis-divider);
+}
+
+/* ===== Profile Settings (the one yellow control of the sidebar) ===== */
+.profile-item {
+  margin: 0 14px 0 11px;
+  border-radius: 14px;
+  background: var(--rpis-accent);
+  transition: background 0.18s ease;
+}
+
+.profile-item:hover,
+.profile-item.active {
+  background: var(--rpis-accent-hover);
+}
+
+/* The yellow button is its own highlight, so it never gets the active edge. */
+.profile-item.active::before {
+  content: none;
+}
+
+.profile-link,
+.profile-item.active .profile-link {
+  justify-content: flex-start;
+  min-height: 46px;
+  padding: 0 16px;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+.profile-link:hover {
+  color: #1c1a3c;
+}
+
+.profile-link:focus-visible {
+  outline: 2px solid #1c1a3c;
+  outline-offset: -3px;
+}
+
+.profile-item .nav-icon,
+.profile-item .nav-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+}
+
+.profile-item .nav-icon :deep(svg) {
+  stroke-width: 1.7;
+}
+
+/* ===== Collapsed rail =====
+   Only the icons remain; the label, the row text and the help card step aside and the
+   title attribute keeps every link identifiable. */
+.sidebar-nav.is-collapsed .menu-label,
+.sidebar-nav.is-collapsed .nav-text,
+.sidebar-nav.is-collapsed .help-card {
+  display: none;
+}
+
+.sidebar-nav.is-collapsed .nav-link {
+  justify-content: center;
+  gap: 0;
+  padding: 0 10px;
+}
+
+.sidebar-nav.is-collapsed .nav-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  min-width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+.sidebar-nav.is-collapsed .nav-divider {
+  margin: 12px 14px;
+}
+
+.sidebar-nav.is-collapsed .profile-item {
+  margin: 0 14px;
+}
+
+.sidebar-nav.is-collapsed .profile-link {
+  justify-content: center;
+  padding: 0;
+}
 </style>
+
+

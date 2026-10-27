@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
  * The shared Cooperating Agency directory of section 02 of the Create Proposal
  * form.
  * <p>
- * The directory is university-wide: an agency added by one proponent is offered to
- * every other proponent on their next proposal, and an agency is never deleted
+ * The directory is university-wide: an agency added by an administrator is offered
+ * to every proponent on their next proposal, and an agency is never deleted
  * because somebody unchecked it. A proposal stores only the ids of the agencies it
  * selected ({@link ProposalCooperatingAgency}); the free-text column the existing
  * screens read is derived from those ids by {@link #describeSelection(List)}, so
@@ -47,15 +47,16 @@ public class CooperatingAgencyService {
     }
 
     /**
-     * Adds an agency to the shared directory.
+     * Adds an agency to the shared directory. Called by an administrator only (see
+     * {@code SecurityConfig}).
      * <p>
      * The name is trimmed and its inner whitespace collapsed before it is stored,
      * so " DOST " and "DOST" cannot become two rows. An existing name - compared
      * case-insensitively - is reported as a conflict instead of being inserted
-     * again, and a request that loses a race against another proponent's identical
-     * add is reported the same way.
+     * again, and a request that loses a race against an identical add is reported
+     * the same way.
      *
-     * @param rawName name as typed by the proponent
+     * @param rawName name as typed by the administrator
      * @return the stored agency
      * @throws IllegalArgumentException when the name is missing or too long
      * @throws IllegalStateException    when the agency already exists

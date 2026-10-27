@@ -22,9 +22,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * HTTP-level test of the cooperating agency directory endpoints
  * ({@code GET/POST /api/cooperating-agencies}): the checklist data is returned as
- * JSON, a new agency answers 201, a duplicate answers 409 with a message the form
- * can show as-is, and a blank name answers 400. Authentication itself is enforced by
- * {@code SecurityConfig} (both routes require an authenticated caller).
+ * JSON, a new agency answers 201, a duplicate answers 409 with a message that can be
+ * shown as-is, and a blank name answers 400. Authentication and the administrator
+ * role required to add an agency are enforced by {@code SecurityConfig} (reading
+ * needs an authenticated caller, adding is restricted to the RPS roles).
  */
 class CooperatingAgencyControllerTest {
 

@@ -68,14 +68,29 @@
             <td class="cell-actions">
               <div class="report-actions">
                 <template v-if="isTerminal(r)">
+                  <!-- The Terminal Report is now completed in RPIS, so it is read as a
+                       document. A legacy report that only holds an uploaded file keeps
+                       the existing file preview. -->
+                  <button v-if="hasStructuredTerminal(r)" class="btn-view" @click="openTerminalDocument(r)">
+                    View Terminal Report
+                  </button>
                   <button
-                    v-if="r.terminalReportFileName"
+                    v-else-if="r.terminalReportFileName"
                     class="btn-view"
                     @click="openTerminalReport(r)"
                   >
                     View
                   </button>
-                  <span v-else class="report-meta">No terminal report file</span>
+                  <button
+                    v-if="r.terminalReportFileName"
+                    class="btn-download"
+                    @click="downloadDoc(r, 'terminal')"
+                  >
+                    Download file
+                  </button>
+                  <span v-if="!hasStructuredTerminal(r) && !r.terminalReportFileName" class="report-meta">
+                    No terminal report content
+                  </span>
                 </template>
                 <template v-else>
                   <button class="btn-view" @click="view(r)">View</button>
@@ -100,7 +115,39 @@
           <button class="close-btn" @click="viewing = null">✕</button>
         </div>
         <div class="modal-body">
-          <QuarterlyReportViewer :report="viewing" @close="viewing = null" />
+          <QuarterlyReportViewer
+            :report="viewing"
+            :can-create-copy="canCopyReport"
+            :copying="copying"
+            @close="viewing = null"
+            @create-copy="createCopyFrom(viewing)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Report document viewer: the submitted report rendered as a document,
+         with a print / save-as-PDF action. The viewer never edits or changes the report. -->
+    <div v-if="terminalDoc" class="modal-overlay" @click.self="terminalDoc = null">
+      <div class="modal modal--viewer modal--terminal-doc">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2 id="terminal-doc-title">Terminal Report</h2>
+            <p class="modal-header-sub">{{ project?.projectTitle || '' }}</p>
+          </div>
+          <div class="modal-header-actions">
+            <button class="btn-secondary" @click="printTerminalDocument">Print / Save as PDF</button>
+            <button class="close-btn" aria-label="Close" @click="terminalDoc = null">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <TerminalReportForm ref="terminalDocRef" :model-value="terminalDoc.terminalReport" readonly>
+            <template #attachment>
+              <p v-if="terminalDoc.terminalReportFileName" class="tr-note">
+                Attachment: {{ terminalDoc.terminalReportFileName }}
+              </p>
+            </template>
+          </TerminalReportForm>
         </div>
       </div>
     </div>
@@ -127,7 +174,10 @@ import api from '@/utils/api'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
+import TerminalReportForm from '@/components/TerminalReportForm.vue'
 import { downloadReportDocument } from '@/utils/fileDownload'
+import { printTerminalReport } from '@/utils/terminalReportPrint'
+import { hasAnyTerminalContent, hasTerminalReportContent } from '@/utils/terminalReport'
 import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
 const route = useRoute()
@@ -142,6 +192,11 @@ const error = ref('')
 const actionError = ref('')
 const viewing = ref(null)
 const terminalModal = ref(null)
+// The submitted Terminal Report opened as a document (structured reports).
+const terminalDoc = ref(null)
+const terminalDocRef = ref(null)
+// True while the Create a Copy action is opening the existing report workflow.
+const copying = ref(false)
 
 // Quarterly reporting is only available to approved, SO-issued projects - the
 // same rule the backend enforces (utils/quarterlyReport.js).
@@ -231,17 +286,95 @@ async function fetchAll() {
     project.value = p.data
     reports.value = r.data || []
     if (eligible.value) {
-      try {
-        const n = await api.get(`/api/quarterly-reports/next-stage/${proposalId.value}`)
-        nextStage.value = n.data
-      } catch (e) {
-        nextStage.value = null
-      }
+      await loadNextStage()
     }
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load reports.'
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * Reads the next required reporting stage for this project. The backend derives it from
+ * the project's own submitted reports (Q1 -> Q2 -> Q3 -> Terminal Report), so the same
+ * call is used when the page opens and again right before a copy is started - the
+ * reporting state may have changed while the report was being viewed.
+ */
+async function loadNextStage() {
+  if (!eligible.value) {
+    nextStage.value = null
+    return null
+  }
+  try {
+    const n = await api.get(`/api/quarterly-reports/next-stage/${proposalId.value}`)
+    nextStage.value = n.data
+  } catch (e) {
+    nextStage.value = null
+  }
+  return nextStage.value
+}
+
+// "Create a Copy" is offered only when this proponent may start the next reporting
+// period for this project: the project is eligible for quarterly reporting (approved
+// with an issued SO), a stage is still required, and that stage is a quarterly progress
+// report - the Terminal Report stage is submitted as an uploaded document and has no
+// report content to copy. The backend re-validates everything when the copy is saved.
+const canCopyReport = computed(
+  () =>
+    eligible.value &&
+    !allStagesComplete.value &&
+    nextStage.value?.reportType === 'QUARTERLY_PROGRESS',
+)
+
+/**
+ * Opens the existing Create Quarterly Report workflow for the next required reporting
+ * period, starting from the report being viewed.
+ *
+ * The next stage is re-read first, so the copy always targets the stage the backend
+ * currently requires and continues that stage's draft when one already exists (the
+ * existing no-duplicate rule) instead of creating a second record for the same period.
+ * Nothing is created, saved or submitted from here: the report form still owns the
+ * Save Draft / Submit Report actions, and the previous report is never modified.
+ */
+async function createCopyFrom(report) {
+  if (!report?.id || copying.value) return
+  actionError.value = ''
+  copying.value = true
+  try {
+    const stage = await loadNextStage()
+    // The modal is closed on every outcome, so a message is never hidden behind it.
+    viewing.value = null
+    if (!eligible.value) {
+      actionError.value =
+        'Quarterly progress reports are only available for projects that are approved for implementation and have an issued Special Order (SO).'
+      return
+    }
+    if (!stage || stage.allStagesComplete) {
+      actionError.value =
+        'All required reporting stages for this project have already been submitted, so there is no next reporting period to create.'
+      return
+    }
+    if (stage.reportType !== 'QUARTERLY_PROGRESS') {
+      actionError.value = `The next required reporting stage for this project is the ${nextStageLabel.value.replace(' + Project Workplan', '')}, which is submitted as an uploaded document and cannot be copied from a quarterly progress report.`
+      return
+    }
+    const query = { copyFrom: String(report.id) }
+    if (stage.draftReportId) {
+      router.push({
+        name: 'ProponentQuarterlyReportEdit',
+        params: { proposalId: proposalId.value, reportId: stage.draftReportId },
+        query,
+      })
+    } else {
+      router.push({
+        name: 'ProponentQuarterlyReportNew',
+        params: { proposalId: proposalId.value },
+        query,
+      })
+    }
+  } finally {
+    copying.value = false
   }
 }
 
@@ -282,6 +415,31 @@ function openTerminalReport(r) {
     fileName: r.terminalReportFileName || '',
     periodLabel: periodLabel(r),
   }
+}
+
+/**
+ * True when the report holds a Terminal Report completed in RPIS (the structured
+ * document). Those reports are read as a document; a legacy report that only holds an
+ * uploaded file keeps the existing file preview.
+ */
+function hasStructuredTerminal(r) {
+  // The core content rule (report title, abstract, introduction, results and discussion) is
+  // what a submitted structured report always satisfies; anything else the proponent has
+  // entered is shown to them as well.
+  return hasTerminalReportContent(r?.terminalReport) || hasAnyTerminalContent(r?.terminalReport)
+}
+
+function openTerminalDocument(r) {
+  terminalDoc.value = r
+}
+
+/** Prints the open Terminal Report document, or saves it as PDF. */
+function printTerminalDocument() {
+  const element = terminalDocRef.value?.$el || terminalDocRef.value
+  return printTerminalReport({
+    title: `Terminal Report - ${project.value?.projectTitle || ''}`,
+    element,
+  })
 }
 
 function closeTerminalModal() {
@@ -631,6 +789,86 @@ onMounted(async () => {
      the footer can span the full modal width. */
   padding: 0;
 }
+/* ---------- Terminal Report document viewer ----------
+   The submitted Terminal Report is rendered as a document. The modal keeps its
+   header (title, print action, close) in place while the document scrolls. */
+.modal.modal--terminal-doc {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 1180px;
+}
+.modal--terminal-doc .modal-header {
+  flex-shrink: 0;
+  gap: 12px;
+}
+.modal-header-text {
+  min-width: 0;
+}
+.modal-header-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.modal-header-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal--terminal-doc .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  background: #f8fafc;
+}
+
+/* The report is authored for a printed Letter page (terminalReportDocument.css: 8.5in wide
+   with 9-10pt Times text), so it is presented at a comfortable reading size here. Print
+   output and the print/PDF export keep the printed sizes. */
+@media screen {
+  .modal--terminal-doc :deep(.tr-sheet) {
+    width: 100%;
+    min-width: 820px;
+    min-height: 0;
+  }
+  .modal--terminal-doc :deep(.tr-cover-title) {
+    font-size: 22pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-team) {
+    font-size: 11pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-report) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-front-heading),
+  .modal--terminal-doc :deep(.tr-section-heading) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-subsection-heading) {
+    font-size: 13pt;
+  }
+  .modal--terminal-doc :deep(.tr-body-title) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-paragraph),
+  .modal--terminal-doc :deep(.tr-reference),
+  .modal--terminal-doc :deep(.tr-keywords) {
+    font-size: 11.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-table-caption),
+  .modal--terminal-doc :deep(.tr-list-entry) {
+    font-size: 12pt;
+  }
+  .modal--terminal-doc :deep(.tr-grid) {
+    font-size: 10.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-page-number) {
+    font-size: 12pt;
+  }
+}
+
 /* Small screens: hide the column headers and stack each report as a card. */
 @media (max-width: 640px) {
   .report-table {

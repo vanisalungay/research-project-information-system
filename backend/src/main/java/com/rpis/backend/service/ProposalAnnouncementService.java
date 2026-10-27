@@ -1,11 +1,15 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalAnnouncementRequest;
+import com.rpis.backend.dto.ProposalAnnouncementUpdateRequest;
 import com.rpis.backend.model.ProposalAnnouncement;
+import com.rpis.backend.model.ProposalAnnouncementUpdate;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
+import com.rpis.backend.repository.ProposalAnnouncementUpdateRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.AnnouncementStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +29,7 @@ import java.util.Set;
 public class ProposalAnnouncementService {
 
     private final ProposalAnnouncementRepository announcementRepository;
+    private final ProposalAnnouncementUpdateRepository announcementUpdateRepository;
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -32,16 +37,15 @@ public class ProposalAnnouncementService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
     /**
-     * Statuses proponents actually see (mirrors {@code src/utils/announcementStatus.js}):
-     * a stored ACTIVE announcement is <em>Scheduled</em> until its start date arrives,
-     * <em>Open</em> while today is inside its window, and <em>Closed</em> once the window
-     * has passed. Only OPEN and CLOSED are eligible for the "announcement updated"
-     * notification.
+     * Statuses proponents actually see (mirrors {@code src/utils/announcementStatus.js}
+     * through {@link AnnouncementStatus}): a stored ACTIVE announcement is
+     * <em>Scheduled</em> until its start date arrives, <em>Open</em> while today is
+     * inside its window, and <em>Closed</em> once the window has passed. Only OPEN and
+     * CLOSED are eligible for the "announcement updated" notification.
      */
-    private static final String DISPLAY_DRAFT = "DRAFT";
-    private static final String DISPLAY_SCHEDULED = "SCHEDULED";
-    private static final String DISPLAY_OPEN = "OPEN";
-    private static final String DISPLAY_CLOSED = "CLOSED";
+    private static final String DISPLAY_SCHEDULED = AnnouncementStatus.DISPLAY_SCHEDULED;
+    private static final String DISPLAY_OPEN = AnnouncementStatus.DISPLAY_OPEN;
+    private static final String DISPLAY_CLOSED = AnnouncementStatus.DISPLAY_CLOSED;
 
     // ==================== READ ====================
 
@@ -80,6 +84,11 @@ public class ProposalAnnouncementService {
         if (ProposalAnnouncement.STATUS_DRAFT.equals(announcement.getStatus())) {
             throw new NoSuchElementException("Proposal announcement not found: " + id);
         }
+        // The read-only Proponent view also carries the recorded history of the
+        // significant published changes (oldest first), so a deadline extension never
+        // hides the original deadline and every earlier announcement stays reviewable.
+        announcement.setUpdates(
+                announcementUpdateRepository.findByAnnouncementIdOrderByCreatedAtAscIdAsc(id));
         return announcement;
     }
 
@@ -200,6 +209,17 @@ public class ProposalAnnouncementService {
 
     @Transactional
     public ProposalAnnouncement createAnnouncement(ProposalAnnouncementRequest request) {
+        return createAnnouncement(request, null);
+    }
+
+    /**
+     * Creates a Call for Proposal on behalf of the given administrator. The actor is
+     * only used to attribute the recorded update-history entry when the call is created
+     * already published (ACTIVE); pass {@code null} when there is no authenticated
+     * actor (for example background/backfill work).
+     */
+    @Transactional
+    public ProposalAnnouncement createAnnouncement(ProposalAnnouncementRequest request, Long actorId) {
         validateRequest(request);
 
         String name = request.getName().trim();
@@ -238,6 +258,11 @@ public class ProposalAnnouncementService {
         // Notify all proponents when an announcement is created directly as ACTIVE.
         if (ProposalAnnouncement.STATUS_ACTIVE.equals(saved.getStatus())) {
             notifyAllProponents(saved);
+            // A published call records its publication (with the original submission
+            // window) so a later deadline extension can be reviewed against it. A draft
+            // is not published yet and records nothing.
+            recordUpdate(saved, ProposalAnnouncementUpdate.TYPE_PUBLISHED,
+                    null, null, null, null, actorId);
         }
 
         return saved;
@@ -246,15 +271,26 @@ public class ProposalAnnouncementService {
     // ==================== UPDATE ====================
 
     @Transactional
-    public ProposalAnnouncement updateAnnouncement(Long id, ProposalAnnouncementRequest request) {
+    public ProposalAnnouncement updateAnnouncement(Long id, ProposalAnnouncementUpdateRequest request) {
+        return updateAnnouncement(id, request, null);
+    }
+
+    /**
+     * Updates an existing Call for Proposal on behalf of the given administrator.
+     *
+     * <p>Only the submission window (start and end date) and the status are applied. The
+     * announcement name, its RIIDE priority agenda, its announcement reminders and its
+     * additional announcement are part of the published call and keep their stored values:
+     * they are not even declared in {@link ProposalAnnouncementUpdateRequest}, so a client
+     * that sends them cannot reach them. The actor is only used to attribute the recorded
+     * update-history entry; pass {@code null} when there is no authenticated actor.</p>
+     */
+    @Transactional
+    public ProposalAnnouncement updateAnnouncement(Long id, ProposalAnnouncementUpdateRequest request, Long actorId) {
         ProposalAnnouncement announcement = getAnnouncementById(id);
 
-        validateRequest(request);
-
-        String name = request.getName().trim();
-        if (announcementRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
-            throw new IllegalArgumentException(
-                    "A proposal announcement named \"" + name + "\" already exists.");
+        if (request == null) {
+            throw new IllegalArgumentException("Request body is required.");
         }
 
         // Snapshot the persisted state before the edit. Eligibility for the
@@ -264,37 +300,56 @@ public class ProposalAnnouncementService {
         LocalDate today = LocalDate.now();
         String previousStatus = announcement.getStatus();
         String previousDisplayStatus = displayStatus(announcement, today);
-        String previousName = announcement.getName();
         LocalDate previousStartDate = announcement.getStartDate();
         LocalDate previousEndDate = announcement.getEndDate();
-        List<String> previousPriorityAgendas = copyOf(announcement.getPriorityAgendas());
-        List<String> previousReminderIds = copyOf(announcement.getReminderIds());
-        String previousAdditionalAnnouncement = announcement.getAdditionalAnnouncement();
 
-        String newStatus = normalizeStatus(request.getStatus());
+        // A field the update does not carry keeps the value already stored, so a client can
+        // send only the part it changes (for example only the new deadline, or only the
+        // status) without repeating the whole announcement. The resulting submission window
+        // is validated as a whole with the same date rule the creation form uses.
+        LocalDate newStartDate = request.getStartDate() != null
+                ? request.getStartDate()
+                : previousStartDate;
+        LocalDate newEndDate = request.getEndDate() != null
+                ? request.getEndDate()
+                : previousEndDate;
+        validateWindow(newStartDate, newEndDate);
 
-        announcement.setName(name);
-        announcement.setStartDate(request.getStartDate());
-        announcement.setEndDate(request.getEndDate());
+        // An update that carries no status keeps the stored one; it never falls back to the
+        // create-time default.
+        String requestedStatus = request.getStatus();
+        String newStatus = (requestedStatus == null || requestedStatus.isBlank())
+                ? announcement.getStatus()
+                : normalizeStatus(requestedStatus);
+
+        // Only the permitted fields are written. Every restricted field keeps the value it
+        // was saved with.
+        announcement.setStartDate(newStartDate);
+        announcement.setEndDate(newEndDate);
         announcement.setStatus(newStatus);
 
-        // Only replace the new fields when the client actually sent them, so an update
-        // that does not touch them never resets saved selections back to the
-        // new-announcement defaults and never wipes the optional text.
-        if (request.getPriorityAgendas() != null) {
-            announcement.setPriorityAgendas(
-                    ProposalAnnouncementCatalog.normalizeProgramKeys(request.getPriorityAgendas()));
-        }
-        if (request.getReminderIds() != null) {
-            announcement.setReminderIds(
-                    ProposalAnnouncementCatalog.normalizeReminderIds(request.getReminderIds()));
-        }
-        if (request.getAdditionalAnnouncement() != null) {
-            announcement.setAdditionalAnnouncement(
-                    normalizeAdditionalAnnouncement(request.getAdditionalAnnouncement()));
-        }
-
         ProposalAnnouncement saved = announcementRepository.save(announcement);
+
+        String newDisplayStatus = displayStatus(saved, today);
+        boolean deadlineChanged = !Objects.equals(previousEndDate, saved.getEndDate());
+        boolean openingChanged = !Objects.equals(previousStartDate, saved.getStartDate());
+        boolean statusChanged = !Objects.equals(previousStatus, saved.getStatus());
+        boolean significantChange = deadlineChanged || openingChanged || statusChanged;
+
+        // Record the significant published change (if any) so the Proponent Side keeps the
+        // previous values next to the new ones (for example the deadline an extension
+        // replaced). Only published calls record history: editing a draft is not visible to
+        // proponents yet, and its publication is recorded when it becomes ACTIVE.
+        boolean wasPublished = !ProposalAnnouncement.STATUS_DRAFT.equals(previousStatus);
+        boolean isPublished = !ProposalAnnouncement.STATUS_DRAFT.equals(saved.getStatus());
+        boolean publishedNow = !wasPublished && isPublished;
+        if (publishedNow || (wasPublished && significantChange)) {
+            String updateType = publishedNow
+                    ? ProposalAnnouncementUpdate.TYPE_PUBLISHED
+                    : classifyUpdate(previousEndDate, saved.getEndDate(), statusChanged);
+            recordUpdate(saved, updateType, previousStatus, previousStartDate, previousEndDate,
+                    null, actorId);
+        }
 
         // Notify all proponents only on the transition into ACTIVE so re-saving an
         // already-active announcement never sends duplicate notifications.
@@ -304,22 +359,15 @@ public class ProposalAnnouncementService {
         }
 
         // Existing Open / Closed calls: one notification per eligible proponent when the
-        // edit actually changed something (status, deadline, name or another editable
-        // detail). This runs after the save inside the same transaction, so a rejected or
-        // rolled-back update never notifies anyone, and a Scheduled announcement is
-        // excluded because eligibility uses the pre-edit display status.
-        if (isOpenOrClosed(previousDisplayStatus)) {
-            boolean deadlineChanged = !Objects.equals(previousEndDate, saved.getEndDate());
-            boolean contentChanged = !Objects.equals(previousName, saved.getName())
-                    || !Objects.equals(previousStartDate, saved.getStartDate())
-                    || !Objects.equals(previousStatus, saved.getStatus())
-                    || !Objects.equals(previousPriorityAgendas, copyOf(saved.getPriorityAgendas()))
-                    || !Objects.equals(previousReminderIds, copyOf(saved.getReminderIds()))
-                    || !Objects.equals(previousAdditionalAnnouncement, saved.getAdditionalAnnouncement());
-            if (deadlineChanged || contentChanged) {
-                notifyProponentsOfUpdate(
-                        saved, previousDisplayStatus, displayStatus(saved, today), deadlineChanged);
-            }
+        // edit actually changed something (the submission window or the status). A
+        // Scheduled call that has just opened is notified with the specific "now open"
+        // message. This runs after the save inside the same transaction, so a rejected or
+        // rolled-back update never notifies anyone.
+        boolean scheduledToOpen = DISPLAY_SCHEDULED.equals(previousDisplayStatus)
+                && DISPLAY_OPEN.equals(newDisplayStatus);
+        if ((isOpenOrClosed(previousDisplayStatus) && significantChange) || scheduledToOpen) {
+            notifyProponentsOfUpdate(saved, previousDisplayStatus, newDisplayStatus,
+                    previousEndDate, saved.getEndDate());
         }
 
         return saved;
@@ -327,6 +375,15 @@ public class ProposalAnnouncementService {
 
     @Transactional
     public ProposalAnnouncement activateAnnouncement(Long id) {
+        return activateAnnouncement(id, null);
+    }
+
+    /**
+     * Explicit activation on behalf of the given administrator: sets the announcement to
+     * ACTIVE, records the publication and notifies all proponents.
+     */
+    @Transactional
+    public ProposalAnnouncement activateAnnouncement(Long id, Long actorId) {
         ProposalAnnouncement announcement = getAnnouncementById(id);
 
         if (ProposalAnnouncement.STATUS_ACTIVE.equals(announcement.getStatus())) {
@@ -339,8 +396,14 @@ public class ProposalAnnouncementService {
                     "Cannot activate an expired announcement. The end date has already passed.");
         }
 
+        String previousStatus = announcement.getStatus();
         announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
         ProposalAnnouncement saved = announcementRepository.save(announcement);
+
+        // The call is published now: record it (with its original submission window) so
+        // later deadline changes can be reviewed against it.
+        recordUpdate(saved, ProposalAnnouncementUpdate.TYPE_PUBLISHED,
+                previousStatus, saved.getStartDate(), saved.getEndDate(), null, actorId);
 
         notifyAllProponents(saved);
         return saved;
@@ -386,6 +449,20 @@ public class ProposalAnnouncementService {
         }
     }
 
+    /**
+     * The date rule of the submission window, applied to the values an update will store:
+     * both dates must be present (a stored value is reused for anything the update does not
+     * carry) and the deadline can never be earlier than the opening date.
+     */
+    private void validateWindow(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date are required.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("End date cannot be earlier than the start date.");
+        }
+    }
+
     private String normalizeStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
             return ProposalAnnouncement.STATUS_DRAFT;
@@ -417,33 +494,17 @@ public class ProposalAnnouncementService {
 
     /**
      * The status proponents actually see for an announcement: DRAFT, SCHEDULED, OPEN or
-     * CLOSED. Mirrors {@code src/utils/announcementStatus.js} so the notification rules
-     * agree with the status shown in the UI.
+     * CLOSED. Delegates to {@link AnnouncementStatus}, the single shared rule that
+     * mirrors {@code src/utils/announcementStatus.js}, so the notification rules agree
+     * with the status shown in the UI.
      */
     private static String displayStatus(ProposalAnnouncement announcement, LocalDate today) {
-        if (ProposalAnnouncement.STATUS_DRAFT.equals(announcement.getStatus())) {
-            return DISPLAY_DRAFT;
-        }
-        if (ProposalAnnouncement.STATUS_CLOSED.equals(announcement.getStatus())) {
-            return DISPLAY_CLOSED;
-        }
-        if (announcement.getStartDate() != null && announcement.getStartDate().isAfter(today)) {
-            return DISPLAY_SCHEDULED;
-        }
-        if (announcement.getEndDate() != null && announcement.getEndDate().isBefore(today)) {
-            return DISPLAY_CLOSED;
-        }
-        return DISPLAY_OPEN;
+        return AnnouncementStatus.displayStatus(announcement, today);
     }
 
     /** True only for the statuses that make an announcement eligible for an update notification. */
     private static boolean isOpenOrClosed(String displayStatus) {
-        return DISPLAY_OPEN.equals(displayStatus) || DISPLAY_CLOSED.equals(displayStatus);
-    }
-
-    /** Null-safe copy used to compare the editable list fields before and after an edit. */
-    private static List<String> copyOf(List<String> values) {
-        return values == null ? List.of() : new ArrayList<>(values);
+        return AnnouncementStatus.isOpenOrClosed(displayStatus);
     }
 
     // ==================== NOTIFICATIONS ====================
@@ -466,17 +527,38 @@ public class ProposalAnnouncementService {
     /**
      * Fan-out an in-app notification to all approved proponents telling them that an
      * existing Call for Proposals was updated. One notification per proponent, using the
-     * most specific message that applies to the detected change.
+     * most specific message that applies to the detected change. The messages carry the
+     * real saved values (the call name and, for a deadline change, the previous and new
+     * deadlines) - nothing is hardcoded.
      */
     private void notifyProponentsOfUpdate(ProposalAnnouncement announcement,
-            String previousDisplayStatus, String newDisplayStatus, boolean deadlineChanged) {
+            String previousDisplayStatus, String newDisplayStatus,
+            LocalDate previousEndDate, LocalDate newEndDate) {
+        boolean deadlineChanged = !Objects.equals(previousEndDate, newEndDate);
+        boolean extended = previousEndDate != null && newEndDate != null
+                && newEndDate.isAfter(previousEndDate);
+
         String title;
         String message;
-        if (DISPLAY_OPEN.equals(previousDisplayStatus) && DISPLAY_CLOSED.equals(newDisplayStatus)) {
+        if (DISPLAY_SCHEDULED.equals(previousDisplayStatus) && DISPLAY_OPEN.equals(newDisplayStatus)) {
+            title = "Call for Proposal Now Open";
+            message = String.format(
+                    "The Call for Proposals \"%s\" is now open for submissions. Please submit your proposal before %s.",
+                    announcement.getName(),
+                    newEndDate != null ? newEndDate.format(DATE_FORMAT) : "the deadline");
+        } else if (DISPLAY_OPEN.equals(previousDisplayStatus)
+                && DISPLAY_CLOSED.equals(newDisplayStatus)) {
             title = "Call for Proposals Closed";
             message = String.format(
                     "The Call for Proposals \"%s\" has been closed. Please review the updated announcement details.",
                     announcement.getName());
+        } else if (extended) {
+            title = "Call for Proposal Deadline Extended";
+            message = String.format(
+                    "The deadline for \"%s\" has been extended from %s to %s. View the call details for the updated submission period.",
+                    announcement.getName(),
+                    previousEndDate.format(DATE_FORMAT),
+                    newEndDate.format(DATE_FORMAT));
         } else if (deadlineChanged) {
             title = "Submission Deadline Updated";
             message = String.format(
@@ -509,5 +591,75 @@ public class ProposalAnnouncementService {
                     proponent.getId(), message, title, "PROPOSAL_ANNOUNCEMENT", null,
                     announcement.getId());
         }
+    }
+
+    // ==================== UPDATE HISTORY ====================
+
+    /**
+     * Appends one history entry for a significant, public-facing change. The previous
+     * values are stored next to the new ones (never overwritten), together with the
+     * effective/announcement date, the optional public explanation and the responsible
+     * administrator.
+     */
+    private void recordUpdate(ProposalAnnouncement announcement, String updateType,
+            String previousStatus, LocalDate previousStartDate, LocalDate previousEndDate,
+            String explanation, Long actorId) {
+        ProposalAnnouncementUpdate update = new ProposalAnnouncementUpdate();
+        update.setAnnouncement(announcement);
+        update.setUpdateType(updateType);
+        update.setPreviousStatus(previousStatus);
+        update.setPreviousStartDate(previousStartDate);
+        update.setPreviousEndDate(previousEndDate);
+        update.setNewStatus(announcement.getStatus());
+        update.setNewStartDate(announcement.getStartDate());
+        update.setNewEndDate(announcement.getEndDate());
+        update.setEffectiveDate(LocalDate.now());
+        update.setExplanation(normalizeExplanation(explanation));
+        applyActor(update, actorId);
+        announcementUpdateRepository.save(update);
+    }
+
+    /**
+     * The type of a recorded change: an extension (a later deadline) is distinguished from
+     * any other deadline move, then a status change, and finally any other significant
+     * detail change.
+     */
+    private static String classifyUpdate(LocalDate previousEndDate, LocalDate newEndDate,
+            boolean statusChanged) {
+        if (previousEndDate != null && newEndDate != null && newEndDate.isAfter(previousEndDate)) {
+            return ProposalAnnouncementUpdate.TYPE_DEADLINE_EXTENDED;
+        }
+        if (!Objects.equals(previousEndDate, newEndDate)) {
+            return ProposalAnnouncementUpdate.TYPE_DEADLINE_CHANGED;
+        }
+        if (statusChanged) {
+            return ProposalAnnouncementUpdate.TYPE_STATUS_CHANGED;
+        }
+        return ProposalAnnouncementUpdate.TYPE_DETAILS_UPDATED;
+    }
+
+    /**
+     * Attributes the change to the administrator who made it, when one is known. The name
+     * and role are captured at write time so the history stays readable even if the
+     * account is later renamed or removed.
+     */
+    private void applyActor(ProposalAnnouncementUpdate update, Long actorId) {
+        if (actorId == null) {
+            return;
+        }
+        userRepository.findById(actorId).ifPresent(actor -> {
+            update.setActorId(actor.getId());
+            update.setActorName(actor.getName());
+            update.setActorRole(actor.getRole());
+        });
+    }
+
+    /** Optional public explanation: trimmed, with blank input stored as {@code null}. */
+    private String normalizeExplanation(String explanation) {
+        if (explanation == null) {
+            return null;
+        }
+        String trimmed = explanation.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -1,5 +1,6 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.dto.DuplicateProposalRequest;
 import com.rpis.backend.dto.FieldRemarkRequest;
 import com.rpis.backend.dto.ForwardRevisionRequest;
 import com.rpis.backend.dto.ProposalRequest;
@@ -296,13 +297,20 @@ public class ProposalController {
     }
 
     /**
-     * Creates a new DRAFT proposal by reusing the reusable content of a completed /
-     * approved proposal. Authorization, eligibility and identifier allocation are all
-     * enforced server-side.
+     * Creates a new DRAFT proposal by reusing the reusable content of an existing
+     * proposal, under the Call for Proposal the proponent selected in the picker. The
+     * original's status does not matter: the copy starts the normal workflow from
+     * scratch and inherits no approval, review or tracking record. The call is
+     * re-validated (it must exist and still be open), so no copy is created without a
+     * valid selection. Authorization and identifier allocation are enforced
+     * server-side.
      */
     @PostMapping("/{id}/duplicate")
-    public ResponseEntity<Proposal> duplicateProposal(@PathVariable Long id) {
-        Proposal duplicate = proposalService.duplicateProposal(id);
+    public ResponseEntity<Proposal> duplicateProposal(
+            @PathVariable Long id,
+            @RequestBody(required = false) DuplicateProposalRequest request) {
+        Proposal duplicate = proposalService.duplicateProposal(
+                id, request != null ? request.getProposalAnnouncementId() : null);
         return new ResponseEntity<>(duplicate, HttpStatus.CREATED);
     }
 

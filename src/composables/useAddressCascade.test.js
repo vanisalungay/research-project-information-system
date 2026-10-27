@@ -11,9 +11,12 @@
  *      template uses `addressCascade.manual`, `addressCascade.regionOptions`, ...
  *      directly; a ref object is always truthy, which silently replaced the five
  *      dropdowns with their free-text fallback inputs.
- *   2. the cascade itself against the real PSGC extract: Philippines -> Region ->
- *      Province -> City -> Barangay, clearing the levels below a changed parent,
- *      the districted region (NCR) and an independent city.
+ *   2. the cascade itself against the real PSGC extract: Region -> Province ->
+ *      City -> Barangay, clearing the levels below a changed parent, the districted
+ *      region (NCR) and an independent city.
+ *   3. the Philippine-only rule: the country is never asked for, so an address
+ *      without one cascades like any other Philippine address, while a stored
+ *      foreign country keeps its manually typed parts.
  *
  * Run with: npm test
  */
@@ -85,7 +88,10 @@ test('the cascade exposes plain values, not refs, for the template to read', asy
     assert.equal(typeof cascade.dropdowns, 'boolean')
     assert.equal(typeof cascade.regionEnabled, 'boolean')
     assert.equal(typeof cascade.notice, 'string')
-    assert.equal(typeof cascade.placeholders.country, 'string')
+    // The Address section is Philippine-only: the cascade no longer offers a country
+    // list, and Region is the first dropdown it drives.
+    assert.equal(cascade.countries, undefined)
+    assert.equal(cascade.regionEnabled, true)
     assert.ok(Array.isArray(cascade.regionOptions))
 
     // Nothing is reported as a problem while the data loads and afterwards - the
@@ -173,6 +179,55 @@ test('the whole cascade works against the bundled PSGC dataset', async () => {
     cascade.select('municipality', 'City of Isabela')
     await waitFor(() => cascade.barangayOptions.length > 0)
     assert.equal(cascade.independentCity, true)
+  } finally {
+    await server.close()
+    restoreFetch()
+  }
+})
+
+test('an address without a country is a Philippine one, and Region is the first step', async () => {
+  const restoreFetch = serveBundledData()
+  const server = await startServer()
+
+  try {
+    const { useAddressCascade } = await server.ssrLoadModule(
+      '/src/composables/useAddressCascade.js',
+    )
+    // The Address section shows the country read-only (it is always the Philippines):
+    // a record saved without a country still cascades through the Philippine data,
+    // and Region is immediately answerable.
+    const details = ref({
+      region: '',
+      province: '',
+      district: '',
+      municipality: '',
+      barangay: '',
+    })
+    const cascade = useAddressCascade(details)
+
+    assert.equal(cascade.philippines, true)
+    assert.equal(cascade.dropdowns, true)
+    assert.equal(cascade.manual, false)
+    assert.equal(cascade.regionEnabled, true)
+
+    await waitFor(() => cascade.regionOptions.length > 0)
+    cascade.select('region', 'Northern Mindanao')
+    await waitFor(() => cascade.provinceOptions.length > 0)
+    assert.ok(cascade.provinceOptions.some((province) => province.name === 'Misamis Oriental'))
+
+    // A stored foreign country (a record saved while the control still existed) keeps
+    // its manually typed parts instead of being forced through the Philippine lists.
+    details.value = {
+      country: 'Japan',
+      region: 'Tokyo',
+      province: '',
+      district: '',
+      municipality: 'Shinjuku',
+      barangay: 'Nishi-Shinjuku',
+    }
+    assert.equal(cascade.philippines, false)
+    assert.equal(cascade.manual, true)
+    assert.equal(cascade.regionEnabled, false)
   } finally {
     await server.close()
     restoreFetch()

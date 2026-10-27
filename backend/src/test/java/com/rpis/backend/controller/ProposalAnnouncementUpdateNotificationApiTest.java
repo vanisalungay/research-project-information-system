@@ -52,6 +52,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProposalAnnouncementUpdateNotificationApiTest {
 
     private static final String UPDATE_TITLE = "Call for Proposals Updated";
+    /** A deadline moved later is announced as an extension, with its own title. */
+    private static final String EXTENDED_TITLE = "Call for Proposal Deadline Extended";
+    /** A deadline moved without extending it (for example an earlier deadline). */
     private static final String DEADLINE_TITLE = "Submission Deadline Updated";
     private static final String CLOSED_TITLE = "Call for Proposals Closed";
     private static final String OPEN_TITLE = "New Proposal Announcement Open";
@@ -182,18 +185,18 @@ class ProposalAnnouncementUpdateNotificationApiTest {
         mockMvc.perform(get("/api/notifications")
                         .header("Authorization", "Bearer " + proponentToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].title").value(hasItem(DEADLINE_TITLE)))
-                .andExpect(jsonPath("$[?(@.title == '" + DEADLINE_TITLE + "')].type")
+                .andExpect(jsonPath("$[*].title").value(hasItem(EXTENDED_TITLE)))
+                .andExpect(jsonPath("$[?(@.title == '" + EXTENDED_TITLE + "')].type")
                         .value(hasItem("PROPOSAL_ANNOUNCEMENT")))
-                .andExpect(jsonPath("$[?(@.title == '" + DEADLINE_TITLE + "')].isRead")
+                .andExpect(jsonPath("$[?(@.title == '" + EXTENDED_TITLE + "')].isRead")
                         .value(hasItem(false)))
-                .andExpect(jsonPath("$[?(@.title == '" + DEADLINE_TITLE + "')].createdAt")
+                .andExpect(jsonPath("$[?(@.title == '" + EXTENDED_TITLE + "')].createdAt")
                         .value(hasItem(notNullValue())))
-                .andExpect(jsonPath("$[?(@.title == '" + DEADLINE_TITLE + "')].message")
+                .andExpect(jsonPath("$[?(@.title == '" + EXTENDED_TITLE + "')].message")
                         .value(hasItem(containsString("Open Call"))))
                 // The reference the Proponent notification list navigates with: the exact
                 // announcement this notification was raised for.
-                .andExpect(jsonPath("$[?(@.title == '" + DEADLINE_TITLE + "')].proposalAnnouncementId")
+                .andExpect(jsonPath("$[?(@.title == '" + EXTENDED_TITLE + "')].proposalAnnouncementId")
                         .value(hasItem(id.intValue())));
     }
 
@@ -226,6 +229,7 @@ class ProposalAnnouncementUpdateNotificationApiTest {
                         .header("Authorization", "Bearer " + proponentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].title").value(not(hasItem(UPDATE_TITLE))))
+                .andExpect(jsonPath("$[*].title").value(not(hasItem(EXTENDED_TITLE))))
                 .andExpect(jsonPath("$[*].title").value(not(hasItem(DEADLINE_TITLE))))
                 .andExpect(jsonPath("$[*].title").value(not(hasItem(CLOSED_TITLE))));
     }
@@ -241,14 +245,14 @@ class ProposalAnnouncementUpdateNotificationApiTest {
                 "ACTIVE");
 
         assertEquals(1, notificationsOf(proponent).stream()
-                .filter(n -> DEADLINE_TITLE.equals(n.getTitle())).count());
+                .filter(n -> EXTENDED_TITLE.equals(n.getTitle())).count());
         assertEquals(1, notificationsOf(secondProponent).stream()
-                .filter(n -> DEADLINE_TITLE.equals(n.getTitle())).count());
+                .filter(n -> EXTENDED_TITLE.equals(n.getTitle())).count());
 
         mockMvc.perform(get("/api/notifications")
                         .header("Authorization", "Bearer " + rpsAdminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].title").value(not(hasItem(DEADLINE_TITLE))));
+                .andExpect(jsonPath("$[*].title").value(not(hasItem(EXTENDED_TITLE))));
 
         mockMvc.perform(get("/api/notifications")
                         .header("Authorization", "Bearer " + pendingProponentToken))
@@ -266,7 +270,7 @@ class ProposalAnnouncementUpdateNotificationApiTest {
                 daysFromToday(25), "ACTIVE");
 
         Notification update = notificationsOf(proponent).stream()
-                .filter(n -> DEADLINE_TITLE.equals(n.getTitle()))
+                .filter(n -> EXTENDED_TITLE.equals(n.getTitle()))
                 .findFirst()
                 .orElseThrow();
         assertFalse(update.getIsRead());
@@ -288,6 +292,24 @@ class ProposalAnnouncementUpdateNotificationApiTest {
     void theNotificationListingRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/notifications"))
                 .andExpect(status().isForbidden());
+    }
+
+    // 7. A deadline that is moved without being extended (brought forward) keeps the
+    //    general "submission deadline updated" title, so the extension wording is never
+    //    used for a shorter window.
+    @Test
+    void movingTheDeadlineEarlierKeepsTheGeneralDeadlineNotification() throws Exception {
+        Long id = createAnnouncement(rpsAdminToken, "Shortened Call", daysFromToday(-1),
+                daysFromToday(20), "ACTIVE");
+
+        updateAnnouncement(rpsAdminToken, id, "Shortened Call", daysFromToday(-1), daysFromToday(5),
+                "ACTIVE");
+
+        mockMvc.perform(get("/api/notifications")
+                        .header("Authorization", "Bearer " + proponentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].title").value(hasItem(DEADLINE_TITLE)))
+                .andExpect(jsonPath("$[*].title").value(not(hasItem(EXTENDED_TITLE))));
     }
 
 }

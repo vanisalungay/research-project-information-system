@@ -1,11 +1,14 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalAnnouncementRequest;
+import com.rpis.backend.dto.ProposalAnnouncementUpdateRequest;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.ProposalAnnouncement;
+import com.rpis.backend.model.ProposalAnnouncementUpdate;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
+import com.rpis.backend.repository.ProposalAnnouncementUpdateRepository;
 import com.rpis.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,11 +18,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +43,8 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
     private ProposalAnnouncementService service;
     @Autowired
     private ProposalAnnouncementRepository announcementRepository;
+    @Autowired
+    private ProposalAnnouncementUpdateRepository updateRepository;
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -74,6 +79,12 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         return LocalDate.now().plusDays(days).toString();
     }
 
+    /** The same "MMMM d, yyyy" rendering the notification messages use. */
+    private static String formattedDaysFromToday(long days) {
+        return LocalDate.parse(daysFromToday(days))
+                .format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+    }
+
     private ProposalAnnouncementRequest request(String name, String start, String end, String status) {
         ProposalAnnouncementRequest request = new ProposalAnnouncementRequest();
         request.setName(name);
@@ -93,6 +104,19 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         return request(name, daysFromToday(10), daysFromToday(20), "ACTIVE");
     }
 
+    /**
+     * The payload of an update: only the submission window and the status can be changed.
+     * The name, priority agenda, reminders and additional announcement are not part of an
+     * update any more, so this helper cannot send them.
+     */
+    private ProposalAnnouncementUpdateRequest updateRequest(String start, String end, String status) {
+        ProposalAnnouncementUpdateRequest update = new ProposalAnnouncementUpdateRequest();
+        update.setStartDate(LocalDate.parse(start));
+        update.setEndDate(LocalDate.parse(end));
+        update.setStatus(status);
+        return update;
+    }
+
     private List<Notification> notifications() {
         return notificationRepository.findByUserOrderByCreatedAtDesc(proponent);
     }
@@ -101,22 +125,27 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         return notifications().stream().anyMatch(n -> title.equals(n.getTitle()));
     }
 
-    // 1. Editing an existing Open announcement (deadline change) notifies proponents.
+    // 1. Extending the deadline of an existing Open announcement notifies proponents with
+    // the specific "deadline extended" notification, carrying both real deadlines.
     @Test
-    void editingAnOpenAnnouncementNotifiesProponents() {
+    void extendingAnOpenAnnouncementNotifiesProponents() {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Open Call"));
         assertEquals(1, notifications().size(), "creating an open call notifies once");
 
         service.updateAnnouncement(created.getId(),
-                request("Open Call", daysFromToday(-1), daysFromToday(12), "ACTIVE"));
+                updateRequest(daysFromToday(-1), daysFromToday(12), "ACTIVE"));
 
         assertEquals(2, notifications().size());
-        assertTrue(hasNotification("Submission Deadline Updated"));
+        assertTrue(hasNotification("Call for Proposal Deadline Extended"));
         Notification latest = notifications().stream()
-                .filter(n -> "Submission Deadline Updated".equals(n.getTitle()))
+                .filter(n -> "Call for Proposal Deadline Extended".equals(n.getTitle()))
                 .findFirst()
                 .orElseThrow();
         assertTrue(latest.getMessage().contains("Open Call"));
+        assertTrue(latest.getMessage().contains(formattedDaysFromToday(5)),
+                "the previous deadline is named in the message");
+        assertTrue(latest.getMessage().contains(formattedDaysFromToday(12)),
+                "the new deadline is named in the message");
         assertEquals("PROPOSAL_ANNOUNCEMENT", latest.getType());
         assertFalse(latest.getIsRead());
 
@@ -126,7 +155,8 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertEquals("ACTIVE", saved.getStatus());
     }
 
-    // 2. Editing an existing Closed announcement notifies proponents.
+    // 2. Editing an existing Closed announcement notifies proponents (its submission
+    //    window is the only thing an update can change).
     @Test
     void editingAClosedAnnouncementNotifiesProponents() {
         ProposalAnnouncement created = service.createAnnouncement(
@@ -134,21 +164,37 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertTrue(notifications().isEmpty(), "creating a closed call notifies nobody");
 
         service.updateAnnouncement(created.getId(),
-                request("Closed Call (revised)", daysFromToday(-20), daysFromToday(-10), "CLOSED"));
+                updateRequest(daysFromToday(-20), daysFromToday(-2), "CLOSED"));
 
         assertEquals(1, notifications().size());
-        assertTrue(hasNotification("Call for Proposals Updated"));
+        assertTrue(hasNotification("Call for Proposal Deadline Extended"),
+                "moving the deadline later is still announced as an extension");
+        assertEquals("Closed Call",
+                announcementRepository.findById(created.getId()).orElseThrow().getName(),
+                "the name the call was published with is kept");
     }
 
-    // 3. Changing the name of an Open announcement notifies proponents.
+    // 3. An update never changes the fields that are set when the call is created: the
+    //    name, the RIIDE priority agenda, the announcement reminders and the additional
+    //    announcement keep their stored values.
     @Test
-    void changingTheAnnouncementNameNotifiesProponents() {
-        ProposalAnnouncement created = service.createAnnouncement(openRequest("Original Name"));
+    void anUpdateKeepsTheNameTheAgendaTheRemindersAndTheAdditionalAnnouncement() {
+        ProposalAnnouncementRequest create = openRequest("Original Name");
+        create.setPriorityAgendas(List.of("dagat"));
+        create.setReminderIds(List.of("research-plan"));
+        create.setAdditionalAnnouncement("Original body.");
+        ProposalAnnouncement created = service.createAnnouncement(create);
 
-        service.updateAnnouncement(created.getId(), openRequest("Renamed Call"));
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(18), "ACTIVE"));
 
-        assertTrue(hasNotification("Call for Proposals Updated"));
-        assertEquals(2, notifications().size());
+        ProposalAnnouncement saved = announcementRepository.findById(created.getId()).orElseThrow();
+        assertEquals("Original Name", saved.getName());
+        assertEquals(List.of("dagat"), saved.getPriorityAgendas());
+        assertEquals(List.of("research-plan"), saved.getReminderIds());
+        assertEquals("Original body.", saved.getAdditionalAnnouncement());
+        assertEquals(LocalDate.parse(daysFromToday(18)), saved.getEndDate(),
+                "the deadline itself is still updated");
     }
 
     // 4. Closing an Open call uses the specific "closed" notification.
@@ -157,7 +203,7 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Closing Call"));
 
         service.updateAnnouncement(created.getId(),
-                request("Closing Call", daysFromToday(-1), daysFromToday(5), "CLOSED"));
+                updateRequest(daysFromToday(-1), daysFromToday(5), "CLOSED"));
 
         assertTrue(hasNotification("Call for Proposals Closed"));
         assertFalse(hasNotification("Call for Proposals Updated"));
@@ -172,7 +218,7 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertEquals(1, notifications().size());
 
         service.updateAnnouncement(created.getId(),
-                request("Scheduled Call", daysFromToday(10), daysFromToday(30), "ACTIVE"));
+                updateRequest(daysFromToday(10), daysFromToday(30), "ACTIVE"));
 
         assertEquals(1, notifications().size(), "editing a scheduled call adds no update notification");
         assertFalse(hasNotification("Call for Proposals Updated"));
@@ -180,15 +226,24 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertFalse(hasNotification("Call for Proposals Closed"));
     }
 
-    // 6. Scheduled -> Open is still an edit of a Scheduled announcement: no notification.
+    // 6. Scheduled -> Open notifies with the specific "now open" message.
     @Test
-    void changingAScheduledAnnouncementToOpenSendsNoUpdateNotification() {
+    void changingAScheduledAnnouncementToOpenSendsTheNowOpenNotification() {
         ProposalAnnouncement created = service.createAnnouncement(scheduledRequest("Future Call"));
         assertEquals(1, notifications().size());
 
-        service.updateAnnouncement(created.getId(), openRequest("Future Call"));
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(5), "ACTIVE"));
 
-        assertEquals(1, notifications().size(), "Scheduled -> Open adds no update notification");
+        assertEquals(2, notifications().size(), "Scheduled -> Open adds the now-open notification");
+        assertTrue(hasNotification("Call for Proposal Now Open"));
+        Notification nowOpen = notifications().stream()
+                .filter(n -> "Call for Proposal Now Open".equals(n.getTitle()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(nowOpen.getMessage().contains("Future Call"));
+        assertTrue(nowOpen.getMessage().contains(formattedDaysFromToday(5)),
+                "the real deadline is named in the message");
         assertFalse(hasNotification("Call for Proposals Updated"));
         assertFalse(hasNotification("Submission Deadline Updated"));
     }
@@ -200,7 +255,7 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertEquals(1, notifications().size());
 
         service.updateAnnouncement(created.getId(),
-                request("Future Call 2", daysFromToday(10), daysFromToday(20), "CLOSED"));
+                updateRequest(daysFromToday(10), daysFromToday(20), "CLOSED"));
 
         assertEquals(1, notifications().size(), "Scheduled -> Closed adds no update notification");
         assertFalse(hasNotification("Call for Proposals Closed"));
@@ -223,7 +278,7 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Valid Call"));
 
         assertThrows(IllegalArgumentException.class, () -> service.updateAnnouncement(created.getId(),
-                request("Valid Call", daysFromToday(5), daysFromToday(1), "ACTIVE")));
+                updateRequest(daysFromToday(5), daysFromToday(1), "ACTIVE")));
 
         assertEquals(1, notifications().size(), "only the creation notification exists");
         assertFalse(hasNotification("Call for Proposals Updated"));
@@ -238,7 +293,8 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertEquals(1, notifications().size());
 
         // Exactly the same values again, as the Edit form sends when nothing was touched.
-        service.updateAnnouncement(created.getId(), openRequest("Unchanged Call"));
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(5), "ACTIVE"));
 
         assertEquals(1, notifications().size(), "an unchanged save must not notify");
     }
@@ -250,12 +306,12 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Shared Call"));
 
         service.updateAnnouncement(created.getId(),
-                request("Shared Call", daysFromToday(-1), daysFromToday(15), "ACTIVE"));
+                updateRequest(daysFromToday(-1), daysFromToday(15), "ACTIVE"));
 
         assertEquals(1, notifications().stream()
-                .filter(n -> "Submission Deadline Updated".equals(n.getTitle())).count());
+                .filter(n -> "Call for Proposal Deadline Extended".equals(n.getTitle())).count());
         assertEquals(1, notificationRepository.findByUserOrderByCreatedAtDesc(second).stream()
-                .filter(n -> "Submission Deadline Updated".equals(n.getTitle())).count());
+                .filter(n -> "Call for Proposal Deadline Extended".equals(n.getTitle())).count());
     }
 
     // 12. Only the established recipient group (approved proponents) is notified.
@@ -266,11 +322,11 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Eligibility Call"));
 
         service.updateAnnouncement(created.getId(),
-                request("Eligibility Call", daysFromToday(-1), daysFromToday(9), "ACTIVE"));
+                updateRequest(daysFromToday(-1), daysFromToday(9), "ACTIVE"));
 
         assertTrue(notificationRepository.findByUserOrderByCreatedAtDesc(pending).isEmpty());
         assertTrue(notificationRepository.findByUserOrderByCreatedAtDesc(staff).isEmpty());
-        assertTrue(hasNotification("Submission Deadline Updated"),
+        assertTrue(hasNotification("Call for Proposal Deadline Extended"),
                 "the approved proponent is still notified");
     }
 
@@ -281,7 +337,8 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
                 request("Draft Call", daysFromToday(-1), daysFromToday(5), "DRAFT"));
         assertTrue(notifications().isEmpty());
 
-        service.updateAnnouncement(created.getId(), openRequest("Draft Call"));
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(5), "ACTIVE"));
 
         assertEquals(1, notifications().size());
         assertTrue(hasNotification("New Proposal Announcement Open"));
@@ -294,12 +351,12 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Listed Call"));
 
         service.updateAnnouncement(created.getId(),
-                request("Listed Call", daysFromToday(-1), daysFromToday(20), "ACTIVE"));
+                updateRequest(daysFromToday(-1), daysFromToday(20), "ACTIVE"));
 
         List<Notification> listed = notificationService.getNotificationsForUser(proponent.getId());
         assertEquals(2, listed.size());
         Notification update = listed.stream()
-                .filter(n -> "Submission Deadline Updated".equals(n.getTitle()))
+                .filter(n -> "Call for Proposal Deadline Extended".equals(n.getTitle()))
                 .findFirst()
                 .orElseThrow();
         assertEquals("PROPOSAL_ANNOUNCEMENT", update.getType());
@@ -317,7 +374,8 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
                 request("Reopen Call", daysFromToday(-20), daysFromToday(-10), "CLOSED"));
         assertTrue(notifications().isEmpty());
 
-        service.updateAnnouncement(created.getId(), openRequest("Reopen Call"));
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(5), "ACTIVE"));
 
         // Two distinct notifications, not duplicates: the pre-existing "call is open" one
         // plus the new update notification. Because the edit also moved the submission
@@ -325,7 +383,7 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         assertEquals(2, notifications().size());
         assertTrue(hasNotification("New Proposal Announcement Open"),
                 "pre-existing opening notification is preserved");
-        assertTrue(hasNotification("Submission Deadline Updated"),
+        assertTrue(hasNotification("Call for Proposal Deadline Extended"),
                 "the new update notification is added");
     }
 
@@ -336,76 +394,77 @@ class ProposalAnnouncementUpdateNotificationPostgresTest {
         ProposalAnnouncement created = service.createAnnouncement(openRequest("Window Call"));
 
         service.updateAnnouncement(created.getId(),
-                request("Window Call", daysFromToday(-3), daysFromToday(5), "ACTIVE"));
+                updateRequest(daysFromToday(-3), daysFromToday(5), "ACTIVE"));
 
         assertEquals(2, notifications().size());
         assertTrue(hasNotification("Call for Proposals Updated"));
         assertFalse(hasNotification("Submission Deadline Updated"));
     }
 
-    // 17. Changing only the RIIDE priority-agenda selection of an Open call notifies.
+    // 17. A start-date-only change is a meaningful update: the general "call updated"
+    //     notification is sent (the deadline itself did not move).
     @Test
-    void changingThePriorityAgendasOfAnOpenAnnouncementNotifiesProponents() {
-        ProposalAnnouncementRequest create = openRequest("Agenda Call");
+    void changingOnlyTheOpeningDateNotifiesWithTheGeneralUpdate() {
+        ProposalAnnouncement created = service.createAnnouncement(openRequest("Opening Call"));
+
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-4), daysFromToday(5), "ACTIVE"));
+
+        assertEquals(2, notifications().size());
+        assertTrue(hasNotification("Call for Proposals Updated"));
+        assertFalse(hasNotification("Submission Deadline Updated"));
+    }
+
+    // 18. A start-date-only change records the window change in the update history.
+    @Test
+    void changingOnlyTheOpeningDateIsRecordedInTheUpdateHistory() {
+        ProposalAnnouncement created = service.createAnnouncement(openRequest("Recorded Opening Call"));
+
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-4), daysFromToday(5), "ACTIVE"));
+
+        List<ProposalAnnouncementUpdate> history = updateRepository
+                .findByAnnouncementIdOrderByCreatedAtAscIdAsc(created.getId());
+        assertEquals(2, history.size(), "publication + the window change, never a duplicate");
+        assertEquals(ProposalAnnouncementUpdate.TYPE_DETAILS_UPDATED, history.get(1).getUpdateType());
+        assertEquals(LocalDate.parse(daysFromToday(-1)), history.get(1).getPreviousStartDate());
+        assertEquals(LocalDate.parse(daysFromToday(-4)), history.get(1).getNewStartDate());
+    }
+
+    // 19. The update payload cannot carry the restricted fields at all, so a client cannot
+    //     change the priority agenda, the reminders or the additional announcement.
+    @Test
+    void theUpdatePayloadOnlyCarriesTheWindowAndTheStatus() {
+        ProposalAnnouncementRequest create = openRequest("Payload Call");
         create.setPriorityAgendas(List.of("dagat"));
-        ProposalAnnouncement created = service.createAnnouncement(create);
-
-        ProposalAnnouncementRequest update = openRequest("Agenda Call");
-        update.setPriorityAgendas(List.of("dagat", "punla"));
-        service.updateAnnouncement(created.getId(), update);
-
-        assertEquals(2, notifications().size());
-        assertTrue(hasNotification("Call for Proposals Updated"));
-    }
-
-    // 18. Changing only the reminder selection of an Open call notifies.
-    @Test
-    void changingTheReminderSelectionOfAnOpenAnnouncementNotifiesProponents() {
-        ProposalAnnouncementRequest create = openRequest("Reminder Call");
         create.setReminderIds(List.of("research-plan"));
-        ProposalAnnouncement created = service.createAnnouncement(create);
-
-        ProposalAnnouncementRequest update = openRequest("Reminder Call");
-        update.setReminderIds(List.of("research-plan", "collaboration"));
-        service.updateAnnouncement(created.getId(), update);
-
-        assertEquals(2, notifications().size());
-        assertTrue(hasNotification("Call for Proposals Updated"));
-    }
-
-    // 19. Changing only the additional announcement text of a Closed call notifies.
-    @Test
-    void changingTheAdditionalTextOfAClosedAnnouncementNotifiesProponents() {
-        ProposalAnnouncementRequest create =
-                request("Closed Text Call", daysFromToday(-20), daysFromToday(-10), "CLOSED");
         create.setAdditionalAnnouncement("Original body.");
         ProposalAnnouncement created = service.createAnnouncement(create);
-        assertTrue(notifications().isEmpty(), "creating a closed call notifies nobody");
+        int notificationsAfterCreate = notifications().size();
 
-        ProposalAnnouncementRequest update =
-                request("Closed Text Call", daysFromToday(-20), daysFromToday(-10), "CLOSED");
-        update.setAdditionalAnnouncement("Revised body with new instructions.");
-        service.updateAnnouncement(created.getId(), update);
+        // The same window and status again: nothing changed, so nothing is announced.
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(5), "ACTIVE"));
 
-        assertEquals(1, notifications().size());
-        assertTrue(hasNotification("Call for Proposals Updated"));
+        assertEquals(notificationsAfterCreate, notifications().size(),
+                "an update that changes nothing notifies nobody");
+        ProposalAnnouncement saved = announcementRepository.findById(created.getId()).orElseThrow();
+        assertEquals(List.of("dagat"), saved.getPriorityAgendas());
+        assertEquals(List.of("research-plan"), saved.getReminderIds());
+        assertEquals("Original body.", saved.getAdditionalAnnouncement());
     }
 
-    // 20. Clearing the additional announcement text is also a meaningful edit.
+    // 20. An update that omits the status keeps the stored one instead of falling back to
+    //     the create-time default.
     @Test
-    void clearingTheAdditionalTextOfAnOpenAnnouncementNotifiesProponents() {
-        ProposalAnnouncementRequest create = openRequest("Cleared Text Call");
-        create.setAdditionalAnnouncement("Remove me.");
-        ProposalAnnouncement created = service.createAnnouncement(create);
+    void anUpdateWithoutAStatusKeepsTheStoredStatus() {
+        ProposalAnnouncement created = service.createAnnouncement(openRequest("Status Kept Call"));
 
-        ProposalAnnouncementRequest update = openRequest("Cleared Text Call");
-        update.setAdditionalAnnouncement("");
-        service.updateAnnouncement(created.getId(), update);
+        service.updateAnnouncement(created.getId(),
+                updateRequest(daysFromToday(-1), daysFromToday(11), null));
 
-        assertEquals(2, notifications().size());
-        assertTrue(hasNotification("Call for Proposals Updated"));
-        assertNull(
-                announcementRepository.findById(created.getId()).orElseThrow().getAdditionalAnnouncement());
+        assertEquals("ACTIVE",
+                announcementRepository.findById(created.getId()).orElseThrow().getStatus());
+        assertTrue(hasNotification("Call for Proposal Deadline Extended"));
     }
-
 }

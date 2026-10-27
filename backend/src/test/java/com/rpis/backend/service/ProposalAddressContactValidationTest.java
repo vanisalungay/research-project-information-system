@@ -48,10 +48,11 @@ class ProposalAddressContactValidationTest {
 
     @Test
     void everyRequiredAddressPartIsEnforced() {
-        for (String part : new String[] { "country", "region", "municipality", "barangay" }) {
+        // The country is not in the list: the Address section is Philippine-only and
+        // its form no longer sends one, so the parts are what must be complete.
+        for (String part : new String[] { "region", "municipality", "barangay" }) {
             ProposalRequest request = request();
             switch (part) {
-                case "country" -> request.setAddressCountry("");
                 case "region" -> request.setAddressRegion("");
                 case "municipality" -> request.setAddressMunicipality("");
                 default -> request.setAddressBarangay("");
@@ -60,6 +61,23 @@ class ProposalAddressContactValidationTest {
                     () -> ProposalService.validateAddressAndContact(request),
                     "an address without its " + part + " must be rejected");
         }
+    }
+
+    @Test
+    void anAddressWithoutACountryIsValidatedAsAPhilippineOne() {
+        ProposalRequest withoutCountry = request();
+        withoutCountry.setAddressCountry(null);
+
+        // No country at all is the normal case now: the parts are still checked
+        // against the Philippine hierarchy.
+        assertDoesNotThrow(() -> ProposalService.validateAddressAndContact(withoutCountry));
+
+        // ...and an impossible Philippine combination is still rejected.
+        ProposalRequest wrongProvince = request();
+        wrongProvince.setAddressCountry(null);
+        wrongProvince.setAddressProvince("Leyte");
+        assertThrows(IllegalArgumentException.class,
+                () -> ProposalService.validateAddressAndContact(wrongProvince));
     }
 
     @Test

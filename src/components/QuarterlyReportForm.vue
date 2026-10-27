@@ -282,6 +282,11 @@ import { reactive, computed, watch } from 'vue'
 // Shared document shell (page, header, footer, tables, print rules) used by the
 // Quarterly Progress Report pages and the Project Workplan page.
 import '@/assets/reportDocument.css'
+import {
+  emptyObjective,
+  reportFormState,
+  reportPayload,
+} from '@/utils/quarterlyReportFormState'
 
 const props = defineProps({
   report: { type: Object, default: null },
@@ -302,49 +307,13 @@ const props = defineProps({
 })
 const emit = defineEmits(['save-draft', 'submit', 'cancel'])
 
-const OUTPUT_TYPES = ['Publications', 'Patents/IP', 'Products', 'People Services', 'Partnerships', 'Policy']
-
-const form = reactive({
-  period: 'Q1',
-  year: new Date().getFullYear(),
-  projectTitle: '',
-  projectLeader: '',
-  leaderGender: '',
-  baseStation: '',
-  sitesOfImplementation: '',
-  projectDuration: '',
-  projectStartDate: '',
-  projectEndDate: '',
-  catchUpPlan: '',
-  problemsConcerns: '',
-  suggestedSolutions: '',
-  objectives: [],
-  outputs: [],
-})
-
-const emptyObjective = () => ({ objective: '', target: '', actual: '', percentagePeriod: '', percentageCumulative: '' })
-const seedOutputs = () => OUTPUT_TYPES.map((t) => ({ outputType: t, expectedOutput: '', actualOutput: '' }))
+// The form state itself (defaults, the report → form mapping and the save payload) lives
+// in utils/quarterlyReportFormState.js, so the values shown in the form and the values
+// that are saved come from one tested place.
+const form = reactive(reportFormState(null))
 
 function applyReport(r) {
-  form.period = r?.period || 'Q1'
-  form.year = r?.year || new Date().getFullYear()
-  form.projectTitle = r?.projectTitle || ''
-  form.projectLeader = r?.projectLeader || ''
-  form.leaderGender = r?.leaderGender || ''
-  form.baseStation = r?.baseStation || ''
-  form.sitesOfImplementation = r?.sitesOfImplementation || ''
-  form.projectDuration = r?.projectDuration || ''
-  form.projectStartDate = r?.projectStartDate || ''
-  form.projectEndDate = r?.projectEndDate || ''
-  form.catchUpPlan = r?.catchUpPlan || ''
-  form.problemsConcerns = r?.problemsConcerns || ''
-  form.suggestedSolutions = r?.suggestedSolutions || ''
-  const objectives = Array.isArray(r?.objectives) && r.objectives.length ? r.objectives : [emptyObjective()]
-  form.objectives = objectives.map((o) => ({ ...emptyObjective(), ...o }))
-  form.outputs = seedOutputs().map((seed) => {
-    const found = (r?.outputs || []).find((o) => o.outputType === seed.outputType)
-    return { ...seed, ...(found || {}) }
-  })
+  Object.assign(form, reportFormState(r))
 }
 
 watch(() => props.report, (r) => applyReport(r), { immediate: true })
@@ -370,23 +339,7 @@ function removeObjective(i) {
 }
 
 function buildPayload() {
-  return {
-    period: form.period,
-    year: form.year,
-    projectTitle: form.projectTitle,
-    projectLeader: form.projectLeader,
-    leaderGender: form.leaderGender,
-    baseStation: form.baseStation,
-    sitesOfImplementation: form.sitesOfImplementation,
-    projectDuration: form.projectDuration,
-    projectStartDate: form.projectStartDate || null,
-    projectEndDate: form.projectEndDate || null,
-    catchUpPlan: form.catchUpPlan,
-    problemsConcerns: form.problemsConcerns,
-    suggestedSolutions: form.suggestedSolutions,
-    objectives: form.objectives,
-    outputs: form.outputs,
-  }
+  return reportPayload(form)
 }
 
 // The stage action buttons (Cancel / Save Draft / Submit Report) are rendered by

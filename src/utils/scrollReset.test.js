@@ -10,7 +10,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { CONTENT_SCROLL_SELECTOR, getScrollContainer, resetScrollPosition } from './scrollReset.js'
+import {
+  CONTENT_SCROLL_SELECTOR,
+  LEGACY_CONTENT_SCROLL_SELECTORS,
+  getScrollContainer,
+  resetScrollPosition,
+} from './scrollReset.js'
 
 /** Minimal stand-in for a scrollable element. */
 function fakeElement(scrollTop = 0, scrollLeft = 0) {
@@ -29,12 +34,29 @@ function fakeDocument({
   }
 }
 
+/** A document that only knows the content region of an earlier shell. */
+function legacyDocument(container) {
+  return {
+    querySelector: (selector) =>
+      LEGACY_CONTENT_SCROLL_SELECTORS.includes(selector) ? container : null,
+    scrollingElement: null,
+    documentElement: null,
+  }
+}
+
 test('the layout content region is the element that controls scrolling', () => {
   const container = fakeElement()
   const root = fakeDocument({ container })
 
-  assert.equal(CONTENT_SCROLL_SELECTOR, 'main.content')
+  assert.equal(CONTENT_SCROLL_SELECTOR, 'main.app-content')
   assert.equal(getScrollContainer(root), container)
+})
+
+test('the content region of an earlier shell is still found', () => {
+  const container = fakeElement(400, 0)
+
+  assert.deepEqual(LEGACY_CONTENT_SCROLL_SELECTORS, ['main.content'])
+  assert.equal(getScrollContainer(legacyDocument(container)), container)
 })
 
 test('the layout content region is reset to the very top', () => {

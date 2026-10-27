@@ -413,6 +413,14 @@ public class ProposalService {
             // Ignore
         }
 
+        // Project period: the End Date is calculated by the system (the selected duration
+        // added to the start date - see validateProjectPeriod). Enforced here as well as in
+        // the form, so a modified API request cannot store another date. Only proposals that
+        // are still being prepared are checked, exactly like the duration rule above.
+        if (applySelectedDuration) {
+            validateProjectPeriod(proposal.getStartDate(), proposal.getEndDate(), proposal.getDuration());
+        }
+
         // Section 23 (Literature Cited). The form sends the plain-text rendering of
         // every reference and the structured entries behind it. A client that does not
         // send them (null) leaves the stored value untouched, so a partial update can
@@ -585,6 +593,52 @@ public class ProposalService {
             throw new IllegalArgumentException("Project duration must be one of 12, 24 or 36 months.");
         }
         return normalized;
+    }
+
+    /**
+     * The calculated End Date rule: the End Date is the start date plus the selected number
+     * of months, keeping the day of the month and using the last valid day when the target
+     * month is shorter (31 January + 1 month = 28 February). A 12-month project starting on
+     * 1 October 2026 therefore ends on 1 October 2027.
+     *
+     * <p>The same rule calculates the field in the Create Proposal form
+     * ({@code src/utils/projectDates.js}), so the form and the server always agree; a
+     * modified API request cannot store a different date.</p>
+     *
+     * <p>Only the ordering rule is applied when a proposal carries a duration that is not one
+     * of the supported options, because no end date can be derived from it.</p>
+     */
+    private void validateProjectPeriod(LocalDate startDate, LocalDate endDate, String duration) {
+        if (startDate == null || endDate == null) {
+            return;
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException(
+                    "The project end date cannot be earlier than the start date (" + startDate + ").");
+        }
+        Integer months = supportedDurationMonths(duration);
+        if (months == null) {
+            return;
+        }
+        LocalDate calculatedEndDate = startDate.plusMonths(months);
+        if (!endDate.equals(calculatedEndDate)) {
+            throw new IllegalArgumentException("The project end date is calculated from the duration and"
+                    + " the start date: a " + months + "-month project starting " + startDate
+                    + " must end on " + calculatedEndDate + ".");
+        }
+    }
+
+    /** Whole months of a supported duration, or null when the value is not one of them. */
+    private Integer supportedDurationMonths(String duration) {
+        String normalized = duration == null ? null : duration.trim();
+        if (normalized == null || !SUPPORTED_DURATIONS.contains(normalized)) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(normalized);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** Statuses that must only be set through the RPS revision workflow. */
@@ -774,23 +828,8 @@ public class ProposalService {
     }
 
     /**
-     * Statuses whose proposal content may be reused as the starting point for a new
-     * proposal. Only REJECTED proposals are eligible: rejection is the workflow
-     * outcome that means "rework this and submit it again". Approval statuses and
-     * returned-for-revision statuses (RPS_RETURNED, REVISION, REC_REVISION,
-     * RETURNED_TO_RPS) are deliberately excluded, so the copy action can never be
-     * used to bypass the normal validation, review or submission process.
-     */
-    public static final Set<String> DUPLICABLE_STATUSES = Set.of("REJECTED");
-
-    /** True when the given proposal status allows creating a duplicate draft from it. */
-    public static boolean isDuplicableStatus(String status) {
-        return status != null && DUPLICABLE_STATUSES.contains(status.toUpperCase());
-    }
-
-    /**
-     * Creates a brand-new DRAFT proposal by reusing the reusable content of a
-     * REJECTED proposal.
+     * Creates a brand-new DRAFT proposal by reusing the reusable content of an
+     * existing proposal.
      * <p>
      * The copy is an independent record: it receives its own proposal code and
      * document id from the existing sequence allocation, its child rows are fresh
@@ -800,22 +839,23 @@ public class ProposalService {
      * intentionally not carried over either, because those files belong to the
      * original proposal and the new-proposal form cannot prefill them — the proponent
      * re-uploads them before submitting.
+     * <p>
+     * The original's status never decides whether it can be copied: the copy is a
+     * private DRAFT that starts the normal submission workflow from scratch, so
+     * reusing the content of a rejected, pending, under-review, approved or
+     * returned-for-revision proposal is always allowed. Only authorization is
+     * checked here - a proponent can only copy their own proposal.
      *
-     * @param sourceId id of the proposal to copy
+     * @param sourceId       id of the proposal to copy
+     * @param announcementId id of the Call for Proposal the copy belongs to
      * @return the newly created DRAFT proposal
      */
     @Transactional
-    public Proposal duplicateProposal(Long sourceId) {
+    public Proposal duplicateProposal(Long sourceId, Long announcementId) {
         Proposal source = getProposalById(sourceId);
         // Ownership is enforced server-side: a Proponent can never duplicate a
         // proposal they are not authorized to access by manipulating the request.
         currentUser.requireAccessTo(source);
-
-        if (!isDuplicableStatus(source.getStatus())) {
-            throw new IllegalStateException(
-                    "Only rejected proposals can be copied. Current status: "
-                            + source.getStatus());
-        }
 
         // A proposal whose proponent record was deleted has no owner, so a duplicate
         // could never be reached by anyone. Fail instead of creating an orphan record.
@@ -824,13 +864,22 @@ public class ProposalService {
                     "This proposal has no proponent on record and cannot be duplicated.");
         }
 
+        // The Call for Proposal the proponent selected in the picker: without it no copy
+        // is created, and the call is validated with the same rule the submission
+        // gatekeeper uses (it must exist and still be open for submissions).
+        if (announcementId == null) {
+            throw new IllegalArgumentException(
+                    "Please select a call for proposal before making a copy.");
+        }
+        ProposalAnnouncement announcement = proposalAnnouncementService.requireOpenAnnouncement(announcementId);
+
         Proposal copy = new Proposal();
         // The duplicate belongs to the same proponent so it stays in their workspace.
         copy.setProponent(source.getProponent());
-        // A duplicate is a private draft: it is not attached to a submission window and
-        // only becomes part of an announcement when the proponent actually submits it,
-        // which keeps the normal gatekeeper/validation flow in force.
-        copy.setProposalAnnouncementId(null);
+        // It belongs to the call the proponent selected, so it is listed under that call
+        // in their own workspace and in the RPS views, and its submission is validated
+        // against the same call.
+        copy.setProposalAnnouncementId(announcement.getId());
         copy.setStatus("DRAFT");
         copy.setRevisionNumber(0);
         String proposalCode = generateNextProposalCode();
@@ -854,7 +903,7 @@ public class ProposalService {
     /**
      * Copies only the content fields that are meaningful to reuse. Workflow fields
      * (status, identifiers, revision/SO/approval metadata, remarks) are intentionally
-     * excluded and set explicitly by {@link #duplicateProposal(Long)}, and uploaded
+     * excluded and set explicitly by {@link #duplicateProposal(Long, Long)}, and uploaded
      * attachment references (review/roadmap/beneficiaries/GAD file names) are left
      * blank because those files belong to the original proposal and must be uploaded
      * again on the copy.
@@ -884,11 +933,16 @@ public class ProposalService {
      * <p>
      * The form validates the same rules, but a request can also arrive from a
      * client that skips that validation, so the values are checked again before a
-     * proposal is submitted: the address must be complete for the selected
+     * proposal is submitted: the address must be complete for the Philippine
      * administrative hierarchy (see {@link #validateAddressHierarchy}) and the
      * contact must match its selected type. Only what the client actually sends is
      * validated: a client that predates the split (the revision form) sends neither
      * section and its legacy {@code address} text keeps working unchanged.
+     * <p>
+     * The Address section is Philippine-only, so the country is not a question any
+     * more: a request that sends the address parts without a country is valid and
+     * the country is stored as the Philippines (see
+     * {@link #addressCountryOrDefault}).
      */
     static void validateAddressAndContact(ProposalRequest request) {
         boolean addressSupplied = request.getAddressCountry() != null
@@ -898,7 +952,6 @@ public class ProposalService {
                 || request.getAddressMunicipality() != null
                 || request.getAddressBarangay() != null;
         if (addressSupplied) {
-            requireAddressPart(request.getAddressCountry(), "Country");
             requireAddressPart(request.getAddressRegion(), "Region");
             requireAddressPart(request.getAddressMunicipality(), "Municipality / City");
             requireAddressPart(request.getAddressBarangay(), "Barangay");
@@ -960,13 +1013,15 @@ public class ProposalService {
      * would otherwise be stored as a valid-looking address.
      * <p>
      * The check runs against the same PSGC extract the form's dropdowns are built
-     * from ({@link PhilippineAddressCatalog}). A country other than the Philippines
-     * has no structured hierarchy in RPIS - its parts are typed in by hand - so it
-     * keeps the simpler rule that a province or a district identifies the area, and
-     * only the country itself is verified.
+     * from ({@link PhilippineAddressCatalog}). The Address section is
+     * Philippine-only, so a request that omits the country is checked as a
+     * Philippine address ({@link #addressCountryOrDefault}); a country that is sent
+     * is still verified, and a country other than the Philippines has no structured
+     * hierarchy in RPIS - its parts are typed in by hand - so it keeps the simpler
+     * rule that a province or a district identifies the area.
      */
     static void validateAddressHierarchy(ProposalRequest request) {
-        String country = trimToNull(request.getAddressCountry());
+        String country = addressCountryOrDefault(request);
         PhilippineAddressCatalog catalog = PhilippineAddressCatalog.shared();
         if (catalog != null && !catalog.isKnownCountry(country)) {
             throw new IllegalArgumentException("Unknown country: " + country + ".");
@@ -984,6 +1039,19 @@ public class ProposalService {
         if (problem != null) {
             throw new IllegalArgumentException(problem);
         }
+    }
+
+    /**
+     * The country of the "Address *" section.
+     * <p>
+     * RPIS handles Philippine addresses only: the form has no country control, so a
+     * request that sends the address parts without a country means the Philippines.
+     * A country that is sent is used as it is, which keeps a proposal saved while
+     * the control still existed editable.
+     */
+    static String addressCountryOrDefault(ProposalRequest request) {
+        String country = request == null ? null : trimToNull(request.getAddressCountry());
+        return country == null ? PhilippineAddressCatalog.PHILIPPINES : country;
     }
 
     /** 7-15 digits, an optional leading "+" and the usual separators. */
@@ -1017,6 +1085,10 @@ public class ProposalService {
      * proponent already saved. An empty string still clears a part, because the
      * form always sends what it currently holds.
      * <p>
+     * The Address section is Philippine-only, so the country is never asked for: when
+     * the address parts are supplied without one, the country is stored as the
+     * Philippines (see {@link #addressCountryOrDefault}).
+     * <p>
      * Whenever the structured values are supplied, the combined {@code address}
      * column is rewritten from them plus the contact, so the proposal details,
      * reviewer views, exports and printouts - which all read that single column -
@@ -1024,17 +1096,23 @@ public class ProposalService {
      * only the legacy text has it stored unchanged.
      */
     static void applyAddressAndContact(Proposal proposal, ProposalRequest request) {
-        boolean supplied = request.getAddressCountry() != null
+        boolean addressPartsSupplied = request.getAddressCountry() != null
                 || request.getAddressRegion() != null
                 || request.getAddressProvince() != null
                 || request.getAddressDistrict() != null
                 || request.getAddressMunicipality() != null
-                || request.getAddressBarangay() != null
+                || request.getAddressBarangay() != null;
+        boolean supplied = addressPartsSupplied
                 || request.getContactType() != null
                 || request.getContactValue() != null;
 
         if (request.getAddressCountry() != null) {
             proposal.setAddressCountry(truncate(request.getAddressCountry(), ADDRESS_PART_MAX_LENGTH));
+        } else if (addressPartsSupplied) {
+            // The Address section is Philippine-only and its form no longer sends a
+            // country, so the parts are stored as a Philippine address: the structured
+            // columns and the combined "Address / Contact" text stay complete.
+            proposal.setAddressCountry(PhilippineAddressCatalog.PHILIPPINES);
         }
         if (request.getAddressRegion() != null) {
             proposal.setAddressRegion(truncate(request.getAddressRegion(), ADDRESS_PART_MAX_LENGTH));

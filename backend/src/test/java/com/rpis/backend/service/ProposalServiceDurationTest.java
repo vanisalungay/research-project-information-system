@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -81,6 +83,14 @@ class ProposalServiceDurationTest {
         return req;
     }
 
+    /** A draft proposal with a project period. */
+    private ProposalRequest datedRequest(String duration, String startDate, String endDate) {
+        ProposalRequest req = newProposalRequest(duration);
+        req.setStartDate(startDate);
+        req.setEndDate(endDate);
+        return req;
+    }
+
     @Test
     void newProposalSavesSelectedTwelveMonthDuration() {
         Proposal saved = service.saveProposal(newProposalRequest("12"), null);
@@ -109,5 +119,61 @@ class ProposalServiceDurationTest {
     void tamperedUnsupportedDurationIsRejected() {
         assertThrows(IllegalArgumentException.class,
                 () -> service.saveProposal(newProposalRequest("999"), null));
+    }
+
+    // ===== Calculated End Date: start date + duration (the day of the month is kept) =====
+
+    @Test
+    void endDateIsTheStartDatePlusTheDuration() {
+        // The examples of the requirement: 12 months from 1 October 2026 ends 1 October 2027.
+        Proposal saved = service.saveProposal(datedRequest("12", "2026-10-01", "2027-10-01"), null);
+        assertEquals(LocalDate.parse("2027-10-01"), saved.getEndDate());
+
+        service.saveProposal(datedRequest("12", "2026-12-01", "2027-12-01"), null);
+        service.saveProposal(datedRequest("24", "2026-10-01", "2028-10-01"), null);
+        service.saveProposal(datedRequest("36", "2026-10-01", "2029-10-01"), null);
+    }
+
+    @Test
+    void endDateThatIsNotTheCalculatedDateIsRejected() {
+        // One day before the calculated end date is still not the calculated date.
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(datedRequest("12", "2026-10-01", "2027-09-30"), null));
+        assertTrue(error.getMessage().contains("must end on 2027-10-01"), error.getMessage());
+
+        // ... and neither is a day after it.
+        assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(datedRequest("12", "2026-10-01", "2027-10-02"), null));
+    }
+
+    @Test
+    void endDateEqualToTheStartDateIsRejectedForAMultiMonthDuration() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(datedRequest("12", "2026-10-01", "2026-10-01"), null));
+    }
+
+    @Test
+    void endDateEarlierThanTheStartDateIsRejected() {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(datedRequest("12", "2026-10-01", "2026-09-01"), null));
+        assertTrue(error.getMessage().contains("cannot be earlier than the start date"),
+                error.getMessage());
+    }
+
+    @Test
+    void endDateUsesTheLastValidDayWhenTheTargetMonthIsShorter() {
+        // 31 January + 12 months is 31 January of the next year (the day exists again) ...
+        service.saveProposal(datedRequest("12", "2026-01-31", "2027-01-31"), null);
+        // ... while a date the target month does not contain is clamped to its last day.
+        assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(datedRequest("12", "2028-02-29", "2029-03-01"), null));
+    }
+
+    @Test
+    void endDateRuleSkipsAMissingDate() {
+        // A draft may be saved before both dates are known; no end date can be calculated yet.
+        Proposal saved = service.saveProposal(datedRequest("12", "2026-10-01", ""), null);
+        assertEquals(LocalDate.parse("2026-10-01"), saved.getStartDate());
+        assertNull(saved.getEndDate());
     }
 }

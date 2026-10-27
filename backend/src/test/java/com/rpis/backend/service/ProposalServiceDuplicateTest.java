@@ -1,6 +1,7 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.ProposalBudget;
 import com.rpis.backend.model.ProposalLimitation;
 import com.rpis.backend.model.ProposalLogFrame;
@@ -40,24 +41,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the "Make a Copy" feature: a REJECTED proposal can be reused as the
- * starting point for a brand-new draft that gets its own identifiers, copies only
- * reusable content, and never modifies or inherits the original proposal's workflow
- * state. Approval and returned-for-revision statuses are deliberately not copyable.
+ * Verifies the "Make a Copy" feature: a proposal can be reused as the starting
+ * point for a brand-new draft that gets its own identifiers, copies only reusable
+ * content, and never modifies or inherits the original proposal's workflow state.
+ * The original's status never decides whether it can be copied.
  */
 class ProposalServiceDuplicateTest {
 
     private ProposalRepository proposalRepository;
     private NotificationService notificationService;
     private ProposalVersionService versionService;
+    private ProposalAnnouncementService announcementService;
     private ProposalService service;
+
+    /** The Call for Proposal the copy is created under. */
+    private static final Long CALL_ID = 5L;
 
     @BeforeEach
     void setUp() {
         proposalRepository = mock(ProposalRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
         notificationService = mock(NotificationService.class);
-        ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
+        announcementService = mock(ProposalAnnouncementService.class);
         versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
@@ -66,6 +71,16 @@ class ProposalServiceDuplicateTest {
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(100L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
         when(userRepository.findAll()).thenReturn(List.of());
+        // The picker's call: open for submissions, so the copy may be created under it.
+        when(announcementService.requireOpenAnnouncement(CALL_ID)).thenReturn(openCall(CALL_ID));
+    }
+
+    /** The Call for Proposal the proponent selected in the "Make a Copy" picker. */
+    private ProposalAnnouncement openCall(Long id) {
+        ProposalAnnouncement announcement = new ProposalAnnouncement();
+        announcement.setId(id);
+        announcement.setName("Call " + id);
+        return announcement;
     }
 
     @AfterEach
@@ -161,7 +176,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         assertEquals("100", copy.getProposalCode());
         assertEquals("MSUN-ORPS-DA-100-" + Year.now().getValue() + "-REV00", copy.getDocumentId());
@@ -177,7 +192,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         assertEquals(source.getProjectTitle(), copy.getProjectTitle());
         assertEquals(source.getProgramTitle(), copy.getProgramTitle());
@@ -210,7 +225,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         // Edit the duplicate the way the proposal form would.
         copy.setProjectTitle("A Completely Different Project");
@@ -228,7 +243,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         assertNull(copy.getRemarks());
         assertNull(copy.getReturnRemarks());
@@ -244,8 +259,47 @@ class ProposalServiceDuplicateTest {
         assertNull(copy.getNeedsBudget());
         assertNull(copy.getReviewedBy());
         assertNull(copy.getReviewedByPosition());
-        // A duplicate is a private draft, not a submission under a window.
-        assertNull(copy.getProposalAnnouncementId());
+        // A duplicate is a draft that belongs to the call the proponent selected in the
+        // picker - never to the original's own call (3L in this fixture).
+        assertEquals(CALL_ID, copy.getProposalAnnouncementId());
+    }
+
+    @Test
+    void aCopyWithoutASelectedCallIsRejectedAndCreatesNothing() {
+        authenticate(7L, "PROPONENT");
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(rejectedProposal(1L, 7L)));
+
+        assertThrows(IllegalArgumentException.class, () -> service.duplicateProposal(1L, null));
+
+        // No identifier is allocated and nothing is stored before a call is selected.
+        verify(proposalRepository, never()).save(any(Proposal.class));
+        verify(proposalRepository, never()).nextProposalCodeSequence();
+    }
+
+    @Test
+    void aCopyIsRejectedWhenTheSelectedCallIsNoLongerOpen() {
+        authenticate(7L, "PROPONENT");
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(rejectedProposal(1L, 7L)));
+        when(announcementService.requireOpenAnnouncement(9L)).thenThrow(new IllegalStateException(
+                "The selected Call for Proposal is no longer open for submissions. "
+                        + "Please select an open call for proposal."));
+
+        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L, 9L));
+
+        verify(proposalRepository, never()).save(any(Proposal.class));
+    }
+
+    @Test
+    void theCopyKeepsTheSelectedCallAndTheOriginalKeepsItsOwn() {
+        authenticate(7L, "PROPONENT");
+        Proposal source = rejectedProposal(1L, 7L);
+        when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
+
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
+
+        assertEquals(CALL_ID, copy.getProposalAnnouncementId());
+        assertEquals(3L, source.getProposalAnnouncementId(),
+                "the original proposal keeps its own call");
     }
 
     @Test
@@ -254,7 +308,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        service.duplicateProposal(1L);
+        service.duplicateProposal(1L, CALL_ID);
 
         verify(versionService, never()).recordSubmission(any(), any(Boolean.class), any());
         verify(notificationService, never()).createNotification(any(), any(), any(), any(), any());
@@ -267,7 +321,7 @@ class ProposalServiceDuplicateTest {
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(rejectedProposal(1L, 8L)));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> service.duplicateProposal(1L));
+                () -> service.duplicateProposal(1L, CALL_ID));
 
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     }
@@ -278,43 +332,54 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         assertEquals("DRAFT", copy.getStatus());
         assertSame(source.getProponent(), copy.getProponent());
     }
 
     @Test
-    void approvedProposalsCannotBeCopied() {
+    void approvedProposalsCanBeCopied() {
         authenticate(7L, "PROPONENT");
         Proposal source = rejectedProposal(1L, 7L);
         source.setStatus("APPROVED");
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L));
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
+
+        // The copy is a draft: the approval itself is not carried over.
+        assertEquals("DRAFT", copy.getStatus());
+        assertNull(copy.getSoNumber());
     }
 
     @Test
-    void returnedForRevisionProposalsCannotBeCopied() {
+    void returnedForRevisionProposalsCanBeCopied() {
         authenticate(7L, "PROPONENT");
         Proposal source = rejectedProposal(1L, 7L);
         source.setStatus("RPS_RETURNED");
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L));
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
+
+        assertEquals("DRAFT", copy.getStatus());
+        assertNull(copy.getReturnRemarks());
     }
 
     @Test
-    void onlyRejectedProposalsCanBeCopied() {
+    void everyStatusCanBeCopied() {
         authenticate(7L, "PROPONENT");
-        for (String status : List.of("SUBMITTED", "APPROVED", "IMPLEMENTATION", "RELEASED",
-                "COMPLETED", "DRAFT", "RPS_RETURNED", "REVISION", "REC_REVISION", "RETURNED_TO_RPS")) {
+        for (String status : List.of("DRAFT", "SUBMITTED", "UNDER_REVIEW", "RPS_REVIEW",
+                "RPS_RETURNED", "OVCRIGE_COORDINATION", "REC_EVALUATION", "CHANCELLOR_REVIEW",
+                "FINANCE_AUTHORIZATION", "APPROVED", "REJECTED", "REVISION", "RETURNED_TO_RPS",
+                "RELEASED", "IMPLEMENTATION", "COMPLETED")) {
             Proposal source = rejectedProposal(1L, 7L);
             source.setStatus(status);
             when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-            assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L),
-                    status + " must not be copyable");
+            Proposal copy = service.duplicateProposal(1L, CALL_ID);
+
+            assertEquals("DRAFT", copy.getStatus(), status + " must be copyable");
+            assertSame(source.getProponent(), copy.getProponent());
         }
     }
 
@@ -324,7 +389,7 @@ class ProposalServiceDuplicateTest {
         Proposal source = rejectedProposal(1L, 7L);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        Proposal copy = service.duplicateProposal(1L);
+        Proposal copy = service.duplicateProposal(1L, CALL_ID);
 
         // The uploaded files belong to the original proposal, so the copy must not
         // point at them; the proponent re-uploads them before submitting.
@@ -341,7 +406,7 @@ class ProposalServiceDuplicateTest {
         source.setProponent(null);
         when(proposalRepository.findById(1L)).thenReturn(Optional.of(source));
 
-        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L));
+        assertThrows(IllegalStateException.class, () -> service.duplicateProposal(1L, CALL_ID));
     }
 
     @Test
@@ -352,6 +417,6 @@ class ProposalServiceDuplicateTest {
         when(proposalRepository.save(any(Proposal.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate key"));
 
-        assertThrows(DataIntegrityViolationException.class, () -> service.duplicateProposal(1L));
+        assertThrows(DataIntegrityViolationException.class, () -> service.duplicateProposal(1L, CALL_ID));
     }
 }

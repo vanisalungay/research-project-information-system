@@ -1,6 +1,7 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalAnnouncementRequest;
+import com.rpis.backend.dto.ProposalAnnouncementUpdateRequest;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,18 @@ class ProposalAnnouncementDetailsPostgresTest {
     private ProposalAnnouncementRequest request(String name, String start, String end, String status) {
         ProposalAnnouncementRequest request = new ProposalAnnouncementRequest();
         request.setName(name);
+        request.setStartDate(LocalDate.parse(start));
+        request.setEndDate(LocalDate.parse(end));
+        request.setStatus(status);
+        return request;
+    }
+
+    /**
+     * The payload of an update: only the submission window and the status. The name,
+     * priority agenda, reminders and additional announcement cannot be sent at all.
+     */
+    private ProposalAnnouncementUpdateRequest updateRequest(String start, String end, String status) {
+        ProposalAnnouncementUpdateRequest request = new ProposalAnnouncementUpdateRequest();
         request.setStartDate(LocalDate.parse(start));
         request.setEndDate(LocalDate.parse(end));
         request.setStatus(status);
@@ -143,9 +156,10 @@ class ProposalAnnouncementDetailsPostgresTest {
                 reload(created.getId()).getAdditionalAnnouncement());
     }
 
-    // 8. Editing restores the saved selection/text and can replace it.
+    // 8. An update keeps the saved selection and text: they are shown read-only and can no
+    //    longer be replaced through the update endpoint.
     @Test
-    void editingRestoresSavedSelectionsAndText() {
+    void anUpdateKeepsTheSavedSelectionsAndText() {
         ProposalAnnouncementRequest createRequest =
                 request("Editable Call", "2026-10-01", "2026-10-31", "DRAFT");
         createRequest.setPriorityAgendas(List.of("punla"));
@@ -153,47 +167,49 @@ class ProposalAnnouncementDetailsPostgresTest {
         createRequest.setAdditionalAnnouncement("Original note.");
         ProposalAnnouncement created = service.createAnnouncement(createRequest);
 
-        // What the Edit form loads.
+        // The Edit form loads the saved selection and text.
         ProposalAnnouncement loaded = service.getAnnouncementById(created.getId());
         assertEquals(List.of("punla"), loaded.getPriorityAgendas());
         assertEquals(List.of("research-plan"), loaded.getReminderIds());
         assertEquals("Original note.", loaded.getAdditionalAnnouncement());
 
-        // The user changes every new value and saves.
-        ProposalAnnouncementRequest updateRequest =
-                request("Editable Call", "2026-10-01", "2026-10-31", "DRAFT");
-        updateRequest.setPriorityAgendas(List.of("kalikasan", "tanglaw"));
-        updateRequest.setReminderIds(List.of("eligible-submitters", "collaboration"));
-        updateRequest.setAdditionalAnnouncement("Updated note.\nSecond line.");
-        service.updateAnnouncement(created.getId(), updateRequest);
+        // An update moves the submission window only: the selection and the text keep the
+        // values the call was created with.
+        service.updateAnnouncement(created.getId(),
+                updateRequest("2026-10-01", "2026-11-15", "DRAFT"));
 
         ProposalAnnouncement saved = reload(created.getId());
-        assertEquals(List.of("kalikasan", "tanglaw"), saved.getPriorityAgendas());
-        assertEquals(List.of("eligible-submitters", "collaboration"), saved.getReminderIds());
-        assertEquals("Updated note.\nSecond line.", saved.getAdditionalAnnouncement());
+        assertEquals(List.of("punla"), saved.getPriorityAgendas());
+        assertEquals(List.of("research-plan"), saved.getReminderIds());
+        assertEquals("Original note.", saved.getAdditionalAnnouncement());
+        assertEquals(LocalDate.parse("2026-11-15"), saved.getEndDate());
     }
 
-    // 9. Updating the new fields leaves the existing announcement data untouched.
+    // 9. An update applies the window and the status and leaves the announcement data
+    //    (name, selection, text, creation timestamp) untouched.
     @Test
-    void updatingTheNewFieldsLeavesExistingAnnouncementDataUntouched() {
-        ProposalAnnouncement created =
-                service.createAnnouncement(request("Untouched Call", "2026-10-01", "2026-10-31", "ACTIVE"));
+    void updatingTheWindowLeavesExistingAnnouncementDataUntouched() {
+        ProposalAnnouncementRequest createRequest =
+                request("Untouched Call", "2026-10-01", "2026-10-31", "ACTIVE");
+        createRequest.setPriorityAgendas(List.of("dagat"));
+        createRequest.setReminderIds(List.of("collaboration"));
+        createRequest.setAdditionalAnnouncement("Keep this body.");
+        ProposalAnnouncement created = service.createAnnouncement(createRequest);
         ProposalAnnouncement before = reload(created.getId());
 
-        ProposalAnnouncementRequest updateRequest =
-                request("Untouched Call", "2026-10-01", "2026-10-31", "ACTIVE");
-        updateRequest.setPriorityAgendas(List.of("dagat"));
-        updateRequest.setReminderIds(List.of("collaboration"));
-        updateRequest.setAdditionalAnnouncement("Only the new fields change.");
-        service.updateAnnouncement(created.getId(), updateRequest);
+        service.updateAnnouncement(created.getId(),
+                updateRequest("2026-10-01", "2026-12-20", "CLOSED"));
 
         ProposalAnnouncement after = reload(created.getId());
         assertEquals(before.getName(), after.getName());
         assertEquals(before.getStartDate(), after.getStartDate());
-        assertEquals(before.getEndDate(), after.getEndDate());
-        assertEquals("ACTIVE", after.getStatus());
         assertEquals(before.getCreatedAt(), after.getCreatedAt());
         assertEquals(List.of("dagat"), after.getPriorityAgendas());
+        assertEquals(List.of("collaboration"), after.getReminderIds());
+        assertEquals("Keep this body.", after.getAdditionalAnnouncement());
+        // The permitted fields did change.
+        assertEquals(LocalDate.parse("2026-12-20"), after.getEndDate());
+        assertEquals("CLOSED", after.getStatus());
     }
 
     // 10. An update that does not send the new fields never resets them to defaults.
@@ -206,9 +222,9 @@ class ProposalAnnouncementDetailsPostgresTest {
         createRequest.setAdditionalAnnouncement("Keep this text.");
         ProposalAnnouncement created = service.createAnnouncement(createRequest);
 
-        // Request carrying only the pre-existing fields (new fields left null).
+        // The update carries only the submission window and the status.
         service.updateAnnouncement(created.getId(),
-                request("Keep Selection", "2026-10-02", "2026-11-30", "DRAFT"));
+                updateRequest("2026-10-02", "2026-11-30", "DRAFT"));
 
         ProposalAnnouncement saved = reload(created.getId());
         assertEquals(List.of("dagat"), saved.getPriorityAgendas());
@@ -234,18 +250,17 @@ class ProposalAnnouncementDetailsPostgresTest {
         assertTrue(legacy.getReminderIds().isEmpty());
         assertNull(legacy.getAdditionalAnnouncement());
 
-        ProposalAnnouncementRequest updateRequest =
-                request("Legacy Call", "2026-09-01", "2026-09-30", "CLOSED");
-        updateRequest.setPriorityAgendas(List.of("tanglaw"));
-        updateRequest.setReminderIds(List.of("research-plan"));
-        updateRequest.setAdditionalAnnouncement("Filled in later.");
-        service.updateAnnouncement(legacyId, updateRequest);
+        // An update only moves the submission window: a legacy row keeps its empty
+        // selections and its (absent) additional text.
+        service.updateAnnouncement(legacyId,
+                updateRequest("2026-09-01", "2026-10-15", "CLOSED"));
 
         ProposalAnnouncement saved = reload(legacyId);
-        assertEquals(List.of("tanglaw"), saved.getPriorityAgendas());
-        assertEquals(List.of("research-plan"), saved.getReminderIds());
-        assertEquals("Filled in later.", saved.getAdditionalAnnouncement());
+        assertTrue(saved.getPriorityAgendas().isEmpty());
+        assertTrue(saved.getReminderIds().isEmpty());
+        assertNull(saved.getAdditionalAnnouncement());
         assertEquals("Legacy Call", saved.getName());
+        assertEquals(LocalDate.parse("2026-10-15"), saved.getEndDate());
     }
 
     // 12. Unknown/duplicated identifiers are dropped and normalised to canonical keys.

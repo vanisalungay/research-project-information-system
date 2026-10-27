@@ -15,11 +15,11 @@ import java.util.Map;
  * The shared cooperating agency directory used by section 02 of the Create
  * Proposal form.
  * <p>
- * Both endpoints require an authenticated caller (see {@code SecurityConfig}):
- * a proponent may read the directory and add a missing agency, and an anonymous
- * caller can do neither. Adding an agency is not an administrative privilege -
- * it only appends one reusable row to a lookup list - so no extra role is needed
- * or granted.
+ * Reading the directory requires an authenticated caller; adding an agency is an
+ * administrative action and is restricted to the RPS roles in {@code SecurityConfig}
+ * ({@code RPS_ADMIN} / {@code RPS_STAFF}, the roles that manage the master data).
+ * A proponent therefore selects from the list and can never change it: an agency
+ * that is missing is requested from an administrator.
  */
 @RestController
 @RequestMapping("/api/cooperating-agencies")
@@ -35,9 +35,12 @@ public class CooperatingAgencyController {
     }
 
     /**
-     * Adds an agency that is not in the directory yet. The name is validated and
-     * compared case-insensitively with the existing agencies; a duplicate is
-     * answered with 409 and a message the form can show as-is.
+     * Administrator-only: adds an agency that is not in the directory yet. The name
+     * is validated and compared case-insensitively with the existing agencies; a
+     * duplicate is answered with 409 and a message that can be shown as-is.
+     * <p>
+     * The role requirement lives in {@code SecurityConfig} (the proponent form never
+     * calls this endpoint).
      */
     @PostMapping
     public ResponseEntity<CooperatingAgency> addAgency(@RequestBody CooperatingAgencyRequest request) {

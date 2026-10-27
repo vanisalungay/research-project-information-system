@@ -21,6 +21,7 @@
   nav,
   aside,
   .app-layout header,
+  .app-layout .app-sidebar,
   .app-layout .sidebar,
   .sidebar,
   .nav-menu,
@@ -62,6 +63,8 @@
   }
 
   .app-layout .content,
+  .app-layout .app-content,
+  main.app-content,
   main.content,
   .content {
     overflow: visible !important;

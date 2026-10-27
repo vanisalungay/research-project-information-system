@@ -32,11 +32,13 @@ import {
   formatAddressContact,
   independentCitiesOfRegion,
   isIndependentCity,
+  isPhilippineAddress,
   isPhilippines,
   loadProvinces,
   loadRegions,
   provincesOfRegion,
   regionLabel,
+  savedAddressDetails,
   setAddressLevel,
   sortedByName,
   validateAddress,
@@ -126,12 +128,61 @@ const citiesWithIndependent = [
 test('a new address starts on the Philippines with every level below empty', () => {
   const details = emptyAddressDetails()
   assert.deepEqual(Object.keys(details), ADDRESS_LEVELS)
-  // The Philippines is the default for a new proposal, so its region dropdown is
-  // available immediately; nothing below it is preselected.
+  // The country is fixed (the field is shown read-only and always holds the
+  // Philippines), so the region dropdown is available immediately; nothing below it
+  // is preselected.
   assert.equal(details.country, 'Philippines')
   assert.ok(
     ADDRESS_LEVELS.filter((level) => level !== 'country').every((level) => details[level] === ''),
   )
+})
+
+test('a loaded record keeps its address and is always a Philippine one', () => {
+  // A draft saved with its country: loaded unchanged.
+  assert.deepEqual(
+    savedAddressDetails({
+      country: 'Philippines',
+      region: 'Northern Mindanao',
+      province: 'Misamis Oriental',
+      district: '',
+      municipality: 'Naawan',
+      barangay: 'Balintad',
+    }),
+    {
+      country: 'Philippines',
+      region: 'Northern Mindanao',
+      province: 'Misamis Oriental',
+      district: '',
+      municipality: 'Naawan',
+      barangay: 'Balintad',
+    },
+  )
+
+  // Parts saved without a country (an older row, or a client that sent none): the
+  // Philippines is filled in and nothing else is touched.
+  const completed = savedAddressDetails({ region: 'Northern Mindanao', municipality: 'Naawan' })
+  assert.equal(completed.country, 'Philippines')
+  assert.equal(completed.region, 'Northern Mindanao')
+  assert.equal(completed.municipality, 'Naawan')
+
+  // An empty record - a new proposal, or a copy with no address yet - starts as the
+  // Philippines with every level below empty.
+  assert.deepEqual(savedAddressDetails({}), emptyAddressDetails())
+  assert.deepEqual(savedAddressDetails(), emptyAddressDetails())
+
+  // A record that stored another country *and* its own parts keeps both, so opening an
+  // old draft never erases a foreign address; a country on its own is Philippine.
+  const foreign = savedAddressDetails({ country: 'Japan', region: 'Tokyo', municipality: 'Shinjuku' })
+  assert.equal(foreign.country, 'Japan')
+  assert.equal(foreign.region, 'Tokyo')
+  assert.equal(foreign.municipality, 'Shinjuku')
+  assert.equal(savedAddressDetails({ country: 'Japan' }).country, 'Philippines')
+
+  // Every level is present and every value is a string.
+  const numeric = savedAddressDetails({ region: 12 })
+  assert.deepEqual(Object.keys(numeric), ADDRESS_LEVELS)
+  assert.equal(numeric.region, '12')
+  assert.equal(numeric.country, 'Philippines')
 })
 
 test('changing a parent clears every dependent selection', () => {
@@ -177,6 +228,18 @@ test('the Philippines is the only country with structured data', () => {
   assert.equal(isPhilippines('Philippines'), true)
   assert.equal(isPhilippines('Malaysia'), false)
   assert.equal(isPhilippines(''), false)
+})
+
+test('an address is a Philippine one unless it stores another country', () => {
+  // The Address section is Philippine-only: the country is never asked for, so an
+  // address that has none (a new one, or a record saved without it) is Philippine.
+  assert.equal(isPhilippineAddress('Philippines'), true)
+  assert.equal(isPhilippineAddress('  Philippines  '), true)
+  assert.equal(isPhilippineAddress(''), true)
+  assert.equal(isPhilippineAddress(null), true)
+  assert.equal(isPhilippineAddress(undefined), true)
+  // A record saved while the country control still existed keeps its own country.
+  assert.equal(isPhilippineAddress('Japan'), false)
 })
 
 test('province and district options follow the selected region', () => {
@@ -371,7 +434,6 @@ test('an incomplete address is rejected with a message for the missing level', (
     barangay: 'Balintad',
   }
   assert.equal(validateAddress(complete, { hasProvinces: true }), '')
-  assert.match(validateAddress({}, {}), /country/i)
   assert.match(validateAddress({ country: 'Philippines' }, { hasProvinces: true }), /region/i)
   assert.match(validateAddress({ ...complete, province: '' }, { hasProvinces: true }), /province/i)
   assert.match(
@@ -379,6 +441,27 @@ test('an incomplete address is rejected with a message for the missing level', (
     /municipality/i,
   )
   assert.match(validateAddress({ ...complete, barangay: '' }, { hasProvinces: true }), /barangay/i)
+})
+
+test('the address is validated without a country, which is never asked for', () => {
+  const complete = {
+    region: 'Northern Mindanao',
+    province: 'Misamis Oriental',
+    district: '',
+    municipality: 'Naawan',
+    barangay: 'Balintad',
+  }
+  // No country at all: still a Philippine address, so the same rules apply.
+  assert.equal(validateAddress(complete, { hasProvinces: true }), '')
+  assert.match(validateAddress({}, {}), /region/i)
+  assert.match(validateAddress({ region: 'Northern Mindanao' }, { hasProvinces: true }), /province/i)
+  assert.match(
+    validateAddress({ ...complete, municipality: '' }, { hasProvinces: true }),
+    /municipality \/ city/i,
+  )
+  assert.match(validateAddress({ ...complete, barangay: '' }, { hasProvinces: true }), /barangay/i)
+  // The country that is stored is the Philippines and behaves identically.
+  assert.equal(validateAddress({ country: 'Philippines', ...complete }, { hasProvinces: true }), '')
 })
 
 test('a region without provinces (NCR) needs a district instead', () => {
@@ -417,27 +500,24 @@ test('a foreign address is typed in and never needs Philippine units', () => {
 })
 
 test('each dropdown reports whether it is waiting, loading, ready or not applicable', () => {
-  // Nothing selected yet: only the country can be answered.
+  // Nothing selected yet: Region is the first control of the section (there is no
+  // country control any more), and the levels below it wait for their parent.
   const fresh = addressLevelPlaceholders({})
-  assert.equal(fresh.country, 'Select Country')
-  assert.equal(fresh.region, 'Select a country first')
+  assert.equal('country' in fresh, false)
+  assert.equal(fresh.region, 'No regions available')
   assert.equal(fresh.province, 'Select a region first')
   assert.equal(fresh.municipality, 'Select a region first')
   assert.equal(fresh.barangay, 'Select a municipality / city first')
 
-  // A country is chosen and its regions are still being read.
+  // The bundled regions are still being read, then they are ready.
+  assert.equal(addressLevelPlaceholders({ loadingBase: true }).region, 'Loading regions...')
   assert.equal(
-    addressLevelPlaceholders({ country: 'Philippines', loadingBase: true }).region,
-    'Loading regions...',
-  )
-  assert.equal(
-    addressLevelPlaceholders({ country: 'Philippines', loadingBase: false }).region,
-    'No regions available',
+    addressLevelPlaceholders({ loadingBase: false, regionCount: 17 }).region,
+    'Select Region',
   )
 
   // Region chosen: the levels that do not apply say so instead of inventing data.
   const region = addressLevelPlaceholders({
-    country: 'Philippines',
     region: 'Northern Mindanao',
     regionCount: 17,
     provinceCount: 5,
@@ -451,7 +531,6 @@ test('each dropdown reports whether it is waiting, loading, ready or not applica
 
   // A region without provinces (NCR) is answered through its districts.
   const ncr = addressLevelPlaceholders({
-    country: 'Philippines',
     region: 'National Capital Region',
     regionCount: 17,
     provinceCount: 0,
@@ -476,7 +555,6 @@ test('the municipality level reports its parent, its loading and its failure', (
   // A region with provinces: the city waits for the province.
   assert.equal(
     addressLevelPlaceholders({
-      country: 'Philippines',
       region: 'Northern Mindanao',
       provinceRequired: true,
       regionCount: 17,
@@ -487,7 +565,6 @@ test('the municipality level reports its parent, its loading and its failure', (
   // ...unless the region has independent cities of its own, which are offered.
   assert.equal(
     addressLevelPlaceholders({
-      country: 'Philippines',
       region: 'Zamboanga Peninsula',
       provinceRequired: true,
       cityCount: 1,
@@ -496,7 +573,6 @@ test('the municipality level reports its parent, its loading and its failure', (
   )
   assert.equal(
     addressLevelPlaceholders({
-      country: 'Philippines',
       region: 'Northern Mindanao',
       province: 'Misamis Oriental',
       provinceRequired: true,
@@ -507,7 +583,6 @@ test('the municipality level reports its parent, its loading and its failure', (
   // The 242 KB city file is still being read, and a failed read says so.
   assert.equal(
     addressLevelPlaceholders({
-      country: 'Philippines',
       region: 'Northern Mindanao',
       loadingCities: true,
     }).municipality,
@@ -515,7 +590,6 @@ test('the municipality level reports its parent, its loading and its failure', (
   )
   assert.equal(
     addressLevelPlaceholders({
-      country: 'Philippines',
       region: 'Northern Mindanao',
       citiesFailed: true,
     }).municipality,

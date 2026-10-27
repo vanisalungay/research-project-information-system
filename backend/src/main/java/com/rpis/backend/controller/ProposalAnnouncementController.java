@@ -1,7 +1,9 @@
 package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.ProposalAnnouncementRequest;
+import com.rpis.backend.dto.ProposalAnnouncementUpdateRequest;
 import com.rpis.backend.model.ProposalAnnouncement;
+import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.NoSuchElementException;
 public class ProposalAnnouncementController {
 
     private final ProposalAnnouncementService announcementService;
+    private final CurrentUser currentUser;
 
     // ==================== READ ====================
 
@@ -81,15 +84,26 @@ public class ProposalAnnouncementController {
 
     @PostMapping
     public ResponseEntity<ProposalAnnouncement> createAnnouncement(@RequestBody ProposalAnnouncementRequest request) {
-        ProposalAnnouncement created = announcementService.createAnnouncement(request);
+        // The authenticated administrator is recorded on the update history when the call
+        // is created already published.
+        ProposalAnnouncement created =
+                announcementService.createAnnouncement(request, currentUser.getUserId());
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
+    /**
+     * Updates an existing Call for Proposal. Only the submission window (start and end
+     * date) and the status can be changed - see
+     * {@link com.rpis.backend.dto.ProposalAnnouncementUpdateRequest}, which is the
+     * allow-list of the update: the name, priority agenda, announcement reminders and
+     * additional announcement are not part of the request and keep their stored values.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<ProposalAnnouncement> updateAnnouncement(
             @PathVariable Long id,
-            @RequestBody ProposalAnnouncementRequest request) {
-        return ResponseEntity.ok(announcementService.updateAnnouncement(id, request));
+            @RequestBody ProposalAnnouncementUpdateRequest request) {
+        return ResponseEntity.ok(
+                announcementService.updateAnnouncement(id, request, currentUser.getUserId()));
     }
 
     /**
@@ -98,7 +112,8 @@ public class ProposalAnnouncementController {
      */
     @PutMapping("/{id}/activate")
     public ResponseEntity<ProposalAnnouncement> activateAnnouncement(@PathVariable Long id) {
-        return ResponseEntity.ok(announcementService.activateAnnouncement(id));
+        return ResponseEntity.ok(
+                announcementService.activateAnnouncement(id, currentUser.getUserId()));
     }
 
     @DeleteMapping("/{id}")

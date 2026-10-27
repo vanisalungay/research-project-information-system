@@ -2,28 +2,26 @@
  * cooperatingAgencies.test.js
  * ---------------------------------------------------------------------------
  * Covers the client-side rules of the "Cooperating Agencies" checklist
- * (section 02 of the Create Proposal form): the name of a new agency is
- * normalized before it is sent, an empty / too long / already existing name is
- * rejected (case-insensitively), a newly added agency is merged into the
- * checklist in its alphabetical place, and the selection is turned into the
- * legacy text the existing screens read.
+ * (section 02 of the Create Proposal form): the checklist is ordered by the
+ * lower-cased agency name, the selection is normalized, and a selection becomes
+ * the legacy text the existing screens read.
+ *
+ * The proponent interface is read-only over the directory, so the module must not
+ * expose any way to create an agency - the first test locks that in.
  *
  * Run with: npm test
  */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
+import * as cooperatingAgencies from './cooperatingAgencies.js'
 import {
-  AGENCY_NAME_MAX_LENGTH,
   agencyNameKey,
   describeAgencySelection,
-  findAgencyByName,
   joinAgencyNames,
-  mergeAgency,
   normalizeAgencyName,
   normalizeSelectedIds,
   sortAgenciesByName,
-  validateAgencyName,
 } from './cooperatingAgencies.js'
 
 const DIRECTORY = [
@@ -33,48 +31,36 @@ const DIRECTORY = [
   { id: 4, name: 'Local Government Unit (LGU)' },
 ]
 
+test('the proponent module cannot create an agency', () => {
+  // Creating an agency is an administrator action (POST /api/cooperating-agencies
+  // is restricted to the RPS roles), so the proponent-side helpers that validated
+  // and merged a new agency name are gone and must not come back.
+  for (const removed of [
+    'validateAgencyName',
+    'mergeAgency',
+    'findAgencyByName',
+    'AGENCY_NAME_MAX_LENGTH',
+  ]) {
+    assert.equal(cooperatingAgencies[removed], undefined, `${removed} must not be exported`)
+  }
+
+  // What is left is read-only: ordering, selection and the legacy text.
+  assert.deepEqual(Object.keys(cooperatingAgencies).sort(), [
+    'agencyNameKey',
+    'describeAgencySelection',
+    'joinAgencyNames',
+    'normalizeAgencyName',
+    'normalizeSelectedIds',
+    'sortAgenciesByName',
+  ])
+})
+
 test('an agency name is trimmed and its inner whitespace collapsed', () => {
   assert.equal(normalizeAgencyName('  Bureau   of Fisheries  '), 'Bureau of Fisheries')
   assert.equal(normalizeAgencyName('\tPhilippine\tSpace\nAgency '), 'Philippine Space Agency')
   assert.equal(normalizeAgencyName(null), '')
   assert.equal(normalizeAgencyName(undefined), '')
   assert.equal(agencyNameKey('  Department of Health (DOH) '), 'department of health (doh)')
-})
-
-test('an existing agency is found regardless of case and spacing', () => {
-  assert.equal(findAgencyByName(DIRECTORY, 'department of science and technology (dost)')?.id, 1)
-  assert.equal(findAgencyByName(DIRECTORY, '  DEPARTMENT   OF TOURISM (DOT) ')?.id, 3)
-  assert.equal(findAgencyByName(DIRECTORY, 'Department of Energy (DOE)'), null)
-  assert.equal(findAgencyByName(DIRECTORY, '   '), null)
-  assert.equal(findAgencyByName(null, 'DOST'), null)
-})
-
-test('a blank name is rejected before anything is sent', () => {
-  assert.match(validateAgencyName('', DIRECTORY), /enter the name/i)
-  assert.match(validateAgencyName('   ', DIRECTORY), /enter the name/i)
-})
-
-test('a name that already exists is rejected case-insensitively', () => {
-  assert.match(
-    validateAgencyName('department of science and technology (dost)', DIRECTORY),
-    /already in the cooperating agencies list/i,
-  )
-  assert.match(
-    validateAgencyName('  LOCAL   GOVERNMENT UNIT (LGU) ', DIRECTORY),
-    /already in the cooperating agencies list/i,
-  )
-})
-
-test('a too long name is rejected, a new one is accepted', () => {
-  assert.match(
-    validateAgencyName('x'.repeat(AGENCY_NAME_MAX_LENGTH + 1), DIRECTORY),
-    /at most 200 characters/i,
-  )
-  assert.equal(
-    validateAgencyName('Bureau of Fisheries and Aquatic Resources (BFAR)', DIRECTORY),
-    '',
-  )
-  assert.equal(validateAgencyName('  Bureau  of Fisheries ', []), '')
 })
 
 test('the checklist is ordered by the lower-cased name, then by id', () => {
@@ -108,21 +94,6 @@ test('the checklist is ordered by the lower-cased name, then by id', () => {
     original.map((agency) => agency.id),
     [1, 2],
   )
-})
-
-test('a newly added agency is merged into the checklist in its place', () => {
-  const merged = mergeAgency(DIRECTORY, {
-    id: 5,
-    name: 'Bureau of Fisheries and Aquatic Resources (BFAR)',
-  })
-  assert.deepEqual(
-    merged.map((agency) => agency.id),
-    [5, 1, 2, 3, 4],
-  )
-  // Nothing is duplicated when the same agency comes back from the backend.
-  assert.deepEqual(mergeAgency(DIRECTORY, { id: 1, name: 'DOST' }).length, DIRECTORY.length)
-  // An unsaved agency (no id) never enters the checklist.
-  assert.deepEqual(mergeAgency(DIRECTORY, { name: 'No id' }).length, DIRECTORY.length)
 })
 
 test('the selected ids are numbers, unique and never empty entries', () => {

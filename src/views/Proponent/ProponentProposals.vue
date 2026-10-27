@@ -19,6 +19,8 @@
       @next="goToStep2" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
     <ProponentSubmitProp2 ref="step2Ref" v-if="showModal2" :open="showModal2"
+      :saved-signature="proposalData.certificationSignature"
+      @update:signature="proposalData.certificationSignature = $event"
       @close="showModal2 = false; refreshOnClose()" @openPrevious="goBackToStep1" @openCriteria="openCriteriaModal"
       @submitProposal="handleStep2Submit" @goToStep="handleGoToStep" />
 
@@ -74,10 +76,6 @@
           <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
             <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
-            <button v-if="isDuplicable(proposal.status)" class="btn-duplicate" :disabled="duplicatingId === proposal.id"
-              @click="duplicateProposal(proposal)">
-              {{ duplicatingId === proposal.id ? 'Copying...' : 'Make a Copy' }}
-            </button>
             <button v-if="proposal.status === 'DRAFT'" class="btn-delete"
               @click="deleteProposal(proposal.id)">Delete</button>
           </td>
@@ -95,7 +93,6 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
-import { isDuplicable } from '@/utils/proposalStatus'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -260,44 +257,10 @@ const viewProposal = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })
 }
 
-// ===== Make a Copy of a rejected proposal =====
-// The backend creates a brand-new DRAFT with its own proposal code / document id
-// and only the reusable content of the rejected proposal. Attachments are not
-// carried over (the uploaded files belong to the original), so the copy is opened
-// for editing right away and the proponent re-uploads the files before submitting.
-const duplicatingId = ref(null)
-
-const duplicateProposal = async (proposal) => {
-  const title = proposal.projectTitle || proposal.title || 'this proposal'
-  const confirmed = await showConfirm(
-    `Create a new draft from the rejected proposal "${title}"? You can reuse its content, edit what you need, and submit it as a new proposal.`,
-    { title: 'Make a Copy', type: 'info', confirmText: 'Make a Copy' }
-  )
-  if (!confirmed) return
-
-  duplicatingId.value = proposal.id
-  try {
-    const res = await api.post(`/api/proposals/${proposal.id}/duplicate`)
-    const created = res.data || {}
-    await showAlert(
-      `A new draft was created from this proposal (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
-      { type: 'success', title: 'Copy Created' }
-    )
-    await fetchProposals()
-    if (created.id) {
-      await openDraftForEdit(created.id)
-    }
-  } catch (err) {
-    console.error(err)
-    const body = err.response?.data
-    const message =
-      (body && typeof body === 'object' ? body.error : body) ||
-      'Failed to create a copy of the proposal. Please try again.'
-    await showAlert(String(message), { type: 'error', title: 'Copy Failed' })
-  } finally {
-    duplicatingId.value = null
-  }
-}
+// ===== Make a Copy =====
+// The action lives on the proposal details page (opened with View), not in this
+// table: a copy is made from the proposal the proponent is looking at, whatever
+// its status, and the backend creates a brand-new DRAFT that this page then shows.
 
 const deleteProposal = async (id) => {
   const confirmed = await showConfirm('Are you sure you want to delete this draft proposal?', {
@@ -372,12 +335,16 @@ const goBackToStep1 = () => {
 }
 
 const handleStep2Submit = (certificationData) => {
-  // Store certification data alongside proposal data
+  // Store certification data alongside proposal data. The signature chosen in the
+  // step travels with it, so going back to that step keeps the same selection
+  // instead of starting over from the account's saved signature.
   if (certificationData) {
     proposalData.value = {
       ...proposalData.value,
       certification: certificationData.certification,
-      signatureFiles: certificationData.signatureFiles
+      signatureFiles: certificationData.signatureFiles,
+      certificationSignature:
+        certificationData.certificationSignature ?? proposalData.value.certificationSignature ?? null
     }
   }
   // The selected call is kept until the proposal is submitted.
@@ -540,26 +507,6 @@ const refreshOnClose = () => {
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-}
-
-.btn-duplicate {
-  background: #ffffff;
-  border: 1px solid #4b3f72;
-  color: #4b3f72;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-right: 6px;
-}
-
-.btn-duplicate:hover:not(:disabled) {
-  background: #f1f0f7;
-}
-
-.btn-duplicate:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .btn-delete:hover {

@@ -5,7 +5,7 @@
  *
  * src/layouts/DefaultLayout.vue pins the page body to the viewport
  * (.app-layout { height: 100vh; overflow: hidden }) and scrolls its
- * <main class="content"> region instead (.content { overflow-y: auto }).
+ * <main class="app-content"> region instead (.app-content { overflow-y: auto }).
  * That region is never re-created while the router swaps views, so its scrollTop
  * is carried over from the previous page: opening the Quarterly Progress Report
  * right after scrolling down Proposal Monitoring used to start the report
@@ -21,7 +21,10 @@
  */
 
 /** Selector of the scrollable content region of the authenticated layout. */
-export const CONTENT_SCROLL_SELECTOR = 'main.content'
+export const CONTENT_SCROLL_SELECTOR = 'main.app-content'
+
+/** Selectors of earlier shells, still checked as a fallback. */
+export const LEGACY_CONTENT_SCROLL_SELECTORS = ['main.content']
 
 function defaultDocument() {
   return typeof document === 'undefined' ? null : document
@@ -39,7 +42,16 @@ function defaultWindow() {
  */
 export function getScrollContainer(root = defaultDocument()) {
   if (!root || typeof root.querySelector !== 'function') return null
-  return root.querySelector(CONTENT_SCROLL_SELECTOR)
+
+  const container = root.querySelector(CONTENT_SCROLL_SELECTOR)
+  if (container) return container
+
+  for (const selector of LEGACY_CONTENT_SCROLL_SELECTORS) {
+    const legacy = root.querySelector(selector)
+    if (legacy) return legacy
+  }
+
+  return null
 }
 
 /**

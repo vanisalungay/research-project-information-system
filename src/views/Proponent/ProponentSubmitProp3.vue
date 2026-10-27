@@ -205,6 +205,7 @@ import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import {
+  PHILIPPINES,
   formatAddressContact,
   isIndependentCity,
   loadCitiesMunicipalities,
@@ -393,10 +394,12 @@ const validationErrors = computed(() => {
   if (isBlank(d.end_date)) errs.push('End Date is missing.')
   if (isBlank(d.department)) errs.push('Department is missing.')
   // Address and Contact are two separate sections now; step 1 validates them in
-  // full, this is the review page's summary check. The province / district is
-  // required unless the selected city belongs to no province and no district.
+  // full, this is the review page's summary check. The Address section is
+  // Philippine-only, so the country is not asked for (it is filled in when the
+  // proposal is submitted). The province / district is required unless the
+  // selected city belongs to no province and no district.
   const address = d.address_details || {}
-  const addressParts = ['country', 'region', 'municipality', 'barangay']
+  const addressParts = ['region', 'municipality', 'barangay']
   const areaLevelApplies =
     !isBlank(address.province) ||
     !isBlank(address.district) ||
@@ -548,7 +551,9 @@ const saveOrUpdateProposal = async (status) => {
     // The combined "Address / Contact" column stays in sync with the two new
     // sections, so existing screens and exports keep showing both.
     address: formatAddressContact(data.address_details, data.contact_details),
-    addressCountry: data.address_details?.country || '',
+    // The Address section is Philippine-only: the country is never asked for, so it
+    // is filled in here (a stored country - a legacy record - is kept as it is).
+    addressCountry: data.address_details?.country || PHILIPPINES.name,
     addressRegion: data.address_details?.region || '',
     addressProvince: data.address_details?.province || '',
     addressDistrict: data.address_details?.district || '',

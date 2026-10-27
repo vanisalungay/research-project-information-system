@@ -49,6 +49,24 @@ class ProposalAddressContactMappingTest {
     }
 
     @Test
+    void aRequestWithoutACountryStoresThePhilippines() {
+        // The form no longer asks for a country, so the parts arrive on their own and
+        // the country is filled in - the structured columns and the combined
+        // "Address / Contact" text stay complete.
+        ProposalRequest request = structuredRequest();
+        request.setAddressCountry(null);
+        Proposal proposal = new Proposal();
+
+        ProposalService.applyAddressAndContact(proposal, request);
+
+        assertEquals("Philippines", proposal.getAddressCountry());
+        assertEquals(
+                "Balintad, Naawan, Misamis Oriental, Region X \u2013 Northern Mindanao, Philippines"
+                        + " / juan.delaacruz@example.com",
+                proposal.getAddress());
+    }
+
+    @Test
     void theCombinedAddressKeepsTheOldFieldOrderAndAppendsTheContact() {
         Proposal proposal = new Proposal();
 

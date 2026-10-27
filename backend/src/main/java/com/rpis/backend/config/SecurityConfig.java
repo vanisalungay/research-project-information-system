@@ -72,12 +72,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/available").authenticated()
 
                         // Cooperating Agency directory (section 02 of the Create Proposal
-                        // form): any authenticated user may read it and add an agency that
-                        // is missing. Anonymous callers can never modify the directory,
-                        // and no administrative role is required - or granted - because
-                        // adding one lookup row is not an administrative action.
+                        // form): any authenticated user may read it, but only an
+                        // administrator (the RPS roles that manage the master data) may
+                        // add an agency. The proponent form is read-only over the
+                        // directory, so the global list cannot be changed from it.
                         .requestMatchers(HttpMethod.GET, "/api/cooperating-agencies").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/cooperating-agencies").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/cooperating-agencies")
+                        .hasAnyRole("RPS_ADMIN", "RPS_STAFF")
 
                         // Proponent-facing Call for Proposals details, opened from an
                         // announcement notification: read-only and proponents only. Draft

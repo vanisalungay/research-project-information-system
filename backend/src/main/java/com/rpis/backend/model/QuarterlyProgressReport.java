@@ -106,6 +106,18 @@ public class QuarterlyProgressReport {
     @Column(name = "submitted_by")
     private Long submittedBy;
 
+    /**
+     * The report this one was started from through the "Create a Copy" action, when one
+     * was used; null for every report written from scratch.
+     *
+     * A plain id (no relation and no cascade): the source report is only referenced for
+     * traceability and is never modified, resubmitted or removed by this record. The
+     * service stores it only for a brand-new row and only when the referenced report
+     * belongs to the same project.
+     */
+    @Column(name = "copied_from_report_id")
+    private Long copiedFromReportId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -142,4 +154,13 @@ public class QuarterlyProgressReport {
     @Column(name = "workplan_json", columnDefinition = "TEXT")
     @Convert(converter = WorkplanDataConverter.class)
     private WorkplanData workplan;
+
+    // ===== Structured Terminal Report (reporting stage 4) =====
+    // The Terminal Report is completed in RPIS as a structured document (title page,
+    // summary sheet, abstract, table of contents, text, problems, outputs, utilization)
+    // and stored as JSON here, exactly like the structured Project Workplan above.
+    // Legacy rows keep their uploaded file in terminal_report_file_name / _path.
+    @Column(name = "terminal_report_json", columnDefinition = "TEXT")
+    @Convert(converter = TerminalReportDataConverter.class)
+    private TerminalReportData terminalReport;
 }

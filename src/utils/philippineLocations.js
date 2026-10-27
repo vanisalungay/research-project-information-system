@@ -4,6 +4,11 @@
  * Cascading address data for the Create Proposal form (section 01 - Project
  * Profile, "Address *").
  *
+ * The section is Philippine-only: the form has no Country control, so the country
+ * is never asked for and is stored as "Philippines" (see {@link #PHILIPPINES} and
+ * {@link #isPhilippineAddress}). Region is the first dropdown the proponent
+ * answers, and the levels below it cascade from it.
+ *
  * Data source
  *   The bundled extract of the Philippine Standard Geographic Code (PSGC) of
  *   the Philippine Statistics Authority that lives in public/locations/ph and
@@ -30,7 +35,11 @@ import { COUNTRIES, PHILIPPINES_COUNTRY_CODE } from './countries.js'
 /** Base path of the bundled PSGC extract (Vite serves public/ from the root). */
 const DATA_BASE = `${import.meta.env?.BASE_URL ?? '/'}locations/ph/`
 
-/** Address levels of section 01, widest first. */
+/**
+ * Address levels of section 01, widest first. `country` stays first so that
+ * clearing a level still clears everything narrower than it, but it is no longer a
+ * control the proponent answers: the country is always the Philippines.
+ */
 export const ADDRESS_LEVELS = [
   'country',
   'region',
@@ -47,12 +56,25 @@ export const PHILIPPINES = COUNTRIES.find((country) => country.code === PHILIPPI
 export const isPhilippines = (countryName) => countryName === PHILIPPINES.name
 
 /**
+ * True when an address belongs to the Philippines.
+ *
+ * The Address section of the form is Philippine-only, so the country is never
+ * asked for: an address whose country is empty - an older record, or a request
+ * that sent only the parts - is a Philippine one as well. Only a stored foreign
+ * country (possible in a record saved while the country control still existed) is
+ * not, and such a record keeps its manually typed parts.
+ */
+export const isPhilippineAddress = (countryName) => {
+  const name = String(countryName ?? '').trim()
+  return name === '' || isPhilippines(name)
+}
+
+/**
  * A fresh address state, also used when the proposal form is reset.
  *
- * The Philippines is preselected: it is the only country RPIS holds a structured
- * hierarchy for, so a new proposal opens with its Region dropdown already
- * available (the levels below start empty and are cleared again whenever a parent
- * changes).
+ * The country is always the Philippines (the form shows it read-only) and its
+ * Region dropdown is therefore available right away; the levels below start empty
+ * and are cleared again whenever a parent changes.
  */
 export const emptyAddressDetails = () => ({
   country: PHILIPPINES.name,
@@ -62,6 +84,32 @@ export const emptyAddressDetails = () => ({
   municipality: '',
   barangay: '',
 })
+
+/**
+ * The Address state of a proposal that is being loaded into the form (a draft, a
+ * revision or a copy made with "Make a Copy").
+ *
+ * The Address section is Philippine-only, so the country is always the Philippines:
+ * a record that carries address parts but no country value is completed with it -
+ * older rows, or a client that did not send one - instead of losing the rest of the
+ * address. The single exception is a record that stored a *foreign* country
+ * together with its own address parts (possible while the country control still
+ * existed): that country and its typed parts are kept exactly as they were saved, so
+ * opening an old draft never erases an address. Every other case is Philippine.
+ */
+export function savedAddressDetails(saved = {}) {
+  const values = {}
+  for (const level of ADDRESS_LEVELS) {
+    const value = saved?.[level]
+    values[level] = value == null ? '' : String(value)
+  }
+  const hasArea = ADDRESS_LEVELS.some(
+    (level) => level !== 'country' && values[level].trim() !== '',
+  )
+  const storedCountry = values.country.trim()
+  const foreignAddress = hasArea && storedCountry !== '' && !isPhilippines(storedCountry)
+  return { ...values, country: foreignAddress ? storedCountry : PHILIPPINES.name }
+}
 
 // ------------------------------------------------------------------ loading --
 
@@ -251,14 +299,19 @@ export function formatAddressContact(details, contact) {
 /**
  * Required-field check for the Address section.
  *
+ * The section is Philippine-only: the country is never asked for, so an address
+ * without a stored country is validated as a Philippine one
+ * ({@link #isPhilippineAddress}) - only a stored foreign country (a record saved
+ * while the country control still existed) falls back to the manual rules.
+ *
  * `hasProvinces` / `hasDistricts` come from the loaded hierarchy: a region
  * without provinces (NCR) needs no province, and a district is only required
  * where the PSGC actually defines districts. `manual` marks the states in which
- * the dropdowns cannot be used (a country other than the Philippines, or the
- * bundled data being unavailable) - then the parts are typed in and the province
- * is required again. `independentCity` marks a selected municipality / city that
- * belongs to no province and no district (City of Isabela, City of Cotabato), so
- * neither level applies to that address.
+ * the dropdowns cannot be used (a foreign address, or the bundled data being
+ * unavailable) - then the parts are typed in and the province is required again.
+ * `independentCity` marks a selected municipality / city that belongs to no
+ * province and no district (City of Isabela, City of Cotabato), so neither level
+ * applies to that address.
  */
 export function validateAddress(
   details = {},
@@ -270,8 +323,7 @@ export function validateAddress(
     independentCity = false,
   } = {},
 ) {
-  if (!details.country) return 'Please select a country.'
-  const philippines = isPhilippines(details.country)
+  const philippines = isPhilippineAddress(details.country)
   if (!details.region)
     return philippines ? 'Please select a region.' : 'Please enter the state / region.'
   if (manual) {
@@ -290,7 +342,14 @@ export function validateAddress(
 
 // ------------------------------------------------------------ placeholders --
 
-/** Labels of the six Address controls, in cascade order. */
+/**
+ * Labels of the address parts, in cascade order.
+ *
+ * `country` is listed because the parts are still stored (and printed) with a
+ * country, but it is not a control the proponent answers: the Address section is
+ * Philippine-only and its country is always "Philippines" - the first control of
+ * the section is Region.
+ */
 export const ADDRESS_LEVEL_LABELS = {
   country: 'Country',
   region: 'Region',
@@ -308,12 +367,15 @@ export const ADDRESS_LEVEL_LABELS = {
  * an area without districts). No level is ever filled with invented records, and
  * a level that does not apply is never treated as a missing selection.
  *
+ * Region is the first control of the section (the country is always the
+ * Philippines), so its placeholder is the "Select Region" prompt - or the loading
+ * / empty state of the bundled regions.
+ *
  * `provinceRequired` is true when the selected region has provinces: the
  * municipality / city level then waits for one - unless the region has
  * independent cities of its own, which are offered without a province.
  */
 export function addressLevelPlaceholders({
-  country = '',
   region = '',
   province = '',
   municipality = '',
@@ -329,14 +391,11 @@ export function addressLevelPlaceholders({
   barangayCount = 0,
 } = {}) {
   return {
-    country: 'Select Country',
-    region: !country
-      ? 'Select a country first'
-      : loadingBase
-        ? 'Loading regions...'
-        : regionCount
-          ? 'Select Region'
-          : 'No regions available',
+    region: loadingBase
+      ? 'Loading regions...'
+      : regionCount
+        ? 'Select Region'
+        : 'No regions available',
     province: !region
       ? 'Select a region first'
       : provinceCount

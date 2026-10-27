@@ -133,6 +133,40 @@ class ProposalControllerAddressContactTest {
     }
 
     @Test
+    void aSubmissionWithoutACountryIsStoredAsThePhilippines() throws Exception {
+        // The Address section has no Country control any more: the address arrives as
+        // its parts and the backend fills the country in.
+        String payload = """
+                {
+                  "projectTitle": "No country API test",
+                  "duration": "12",
+                  "status": "DRAFT",
+                  "addressRegion": "Region X \u2013 Northern Mindanao",
+                  "addressProvince": "Misamis Oriental",
+                  "addressDistrict": "",
+                  "addressMunicipality": "Naawan",
+                  "addressBarangay": "Balintad",
+                  "contactType": "CONTACT_NUMBER",
+                  "contactValue": "0917 123 4567"
+                }
+                """;
+
+        mockMvc.perform(post("/api/proposals")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload.getBytes(StandardCharsets.UTF_8)))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<Proposal> saved = ArgumentCaptor.forClass(Proposal.class);
+        verify(proposalRepository, atLeastOnce()).save(saved.capture());
+        Proposal proposal = saved.getValue();
+
+        assertEquals("Philippines", proposal.getAddressCountry());
+        assertEquals(
+                "Balintad, Naawan, Misamis Oriental, Region X \u2013 Northern Mindanao, Philippines / 0917 123 4567",
+                proposal.getAddress());
+    }
+
+    @Test
     void aRequestWithoutTheSplitFieldsKeepsTheLegacyAddress() throws Exception {
         String payload = """
                 {

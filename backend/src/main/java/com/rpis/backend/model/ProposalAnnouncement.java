@@ -77,6 +77,15 @@ public class ProposalAnnouncement {
     @Transient
     private Boolean hasSubmittedProposals;
 
+    /**
+     * Computed (not persisted) history of the significant published changes recorded
+     * for this call, oldest first. Populated by the service for the Proponent-facing
+     * Call for Proposals details view so a deadline extension never hides the
+     * original deadline or the earlier announcements.
+     */
+    @Transient
+    private List<ProposalAnnouncementUpdate> updates = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

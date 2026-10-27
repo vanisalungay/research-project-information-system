@@ -1,9 +1,11 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.ProposalBudget;
 import com.rpis.backend.model.ProposalSite;
 import com.rpis.backend.model.User;
+import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalSectionRemarkRepository;
 import com.rpis.backend.repository.ProposalVersionRepository;
@@ -20,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,6 +55,8 @@ class ProposalDuplicatePostgresTest {
     @Autowired
     private ProposalVersionRepository proposalVersionRepository;
     @Autowired
+    private ProposalAnnouncementRepository proposalAnnouncementRepository;
+    @Autowired
     private UserRepository userRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -80,6 +85,19 @@ class ProposalDuplicatePostgresTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * The Call for Proposal the proponent selects in the "Make a Copy" picker: it is
+     * open today, which is the rule the backend enforces before a copy is created.
+     */
+    private ProposalAnnouncement openCall() {
+        ProposalAnnouncement announcement = new ProposalAnnouncement();
+        announcement.setName("Copy Call for Proposal");
+        announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
+        announcement.setStartDate(LocalDate.now().minusDays(1));
+        announcement.setEndDate(LocalDate.now().plusDays(7));
+        return proposalAnnouncementRepository.saveAndFlush(announcement);
+    }
+
     private Proposal rejectedProposal() {
         Proposal p = new Proposal();
         p.setProponent(proponent);
@@ -106,10 +124,11 @@ class ProposalDuplicatePostgresTest {
 
     @Test
     void duplicateIsAnIndependentDraftAndTheOriginalIsUntouched() {
+        ProposalAnnouncement call = openCall();
         Proposal source = rejectedProposal();
         long versionsBefore = proposalVersionRepository.count();
 
-        Proposal copy = proposalService.duplicateProposal(source.getId());
+        Proposal copy = proposalService.duplicateProposal(source.getId(), call.getId());
 
         assertNotEquals(source.getId(), copy.getId());
         assertNotEquals(source.getDocumentId(), copy.getDocumentId());
@@ -118,6 +137,11 @@ class ProposalDuplicatePostgresTest {
         assertTrue(copy.getDocumentId().endsWith("-REV00"));
         assertEquals("Original Rejected Project", copy.getProjectTitle());
         assertEquals("Original methodology", copy.getMethodology());
+        // The copy belongs to the Call for Proposal selected in the picker, and that
+        // association is persisted with the new draft.
+        assertEquals(call.getId(), copy.getProposalAnnouncementId());
+        assertEquals(call.getId(), proposalRepository.findById(copy.getId())
+                .orElseThrow().getProposalAnnouncementId());
         assertNull(copy.getSoNumber());
         assertNull(copy.getRemarks());
         assertNull(copy.getReturnedByOffice());
@@ -150,19 +174,28 @@ class ProposalDuplicatePostgresTest {
     }
 
     @Test
-    void approvedProposalCannotBeCopied() {
+    void approvedProposalsCanBeCopied() {
+        ProposalAnnouncement call = openCall();
         Proposal source = rejectedProposal();
         source.setStatus("APPROVED");
         proposalRepository.saveAndFlush(source);
 
-        assertThrows(IllegalStateException.class,
-                () -> proposalService.duplicateProposal(source.getId()));
+        Proposal copy = proposalService.duplicateProposal(source.getId(), call.getId());
+
+        // The copy is a fresh draft: the approval status and the SO number of the
+        // original are not carried over, and the original keeps them.
+        assertEquals("DRAFT", copy.getStatus());
+        assertNull(copy.getSoNumber());
+        assertEquals("APPROVED", proposalRepository.findById(source.getId()).orElseThrow().getStatus());
+        assertEquals("SO-2026-500",
+                proposalRepository.findById(source.getId()).orElseThrow().getSoNumber());
     }
 
     @Test
     void editingTheDuplicateDoesNotChangeTheOriginal() {
+        ProposalAnnouncement call = openCall();
         Proposal source = rejectedProposal();
-        Proposal copy = proposalService.duplicateProposal(source.getId());
+        Proposal copy = proposalService.duplicateProposal(source.getId(), call.getId());
 
         copy.setProjectTitle("Edited Duplicate");
         copy.getSites().clear();
@@ -172,7 +205,11 @@ class ProposalDuplicatePostgresTest {
         Proposal original = proposalRepository.findById(source.getId()).orElseThrow();
         Proposal reloadedCopy = proposalRepository.findById(copy.getId()).orElseThrow();
         assertEquals("Edited Duplicate", reloadedCopy.getProjectTitle());
+        // The call association survives editing the copy.
+        assertEquals(call.getId(), reloadedCopy.getProposalAnnouncementId());
         assertEquals("Original Rejected Project", original.getProjectTitle());
+        assertNull(original.getProposalAnnouncementId(),
+                "the original proposal is not attached to the copy's call");
         assertEquals(1, original.getSites().size());
         assertEquals("Naawan", original.getSites().get(0).getMunicipality());
     }

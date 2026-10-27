@@ -17,44 +17,88 @@
       Reporting is only available for approved, SO-issued projects.
     </div>
 
-    <!-- Terminal Report stage: upload only, no manual data entry. -->
+    <!-- Terminal Report stage: the report is completed in RPIS as a structured document.
+         The official ORPS format stays available as a reference, and a signed or scanned
+         copy can still be attached (legacy reports that only hold a file stay viewable). -->
     <template v-else-if="isTerminalStage">
       <div class="terminal-card">
-        <h2 class="terminal-card-title">Terminal Report</h2>
-        <p class="terminal-card-desc">
-          Submit your completed Terminal Report for this project. Use the official ORPS Terminal Report
-          Format as your guide — you do not need to re-type its contents into RPIS.
-        </p>
-
-        <!-- Step 1: get the official format -->
-        <div class="terminal-step">
-          <span class="terminal-step-badge">1</span>
-          <div class="terminal-step-body">
-            <h3 class="terminal-step-title">Get the official format</h3>
-            <div class="terminal-format-actions">
-              <a class="terminal-format-btn" :href="terminalFormatUrl" target="_blank" rel="noopener">
-                <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                View official format
-              </a>
-              <a
-                class="terminal-format-btn terminal-format-btn--download"
-                :href="terminalFormatUrl"
-                :download="terminalFormatName"
-              >
-                <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download format
-              </a>
-            </div>
+        <div class="terminal-head">
+          <div class="terminal-head-text">
+            <h2 class="terminal-card-title">Terminal Report</h2>
+            <p class="terminal-card-desc">
+              Fill in your Terminal Report here, section by section. You can save it as a draft
+              and continue later — nothing is submitted until you confirm the submission.
+            </p>
+          </div>
+          <div class="terminal-format-actions">
+            <a class="terminal-format-btn" :href="terminalFormatUrl" target="_blank" rel="noopener">
+              <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              View official format
+            </a>
+            <a
+              class="terminal-format-btn terminal-format-btn--download"
+              :href="terminalFormatUrl"
+              :download="terminalFormatName"
+            >
+              <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download format
+            </a>
           </div>
         </div>
 
-        <!-- Step 2: upload the completed report -->
+        <!-- Section navigation. One major section is edited at a time and every value is
+             kept in the shared report state, so moving between sections never loses data. -->
+        <ol class="tr-progress">
+          <li
+            v-for="(section, index) in TERMINAL_SECTIONS"
+            :key="section.key"
+            class="tr-progress-item"
+            :class="`is-${terminalSectionState(index)}`"
+          >
+            <button
+              type="button"
+              class="tr-progress-btn"
+              :aria-current="terminalSectionIndex === index ? 'step' : undefined"
+              @click="goToTerminalSection(index)"
+            >
+              <span class="tr-progress-marker" aria-hidden="true">
+                <template v-if="terminalSectionState(index) === 'done'">✓</template>
+                <template v-else>{{ index + 1 }}</template>
+              </span>
+              <span class="tr-progress-label">{{ section.label }}</span>
+            </button>
+          </li>
+        </ol>
+        <p class="tr-progress-meta">
+          Section {{ terminalSectionIndex + 1 }} of {{ TERMINAL_SECTIONS.length }} ·
+          <span v-if="terminalDirty" class="tr-progress-unsaved">Unsaved changes</span>
+          <span v-else>No unsaved changes</span>
+        </p>
+      </div>
+
+      <p v-if="terminalError" class="wizard-field-error">{{ terminalError }}</p>
+
+      <!-- The document itself: only the active major section is rendered while editing. -->
+      <div class="terminal-doc-panel">
+        <TerminalReportForm
+          v-model="terminalReport"
+          :section="currentTerminalSection.key"
+          :errors="terminalErrors"
+        />
+      </div>
+
+      <!-- Optional attachment: the existing secure file handling is reused. The structured
+           report above is what gets submitted; the file is a convenience for scanned or
+           signed copies. -->
+      <div class="terminal-card">
         <div class="terminal-step">
-          <span class="terminal-step-badge">2</span>
+          <span class="terminal-step-badge">+</span>
           <div class="terminal-step-body">
-            <h3 class="terminal-step-title">
-              Upload your completed report <span class="req">*</span>
-            </h3>
+            <h3 class="terminal-step-title">Optional attachment (scanned or signed copy)</h3>
+            <p class="terminal-card-desc">
+              Not required — attach a PDF, DOC or DOCX copy of your report if you want one kept
+              with this submission.
+            </p>
 
             <div
               class="terminal-dropzone"
@@ -119,13 +163,33 @@
           </div>
         </div>
 
-        <hr class="terminal-divider" />
-
         <div class="terminal-actions">
           <button class="terminal-cancel" @click="$router.back()">Cancel</button>
-          <button class="terminal-submit" :disabled="saving" @click="submitTerminal">
+          <button
+            v-if="terminalSectionIndex > 0"
+            class="btn-secondary"
+            @click="goToTerminalSection(terminalSectionIndex - 1)"
+          >
+            Previous Section
+          </button>
+          <button
+            v-if="terminalSectionIndex < TERMINAL_SECTIONS.length - 1"
+            class="btn-submit"
+            @click="goToTerminalSection(terminalSectionIndex + 1)"
+          >
+            Next Section
+          </button>
+          <button class="btn-draft" :disabled="saving" @click="saveTerminalDraft">
+            {{ saving ? 'Saving...' : 'Save as Draft' }}
+          </button>
+          <button class="btn-secondary" :disabled="saving" @click="openTerminalReview">
+            Review Report
+          </button>
+          <!-- Submission always goes through the confirmation step: this opens the report
+               document, where the submission is confirmed after the proponent reviews it. -->
+          <button class="terminal-submit" :disabled="saving" @click="openTerminalReview">
             <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            {{ saving ? 'Submitting...' : 'Submit Terminal Report' }}
+            Submit Terminal Report
           </button>
         </div>
       </div>
@@ -179,6 +243,22 @@
 
       <p v-if="stepError" class="wizard-field-error">{{ stepError }}</p>
 
+      <!-- "Create a Copy": this report was started from a previous one. The copied
+           values are a starting point only - they are saved when the proponent uses the
+           existing Save Draft / Submit Report actions, and the previous report is never
+           modified. -->
+      <div v-if="copyNotice" class="copy-notice">
+        <span class="copy-notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="12" height="12" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        </span>
+        <p class="copy-notice-text">{{ copyNotice }}</p>
+      </div>
+      <p v-if="copyError" class="copy-notice copy-notice--error">{{ copyError }}</p>
+
       <!-- PAGE 1 and PAGE 2: one Quarterly Progress Report form instance. The
            `page` prop renders only the sections of the active step, so the
            single shared form state is preserved on every navigation. -->
@@ -227,35 +307,83 @@
       <p v-if="saveError" class="state error">{{ saveError }}</p>
     </template>
 
-    <!-- Review Report: read-only view of all three pages. Reaching this point
-         never submits anything - the proponent still completes the existing
-         Save Draft / Submit Report actions from here. -->
+    <!-- Review Report: read-only view of all three pages, or of the Terminal Report
+         document. Reaching this point never submits anything - the proponent still
+         completes the existing Save Draft / Submit Report actions from here. -->
     <div v-if="reviewing" class="review-overlay" @click.self="reviewing = false">
       <div class="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-report-title">
         <div class="review-header">
           <div>
-            <h2 id="review-report-title" class="review-title">Review Report</h2>
+            <h2 id="review-report-title" class="review-title">
+              {{ isTerminalStage ? 'Review Terminal Report' : 'Review Report' }}
+            </h2>
             <p class="review-sub">
-              Check all three pages below. Nothing is submitted until you choose Submit Report.
+              <template v-if="isTerminalStage">
+                This is the document that will be submitted. Nothing is submitted until you
+                confirm below.
+              </template>
+              <template v-else>
+                Check all three pages below. Nothing is submitted until you choose Submit Report.
+              </template>
             </p>
           </div>
           <button class="close-btn" aria-label="Close review" @click="reviewing = false">✕</button>
         </div>
 
+        <!-- Confirmation panel of the Terminal Report: the submission is final only after
+             the proponent confirms here, and the success message appears only after the
+             backend has confirmed the submission. -->
+        <div v-if="isTerminalStage && terminalSubmitted" class="review-success">
+          <p class="review-success-text">
+            Terminal Report submitted. It is now listed in your reports as submitted.
+          </p>
+          <button class="btn-submit" @click="goToReports">Back to My Reports</button>
+        </div>
+
         <div class="review-body">
-          <QuarterlyReportForm :report="reviewReport" readonly />
-          <ProjectWorkplanForm :model-value="reviewWorkplan" readonly />
+          <template v-if="isTerminalStage">
+            <TerminalReportForm
+              ref="terminalDocRef"
+              :model-value="terminalReviewReport"
+              readonly
+            >
+              <template #attachment>
+                <p v-if="terminalAttachmentName" class="tr-note">
+                  Attachment: {{ terminalAttachmentName }}
+                </p>
+              </template>
+            </TerminalReportForm>
+          </template>
+          <template v-else>
+            <QuarterlyReportForm :report="reviewReport" readonly />
+            <ProjectWorkplanForm :model-value="reviewWorkplan" readonly />
+          </template>
         </div>
 
         <div class="review-footer">
           <button class="btn-secondary" @click="reviewing = false">Back to Editing</button>
           <div class="review-footer-right">
-            <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
-              Save Draft
-            </button>
-            <button class="btn-submit" :disabled="saving" @click="saveQuarterly('SUBMITTED', qprPayload())">
-              {{ saving ? 'Saving...' : 'Submit Report' }}
-            </button>
+            <template v-if="isTerminalStage">
+              <button class="btn-secondary" @click="printTerminalReview">Print / Save as PDF</button>
+              <button class="btn-draft" :disabled="saving" @click="saveTerminalDraft">
+                {{ saving ? 'Saving...' : 'Save as Draft' }}
+              </button>
+              <button
+                class="terminal-submit"
+                :disabled="saving || terminalSubmitted"
+                @click="submitTerminal"
+              >
+                {{ saving ? 'Submitting...' : terminalSubmitted ? 'Submitted' : 'Submit Terminal Report' }}
+              </button>
+            </template>
+            <template v-else>
+              <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
+                Save Draft
+              </button>
+              <button class="btn-submit" :disabled="saving" @click="saveQuarterly('SUBMITTED', qprPayload())">
+                {{ saving ? 'Saving...' : 'Submit Report' }}
+              </button>
+            </template>
           </div>
         </div>
         <p v-if="saveError" class="state error">{{ saveError }}</p>
@@ -271,6 +399,17 @@ import api from '@/utils/api'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
 import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
+import TerminalReportForm from '@/components/TerminalReportForm.vue'
+import { printTerminalReport } from '@/utils/terminalReportPrint'
+import {
+  TERMINAL_SECTIONS,
+  hasTerminalReportContent,
+  terminalReportFormState,
+  terminalReportPayload,
+  terminalReportValidation,
+  terminalSectionFilled,
+  terminalSectionOf,
+} from '@/utils/terminalReport'
 import {
   REPORT_WIZARD_PAGES,
   REPORT_WIZARD_STEPS,
@@ -279,6 +418,8 @@ import {
   stepState,
   validateReportStep,
 } from '@/utils/reportWizard'
+import { copyReportValues, copySourceId } from '@/utils/quarterlyReportCopy'
+import { workplanFormState, workplanPayload } from '@/utils/quarterlyReportFormState'
 
 // Official ORPS Terminal Report format shipped with the app (public/templates).
 const TERMINAL_FORMAT_URL = '/templates/ORPS-Inhouse-Terminal-Report-Format-2026-Rev01.pdf'
@@ -298,6 +439,14 @@ const error = ref('')
 const saveError = ref('')
 const saving = ref(false)
 
+// "Create a Copy": the report the proponent chose to start this one from, taken from the
+// ?copyFrom= query the Create a Copy action adds. Only a positive report id is accepted,
+// and the source is read through the existing authorized report endpoint - it is only
+// ever read, never modified.
+const copyFromId = computed(() => copySourceId(route.query.copyFrom))
+const copySource = ref(null)
+const copyError = ref('')
+
 const terminalFile = ref(null)
 const terminalFileInput = ref(null)
 const terminalUploadError = ref('')
@@ -308,56 +457,134 @@ const terminalUploadError = ref('')
 const hasTerminalFile = computed(() => !!(terminalFile.value && terminalFile.value.name))
 
 // Structured Project Workplan (reporting stages 1-3). Bound to the interactive
-// workplan form and persisted through the quarterly report API (workplan_json).
-const WORKPLAN_MONTHS = 12
-const MIN_WORKPLAN_ROWS = 3
-
-const workplan = reactive({
-  asOf: '',
-  projectTitle: '',
-  projectLeader: '',
-  projectDuration: '',
-  objectives: [],
-  remarks: '',
-})
-
-function emptyWorkplanObjective() {
-  return { objective: '', months: Array(WORKPLAN_MONTHS).fill(''), total: '' }
-}
-
-function normalizeWorkplanObjective(o) {
-  const src = Array.isArray(o?.months) ? o.months : []
-  const months = src.slice(0, WORKPLAN_MONTHS).map((m) => (typeof m === 'string' ? m : ''))
-  while (months.length < WORKPLAN_MONTHS) months.push('')
-  return { objective: o?.objective || '', months, total: o?.total || '' }
-}
+// workplan form and persisted through the quarterly report API (workplan_json). Its
+// form state, its defaults and its save payload live in
+// utils/quarterlyReportFormState.js so the mapping is tested in one place.
+const workplan = reactive(workplanFormState(null, null))
 
 // Seed from the saved workplan when present, otherwise from the proposal. Saved
 // values always win so reopening a report restores what the proponent entered.
 function initWorkplan(saved, proposal) {
-  workplan.asOf = saved?.asOf || ''
-  workplan.projectTitle = saved?.projectTitle || proposal?.projectTitle || ''
-  workplan.projectLeader = saved?.projectLeader || proposal?.projectLeader || ''
-  workplan.projectDuration = saved?.projectDuration || proposal?.duration || ''
-  const objectives = Array.isArray(saved?.objectives) ? saved.objectives.map(normalizeWorkplanObjective) : []
-  while (objectives.length < MIN_WORKPLAN_ROWS) objectives.push(emptyWorkplanObjective())
-  workplan.objectives = objectives
-  workplan.remarks = saved?.remarks || ''
+  Object.assign(workplan, workplanFormState(saved, proposal))
 }
 
 function serializeWorkplan() {
-  return {
-    asOf: workplan.asOf || '',
-    projectTitle: workplan.projectTitle || '',
-    projectLeader: workplan.projectLeader || '',
-    projectDuration: workplan.projectDuration || '',
-    objectives: workplan.objectives.map((o) => ({
-      objective: o.objective || '',
-      months: (o.months || []).slice(0, WORKPLAN_MONTHS).map((m) => m || ''),
-      total: o.total || '',
-    })),
-    remarks: workplan.remarks || '',
+  return workplanPayload(workplan)
+}
+
+// ---------------------------------------------------------------------------
+// Structured Terminal Report (reporting stage 4).
+// The report is completed in RPIS (see TerminalReportForm.vue) and persisted through the
+// existing quarterly report API on the terminal row (terminal_report_json). Its form state,
+// its prefill from the project record, its validation rules and its save payload live in
+// utils/terminalReport.js so the mapping is tested in one place.
+// ---------------------------------------------------------------------------
+const terminalReport = reactive(terminalReportFormState(null, null))
+const terminalSectionIndex = ref(0)
+const terminalErrors = ref({})
+const terminalError = ref('')
+const terminalDirty = ref(false)
+const terminalSubmitted = ref(false)
+const terminalDocRef = ref(null)
+
+const currentTerminalSection = computed(() => TERMINAL_SECTIONS[terminalSectionIndex.value])
+
+// Seed from the saved report when present, otherwise from the project record. Saved values
+// always win, so reopening a draft restores exactly what the proponent entered.
+function initTerminalReport(saved, proposal) {
+  Object.assign(terminalReport, terminalReportFormState(saved, proposal))
+  terminalErrors.value = {}
+  terminalError.value = ''
+  terminalDirty.value = false
+  terminalSubmitted.value = false
+}
+
+/** The Terminal Report payload saved with the report (terminal_report_json). */
+function terminalPayload() {
+  return { terminalReport: terminalReportPayload(terminalReport) }
+}
+
+/** Name of the optional attachment, shown in the report document when there is one. */
+const terminalAttachmentName = computed(() =>
+  hasTerminalFile.value ? terminalFile.value.name : existingTerminalName.value || ''
+)
+
+/** The payload as a read-only snapshot for the review document. */
+const terminalReviewReport = computed(() => terminalReportPayload(terminalReport))
+
+function terminalSectionState(index) {
+  if (index === terminalSectionIndex.value) return 'current'
+  return terminalSectionFilled(terminalReport, TERMINAL_SECTIONS[index].key) ? 'done' : 'upcoming'
+}
+
+function goToTerminalSection(index) {
+  terminalSectionIndex.value = Math.min(Math.max(index, 0), TERMINAL_SECTIONS.length - 1)
+  scrollReportToTop()
+}
+
+/** The section holding the first validation error, so a blocked submission lands there. */
+function firstTerminalErrorSection() {
+  for (const [index, section] of TERMINAL_SECTIONS.entries()) {
+    const keys = Object.keys(terminalErrors.value)
+    if (keys.some((key) => terminalSectionOf(key) === section.key)) return index
   }
+  return 0
+}
+
+/** Validates the whole report against the submission rules and shows the messages. */
+function checkTerminalReport() {
+  const { errors, summary } = terminalReportValidation(terminalReport, { forSubmission: true })
+  terminalErrors.value = errors
+  terminalError.value = summary
+  if (summary) goToTerminalSection(firstTerminalErrorSection())
+  return Object.keys(errors).length === 0
+}
+
+// A validation message disappears as soon as the proponent starts correcting the value.
+watch(terminalReport, () => {
+  terminalDirty.value = true
+  if (terminalError.value || Object.keys(terminalErrors.value).length) {
+    terminalErrors.value = {}
+    terminalError.value = ''
+  }
+}, { deep: true })
+
+/** Opens the review step: the report document, where the submission is confirmed. */
+function openTerminalReview() {
+  saveError.value = ''
+  terminalSubmitted.value = false
+  if (!checkTerminalReport()) return
+  reviewing.value = true
+}
+
+/** Prints the reviewed document (or saves it as PDF through the browser print dialog). */
+function printTerminalReview() {
+  const element = terminalDocRef.value?.$el || terminalDocRef.value
+  return printTerminalReport({
+    title: `Terminal Report - ${terminalReport.projectTitle || project.value?.projectTitle || ''}`,
+    element,
+  })
+}
+
+/** Saves the Terminal Report as a draft through the existing draft workflow. */
+async function saveTerminalDraft() {
+  if (saving.value) return
+  saving.value = true
+  saveError.value = ''
+  try {
+    const id = await ensureDraft(terminalPayload(), 'TERMINAL_REPORT', 'TERMINAL')
+    await uploadDocs(id, 'TERMINAL_REPORT')
+    terminalDirty.value = false
+    goToReports()
+  } catch (e) {
+    saveError.value = e.response?.data?.error || 'Failed to save the Terminal Report draft.'
+  } finally {
+    saving.value = false
+  }
+}
+
+function goToReports() {
+  router.push(`/quarterly-reports/${proposalId.value}`)
 }
 
 function hasWorkplanContent() {
@@ -541,10 +768,16 @@ async function fetchData() {
   try {
     const p = await api.get(`/api/proposals/${proposalId.value}`)
     project.value = p.data
+    // The previous report a copy was started from (null when this is not a copy).
+    const source = await loadCopySource()
     if (isEdit.value) {
       const r = await api.get(`/api/quarterly-reports/${reportId.value}`)
-      report.value = r.data
-      initWorkplan(r.data.workplan, p.data)
+      // A draft that already exists keeps its saved content: the copy only fills in what
+      // the draft is still missing, so continuing a draft never overwrites work the
+      // proponent already saved for this period.
+      report.value = source ? copyReportValues(source, r.data, { fillEmptyOnly: true }) : r.data
+      initWorkplan(report.value.workplan, p.data)
+      initTerminalReport(report.value.terminalReport, p.data)
     } else {
       const n = await api.get(`/api/quarterly-reports/next-stage/${proposalId.value}`)
       nextStage.value = n.data
@@ -552,7 +785,9 @@ async function fetchData() {
         error.value = 'All required reports for this project have already been submitted.'
         return
       }
-      report.value = {
+      // The next required reporting period comes from the backend, never from the
+      // previous report: the copied content is only the report's own editable content.
+      const base = {
         period: n.data?.period || 'Q1',
         reportType: n.data?.reportType || 'QUARTERLY_PROGRESS',
         projectTitle: p.data.projectTitle || '',
@@ -563,7 +798,13 @@ async function fetchData() {
         objectives: [],
         outputs: [],
       }
-      initWorkplan(null, p.data)
+      // One merged object carries the report content and its Project Workplan, so the
+      // form state is seeded from exactly what the form will display and save.
+      report.value = source ? copyReportValues(source, base) : base
+      initWorkplan(report.value.workplan, p.data)
+      // The Terminal Report content of a copied report is a starting point the proponent
+      // reviews and updates; the prefill fills in only what the report is still missing.
+      initTerminalReport(report.value.terminalReport, p.data)
     }
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load.'
@@ -571,6 +812,57 @@ async function fetchData() {
     loading.value = false
   }
 }
+
+/**
+ * Loads the previous report a copy was started from, through the existing authorized
+ * report endpoint. A copy is only a convenience: when the source cannot be read the form
+ * still opens (empty) and the proponent is told, instead of blocking the workflow.
+ */
+async function loadCopySource() {
+  copySource.value = null
+  copyError.value = ''
+  const id = copyFromId.value
+  if (!id) return null
+  try {
+    const res = await api.get(`/api/quarterly-reports/${id}`)
+    // A report of another project would prefill the wrong content; the backend also
+    // refuses to reference it.
+    if (String(res.data?.proposalId) !== String(proposalId.value)) {
+      copyError.value =
+        'The report you copied from belongs to another project, so this report was started empty.'
+      return null
+    }
+    copySource.value = res.data
+    return res.data
+  } catch (e) {
+    copyError.value =
+      'The previous report could not be loaded, so this report was started empty.'
+    return null
+  }
+}
+
+/**
+ * Shown while the form is filled in from a previous report: it names the source reporting
+ * period, reminds the proponent that the copied values are a starting point to review and
+ * update for the new period, and - when the source report still holds a legacy uploaded
+ * workplan file - states that the file itself is not carried over (the Project Workplan
+ * form below starts from the copied plan, and a new report attaches its own files).
+ */
+const copyNotice = computed(() => {
+  const source = copySource.value
+  if (!source) return ''
+  const period = `${source.period || ''} ${source.year || ''}`.trim()
+  const label =
+    source.reportType === 'TERMINAL_REPORT'
+      ? 'Terminal Report'
+      : `Quarterly Progress Report${period ? ` ${period}` : ''}`
+  const target = stagePeriod.value || 'new'
+  const notice = `Started from the ${label}. Review and update the copied information for the ${target} reporting period before saving or submitting this report.`
+  if (source.workplanFileName) {
+    return `${notice} The workplan file uploaded for that report is not carried over.`
+  }
+  return notice
+})
 
 // Terminal Report upload: the drop zone applies the same rules as the file
 // picker (accepted types + the 10 MB limit configured by the application), so
@@ -683,7 +975,13 @@ async function ensureDraft(payload, type, period) {
     report.value = res.data
     return res.data.id
   }
-  const res = await api.post('/api/quarterly-reports', body)
+  // A brand-new record also stores which report the copy was started from (traceability
+  // of the "Create a Copy" action). The backend keeps the reference only when it is a
+  // report of this same project and ignores anything else.
+  const res = await api.post('/api/quarterly-reports', {
+    ...body,
+    copiedFromReportId: copyFromId.value,
+  })
   report.value = res.data
   return res.data.id
 }
@@ -702,11 +1000,15 @@ async function uploadDocs(id, type) {
 
 async function submitStage(payload, type, period) {
   if (saving.value) return
-  // Frontend guard (the backend validates this too). A stage cannot be
-  // submitted until its required document has been attached.
-  if (type === 'TERMINAL_REPORT' && !terminalFile.value && !existingTerminalName.value) {
-    saveError.value = 'Please attach the completed Terminal Report file before submitting.'
-    return
+  // Frontend guard (the backend validates this too). The Terminal Report stage requires
+  // the report content entered in RPIS - a legacy uploaded file (reports created before
+  // the in-system form) is still accepted on its own.
+  if (type === 'TERMINAL_REPORT' && !hasTerminalReportContent(terminalReport)) {
+    if (!terminalFile.value && !existingTerminalName.value) {
+      saveError.value =
+        'Please complete the Terminal Report form (report title, abstract, introduction and results and discussion) before submitting.'
+      return
+    }
   }
   if (type === 'QUARTERLY_PROGRESS' && !hasWorkplanContent()) {
     saveError.value = 'Please complete the Project Workplan form (at least one objective) before submitting.'
@@ -725,9 +1027,10 @@ async function submitStage(payload, type, period) {
       status: 'SUBMITTED',
     })
     report.value = res.data
-    router.push(`/quarterly-reports/${proposalId.value}`)
+    return true
   } catch (e) {
     saveError.value = e.response?.data?.error || 'Failed to submit the report.'
+    return false
   } finally {
     saving.value = false
   }
@@ -737,7 +1040,7 @@ async function saveQuarterly(status, payload) {
   // The Project Workplan is part of the same stage submission as the QPR.
   const body = { ...payload, workplan: serializeWorkplan() }
   if (status === 'SUBMITTED') {
-    await submitStage(body, 'QUARTERLY_PROGRESS', stagePeriod.value)
+    if (await submitStage(body, 'QUARTERLY_PROGRESS', stagePeriod.value)) goToReports()
     return
   }
   if (saving.value) return
@@ -745,7 +1048,7 @@ async function saveQuarterly(status, payload) {
   saveError.value = ''
   try {
     await ensureDraft(body, 'QUARTERLY_PROGRESS', stagePeriod.value)
-    router.push(`/quarterly-reports/${proposalId.value}`)
+    goToReports()
   } catch (e) {
     saveError.value = e.response?.data?.error || 'Failed to save report.'
   } finally {
@@ -753,8 +1056,19 @@ async function saveQuarterly(status, payload) {
   }
 }
 
+/**
+ * Submits the completed Terminal Report through the existing submission workflow. The
+ * submission is confirmed from the review step (the proponent sees the document first), and
+ * the success message is shown only after the backend has confirmed the submission.
+ */
 async function submitTerminal() {
-  await submitStage({}, 'TERMINAL_REPORT', 'TERMINAL')
+  if (saving.value) return
+  if (!checkTerminalReport()) return
+  const submitted = await submitStage(terminalPayload(), 'TERMINAL_REPORT', 'TERMINAL')
+  if (submitted) {
+    terminalSubmitted.value = true
+    terminalDirty.value = false
+  }
 }
 
 // Opening the report (new, resumed draft or edit) always starts at the very top
@@ -1504,6 +1818,47 @@ onMounted(async () => {
   font-weight: 600;
   line-height: 1.45;
 }
+/* "Create a Copy" notice: shown when this report was started from a previous one. It is
+   information, not a validation message, so it never blocks the workflow. */
+.copy-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border: 1px solid #ffe58a;
+  border-left: 4px solid #ffd400;
+  border-radius: 8px;
+  background: #fffbe6;
+  color: #5b4a00;
+}
+.copy-notice-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: #8a6d00;
+}
+.copy-notice-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.copy-notice-text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+/* The same notice slot reports why nothing could be copied. */
+.copy-notice--error {
+  display: block;
+  border-color: #fecaca;
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
 /* Bottom navigation, placed below the page content: Previous Page on the left,
    the forward / final action on the right. */
 .wizard-actions {
@@ -1612,6 +1967,193 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
+/* ---------- Terminal Report: head, section navigation, document panel ---------- */
+.terminal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.terminal-head-text {
+  min-width: 0;
+}
+.tr-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tr-progress-item {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.tr-progress-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.tr-progress-marker {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+.tr-progress-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tr-progress-item.is-current .tr-progress-btn {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #1c2145;
+}
+.tr-progress-item.is-current .tr-progress-marker {
+  background: #1c2145;
+  color: #fff;
+}
+.tr-progress-item.is-done .tr-progress-btn {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+.tr-progress-item.is-done .tr-progress-marker {
+  background: #16834b;
+  color: #fff;
+}
+.tr-progress-meta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+.tr-progress-unsaved {
+  color: #b45309;
+  font-weight: 700;
+}
+.terminal-doc-panel {
+  margin: 16px 0;
+}
+.review-success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  background: #f0fdf4;
+}
+.review-success-text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #166534;
+}
+
+/* Terminal Report fields on screen: the sheet is authored for a printed A4 page
+   (9-10px text), so the form controls are presented at a readable size here -
+   the same treatment the Quarterly Progress Report and Project Workplan forms
+   get above. Print output and the document viewers keep the printed scale. */
+@media screen {
+  .qpr-form-page :deep(.tr-title-page) {
+    padding: 16px 0 8px;
+  }
+  .qpr-form-page :deep(.tr-title-report) {
+    font-size: 13px;
+    letter-spacing: 2.4px;
+  }
+  .qpr-form-page :deep(.tr-title-heading) {
+    margin-bottom: 22px;
+    font-size: 26px;
+  }
+  .qpr-form-page :deep(.tr-title-fields) {
+    max-width: 720px;
+  }
+  .qpr-form-page :deep(.tr-title-row) {
+    padding: 8px 0 10px;
+  }
+  .qpr-form-page :deep(.tr-field) {
+    margin-bottom: 18px;
+  }
+  .qpr-form-page :deep(.tr-field-label) {
+    margin-bottom: 6px;
+  }
+  .qpr-form-page :deep(.tr-input),
+  .qpr-form-page :deep(.tr-select) {
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+  .qpr-form-page :deep(.tr-area) {
+    min-height: 160px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  .qpr-form-page :deep(.tr-para) {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .qpr-form-page :deep(.tr-counter),
+  .qpr-form-page :deep(.tr-error),
+  .qpr-form-page :deep(.tr-empty) {
+    font-size: 14px;
+  }
+  .qpr-form-page :deep(.tr-required) {
+    font-size: 12px;
+  }
+  .qpr-form-page :deep(.tr-entry) {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+  }
+  .qpr-form-page :deep(.tr-entry-index) {
+    font-size: 13px;
+  }
+  .qpr-form-page :deep(.tr-entry-grid) {
+    gap: 12px 16px;
+  }
+  .qpr-form-page :deep(.tr-btn) {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+  .qpr-form-page :deep(.tr-actions) {
+    gap: 12px;
+    margin: 8px 0 18px;
+  }
+  .qpr-form-page :deep(.tr-ref-item) {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .qpr-form-page :deep(.tr-hint) {
+    font-size: 14.5px;
+  }
+  .qpr-form-page :deep(.tr-list-block) {
+    margin-bottom: 18px;
+  }
+}
+
 /* On smaller screens the page padding shrinks so the report keeps as much
    content width as possible without overflowing the viewport. */
 @media (max-width: 1024px) {
@@ -1638,6 +2180,14 @@ onMounted(async () => {
   }
   .wizard-progress-item {
     flex: 1 1 100%;
+  }
+  .tr-progress-item {
+    flex: 1 1 100%;
+  }
+  .terminal-actions .btn-submit,
+  .terminal-actions .btn-draft,
+  .terminal-actions .btn-secondary {
+    width: 100%;
   }
   .wizard-actions,
   .wizard-actions-right,

@@ -62,11 +62,23 @@
     <!-- Fixed modal footer: the page navigation, placed outside the scrollable
          report content. Previous Page only exists from page 2 on and the last page
          offers Close instead of Next Page. There is no Save, Update or Submit
-         action anywhere in this viewer. -->
+         action anywhere in this viewer. "Create a Copy" is offered only when the
+         host page says the proponent may start the next reporting period: it hands
+         the report being viewed back to that page, which opens the existing Create
+         Quarterly Report workflow. Nothing is copied or saved from here. -->
     <footer class="viewer-footer">
       <div class="viewer-footer-left">
         <button v-if="currentStep > 1" class="btn-secondary" @click="goToStep(currentStep - 1)">
           Previous Page
+        </button>
+        <button
+          v-if="canCreateCopy"
+          type="button"
+          class="btn-copy"
+          :disabled="copying"
+          @click="emit('create-copy')"
+        >
+          {{ copying ? 'Opening...' : 'Create a Copy' }}
         </button>
       </div>
       <div class="viewer-footer-right">
@@ -108,9 +120,15 @@ const props = defineProps({
   // The submitted report exactly as returned by the existing API
   // (GET /api/quarterly-reports/{id}). It is only read, never modified.
   report: { type: Object, default: null },
+  // Whether the proponent viewing this report may start the next reporting period
+  // from it. The host page decides (project eligible for quarterly reporting, a
+  // next quarterly stage still to be written); the viewer only offers the action.
+  canCreateCopy: { type: Boolean, default: false },
+  // True while the host page is opening the Create Quarterly Report workflow.
+  copying: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'create-copy'])
 
 const TOTAL_STEPS = REPORT_WIZARD_STEPS
 const wizardSteps = REPORT_WIZARD_PAGES
@@ -342,9 +360,16 @@ onMounted(scrollToTop)
   flex-wrap: wrap;
   gap: 12px;
 }
+/* Left group: the page navigation and the "Create a Copy" action. */
+.viewer-footer-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 /* Same comfortable button size as the submission wizard. */
 .viewer-footer .btn-submit,
-.viewer-footer .btn-secondary {
+.viewer-footer .btn-secondary,
+.viewer-footer .btn-copy {
   min-height: 46px;
   padding: 12px 26px;
   font-size: 15.5px;
@@ -357,6 +382,25 @@ onMounted(scrollToTop)
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
+}
+/* "Create a Copy" reuses the existing primary-action shape with the outline
+   treatment of a secondary action, so it never competes with the page
+   navigation. */
+.btn-copy {
+  background: #fff;
+  color: #1c2145;
+  border: 2px solid #ffd400;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-copy:hover:not(:disabled) {
+  background: #ffd400;
+}
+.btn-copy:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .btn-submit {
   background: #ffd400;
@@ -509,12 +553,14 @@ onMounted(scrollToTop)
     flex: 1 1 100%;
   }
   .viewer-footer,
+  .viewer-footer-left,
   .viewer-footer-right {
     flex-direction: column;
     align-items: stretch;
   }
   .viewer-footer .btn-submit,
-  .viewer-footer .btn-secondary {
+  .viewer-footer .btn-secondary,
+  .viewer-footer .btn-copy {
     width: 100%;
   }
 }

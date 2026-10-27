@@ -101,8 +101,42 @@
       </div>
     </div>
 
+    <!-- Terminal Report document viewer: a Terminal Report completed in RPIS is read as
+         a document (same component the proponent side uses), read only. -->
+    <div v-if="terminalDoc" class="modal-overlay" @click.self="terminalDoc = null">
+      <div class="modal modal--viewer modal--terminal-doc">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>Terminal Report</h2>
+            <p class="modal-header-sub">
+              {{ terminalDoc.projectTitle || terminalDoc.proposal?.projectTitle || '' }}
+            </p>
+          </div>
+          <div class="modal-header-actions">
+            <button class="btn-print" @click="printTerminalDocument">Print / Save as PDF</button>
+            <button class="close-btn" @click="terminalDoc = null" aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <TerminalReportForm
+            ref="terminalDocRef"
+            :model-value="terminalDoc.terminalReport"
+            readonly
+          >
+            <template #attachment>
+              <p v-if="terminalDoc.terminalReportFileName" class="tr-note">
+                Attachment: {{ terminalDoc.terminalReportFileName }}
+              </p>
+            </template>
+          </TerminalReportForm>
+        </div>
+      </div>
+    </div>
+
     <!-- Terminal Report preview modal (shared component): shows the actual
-         uploaded file, read only, with its own Download action. -->
+         uploaded file, read only, with its own Download action. Used for legacy
+         reports that only hold a file, and for the file attached to a structured
+         report. -->
     <TerminalReportPreviewModal
       v-if="terminalModal"
       :report-id="terminalModal.reportId"
@@ -118,6 +152,9 @@ import { ref, onMounted } from 'vue'
 import api from '@/utils/api'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
+import TerminalReportForm from '@/components/TerminalReportForm.vue'
+import { printTerminalReport } from '@/utils/terminalReportPrint'
+import { hasTerminalReportContent } from '@/utils/terminalReport'
 
 const projects = ref([])
 const loading = ref(true)
@@ -127,6 +164,9 @@ const selectedReports = ref([])
 const reportsLoading = ref(false)
 const viewing = ref(null)
 const terminalModal = ref(null)
+// A Terminal Report completed in RPIS, opened as a document.
+const terminalDoc = ref(null)
+const terminalDocRef = ref(null)
 
 async function fetchProjects() {
   loading.value = true
@@ -156,11 +196,16 @@ async function openProject(p) {
 }
 
 // One "View" action per row, dispatching on the report type the row holds:
-// terminal reports open the document preview modal, every quarterly progress
-// report opens the read-only three page report modal. Both are read only - the
-// report id of the clicked row is the record they load.
+// terminal reports open the report document (a Terminal Report completed in RPIS)
+// or, for a legacy report that only holds a file, the document preview modal;
+// every quarterly progress report opens the read-only three page report modal.
+// Both are read only - the report id of the clicked row is the record they load.
 function viewReport(r) {
   if (isTerminal(r)) {
+    if (hasStructuredTerminal(r)) {
+      terminalDoc.value = r
+      return
+    }
     terminalModal.value = {
       reportId: r.id,
       fileName: r.terminalReportFileName || '',
@@ -169,6 +214,25 @@ function viewReport(r) {
     return
   }
   viewing.value = r
+}
+
+/**
+ * True when the report holds a Terminal Report completed in RPIS (the structured
+ * document). Those reports are read as a document; a legacy report that only holds an
+ * uploaded file keeps the existing file preview. A submitted structured report always
+ * satisfies the core content rule the backend enforces at submission.
+ */
+function hasStructuredTerminal(r) {
+  return hasTerminalReportContent(r?.terminalReport)
+}
+
+/** Prints the open Terminal Report document, or saves it as PDF. */
+function printTerminalDocument() {
+  const element = terminalDocRef.value?.$el || terminalDocRef.value
+  return printTerminalReport({
+    title: `Terminal Report - ${terminalDoc.value?.projectTitle || ''}`,
+    element,
+  })
 }
 
 function formatDate(d) {
@@ -388,5 +452,87 @@ onMounted(fetchProjects)
   flex-direction: column;
   overflow: hidden;
   padding: 0; /* the viewer owns its own padding */
+}
+
+/* ---------- Terminal Report document viewer ----------
+   A Terminal Report completed in RPIS is read as a document: the modal keeps its
+   header (title, print action, close) in place while the document scrolls. */
+.modal.modal--terminal-doc {
+  max-width: 1180px;
+}
+.modal--terminal-doc .modal-header {
+  gap: 12px;
+}
+.modal-header-text {
+  min-width: 0;
+}
+.modal-header-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.modal-header-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal--terminal-doc .modal-body {
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  background: #f8fafc;
+}
+.btn-print {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1c2145;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* The report is authored for a printed Letter page (terminalReportDocument.css), so it is
+   presented at a comfortable reading size here; print output keeps the printed sizes. */
+@media screen {
+  .modal--terminal-doc :deep(.tr-sheet) {
+    width: 100%;
+    min-width: 820px;
+    min-height: 0;
+  }
+  .modal--terminal-doc :deep(.tr-cover-title) {
+    font-size: 22pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-team) {
+    font-size: 11pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-report) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-front-heading),
+  .modal--terminal-doc :deep(.tr-section-heading) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-subsection-heading) {
+    font-size: 13pt;
+  }
+  .modal--terminal-doc :deep(.tr-body-title) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-paragraph),
+  .modal--terminal-doc :deep(.tr-reference),
+  .modal--terminal-doc :deep(.tr-keywords) {
+    font-size: 11.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-table-caption),
+  .modal--terminal-doc :deep(.tr-list-entry) {
+    font-size: 12pt;
+  }
+  .modal--terminal-doc :deep(.tr-grid) {
+    font-size: 10.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-page-number) {
+    font-size: 12pt;
+  }
 }
 </style>
