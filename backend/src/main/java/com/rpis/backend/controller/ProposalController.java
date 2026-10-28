@@ -15,6 +15,7 @@ import com.rpis.backend.service.ProposalReviewService;
 import com.rpis.backend.service.ProposalSectionRemarkService;
 import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.ProposalVersionService;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,14 +24,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/proposals")
@@ -42,6 +39,7 @@ public class ProposalController {
     private final ProposalVersionService proposalVersionService;
     private final ProposalSectionRemarkService sectionRemarkService;
     private final CooperatingAgencyService cooperatingAgencyService;
+    private final UploadStorage uploadStorage;
 
     @GetMapping
     public ResponseEntity<List<Proposal>> getProposals(
@@ -175,7 +173,8 @@ public class ProposalController {
         return ResponseEntity.ok(updated);
     }
 
-    private static final String SO_UPLOAD_DIR = "uploads/special-orders/";
+    /** The folder Special Order documents are stored in, inside the storage root. */
+    private static final String SPECIAL_ORDERS_FOLDER = "special-orders";
 
     /**
      * Approve proposal with Special Order (SO) document upload.
@@ -194,22 +193,13 @@ public class ProposalController {
 
             // Save SO file if provided
             if (soFile != null && !soFile.isEmpty()) {
-                Path uploadPath = Paths.get(SO_UPLOAD_DIR);
-                if (!Files.exists(uploadPath)) {
-                    Files.createDirectories(uploadPath);
-                }
+                // The storage layer generates the name and returns the path relative to
+                // its configured root, so the file is found again from any instance.
+                String stored = uploadStorage.store(soFile.getBytes(), SPECIAL_ORDERS_FOLDER,
+                        soFile.getOriginalFilename());
 
-                String originalFilename = soFile.getOriginalFilename();
-                String extension = originalFilename != null && originalFilename.contains(".")
-                        ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                        : "";
-                String uniqueFilename = UUID.randomUUID().toString() + "_SO" + extension;
-
-                Path filePath = Paths.get(SO_UPLOAD_DIR, uniqueFilename);
-                Files.write(filePath, soFile.getBytes());
-
-                proposal.setSoFileName(originalFilename);
-                proposal.setSoFilePath(filePath.toString());
+                proposal.setSoFileName(soFile.getOriginalFilename());
+                proposal.setSoFilePath(stored);
             }
 
             // Set SO number and metadata

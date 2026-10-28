@@ -39,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Verifies the "Make a Copy" feature: a proposal can be reused as the starting
@@ -66,7 +67,7 @@ class ProposalServiceDuplicateTest {
         versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(100L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));

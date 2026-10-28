@@ -42,3 +42,22 @@ backend/apache-maven-*/
 backend/apache-maven-*
 .aider*
 *rules
+
+# Load-test tooling and output.
+# The k6 binary is downloaded, not committed; the results are run artefacts.
+tools/
+load-tests/results/
+load-tests/*.log
+
+# Uploaded documents (electronic signatures, endorsement letters, Special Orders,
+# technology maps, line-item budgets, reporting-stage documents).
+#
+# These are runtime user data, not source: they belong in the configured storage root
+# (rpis.storage.upload-dir / RPIS_UPLOAD_DIR), which for a deployment is an absolute
+# path outside the repository - for example C:\rpis-data\uploads. They were previously
+# committed, which put genuine signatures and letters in version control.
+#
+# Ignoring the directories does not remove the copies already in history; see
+# backend/DEPLOYMENT.md for the options.
+uploads/
+backend/uploads/

@@ -7,7 +7,7 @@ import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.QuarterlyProgressReportService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -133,14 +133,16 @@ public class QuarterlyProgressReportController {
      * GET rule to PROPONENT, RPS_ADMIN, RPS_STAFF and OVCRIGE.
      */
     @GetMapping("/{id}/documents/{docType}")
-    public ResponseEntity<Resource> downloadDocument(@PathVariable Long id, @PathVariable String docType) {
+    public ResponseEntity<InputStreamResource> downloadDocument(@PathVariable Long id,
+            @PathVariable String docType) {
         try {
             requireReportAccess(id);
             QuarterlyProgressReportService.DocumentDownload download = service.loadDocument(id, docType);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + download.fileName() + "\"")
+                    .contentLength(download.stored().size())
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(download.resource());
+                    .body(new InputStreamResource(download.stored().content()));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.notFound().build();
         }

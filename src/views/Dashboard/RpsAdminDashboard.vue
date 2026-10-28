@@ -258,12 +258,12 @@ const recentProposals = computed(() => {
 })
 
 const formatRole = (role) => {
-  const map = { PROPONENT: 'Proponent', RPS_ADMIN: 'RPS Admin', RPS_STAFF: 'RPS Staff', OVCRIGE: 'OVCRIGE', OVCAF: 'OVCAF', REC: 'REC', OC: 'Chancellor' }
+  const map = { PROPONENT: 'Proponent', DEAN: 'Dean', RPS_ADMIN: 'RPS Admin', RPS_STAFF: 'RPS Staff', OVCRIGE: 'OVCRIGE', OVCAF: 'OVCAF', REC: 'REC', OC: 'Chancellor' }
   return map[role] || role
 }
 
 const getRoleClass = (role) => {
-  const map = { PROPONENT: 'role-proponent', RPS_ADMIN: 'role-admin', RPS_STAFF: 'role-staff', OVCRIGE: 'role-ovcrige', OVCAF: 'role-ovcaf', REC: 'role-rec', OC: 'role-oc' }
+  const map = { PROPONENT: 'role-proponent', DEAN: 'role-dean', RPS_ADMIN: 'role-admin', RPS_STAFF: 'role-staff', OVCRIGE: 'role-ovcrige', OVCAF: 'role-ovcaf', REC: 'role-rec', OC: 'role-oc' }
   return map[role] || ''
 }
 
@@ -581,6 +581,7 @@ onMounted(loadDashboardData)
 
 .role-proponent { background: #dbeafe; color: #1e40af; }
 .role-admin { background: #fce7f3; color: #9d174d; }
+.role-dean { background: #cffafe; color: #155e75; }
 .role-staff { background: #e0e7ff; color: #3730a3; }
 .role-ovcrige { background: #d1fae5; color: #065f46; }
 .role-ovcaf { background: #fef3c7; color: #92400e; }

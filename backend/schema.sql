@@ -1,3 +1,32 @@
+-- ===========================================================================
+-- DEVELOPMENT RESET SCRIPT - DO NOT RUN AGAINST A REAL DATABASE
+-- ===========================================================================
+-- This file drops and recreates the RPIS schema from scratch. It exists to give
+-- a developer a clean local database.
+--
+--   ***  IT DESTROYS EVERY ROW OF EVERY TABLE IT TOUCHES.  ***
+--   ***  NEVER RUN IT AGAINST rpis_db OR ANY OTHER DATABASE WITH REAL DATA. ***
+--
+-- A real database is provisioned with the additive, idempotent migrations in
+-- backend/migration-*.sql, which are safe to re-run and never drop anything.
+-- The check below stops an accidental run against anything that is not a
+-- database whose name ends in "_dev" or "_test".
+--
+-- Usage (development only):
+--   psql -h localhost -U postgres -d rpis_dev -f schema.sql
+-- ===========================================================================
+
+DO $$
+BEGIN
+    IF current_database() NOT LIKE '%\_dev' AND current_database() NOT LIKE '%\_test' THEN
+        RAISE EXCEPTION
+            'Refusing to run the development reset script against database "%". '
+            'This script drops every table. Use backend/migration-*.sql for a real database.',
+            current_database();
+    END IF;
+END
+$$;
+
 -- PostgreSQL Database Schema for Research Project Information System (RPIS)
 
 -- Drop tables if they exist to start fresh (useful for development/testing)
@@ -27,6 +56,10 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    -- Role vocabulary, canonical in com.rpis.backend.model.UserRoles: PROPONENT,
+    -- RPS_ADMIN, RPS_STAFF, DEAN, OVCRIGE, OVCAF, REC, OC. The Dean / Department Chair
+    -- is an independent role, not an RPS sub-role, so its value is DEAN and never
+    -- RPS_DEAN (see migration-rename-dean-role.sql).
     role VARCHAR(50) NOT NULL
 );
 

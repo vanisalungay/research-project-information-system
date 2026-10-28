@@ -158,21 +158,21 @@ const allNavItems = [
     iconKey: 'endorse',
     text: 'Endorsement Requests',
     path: '/dean-requests',
-    roles: [UserRole.RPS_DEAN],
+    roles: [UserRole.DEAN],
     section: 'main',
   },
   {
     iconKey: 'notification',
     text: 'Notifications',
     path: '/notifications',
-    roles: [UserRole.RPS_DEAN],
+    roles: [UserRole.DEAN],
     section: 'main',
   },
   {
     iconKey: 'settings',
     text: 'Endorsement Letter Settings',
     path: '/dean-endorsement-settings',
-    roles: [UserRole.RPS_DEAN, UserRole.RPS_ADMIN],
+    roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
     section: 'main',
   },
 
@@ -299,7 +299,7 @@ const allNavItems = [
     iconKey: 'settings',
     text: 'Profile Settings',
     path: '/manage-profile',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.RPS_DEAN, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.DEAN, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
     section: 'bottom',
   },
 ]

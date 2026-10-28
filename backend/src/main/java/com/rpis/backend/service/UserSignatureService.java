@@ -2,9 +2,10 @@ package com.rpis.backend.service;
 
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +16,9 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Electronic signature of a user account (Manage Profile -> Electronic Signature).
@@ -44,7 +40,7 @@ import java.util.UUID;
 public class UserSignatureService {
 
     /** Existing upload convention: signatures live beside the other uploads. */
-    private static final String UPLOAD_DIR = "uploads/signatures/";
+    private static final String SIGNATURES_SUBDIRECTORY = "signatures";
 
     /** Maximum accepted signature image size (2 MB). */
     public static final long MAX_FILE_BYTES = 2L * 1024 * 1024;
@@ -61,6 +57,10 @@ public class UserSignatureService {
             "The selected file is not a readable image.";
 
     private final UserRepository userRepository;
+    private final UploadStorage uploadStorage;
+
+    /** The folder signatures live in, inside the configured storage root. */
+    private static final String SIGNATURES_FOLDER = "signatures";
 
     /**
      * Stores {@code file} as the signature of {@code userId}, replacing any
@@ -87,11 +87,13 @@ public class UserSignatureService {
 
         ImageInfo image = readImageInfo(bytes);
         String extension = "jpeg".equals(image.format()) ? "jpg" : image.format();
-        Path stored = writeFile(bytes, extension);
+        // The storage layer generates the stored name; the extension is the only part of
+        // the client name that is carried over.
+        String stored = uploadStorage.store(bytes, SIGNATURES_SUBDIRECTORY, "signature." + extension);
 
         String previousPath = user.getSignatureFilePath();
         user.setSignatureFileName(originalName(file, extension));
-        user.setSignatureFilePath(stored.toString().replace('\\', '/'));
+        user.setSignatureFilePath(stored);
         User saved = userRepository.save(user);
 
         deleteStoredFile(previousPath);
@@ -142,19 +144,6 @@ public class UserSignatureService {
         }
     }
 
-    /** Stores the bytes under a generated name: never the client supplied name. */
-    private Path writeFile(byte[] bytes, String extension) {
-        try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            Files.createDirectories(uploadPath);
-            Path target = uploadPath.resolve(UUID.randomUUID() + "_signature." + extension);
-            Files.write(target, bytes);
-            return target;
-        } catch (IOException e) {
-            throw new IllegalStateException("The signature image could not be stored.");
-        }
-    }
-
     /**
      * Original file name kept for display only. Any directory part is stripped and
      * the length is capped to the column size, so a crafted upload cannot store a
@@ -175,9 +164,9 @@ public class UserSignatureService {
     }
 
     /**
-     * Returns the caller's saved signature, or {@code null} when none is stored (or
-     * the stored file is no longer readable - the account then shows the empty
-     * state instead of failing).
+     * Returns the caller's saved signature, or {@code null} when none is stored (or the
+     * stored file is no longer readable - the account then shows the empty state instead
+     * of failing).
      */
     public SignatureFile loadSignature(Long userId) {
         User user = getUser(userId);
@@ -186,22 +175,18 @@ public class UserSignatureService {
             return null;
         }
 
-        Path resolved = Paths.get(storedPath).toAbsolutePath().normalize();
-        try {
-            Resource resource = new UrlResource(resolved.toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                return null;
-            }
-            String fileName = user.getSignatureFileName();
-            if (fileName == null || fileName.isBlank()) {
-                fileName = resolved.getFileName() != null
-                        ? resolved.getFileName().toString()
-                        : "signature";
-            }
-            return new SignatureFile(resource, fileName, contentTypeFor(resolved));
-        } catch (MalformedURLException e) {
+        UploadStorage.StoredUpload stored = uploadStorage.open(storedPath).orElse(null);
+        if (stored == null) {
             return null;
         }
+        String fileName = user.getSignatureFileName();
+        if (fileName == null || fileName.isBlank()) {
+            fileName = stored.fileName();
+        }
+        return new SignatureFile(
+                new InputStreamResource(stored.content()),
+                fileName,
+                contentTypeFor(stored.fileName()));
     }
 
     /** Removes the caller's signature reference and the stored file, if any. */
@@ -216,31 +201,20 @@ public class UserSignatureService {
     }
 
     /**
-     * Deletes a previously stored signature file. Only paths inside the signature
-     * upload directory are touched, so a corrupted value can never remove anything
-     * else. A leftover file never fails the request: the account no longer
-     * references it.
+     * Deletes a previously stored signature file. The storage layer only ever touches a
+     * path inside its own root, so a corrupted column value cannot remove anything else,
+     * and a leftover file never fails the request: the account no longer references it.
      */
     private void deleteStoredFile(String storedPath) {
         if (storedPath == null || storedPath.isBlank()) {
             return;
         }
-        try {
-            Path root = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-            Path resolved = Paths.get(storedPath).toAbsolutePath().normalize();
-            if (resolved.startsWith(root)) {
-                Files.deleteIfExists(resolved);
-            }
-        } catch (IOException ignored) {
-            // Nothing else to do: the signature reference is already cleared.
-        }
+        uploadStorage.delete(storedPath);
     }
 
     /** Media type of a stored signature, derived from its own generated name. */
-    private MediaType contentTypeFor(Path stored) {
-        String name = stored.getFileName() != null
-                ? stored.getFileName().toString().toLowerCase(Locale.ROOT)
-                : "";
+    private MediaType contentTypeFor(String storedName) {
+        String name = storedName == null ? "" : storedName.toLowerCase(Locale.ROOT);
         return name.endsWith(".jpg") || name.endsWith(".jpeg")
                 ? MediaType.IMAGE_JPEG
                 : MediaType.IMAGE_PNG;

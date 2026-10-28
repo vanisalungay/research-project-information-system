@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -48,6 +50,26 @@ public class User {
 
     private String contactNumber;
     private String specialization;
+
+    /**
+     * Notification Routing preferences (Manage Profile -> Notifications).
+     *
+     * <p>Stored on the account so the choice follows the user to any browser and any
+     * instance behind the load balancer. The two lists hold the selected option
+     * labels shown on that page; an empty list means the user has not opted into any
+     * alert of that group, which is the same meaning as "all boxes clear".
+     *
+     * <p>Before this existed the page rendered two hardcoded option lists whose
+     * "Save Notification Settings" button only showed a confirmation dialog - the
+     * selection was never stored anywhere and was lost on reload.
+     */
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "notify_proposals", columnDefinition = "TEXT")
+    private List<String> notifyProposals = new ArrayList<>();
+
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "notify_deadlines", columnDefinition = "TEXT")
+    private List<String> notifyDeadlines = new ArrayList<>();
 
     /**
      * Designation / title of the account, printed on documents the account issues

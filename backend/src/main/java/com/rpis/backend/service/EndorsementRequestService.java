@@ -11,12 +11,14 @@ import com.rpis.backend.model.EndorsementRequestEvent;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
 import com.rpis.backend.repository.EndorsementRequestRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -27,9 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -70,21 +69,19 @@ import java.util.UUID;
 public class EndorsementRequestService {
 
     /** The role that raises endorsement requests. */
-    public static final String ROLE_PROPONENT = "PROPONENT";
-    /** The Dean / Department Chair role. */
-    public static final String ROLE_DEAN = "RPS_DEAN";
+    public static final String ROLE_PROPONENT = UserRoles.PROPONENT;
+    /** The Dean / Department Chair role (independent of RPS; see {@link UserRoles#DEAN}). */
+    public static final String ROLE_DEAN = UserRoles.DEAN;
     /** The system administrator role. */
-    public static final String ROLE_ADMIN = "RPS_ADMIN";
+    public static final String ROLE_ADMIN = UserRoles.RPS_ADMIN;
     /** The ORPS staff role. */
-    public static final String ROLE_STAFF = "RPS_STAFF";
+    public static final String ROLE_STAFF = UserRoles.RPS_STAFF;
 
     /** Reference and document code format: MSUN-ORPS-END-<code>-<year>. */
     static final String REFERENCE_FORMAT = "MSUN-ORPS-END-%03d-%d";
 
     /** Where issued letters and their signature snapshots are stored. */
-    static final String UPLOAD_DIR = "uploads/endorsements/";
-
-    private static final Path UPLOAD_ROOT = Paths.get("uploads").toAbsolutePath().normalize();
+    static final String ENDORSEMENTS_FOLDER = "endorsements";
 
     private final EndorsementRequestRepository requestRepository;
     private final EndorsementRequestEventRepository eventRepository;
@@ -99,6 +96,7 @@ public class EndorsementRequestService {
     private final NotificationService notificationService;
     private final CurrentUser currentUser;
     private final JdbcTemplate jdbcTemplate;
+    private final UploadStorage uploadStorage;
 
     /** Guards the one-off "create the sequence if it is missing" step. */
     private volatile boolean sequenceChecked;
@@ -275,8 +273,8 @@ public class EndorsementRequestService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "No endorsement letter has been issued for this request yet.");
         }
-        Path resolved = UPLOAD_ROOT.resolve(entity.getLetterFilePath()).normalize();
-        if (!resolved.startsWith(UPLOAD_ROOT) || !Files.isReadable(resolved)) {
+        UploadStorage.StoredUpload stored = uploadStorage.open(entity.getLetterFilePath()).orElse(null);
+        if (stored == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "The stored endorsement letter is no longer available.");
         }
@@ -284,11 +282,11 @@ public class EndorsementRequestService {
         if (fileName == null || fileName.isBlank()) {
             fileName = "endorsement-letter.pdf";
         }
-        return new StoredLetter(resolved, fileName);
+        return new StoredLetter(stored, fileName);
     }
 
-    /** A stored endorsement letter: where it is and the name to offer. */
-    public record StoredLetter(Path path, String fileName) {
+    /** A stored endorsement letter: the readable bytes and the name to offer. */
+    public record StoredLetter(UploadStorage.StoredUpload stored, String fileName) {
     }
 
     // ==================== DEAN: APPROVE ====================
@@ -733,21 +731,10 @@ public class EndorsementRequestService {
      * the uploads directory and the original name is kept for display.
      */
     private StoredFile storeFile(byte[] content, String originalName) {
-        try {
-            Path directory = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-            Files.createDirectories(directory);
-            String storedName = UUID.randomUUID() + "_" + originalName;
-            Path target = directory.resolve(storedName).normalize();
-            if (!target.startsWith(directory)) {
-                throw new IllegalStateException("The endorsement letter could not be stored.");
-            }
-            Files.write(target, content);
-            String relative = UPLOAD_ROOT.relativize(target).toString().replace('\\', '/');
-            return new StoredFile(originalName, relative);
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "The endorsement letter could not be stored: " + e.getMessage(), e);
-        }
+        // The storage layer generates the stored name and returns the path relative to
+        // its root; the display name is kept separately.
+        String relative = uploadStorage.store(content, ENDORSEMENTS_FOLDER, originalName);
+        return new StoredFile(originalName, relative);
     }
 
     /**
@@ -786,14 +773,10 @@ public class EndorsementRequestService {
         if (storedPath == null || storedPath.isBlank()) {
             return;
         }
-        try {
-            Path resolved = UPLOAD_ROOT.resolve(storedPath).normalize();
-            if (resolved.startsWith(UPLOAD_ROOT)) {
-                Files.deleteIfExists(resolved);
-            }
-        } catch (IOException ignored) {
-            // The transaction already failed; a leftover file is not worth masking it.
-        }
+        // The storage layer only ever removes a path inside its own root, and reports a
+        // failure instead of throwing: the transaction has already failed and a leftover
+        // file is not worth masking that.
+        uploadStorage.delete(storedPath);
     }
 
     /** A stored file: the name to display and the path relative to uploads. */

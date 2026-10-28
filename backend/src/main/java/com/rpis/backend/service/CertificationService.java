@@ -3,17 +3,16 @@ package com.rpis.backend.service;
 import com.rpis.backend.dto.CertificationResponse;
 import com.rpis.backend.model.Certification;
 import com.rpis.backend.model.EndorsementRequest;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.CertificationRepository;
 import com.rpis.backend.repository.EndorsementRequestRepository;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -32,10 +31,9 @@ public class CertificationService {
     /** Label of the endorsement letter document type. */
     public static final String LABEL_ENDORSEMENT_LETTER = "Endorsement Letter";
 
-    private static final Path UPLOAD_ROOT = Paths.get("uploads").toAbsolutePath().normalize();
-
     private final CertificationRepository certificationRepository;
     private final EndorsementRequestRepository endorsementRequestRepository;
+    private final UploadStorage uploadStorage;
 
     /** The authenticated Proponent's own certification documents, newest first. */
     public List<CertificationResponse> listForProponent(Long proponentId) {
@@ -85,8 +83,8 @@ public class CertificationService {
                 ? certification.getProponent().getId()
                 : null;
         boolean owner = ownerId != null && ownerId.equals(requesterId);
-        boolean staff = "RPS_ADMIN".equalsIgnoreCase(requesterRole)
-                || "RPS_STAFF".equalsIgnoreCase(requesterRole);
+        boolean staff = UserRoles.RPS_ADMIN.equalsIgnoreCase(requesterRole)
+                || UserRoles.RPS_STAFF.equalsIgnoreCase(requesterRole);
         boolean issuingDean = false;
         if (certification.getEndorsementRequestId() != null) {
             // The Dean who issued the letter may re-read it; anyone else is refused.
@@ -102,7 +100,7 @@ public class CertificationService {
 
     /** True when the caller is the Dean who decided the endorsement request. */
     private boolean isIssuingDean(Long endorsementRequestId, Long requesterId, String requesterRole) {
-        if (!"RPS_DEAN".equalsIgnoreCase(requesterRole)) {
+        if (!UserRoles.DEAN.equalsIgnoreCase(requesterRole)) {
             return false;
         }
         return endorsementRequestRepository.findById(endorsementRequestId)
@@ -141,33 +139,32 @@ public class CertificationService {
      * directory are served, so a corrupted value can never reach anything else.
      */
     public StoredDocument loadDocument(Certification certification) {
-        Path resolved = resolveStoredFile(certification);
-        if (resolved == null) {
+        UploadStorage.StoredUpload stored = resolveStoredFile(certification);
+        if (stored == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "The stored certification document is no longer available.");
         }
         String fileName = certification.getFileName();
         if (fileName == null || fileName.isBlank()) {
-            fileName = resolved.getFileName() != null ? resolved.getFileName().toString()
-                    : "certification.pdf";
+            fileName = stored.fileName();
         }
-        return new StoredDocument(resolved, fileName);
+        return new StoredDocument(stored, fileName);
     }
 
-    private Path resolveStoredFile(Certification certification) {
+    /**
+     * Opens the stored file of a certification. The storage layer resolves the value
+     * inside its own root, so a corrupted column value can never reach anything else.
+     */
+    private UploadStorage.StoredUpload resolveStoredFile(Certification certification) {
         String stored = certification.getFilePath();
         if (stored == null || stored.isBlank()) {
             return null;
         }
-        Path resolved = UPLOAD_ROOT.resolve(stored).normalize();
-        if (!resolved.startsWith(UPLOAD_ROOT) || !Files.isReadable(resolved)) {
-            return null;
-        }
-        return resolved;
+        return uploadStorage.open(stored).orElse(null);
     }
 
-    /** A stored certification document: where it is and the name to offer. */
-    public record StoredDocument(Path path, String fileName) {
+    /** A stored certification document: the readable bytes and the name to offer. */
+    public record StoredDocument(UploadStorage.StoredUpload stored, String fileName) {
     }
 
     /**

@@ -79,47 +79,53 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    /**
+     * Authenticates an account and issues a bearer token.
+     *
+     * <p>The password is verified in exactly one place
+     * ({@link UserService#login}). This method previously performed its own plain-text
+     * comparison of the stored and submitted passwords before delegating, so there were
+     * two comparison sites to keep correct - and both compared raw values.
+     *
+     * <p>The HTTP answers are unchanged: a pending or rejected account whose
+     * credentials are correct still gets 403 with the same message it always did, and
+     * everything else gets 401. A wrong password and an unknown e-mail address are
+     * deliberately indistinguishable, so this endpoint cannot be used to enumerate
+     * accounts.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody com.rpis.backend.dto.LoginRequest loginRequest) {
 
-        java.util.Optional<User> existingUserOpt = userService.findByEmail(loginRequest.getEmail());
-        if (existingUserOpt.isPresent()) {
-            User existingUser = existingUserOpt.get();
-            if (existingUser.getPassword().equals(loginRequest.getPassword()) &&
-                    existingUser.getRole().equalsIgnoreCase(loginRequest.getRole())) {
-
-                if (existingUser.getStatus().equalsIgnoreCase("PENDING")) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body("Your account is pending RII ADMIN approval.");
-                } else if (existingUser.getStatus().equalsIgnoreCase("REJECTED")) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Your account registration was rejected.");
-                }
-            }
-        }
-
-        User user = userService.login(
+        UserService.LoginOutcome outcome = userService.login(
                 loginRequest.getEmail(),
                 loginRequest.getPassword(),
                 loginRequest.getRole());
 
-        if (user != null) {
+        if (outcome.status() == UserService.LoginStatus.PENDING) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Your account is pending RII ADMIN approval.");
+        }
+        if (outcome.status() == UserService.LoginStatus.REJECTED) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Your account registration was rejected.");
+        }
 
-            // Generate and set token
-            String token = tokenService.generateToken(user.getId(), user.getRole());
-            user.setToken(token);
-
-            // Hide password before sending response
-            user.setPassword(null);
-
-            return ResponseEntity.ok(user);
-
-        } else {
-
+        User user = outcome.user();
+        if (user == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid email, password, or role.");
         }
+
+        // Generate and set token
+        String token = tokenService.generateToken(user.getId(), user.getRole());
+        user.setToken(token);
+
+        // Never serialize the stored hash.
+        user.setPassword(null);
+
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/google-login")
@@ -176,14 +182,9 @@ public class UserController {
         }
     }
 
-    @PostMapping("/seed")
-    public ResponseEntity<String> seedUsers() {
-
-        userService.seedUsers();
-
-        return ResponseEntity.ok(
-                "Database seeded with temporary user accounts.");
-    }
+    // The POST /seed route moved to DevSeedController: it is now opt-in, restricted
+    // to RPS_ADMIN and refuses to write unless the target is the isolated test
+    // database.
 
     @PostMapping("/admin/create")
     public ResponseEntity<?> createStaffAccount(
@@ -197,8 +198,17 @@ public class UserController {
         }
     }
 
+    /**
+     * Reads one account.
+     *
+     * <p>Data isolation: a caller who is not one of the privileged review/administrative
+     * roles may only read their own account. The route used to be reachable by any
+     * authenticated user with any id, so one account could enumerate every other
+     * account's profile. The password is never serialized ({@code @JsonProperty(WRITE_ONLY)}).
+     */
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        currentUser.requireSelfOrPrivileged(id);
         return userService.getUserById(id)
                 .map(user -> {
                     user.setPassword(null); // Hide password for safety
@@ -246,8 +256,18 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    /**
+     * Updates an account.
+     *
+     * <p>Data isolation: a caller who is not one of the privileged review/administrative
+     * roles may only update their own account, so a Proponent can no longer rewrite
+     * another account's name, e-mail or password by changing the id in the URL. The
+     * administrative account-management screen keeps working because the
+     * administrative roles are privileged.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        currentUser.requireSelfOrPrivileged(id);
         try {
             User updated = userService.updateUser(id, user);
             updated.setPassword(null); // Hide password for safety

@@ -27,7 +27,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Verifies that proposal data is isolated per authenticated Proponent, that the
@@ -50,7 +51,7 @@ class ProposalServiceOwnershipTest {
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
         when(userRepository.findAll()).thenReturn(List.of());

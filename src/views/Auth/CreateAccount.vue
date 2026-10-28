@@ -277,43 +277,26 @@ const handleRegister = async () => {
   } catch (error) {
     console.log(error)
 
-    if (error.response?.status === 400) {
+    if (error.response) {
+      // The backend refused the registration (duplicate e-mail, invalid payload,
+      // ...). Its reason is the one shown to the user.
+      const body = error.response.data
       errorMessage.value =
-        error.response.data?.message || 'Registration failed. Email already exists.'
+        (typeof body === 'string' && body) ||
+        body?.message ||
+        body?.error ||
+        'Registration failed. Email already exists.'
       return
     }
 
-    console.warn('Backend unavailable. Saving locally...')
-
-    const offlineUsers = JSON.parse(
-      localStorage.getItem('offline_users') || '[]'
-    )
-
-    const exists = offlineUsers.some(
-      user => user.email.toLowerCase() === email.value.toLowerCase()
-    )
-
-    if (exists) {
-      errorMessage.value = 'Registration failed. Email already exists.'
-      return
-    }
-
-    const newUser = {
-      id: Date.now(),
-      name: name.value.trim(),
-      email: email.value.trim().toLowerCase(),
-      password: password.value,
-      role: 'PROPONENT',
-      departmentOffice: departmentOffice.value.trim(),
-      status: 'ACTIVE',
-      dateRegistered: new Date().toISOString()
-    }
-
-    offlineUsers.push(newUser)
-    localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
-
-    await showAlert('Account created successfully! You can now log in.', { type: 'success', title: 'Account Created' })
-    router.push('/login')
+    // No response at all: the server could not be reached. The registration is NOT
+    // saved anywhere else. It previously wrote the new account - including its
+    // password - into a `offline_users` list in localStorage and then reported
+    // "Account created successfully!", producing an account that existed only in
+    // that one browser and could never be approved, found or signed into anywhere
+    // else.
+    errorMessage.value =
+      'Cannot reach the RPIS server. Your account was not created. Please check your connection and try again.'
   }
 }
 </script>

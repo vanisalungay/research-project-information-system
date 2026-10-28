@@ -5,6 +5,7 @@ import com.rpis.backend.model.ProjectReport;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProjectReportRepository;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,14 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -30,8 +27,7 @@ public class ReportController {
     private final ProjectReportRepository reportRepository;
     private final ProposalRepository proposalRepository;
     private final CurrentUser currentUser;
-
-    private static final String UPLOAD_DIR = "uploads/reports/";
+    private final UploadStorage uploadStorage;
 
     /**
      * Ensures the caller may access reports for the given proposal. A Proponent is
@@ -67,12 +63,7 @@ public class ReportController {
 
         requireProposalAccess(proposalId);
         try {
-            // Ensure upload directory exists
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
+            // The storage layer creates its directory on first write.
             Map<String, Object> response = new HashMap<>();
 
             // Save Quarterly Progress Report
@@ -176,11 +167,10 @@ public class ReportController {
         String extension = originalFilename != null && originalFilename.contains(".")
                 ? originalFilename.substring(originalFilename.lastIndexOf("."))
                 : "";
-        String uniqueFilename = UUID.randomUUID().toString() + "_" + reportType.toLowerCase() + extension;
+        String storedPath = uploadStorage.store(file.getBytes(), "reports",
+                reportType.toLowerCase() + "-" + originalFilename);
 
-        // Save file
-        Path filePath = Paths.get(UPLOAD_DIR, uniqueFilename);
-        Files.write(filePath, file.getBytes());
+        // The bytes are written by the storage layer above.
 
         // Create report record
         ProjectReport report = new ProjectReport();
@@ -188,7 +178,7 @@ public class ReportController {
         report.setReportType(reportType);
         report.setPeriod(period);
         report.setFileName(originalFilename);
-        report.setFilePath(filePath.toString());
+        report.setFilePath(storedPath);
         report.setRemarks(remarks);
 
         return reportRepository.save(report);

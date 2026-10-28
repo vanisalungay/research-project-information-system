@@ -96,6 +96,27 @@ public class NotificationService {
             Long proposalId, Long proposalAnnouncementId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        return createNotificationForUser(user, message, title, type, proposalId, proposalAnnouncementId);
+    }
+
+    /**
+     * Writes a notification for an account that has already been loaded.
+     *
+     * <p>Used when the recipients were fetched as a set (a status change notifies
+     * every account in one or two roles). Without this overload each notification
+     * re-read the same account by id, which turned one status change into a query per
+     * recipient on top of the recipient lookup itself.
+     */
+    public Notification createNotificationForUser(User user, String message, String title,
+            String type, Long proposalId) {
+        return createNotificationForUser(user, message, title, type, proposalId, null);
+    }
+
+    public Notification createNotificationForUser(User user, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId) {
+        if (user == null) {
+            throw new IllegalArgumentException("A recipient account is required.");
+        }
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setMessage(message);

@@ -1,6 +1,7 @@
 package com.rpis.backend.controller;
 
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.service.TokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,7 @@ class EndorsementSecurityTest {
         jdbcTemplate.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
 
         proponentToken = tokenFor("PROPONENT", "security.proponent@msunaawan.edu.ph");
-        deanToken = tokenFor("RPS_DEAN", "security.dean@msunaawan.edu.ph");
+        deanToken = tokenFor(UserRoles.DEAN, "security.dean@msunaawan.edu.ph");
         adminToken = tokenFor("RPS_ADMIN", "security.admin@msunaawan.edu.ph");
         staffToken = tokenFor("RPS_STAFF", "security.staff@msunaawan.edu.ph");
     }
@@ -180,4 +181,45 @@ class EndorsementSecurityTest {
 
         mockMvc.perform(withToken(get("/api/users/deans"), adminToken)).andExpect(status().isOk());
     }
+
+    // ==================== THE DEAN'S OWN PRIVILEGES ====================
+
+    /**
+     * The regression this rename fixes.
+     *
+     * <p>The decision routes required the authority {@code ROLE_DEAN} while every Dean
+     * account carried {@code ROLE_RPS_DEAN}, so a Dean who had authenticated correctly
+     * was refused by the filter chain and could never endorse anything. The request id
+     * below does not exist, so the answer has to be 404 - and that 404 is the proof that
+     * the authorization layer let the Dean through instead of answering 403.
+     */
+    @Test
+    void aDeanIsNotRefusedByTheDecisionRoutes() throws Exception {
+        mockMvc.perform(withToken(put("/api/endorsements/999999/approve"), deanToken))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(withToken(put("/api/endorsements/999999/reject"), deanToken))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * The Dean is an independent role scoped to its college: it holds no RPS and no
+     * administrator privilege, so every administrative and reviewer surface stays closed
+     * to it.
+     */
+    @Test
+    void aDeanCannotReachTheAdministrativeSurfaces() throws Exception {
+        mockMvc.perform(withToken(get("/api/users"), deanToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(withToken(get("/api/users/deans"), deanToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(withToken(post("/api/users/deans"), deanToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), deanToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(withToken(put("/api/proposals/1/field-remarks"), deanToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(withToken(post("/api/quarterly-reports"), deanToken))
+                .andExpect(status().isForbidden());
+    }
+
 }

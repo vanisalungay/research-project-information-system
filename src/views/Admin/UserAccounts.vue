@@ -169,6 +169,7 @@ const filteredUsers = computed(() => {
 const formatRole = (role) => {
   const roleMap = {
     'PROPONENT': 'Proponent',
+    'DEAN': 'Dean',
     'RPS_ADMIN': 'RPS Admin',
     'RPS_STAFF': 'RPS Staff',
     'OVCRIGE': 'OVCRIGE',
@@ -182,6 +183,7 @@ const formatRole = (role) => {
 const getRoleClass = (role) => {
   const classMap = {
     'PROPONENT': 'role-proponent',
+    'DEAN': 'role-dean',
     'RPS_ADMIN': 'role-admin',
     'RPS_STAFF': 'role-staff',
     'OVCRIGE': 'role-ovcrige',
@@ -402,6 +404,7 @@ td {
 
 .role-proponent { background: #dbeafe; color: #1e40af; }
 .role-admin { background: #fce7f3; color: #9d174d; }
+.role-dean { background: #cffafe; color: #155e75; }
 .role-staff { background: #e0e7ff; color: #3730a3; }
 .role-ovcrige { background: #d1fae5; color: #065f46; }
 .role-ovcaf { background: #fef3c7; color: #92400e; }

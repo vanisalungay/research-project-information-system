@@ -32,7 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Unit tests for the Technology Map upload of the Create Proposal form (section 13).
@@ -69,7 +70,7 @@ class ProposalTechnologyMapServiceTest {
                 mock(ProposalSectionRemarkService.class),
                 currentUser,
                 mock(CooperatingAgencyService.class),
-                mock(PriorityAgendaService.class));
+                mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);

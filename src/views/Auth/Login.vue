@@ -127,7 +127,10 @@ const errorMessage = ref('')
 
 const roles = [
   { name: 'Proponent', desc: 'Faculty Submitter', value: UserRole.PROPONENT, next: '/proponent-dashboard' },
-  { name: 'Dean', desc: 'College Endorsement', value: UserRole._DEAN, next: '/dean-dashboard' },
+  // Dean / Department Chair: an independent role, not part of RPS. The value must be
+  // UserRole.DEAN - it is the role the account is stored with, and UserService.login
+  // authenticates only when the role sent by this form matches it exactly.
+  { name: 'Dean', desc: 'College Endorsement', value: UserRole.DEAN, next: '/dean-dashboard' },
   { name: 'ORPS', desc: 'Technical & Admin Services', value: UserRole.RPS_STAFF, next: '/proponent-dashboard' },
   { name: 'OVCRIGE', desc: 'Research Vice Chancellor', value: UserRole.OVCRIGE, next: '/proponent-dashboard' },
   { name: 'REC', desc: 'Evaluation Committee', value: UserRole.REC, next: '/proponent-dashboard' },

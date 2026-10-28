@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Unit tests for the proponent-selected project duration rule. Only 12, 24 or 36
@@ -45,7 +46,7 @@ class ProposalServiceDurationTest {
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(1L);
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));

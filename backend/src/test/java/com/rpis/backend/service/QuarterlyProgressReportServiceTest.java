@@ -26,7 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Unit tests for the implementation-phase reporting sequence and required-document
@@ -46,7 +47,7 @@ class QuarterlyProgressReportServiceTest {
     void setUp() {
         reportRepository = mock(QuarterlyProgressReportRepository.class);
         proposalRepository = mock(ProposalRepository.class);
-        service = new QuarterlyProgressReportService(reportRepository, proposalRepository);
+        service = new QuarterlyProgressReportService(reportRepository, proposalRepository, new LocalUploadStorage("uploads"));
 
         Proposal proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);

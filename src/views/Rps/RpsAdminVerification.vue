@@ -26,15 +26,15 @@
         </div>
         <div>
           <label>Date Registered</label>
-          <p>N/A</p>
+          <p>{{ formatDate(targetUser?.dateRegistered) }}</p>
         </div>
         <div>
           <label>Requested Role</label>
-          <p>{{ targetUser?.role || 'N/A' }}</p>
+          <p>{{ formatRole(targetUser?.role) }}</p>
         </div>
         <div>
           <label>Department/Office</label>
-          <p>N/A</p>
+          <p>{{ targetUser?.departmentOffice || 'N/A' }}</p>
         </div>
       </div>
     </section>
@@ -42,6 +42,17 @@
     <!-- Documents -->
     <section class="card">
       <h3>Submitted Documents</h3>
+
+      <!--
+        The account record carries no attachments, so this list is genuinely
+        empty. It used to render three invented rows (a "Valid ID.pdf", an
+        "Employment Certificate.pdf" and a "Research Portfolio.pdf", with
+        fabricated file sizes) that appeared on every account and could not be
+        downloaded. Showing nothing is the accurate answer.
+      -->
+      <p v-if="documents.length === 0" class="empty-documents">
+        No documents were submitted with this registration.
+      </p>
 
       <div class="document" v-for="doc in documents" :key="doc.name">
         <div>
@@ -55,7 +66,7 @@
     <!-- Email Verification -->
     <section class="verification">
       <strong>Email Verification Status</strong>
-      <p>Email verified on Dec 15, 2024</p>
+      <p>{{ verificationLabel }}</p>
     </section>
 
     <!-- Actions -->
@@ -134,6 +145,7 @@ const targetUser = ref(null)
 const targetUserFullName = ref('')
 const status = ref('PENDING')
 
+/** Loads the account the RPS administrator is verifying, from the backend only. */
 const fetchUser = async () => {
   try {
     const response = await api.get('/api/users')
@@ -144,14 +156,15 @@ const fetchUser = async () => {
       status.value = found.status
     }
   } catch (error) {
-    console.warn('Backend is offline. Searching user in localStorage offline_users...')
-    const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
-    const found = offlineUsers.find((user) => user.id == route.query.id)
-    if (found) {
-      targetUser.value = found
-      targetUserFullName.value = found.name
-      status.value = found.status
-    }
+    // There is no local fallback any more. It used to read the account out of an
+    // `offline_users` list in localStorage, so a backend that was down produced a
+    // page built from whatever that browser happened to remember instead of the
+    // real registration record.
+    console.error('Could not load the account to verify:', error)
+    await showAlert('The account could not be loaded. Please try again.', {
+      type: 'error',
+      title: 'Load Failed',
+    })
   }
 }
 
@@ -162,11 +175,49 @@ onMounted(() => {
 const showSuccess = ref(false)
 const successMessage = ref('')
 
-const documents = [
-  { name: 'Valid ID.pdf', type: 'ID Document', size: '1.2 MB' },
-  { name: 'Employment Certificate.pdf', type: 'Employment Proof', size: '856 KB' },
-  { name: 'Research Portfolio.pdf', type: 'Supporting Document', size: '3.4 MB' },
-]
+/**
+ * Documents attached to a registration.
+ *
+ * Always empty: the account record has no attachments. This used to be a
+ * hardcoded list of three invented documents with fabricated file sizes, which
+ * rendered on every account and could never be downloaded.
+ */
+const documents = []
+
+/** Human-readable registration date, or "N/A" when the backend has none. */
+const formatDate = (value) => {
+  if (!value) return 'N/A'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? 'N/A'
+    : parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+/**
+ * Human-readable role label, so an operator never reads a raw role value. The Dean is
+ * an independent role (not an RPS sub-role), and it is displayed as "Dean".
+ */
+const formatRole = (role) => {
+  const map = {
+    PROPONENT: 'Proponent',
+    DEAN: 'Dean',
+    RPS_ADMIN: 'RPS Admin',
+    RPS_STAFF: 'RPS Staff',
+    OVCRIGE: 'OVCRIGE',
+    OVCAF: 'OVCAF',
+    REC: 'REC',
+    OC: 'Chancellor',
+  }
+  return map[role] || role || 'N/A'
+}
+
+/** Email verification state taken from the account, never a fixed sentence. */
+const verificationLabel = computed(() => {
+  if (!targetUser.value) return 'Unknown'
+  return targetUser.value.emailVerified
+    ? 'Email address verified.'
+    : 'Email address not verified yet.'
+})
 
 const showModal = ref(false)
 const modalType = ref(null)
@@ -209,22 +260,16 @@ const confirmAction = async () => {
     closeModal()
     showSuccess.value = true
   } catch (error) {
-    console.warn('Backend is offline. Updating status locally in localStorage...')
-    const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
-    const foundIndex = offlineUsers.findIndex((user) => user.id == targetUser.value.id)
-    if (foundIndex !== -1) {
-      const newStatus = modalType.value === 'approve' ? 'Approved' : 'Rejected'
-      offlineUsers[foundIndex].status = newStatus
-      localStorage.setItem('offline_users', JSON.stringify(offlineUsers))
-      
-      status.value = newStatus
-      targetUser.value.status = newStatus
-      successMessage.value = `Account has been successfully ${newStatus.toLowerCase()}.`
-      closeModal()
-      showSuccess.value = true
-    } else {
-      await showAlert('Failed to update account status. User not found in offline database.', { type: 'error', title: 'Update Failed' })
-    }
+    // The decision is reported as failed. It used to be written into the
+    // `offline_users` list in localStorage instead, so the administrator saw
+    // "Account has been successfully approved." while the real account stayed
+    // pending in the database - the opposite of what the screen claimed.
+    console.error('Could not update the account status:', error)
+    closeModal()
+    await showAlert(
+      'The account status could not be updated. Please check your connection and try again.',
+      { type: 'error', title: 'Update Failed' },
+    )
   }
 }
 
@@ -309,6 +354,13 @@ const closeSuccess = () => {
   display: flex;
   justify-content: space-between;
   margin-top: 12px;
+}
+
+/* Legitimate empty state: the account record carries no attachments. */
+.empty-documents {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .verification {

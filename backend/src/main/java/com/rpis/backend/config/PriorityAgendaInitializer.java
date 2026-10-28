@@ -1,11 +1,13 @@
 package com.rpis.backend.config;
 
+import com.rpis.backend.util.PostgresAdvisoryLock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.util.List;
 
 /**
@@ -59,19 +61,39 @@ public class PriorityAgendaInitializer {
 
     private static final String SINGLE_ACTIVE_INDEX = "uk_priority_agenda_set_single_active";
 
-    private final JdbcTemplate jdbcTemplate;
+    /** How this step is described in cluster-lock log lines. */
+    private static final String LOCK_PURPOSE = "the priority agenda master data";
 
-    public PriorityAgendaInitializer(JdbcTemplate jdbcTemplate) {
+    private final JdbcTemplate jdbcTemplate;
+    private final DataSource dataSource;
+
+    public PriorityAgendaInitializer(JdbcTemplate jdbcTemplate, DataSource dataSource) {
         this.jdbcTemplate = jdbcTemplate;
+        this.dataSource = dataSource;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeMasterData() {
-        try {
-            createConstraints();
-            seedDefaultFramework();
-        } catch (Exception e) {
-            log.warn("Failed to initialize the priority agenda master data: {}", e.getMessage());
+        // One instance at a time. The constraint DDL below is genuinely idempotent, but the
+        // seed is a check-then-insert: two instances that both see "the framework is absent"
+        // both try to insert it and the second fails on the unique index, which aborts that
+        // instance's start-up. This step also shares its row with SyntheticTestDataSeeder, so
+        // the lock is shared with it rather than private to this class.
+        try (PostgresAdvisoryLock lock = PostgresAdvisoryLock
+                .tryAcquire(dataSource, PostgresAdvisoryLock.PURPOSE_REFERENCE_DATA, LOCK_PURPOSE)
+                .orElse(null)) {
+            if (lock == null) {
+                log.info("Another instance is initialising the priority agenda master data; this "
+                        + "instance will not. The constraints and the default framework end up "
+                        + "identical either way.");
+                return;
+            }
+            try {
+                createConstraints();
+                seedDefaultFramework();
+            } catch (Exception e) {
+                log.warn("Failed to initialize the priority agenda master data: {}", e.getMessage());
+            }
         }
     }
 
@@ -108,7 +130,8 @@ public class PriorityAgendaInitializer {
                         + "SELECT ?, ?, ?, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
                         + "WHERE NOT EXISTS (SELECT 1 FROM priority_agenda_sets "
                         + "WHERE LOWER(framework_name) = LOWER(?) AND coverage_start_year = ? "
-                        + "AND coverage_end_year = ?)",
+                        + "AND coverage_end_year = ?) "
+                        + "ON CONFLICT DO NOTHING",
                 DEFAULT_FRAMEWORK_NAME, DEFAULT_COVERAGE_START_YEAR, DEFAULT_COVERAGE_END_YEAR,
                 DEFAULT_FRAMEWORK_NAME, DEFAULT_COVERAGE_START_YEAR, DEFAULT_COVERAGE_END_YEAR);
         if (inserted == 0) {

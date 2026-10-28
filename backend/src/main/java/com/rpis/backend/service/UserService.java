@@ -1,18 +1,56 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final PasswordService passwordService;
+
+    /**
+     * Why an authentication attempt ended the way it did.
+     *
+     * <p>Exists so the controller can answer exactly as it did before (403 with a
+     * specific message for a pending or rejected account, 401 for anything else)
+     * while the password is verified in one place only.
+     */
+    public enum LoginStatus {
+        OK, INVALID_CREDENTIALS, PENDING, REJECTED
+    }
+
+    /**
+     * The result of an authentication attempt.
+     *
+     * @param user   the authenticated account, or null when it did not authenticate
+     * @param status why the attempt ended as it did
+     */
+    public record LoginOutcome(User user, LoginStatus status) {
+        static LoginOutcome refused(LoginStatus status) {
+            return new LoginOutcome(null, status);
+        }
+    }
+
+    /**
+     * Whether the fixed set of demonstration accounts may be created. Off by
+     * default: these accounts have published passwords, so they must never appear
+     * in a real database. {@code application-dev.properties} turns it on for local
+     * work, and the seeder additionally refuses to run against anything but the
+     * isolated test database when it is triggered through the API.
+     */
+    @Value("${rpis.seed.default-users.enabled:false}")
+    private boolean defaultUsersSeedingEnabled;
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -32,6 +70,10 @@ public class UserService {
             throw new IllegalArgumentException(
                     "Only MSU Naawan email addresses are allowed.");
         }
+
+        // The password arrives as plain text over the wire (as it must, to be usable)
+        // and is hashed here, so nothing but a BCrypt hash is ever stored.
+        user.setPassword(passwordService.hash(user.getPassword()));
 
         user.setStatus("PENDING");
         user.setDateRegistered(java.time.LocalDate.now());
@@ -56,12 +98,13 @@ public class UserService {
         // RPS_ADMIN through the Dean account endpoints (DeanAccountService), which also
         // records the assignment in the audit trail. Everything else keeps working as
         // before.
-        if (DeanAccountService.ROLE_DEAN.equalsIgnoreCase(user.getRole())) {
+        if (UserRoles.DEAN.equalsIgnoreCase(user.getRole())) {
             throw new IllegalArgumentException(
                     "The Dean role cannot be assigned here. Use the Dean accounts action, which "
                             + "only an RPS administrator may perform.");
         }
 
+        user.setPassword(passwordService.hash(user.getPassword()));
         user.setStatus("APPROVED");
         user.setEmailVerified(true);
         user.setDateRegistered(java.time.LocalDate.now());
@@ -87,43 +130,98 @@ public class UserService {
         return saved;
     }
 
-    public User login(String email, String password, String role) {
-
+    /**
+     * Authenticates an account and reports why an attempt failed.
+     *
+     * <p>This is the only place in the application that verifies a password. It
+     * previously compared plain text, and the controller performed a second plain-text
+     * comparison of its own; both are gone.
+     *
+     * <p>A row whose stored password predates hashing is verified directly and then
+     * <strong>upgraded in place</strong>, so an existing account keeps working and
+     * stops being plain text from its very next successful sign-in. That is the second
+     * of the two migration paths (the first is {@link PasswordMigrationService}), and
+     * either one alone is enough to avoid locking anybody out.
+     *
+     * <p>No branch of this method logs the submitted password, the stored value or the
+     * account's existence.
+     */
+    public LoginOutcome login(String email, String password, String role) {
         User user = userRepository.findByEmail(email).orElse(null);
-
-        System.out.println("========== LOGIN DEBUG ==========");
-        System.out.println("INPUT EMAIL = " + email);
-        System.out.println("INPUT PASSWORD = " + password);
-        System.out.println("INPUT ROLE = " + role);
-
         if (user == null) {
-            System.out.println("USER NOT FOUND");
-            return null;
+            // Deliberately indistinguishable from a wrong password: the caller answers
+            // 401 for both, so the endpoint cannot be used to discover which e-mail
+            // addresses have accounts. The previous version logged "no account for the
+            // supplied e-mail address", which leaked exactly that.
+            return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
         }
         if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
-            return null;
+            return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
         }
 
-        System.out.println("DB EMAIL = " + user.getEmail());
-        System.out.println("DB PASSWORD = " + user.getPassword());
-        System.out.println("DB ROLE = " + user.getRole());
-        System.out.println("DB STATUS = " + user.getStatus());
+        boolean roleMatches = user.getRole() != null && user.getRole().equalsIgnoreCase(role);
+        PasswordService.Verification verification = passwordService.verify(user.getPassword(), password);
 
-        boolean passwordMatch = user.getPassword().equals(password);
-        boolean roleMatch = user.getRole().equalsIgnoreCase(role);
-        boolean statusMatch = user.getStatus() != null &&
-                user.getStatus().equalsIgnoreCase("APPROVED");
+        if (!verification.matches() || !roleMatches) {
+            return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
+        }
 
-        System.out.println("PASSWORD MATCH = " + passwordMatch);
-        System.out.println("ROLE MATCH = " + roleMatch);
-        System.out.println("STATUS MATCH = " + statusMatch);
+        // Credentials are correct, so the account state can be reported honestly.
+        if ("PENDING".equalsIgnoreCase(user.getStatus())) {
+            return LoginOutcome.refused(LoginStatus.PENDING);
+        }
+        if ("REJECTED".equalsIgnoreCase(user.getStatus())) {
+            return LoginOutcome.refused(LoginStatus.REJECTED);
+        }
+        if (!"APPROVED".equalsIgnoreCase(user.getStatus())) {
+            return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
+        }
 
-        return passwordMatch && roleMatch && statusMatch
-                ? user
-                : null;
+        if (verification.legacy()) {
+            // The password was still plain text. Replace it now, before the token is
+            // issued, so a successful sign-in always leaves the account hashed.
+            upgradeLegacyPassword(user, password);
+        }
+
+        return new LoginOutcome(user, LoginStatus.OK);
     }
 
+    /**
+     * Replaces a legacy plain-text password with a BCrypt hash.
+     *
+     * <p>A failure here must not block the sign-in: the credentials were correct, and
+     * refusing them would lock the user out of an account they just proved they own.
+     * The next sign-in simply tries again.
+     */
+    private void upgradeLegacyPassword(User user, String rawPassword) {
+        try {
+            user.setPassword(passwordService.hash(rawPassword));
+            userRepository.save(user);
+            log.info("Upgraded account {} to a hashed password.", user.getId());
+        } catch (Exception e) {
+            log.warn("Could not upgrade account {} to a hashed password: {}",
+                    user.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Creates the fixed set of demonstration accounts.
+     *
+     * <p>This is <strong>synthetic seed data</strong> with published passwords, so
+     * it is opt-in: it runs only when {@code rpis.seed.default-users.enabled} is
+     * true (see {@code application-dev.properties}). It previously ran on every
+     * start-up of every instance and wrote every existing account back to the
+     * database, which is both a startup write storm on a shared database and a way
+     * to introduce known-password accounts into production.
+     *
+     * @throws IllegalStateException when called while disabled
+     */
     public void seedUsers() {
+        if (!defaultUsersSeedingEnabled) {
+            throw new IllegalStateException(
+                    "Default demo accounts are disabled (rpis.seed.default-users.enabled=false). "
+                            + "Enable it only for local development.");
+        }
 
         createIfNotExist(
                 "Proponent User",
@@ -167,24 +265,35 @@ public class UserService {
                 "ocpassword1234",
                 "OC");
 
+        // Backfill the bookkeeping fields on accounts that predate them. Only rows
+        // that are actually missing a value are written, so a start-up against a
+        // populated database performs no writes at all instead of rewriting every
+        // account (the previous behaviour).
         List<User> allUsers = userRepository.findAll();
+        List<User> needingBackfill = allUsers.stream()
+                .filter(u -> u.getStatus() == null
+                        || u.getEmailVerified() == null
+                        || u.getDateRegistered() == null)
+                .toList();
 
-        for (User user : allUsers) {
+        if (needingBackfill.isEmpty()) {
+            log.info("Account bookkeeping is complete; nothing to backfill.");
+            return;
+        }
 
+        for (User user : needingBackfill) {
             if (user.getStatus() == null) {
                 user.setStatus("APPROVED");
             }
-
             if (user.getEmailVerified() == null) {
                 user.setEmailVerified(true);
             }
-
             if (user.getDateRegistered() == null) {
                 user.setDateRegistered(java.time.LocalDate.now());
             }
-
-            userRepository.save(user);
         }
+        userRepository.saveAll(needingBackfill);
+        log.info("Backfilled bookkeeping fields on {} account(s).", needingBackfill.size());
     }
 
     public java.util.Optional<User> getUserById(Long id) {
@@ -202,7 +311,9 @@ public class UserService {
             user.setEmail(updatedUser.getEmail());
         }
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().trim().isEmpty()) {
-            user.setPassword(updatedUser.getPassword());
+            // A password change always stores a fresh hash. The raw value is never
+            // written to the column, and it is not logged.
+            user.setPassword(passwordService.hash(updatedUser.getPassword()));
         }
         if (updatedUser.getDepartmentOffice() != null) {
             user.setDepartmentOffice(updatedUser.getDepartmentOffice());
@@ -213,6 +324,15 @@ public class UserService {
         if (updatedUser.getSpecialization() != null) {
             user.setSpecialization(updatedUser.getSpecialization());
         }
+        // Notification Routing preferences (Manage Profile -> Notifications). Null
+        // means "this client does not manage them" and leaves the stored selection
+        // untouched; an empty list is a real value (the user cleared every box).
+        if (updatedUser.getNotifyProposals() != null) {
+            user.setNotifyProposals(updatedUser.getNotifyProposals());
+        }
+        if (updatedUser.getNotifyDeadlines() != null) {
+            user.setNotifyDeadlines(updatedUser.getNotifyDeadlines());
+        }
 
         return userRepository.save(user);
     }
@@ -222,7 +342,9 @@ public class UserService {
             User user = new User();
             user.setName(name);
             user.setEmail(email);
-            user.setPassword(password);
+            // The demo accounts' published passwords are hashed like any other, so even
+            // the development seed data never puts a readable password in the column.
+            user.setPassword(passwordService.hash(password));
             user.setRole(role);
             user.setStatus("APPROVED");
             userRepository.save(user);

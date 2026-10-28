@@ -210,7 +210,15 @@ test('the help card is limited to proponents', () => {
   // The role exists in the store with exactly this identifier.
   const USER_STORE = read('../stores/userData.js')
   assert.match(USER_STORE, /PROPONENT: 'PROPONENT'/)
-  assert.match(USER_STORE, /role: UserRole\.PROPONENT/)
+  // The store must not carry any account of its own. It used to hold a
+  // TEMPORARY_ACCOUNTS table with seven e-mail/password pairs and a localStorage
+  // list of locally registered accounts, which let a wrong or unreachable backend
+  // still "log in" as a fabricated identity. Every account now comes from the
+  // backend, so any literal credential or local account list in this file is a
+  // regression. The patterns match code, not the prose that explains the change.
+  assert.doesNotMatch(USER_STORE, /TEMPORARY_ACCOUNTS\s*=/)
+  assert.doesNotMatch(USER_STORE, /localStorage\.(get|set)Item\(\s*'offline_users'/)
+  assert.doesNotMatch(USER_STORE, /password:\s*'/)
 })
 
 test('the sidebar badge is driven by the shared unread count', () => {

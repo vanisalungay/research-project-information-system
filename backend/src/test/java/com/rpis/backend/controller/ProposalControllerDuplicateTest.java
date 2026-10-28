@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * HTTP-level wiring test for the two endpoints:
@@ -67,10 +68,10 @@ class ProposalControllerDuplicateTest {
         ProposalService service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), sectionRemarkService, new CurrentUser(),
-                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(service,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class),
-                sectionRemarkService, mock(CooperatingAgencyService.class));
+                sectionRemarkService, mock(CooperatingAgencyService.class), new LocalUploadStorage("uploads"));
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(7L);

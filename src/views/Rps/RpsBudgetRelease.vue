@@ -666,6 +666,7 @@
 
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { API_BASE_URL } from '@/utils/api'
 
 export default {
   name: "RpsBudgetRelease",
@@ -753,14 +754,14 @@ export default {
     },
     viewAttachment(filePath){
 
-      window.open("http://localhost:8080/uploads/"+filePath,
+      window.open(`${API_BASE_URL}/uploads/${filePath}`,
       "_blank"
       )
     },
 
     downloadAttachment(filePath){
     const link=document.createElement("a");
-    link.href="http://localhost:8080/uploads/"+filePath;
+    link.href=`${API_BASE_URL}/uploads/${filePath}`;
     link.download="";
     link.click();
     },

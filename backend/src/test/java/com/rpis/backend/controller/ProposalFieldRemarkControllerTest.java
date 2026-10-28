@@ -35,7 +35,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * HTTP-level wiring test for the field-level remark endpoints:
@@ -64,10 +65,10 @@ class ProposalFieldRemarkControllerTest {
         ProposalService proposalService = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class), remarkService, currentUser,
-                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(proposalService,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class), remarkService,
-                mock(CooperatingAgencyService.class));
+                mock(CooperatingAgencyService.class), new LocalUploadStorage("uploads"));
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));

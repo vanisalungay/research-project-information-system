@@ -6,6 +6,7 @@ import com.rpis.backend.model.*;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class ProposalService {
     private final CurrentUser currentUser;
     private final CooperatingAgencyService cooperatingAgencyService;
     private final PriorityAgendaService priorityAgendaService;
+    private final UploadStorage uploadStorage;
 
     /**
      * Project durations (in months) a proponent may select for an internally funded
@@ -689,59 +691,17 @@ public class ProposalService {
      * Save a proposal entity directly (used when fields are set manually on the
      * entity).
      * Also dispatches notifications based on the current status.
+     *
+     * <p>Note: the endorsement -> proposal association is <em>not</em> applied here.
+     * It is owned by the dedicated endpoint
+     * {@code PUT /api/endorsements/{id}/link} ({@code EndorsementRequestService.linkProposal}),
+     * which validates the endorsement, records the audit event and updates the
+     * certification. An earlier draft of this method also tried to link the
+     * endorsement from the proposal payload; that code was never called and did not
+     * compile (it referenced members that do not exist), so it has been removed
+     * rather than duplicated here.
      */
     @Transactional
-    /**
-     * Records the Dean endorsement the proposal was submitted under, when the
-     * Proponent arrived through the endorsement workflow.
-     *
-     * <p>The association is the {@code proposals.endorsement_request_id} foreign key,
-     * never a title match. It is <em>optional</em>: the current application does not
-     * require an endorsement before submission, so a proposal written without one
-     * keeps working exactly as before - nothing new is imposed here. When an id is
-     * supplied it is validated: the endorsement must exist, be approved, belong to the
-     * same Proponent and not already back another proposal.
-     */
-    private void applyEndorsementLink(Proposal proposal, ProposalRequest request) {
-        Long endorsementId = request.getEndorsementRequestId();
-        if (endorsementId == null || endorsementId.equals(proposal.getEndorsementRequestId())) {
-            return;
-        }
-        EndorsementRequest endorsement = endorsementRequestRepository.findById(endorsementId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Endorsement request not found: " + endorsementId));
-        if (!EndorsementRequest.STATUS_APPROVED.equals(endorsement.getStatus())) {
-            throw new IllegalArgumentException(
-                    "Only an approved endorsement can be attached to a proposal.");
-        }
-        Long endorsementOwner = endorsement.getProponent() != null
-                ? endorsement.getProponent().getId()
-                : null;
-        Long proposalOwner = proposal.getProponent() != null
-                ? proposal.getProponent().getId()
-                : null;
-        if (endorsementOwner == null || proposalOwner == null
-                || !endorsementOwner.equals(proposalOwner)) {
-            throw new IllegalArgumentException("The endorsement belongs to another account.");
-        }
-        if (endorsement.getProposalId() != null
-                && !endorsement.getProposalId().equals(proposal.getId())) {
-            throw new IllegalArgumentException(
-                    "That endorsement is already linked to another proposal.");
-        }
-        if (proposal.getEndorsementRequestId() != null) {
-            throw new IllegalArgumentException(
-                    "This proposal is already linked to another endorsement.");
-        }
-
-        proposal.setEndorsementRequestId(endorsementId);
-        proposalRepository.save(proposal);
-
-        endorsement.setProposalId(proposal.getId());
-        endorsementRequestRepository.save(endorsement);
-        certificationService.linkProposal(endorsement);
-    }
-
     public Proposal saveProposalDirect(Proposal proposal) {
         proposal = proposalRepository.save(proposal);
         notifySubscribedRoles(proposal, null);
@@ -1335,16 +1295,9 @@ public class ProposalService {
      * ({@code GET /api/files?path=...}) expects.
      */
     private String writeTechnologyMap(byte[] bytes, String extension) {
-        try {
-            Path uploadPath = Paths.get(UPLOAD_ROOT, TECHNOLOGY_MAP_DIR);
-            Files.createDirectories(uploadPath);
-            Path target = uploadPath.resolve(UUID.randomUUID() + "_technology-map." + extension);
-            Files.write(target, bytes);
-            return TECHNOLOGY_MAP_DIR + "/" + target.getFileName();
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "The Technology Map image could not be stored.");
-        }
+        // The storage layer generates the stored name and returns the path relative to
+        // its root - the value the authorized download route expects.
+        return uploadStorage.store(bytes, TECHNOLOGY_MAP_DIR, "technology-map." + extension);
     }
 
     /**
@@ -1372,20 +1325,9 @@ public class ProposalService {
      * leftover path from before this feature) is not an error.
      */
     private void deleteStoredTechnologyMap(String storedPath) {
-        if (storedPath == null || storedPath.isBlank()) {
-            return;
-        }
-        Path uploadRoot = Paths.get(UPLOAD_ROOT, TECHNOLOGY_MAP_DIR).toAbsolutePath().normalize();
-        // Stored paths are relative to the uploads directory ("technology-maps/x.png").
-        Path resolved = Paths.get(UPLOAD_ROOT).resolve(storedPath).toAbsolutePath().normalize();
-        if (!resolved.startsWith(uploadRoot)) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(resolved);
-        } catch (IOException ignored) {
-            // An orphaned file is not worth failing an otherwise successful upload for.
-        }
+        // The storage layer only ever removes a path inside its own root, so a corrupted
+        // column value cannot delete anything else.
+        uploadStorage.delete(storedPath);
     }
 
     // ========================
@@ -1494,16 +1436,9 @@ public class ProposalService {
      * ({@code GET /api/files?path=...}) expects.
      */
     private String writeBudgetFile(byte[] bytes, String extension) {
-        try {
-            Path uploadPath = Paths.get(UPLOAD_ROOT, BUDGET_FILE_DIR);
-            Files.createDirectories(uploadPath);
-            Path target = uploadPath.resolve(UUID.randomUUID() + "_line-item-budget." + extension);
-            Files.write(target, bytes);
-            return BUDGET_FILE_DIR + "/" + target.getFileName();
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "The Line-Item Budget file could not be stored.");
-        }
+        // The storage layer generates the stored name and returns the path relative to
+        // its root - the value the authorized download route expects.
+        return uploadStorage.store(bytes, BUDGET_FILE_DIR, "line-item-budget." + extension);
     }
 
     /**
@@ -1531,20 +1466,9 @@ public class ProposalService {
      * leftover path from before this feature) is not an error.
      */
     private void deleteStoredBudgetFile(String storedPath) {
-        if (storedPath == null || storedPath.isBlank()) {
-            return;
-        }
-        Path uploadRoot = Paths.get(UPLOAD_ROOT, BUDGET_FILE_DIR).toAbsolutePath().normalize();
-        // Stored paths are relative to the uploads directory ("budget-files/x.pdf").
-        Path resolved = Paths.get(UPLOAD_ROOT).resolve(storedPath).toAbsolutePath().normalize();
-        if (!resolved.startsWith(uploadRoot)) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(resolved);
-        } catch (IOException ignored) {
-            // An orphaned file is not worth failing an otherwise successful upload for.
-        }
+        // The storage layer only ever removes a path inside its own root, so a corrupted
+        // column value cannot delete anything else.
+        uploadStorage.delete(storedPath);
     }
 
     private void copyReusableContent(Proposal source, Proposal copy) {
@@ -1628,10 +1552,12 @@ public class ProposalService {
     }
 
     private void notifySubscribedRoles(Proposal proposal, String message) {
-        List<User> allUsers = userRepository.findAll();
         String status = proposal.getStatus();
+        if (status == null) {
+            return;
+        }
 
-        for (User user : allUsers) {
+        for (User user : recipientsFor(proposal, status)) {
             String role = user.getRole();
 
             switch (status) {
@@ -1828,6 +1754,52 @@ public class ProposalService {
                                 proposal.getId());
                     }
                     break;
+            }
+        }
+    }
+
+    /**
+     * The accounts a proposal status change actually concerns.
+     *
+     * <p>This is the fix for the measured write-path bottleneck. The previous
+     * implementation started from {@code userRepository.findAll()}, so every status
+     * change loaded <em>every</em> account in the system and iterated all of them just
+     * to find the two or three that matched. With the 518-account load-test data set
+     * that was ~500 rows of loading per proposal write, and it grows linearly with the
+     * user table - exactly the wrong shape for a university-wide system.
+     *
+     * <p>Behaviour is unchanged: the same statuses still notify the same accounts,
+     * because the switch inside {@link #notifySubscribedRoles} is untouched and each
+     * case still re-checks the role. This method only narrows the candidate set, so a
+     * role that is not returned here can never receive a notification it received
+     * before - and the proponent is included for the statuses whose case tests for
+     * them.
+     */
+    private List<User> recipientsFor(Proposal proposal, String status) {
+        switch (status) {
+            case "SUBMITTED", "RETURNED_TO_RPS", "RELEASED", "RETURNED":
+                return userRepository.findByRoleIn(List.of("RPS_ADMIN", "RPS_STAFF"));
+            case "ENDORSED", "REC_APPROVED":
+                return userRepository.findByRoleIn(List.of("OVCRIGE"));
+            case "UNDER_REVIEW":
+                return userRepository.findByRoleIn(List.of("REC"));
+            case "FOR_OVCAF_APPROVAL", "READY_FOR_RELEASE":
+                return userRepository.findByRoleIn(List.of("OVCAF"));
+            case "APPROVED": {
+                // Notifies the proponent and Finance.
+                List<User> recipients = new ArrayList<>(userRepository.findByRoleIn(List.of("OVCAF")));
+                if (proposal.getProponent() != null) {
+                    recipients.add(proposal.getProponent());
+                }
+                return recipients;
+            }
+            default: {
+                // The revision/rejection statuses notify only the proponent; a status
+                // not listed at all notifies nobody.
+                if (proposal.getProponent() != null) {
+                    return List.of(proposal.getProponent());
+                }
+                return List.of();
             }
         }
     }

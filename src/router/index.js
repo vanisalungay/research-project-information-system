@@ -335,7 +335,7 @@ const ROLE_ONLY_ROUTES = [
       path.startsWith('/dean-dashboard') ||
       path.startsWith('/dean-requests') ||
       path.startsWith('/dean-endorsement-settings'),
-    roles: [UserRole.RPS_DEAN, UserRole.RPS_ADMIN],
+    roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
   },
   {
     match: (path) =>

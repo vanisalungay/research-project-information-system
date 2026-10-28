@@ -7,12 +7,12 @@ import com.rpis.backend.dto.EndorsementLetterSettingsResponse;
 import com.rpis.backend.dto.EndorsementLinkRequest;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.EndorsementLetterSettingsService;
 import com.rpis.backend.service.EndorsementRequestService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -57,7 +57,7 @@ public class EndorsementController {
     @GetMapping
     public ResponseEntity<List<EndorsementRequestResponse>> list(
             @RequestParam(required = false) String status) {
-        if (EndorsementRequestService.ROLE_PROPONENT.equalsIgnoreCase(currentUser.getRole())) {
+        if (UserRoles.PROPONENT.equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.ok(endorsementService.listMine());
         }
         return ResponseEntity.ok(endorsementService.listForReviewer(status));
@@ -118,7 +118,7 @@ public class EndorsementController {
      * ({@code download=true}), so the two are always the same document.
      */
     @GetMapping("/{id}/document")
-    public ResponseEntity<Resource> document(
+    public ResponseEntity<InputStreamResource> document(
             @PathVariable Long id,
             @RequestParam(name = "download", defaultValue = "false") boolean download) {
         EndorsementRequestService.StoredLetter letter = endorsementService.loadLetter(id);
@@ -126,8 +126,9 @@ public class EndorsementController {
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .header(HttpHeaders.CONTENT_DISPOSITION, (download ? "attachment" : "inline")
                         + "; filename=\"" + letter.fileName() + "\"")
+                .contentLength(letter.stored().size())
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(new FileSystemResource(letter.path()));
+                .body(new InputStreamResource(letter.stored().content()));
     }
 
     // ==================== CONTINUE TO PROPOSAL SUBMISSION ====================

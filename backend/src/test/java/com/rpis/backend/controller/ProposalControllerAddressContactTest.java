@@ -38,7 +38,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * HTTP-level test for {@code POST /api/proposals} with the Create Proposal
@@ -62,10 +63,10 @@ class ProposalControllerAddressContactTest {
         ProposalService service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class), new CurrentUser(),
-                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(service,
                 mock(ProposalReviewService.class), mock(ProposalVersionService.class),
-                mock(ProposalSectionRemarkService.class), mock(CooperatingAgencyService.class));
+                mock(ProposalSectionRemarkService.class), mock(CooperatingAgencyService.class), new LocalUploadStorage("uploads"));
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         User proponent = new User();

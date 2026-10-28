@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Verifies that proposal codes are allocated from the atomic database sequence
@@ -55,7 +56,7 @@ class ProposalServiceIdGenerationTest {
         ProposalVersionService versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository, notificationService,
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         AtomicLong sequence = new AtomicLong(FIRST_SEQUENCE_VALUE);
         when(proposalRepository.nextProposalCodeSequence()).thenAnswer(inv -> sequence.incrementAndGet());

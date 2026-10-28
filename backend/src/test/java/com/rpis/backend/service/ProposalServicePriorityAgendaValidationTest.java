@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Section 05 submission rules: a priority-agenda key a client sends is accepted only
@@ -54,7 +55,7 @@ class ProposalServicePriorityAgendaValidationTest {
         service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), priorityAgendaService);
+                new CurrentUser(), mock(CooperatingAgencyService.class), priorityAgendaService, new LocalUploadStorage("uploads"));
 
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(1L);

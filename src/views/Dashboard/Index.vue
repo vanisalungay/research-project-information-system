@@ -8,7 +8,7 @@
     <RpsAdminDashboard v-if="loggedInUser.role === UserRole.RPS_ADMIN"></RpsAdminDashboard>
     <OvcafDashboard v-if="loggedInUser.role === UserRole.OVCAF"></OvcafDashboard>
     <OCDashboard v-if="loggedInUser.role === UserRole.OC"></OCDashboard>
-    <DeanDashboard v-if="loggedInUser.role === UserRole.RPS_DEAN"></DeanDashboard>
+    <DeanDashboard v-if="loggedInUser.role === UserRole.DEAN"></DeanDashboard>
   </div>
 </template>
 

@@ -1,6 +1,7 @@
 package com.rpis.backend.security;
 
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.UserRoles;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,16 +23,18 @@ import java.util.Set;
 public class CurrentUser {
 
     /** The only role that is scoped to its own records. */
-    private static final String PROPONENT = "PROPONENT";
+    private static final String PROPONENT = UserRoles.PROPONENT;
 
     /**
-     * Roles explicitly authorized to see the university-wide proposal set. Any role
+     * Roles explicitly authorized to see the university-wide proposal set. The Dean is
+     * deliberately absent - it is an independent, college-scoped role. Any role
      * that is not on this allow-list (including an unrecognized/misdetected role) is
      * treated as own-records-only, so the endpoint fails closed rather than leaking
      * every proposal.
      */
     private static final Set<String> PRIVILEGED_ROLES = Set.of(
-            "RPS_ADMIN", "RPS_STAFF", "OVCRIGE", "OVCAF", "REC", "OC");
+            UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE, UserRoles.OVCAF,
+            UserRoles.REC, UserRoles.OC);
 
     /** Returns the authenticated user's id, or {@code null} when unauthenticated. */
     public Long getUserId() {
@@ -110,6 +113,29 @@ public class CurrentUser {
     /** Fails with 403 when the given user id is not the caller's own id. */
     public void requireSelf(Long userId) {
         if (userId == null || !userId.equals(requireUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to access this resource.");
+        }
+    }
+
+    /**
+     * Fails with 403 unless the caller is either the owner of {@code userId} or one
+     * of the privileged review/administrative roles.
+     *
+     * <p>Used by the account routes that legitimately serve two audiences: a user
+     * editing their own profile, and an administrator managing the accounts. It
+     * replaces the previous behaviour where any authenticated caller could read or
+     * update any account by changing the id in the URL.
+     */
+    public void requireSelfOrPrivileged(Long userId) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to access this resource.");
+        }
+        if (isPrivileged()) {
+            return;
+        }
+        if (!userId.equals(requireUserId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You are not authorized to access this resource.");
         }

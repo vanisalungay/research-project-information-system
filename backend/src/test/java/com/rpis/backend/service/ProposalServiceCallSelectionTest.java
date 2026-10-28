@@ -24,7 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Covers the Call for Proposal selection of the Create Proposal workflow (step 1):
@@ -52,7 +53,7 @@ class ProposalServiceCallSelectionTest {
         service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(22L);

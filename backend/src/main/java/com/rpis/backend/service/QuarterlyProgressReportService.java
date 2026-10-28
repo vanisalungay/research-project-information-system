@@ -9,6 +9,7 @@ import com.rpis.backend.model.TerminalReportSection;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
+import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -17,10 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -50,10 +47,12 @@ public class QuarterlyProgressReportService {
     public static final String DOC_TERMINAL = "terminal";
 
     /** Existing file storage convention for project reports. */
-    private static final String UPLOAD_DIR = "uploads/reports/";
+    /** The folder reporting-stage documents are stored in, inside the storage root. */
+    private static final String REPORTS_FOLDER = "reports";
 
     private final QuarterlyProgressReportRepository reportRepository;
     private final ProposalRepository proposalRepository;
+    private final UploadStorage uploadStorage;
 
     public List<QuarterlyProgressReport> getReportsByProposal(Long proposalId) {
         return reportRepository.findByProposalIdOrderByCreatedAtDesc(proposalId);
@@ -232,17 +231,10 @@ public class QuarterlyProgressReportService {
         if (isBlank(path)) {
             throw new IllegalArgumentException("No " + docType + " document is attached to this report.");
         }
-        Path resolved = Paths.get(path).toAbsolutePath().normalize();
-        try {
-            Resource resource = new UrlResource(resolved.toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new IllegalArgumentException("The stored document could not be read.");
-            }
-            String downloadName = !isBlank(fileName) ? fileName : resolved.getFileName().toString();
-            return new DocumentDownload(resource, downloadName);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("The stored document path is invalid.");
-        }
+        UploadStorage.StoredUpload stored = uploadStorage.open(path)
+                .orElseThrow(() -> new IllegalArgumentException("The stored document could not be read."));
+        String downloadName = !isBlank(fileName) ? fileName : stored.fileName();
+        return new DocumentDownload(stored, downloadName);
     }
 
     private void validateRequiredDocuments(QuarterlyProgressReport report) {
@@ -458,18 +450,10 @@ public class QuarterlyProgressReportService {
     }
 
     private SavedFile storeFile(MultipartFile file, String prefix) throws IOException {
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-        String original = file.getOriginalFilename();
-        String extension = (original != null && original.contains("."))
-                ? original.substring(original.lastIndexOf("."))
-                : "";
-        String uniqueFilename = UUID.randomUUID() + "_" + prefix + extension;
-        Path target = uploadPath.resolve(uniqueFilename);
-        Files.write(target, file.getBytes());
-        return new SavedFile(original, target.toString().replace('\\', '/'));
+        // The storage layer creates its directory on first write, generates the stored
+        // name and returns the path relative to its configured root.
+        String stored = uploadStorage.store(file.getBytes(), REPORTS_FOLDER, prefix + "-report");
+        return new SavedFile(file.getOriginalFilename(), stored);
     }
 
     private LocalDate parseDate(String value) {
@@ -492,7 +476,7 @@ public class QuarterlyProgressReportService {
     }
 
     /** A downloadable report document (bytes + suggested file name). */
-    public record DocumentDownload(Resource resource, String fileName) {
+    public record DocumentDownload(UploadStorage.StoredUpload stored, String fileName) {
     }
 }
 

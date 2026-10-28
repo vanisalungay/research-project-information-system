@@ -40,6 +40,15 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Actuator: exposes the health/metrics endpoints a load balancer and an
+             operator need. /api/health and /api/health/ready are served by
+             HealthController; the actuator endpoints provide the JVM, thread-pool and
+             connection-pool view used while load testing. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>

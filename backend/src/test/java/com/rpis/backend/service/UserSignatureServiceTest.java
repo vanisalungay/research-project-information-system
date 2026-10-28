@@ -32,7 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Unit tests for the electronic signature of a user account. They cover the rules
@@ -56,7 +57,7 @@ class UserSignatureServiceTest {
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        service = new UserSignatureService(userRepository);
+        service = new UserSignatureService(userRepository, new LocalUploadStorage("uploads"));
         user = new User();
         user.setId(USER_ID);
         user.setName("Proponent");
@@ -67,12 +68,20 @@ class UserSignatureServiceTest {
     @AfterEach
     void removeStoredFiles() throws IOException {
         for (String stored : storedPaths) {
-            Files.deleteIfExists(Paths.get(stored));
+            Files.deleteIfExists(storedFile(stored));
         }
         storedPaths.clear();
     }
 
     /** Tracks the file the service just wrote so the test can clean it up. */
+    /**
+     * The stored signature file, resolved against the storage root this test uses.
+     * A stored value is relative to that root ("signatures/x.png"), so it cannot be
+     * turned into a path on its own.
+     */
+    private Path storedFile(String storedPath) {
+        return Paths.get("uploads").resolve(storedPath);
+    }
     private void rememberStoredFile() {
         if (user.getSignatureFilePath() != null) {
             storedPaths.add(user.getSignatureFilePath());
@@ -99,7 +108,7 @@ class UserSignatureServiceTest {
         assertEquals("my-signature.png", saved.getSignatureFileName());
         rememberStoredFile();
 
-        Path stored = Paths.get(saved.getSignatureFilePath());
+        Path stored = storedFile(saved.getSignatureFilePath());
         assertTrue(Files.exists(stored), "the signature file should be stored");
         assertArrayEquals(png, Files.readAllBytes(stored));
         assertTrue(stored.getFileName().toString().endsWith("_signature.png"),
@@ -126,8 +135,8 @@ class UserSignatureServiceTest {
         rememberStoredFile();
 
         assertNotEquals(first, user.getSignatureFilePath());
-        assertFalse(Files.exists(Paths.get(first)), "the replaced file should be deleted");
-        assertTrue(Files.exists(Paths.get(user.getSignatureFilePath())));
+        assertFalse(Files.exists(storedFile(first)), "the replaced file should be deleted");
+        assertTrue(Files.exists(storedFile(user.getSignatureFilePath())));
         assertEquals("second.png", user.getSignatureFileName());
     }
 
@@ -227,7 +236,7 @@ class UserSignatureServiceTest {
     void reportsNoSignatureWhenTheStoredFileIsGone() throws IOException {
         service.saveSignature(USER_ID, upload("sig.png", "image/png", imageBytes("png", 60, 30)));
         rememberStoredFile();
-        Files.deleteIfExists(Paths.get(user.getSignatureFilePath()));
+        Files.deleteIfExists(storedFile(user.getSignatureFilePath()));
 
         assertNull(service.loadSignature(USER_ID));
     }
@@ -241,7 +250,7 @@ class UserSignatureServiceTest {
 
         assertNull(user.getSignatureFileName());
         assertNull(user.getSignatureFilePath());
-        assertFalse(Files.exists(Paths.get(stored)));
+        assertFalse(Files.exists(storedFile(stored)));
         verify(userRepository, org.mockito.Mockito.times(2)).save(user);
     }
 

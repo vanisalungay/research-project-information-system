@@ -8,6 +8,7 @@ import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.CertificationRepository;
 import com.rpis.backend.repository.EndorsementLetterSettingsRepository;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
@@ -120,8 +121,8 @@ class EndorsementWorkflowPostgresTest {
 
         proponent = account("Ana Proponent", "ana.proponent@msunaawan.edu.ph", "PROPONENT", null);
         otherProponent = account("Ben Proponent", "ben.proponent@msunaawan.edu.ph", "PROPONENT", null);
-        dean = account("Dean Maria Santos", "dean.cfms@msunaawan.edu.ph", "RPS_DEAN", COLLEGE);
-        otherDean = account("Dean Pedro Reyes", "dean.cbit@msunaawan.edu.ph", "RPS_DEAN", OTHER_COLLEGE);
+        dean = account("Dean Maria Santos", "dean.cfms@msunaawan.edu.ph", UserRoles.DEAN, COLLEGE);
+        otherDean = account("Dean Pedro Reyes", "dean.cbit@msunaawan.edu.ph", UserRoles.DEAN, OTHER_COLLEGE);
         admin = account("RPS Administrator", "rps.admin@msunaawan.edu.ph", "RPS_ADMIN", null);
 
         call = announcement("Internally Funded Research Program 2026",
@@ -175,7 +176,7 @@ class EndorsementWorkflowPostgresTest {
         user.setRole(role);
         user.setStatus("APPROVED");
         user.setAssignedCollege(college);
-        user.setDesignation("RPS_DEAN".equals(role) ? "Dean" : null);
+        user.setDesignation(UserRoles.DEAN.equals(role) ? "Dean" : null);
         return userRepository.saveAndFlush(user);
     }
 

@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
  * Covers the persistence of section 23 (Literature Cited): the plain-text rendering of
@@ -46,7 +47,7 @@ class ProposalReferencesSaveTest {
         service = new ProposalService(proposalRepository, userRepository,
                 mock(NotificationService.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
-                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class));
+                new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
         when(proposalRepository.nextProposalCodeSequence()).thenReturn(22L);

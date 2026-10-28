@@ -5,8 +5,7 @@ import com.rpis.backend.model.Certification;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CertificationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,7 +45,7 @@ public class CertificationController {
      * preview and for the download, so what is displayed is what is downloaded.
      */
     @GetMapping("/{id}/document")
-    public ResponseEntity<Resource> document(
+    public ResponseEntity<InputStreamResource> document(
             @PathVariable Long id,
             @RequestParam(name = "download", defaultValue = "false") boolean download) {
         Certification certification = certificationService.requireReadable(id,
@@ -57,7 +56,8 @@ public class CertificationController {
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .header(HttpHeaders.CONTENT_DISPOSITION, (download ? "attachment" : "inline")
                         + "; filename=\"" + document.fileName() + "\"")
+                .contentLength(document.stored().size())
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(new FileSystemResource(document.path()));
+                .body(new InputStreamResource(document.stored().content()));
     }
 }

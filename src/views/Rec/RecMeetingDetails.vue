@@ -219,7 +219,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import api from '@/utils/api'
+import api, { API_BASE_URL } from '@/utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -328,28 +328,28 @@ const loadProposal = async () => {
     if (data.proposalFileName) {
       attachments.value.push({
         name: data.proposalFileName,
-        url: `http://localhost:8081/uploads/${data.proposalFileName}`
+        url: `${API_BASE_URL}/uploads/${data.proposalFileName}`
       })
     }
 
     if (data.reviewFileName) {
       attachments.value.push({
         name: data.reviewFileName,
-        url: `http://localhost:8081/uploads/${data.reviewFileName}`
+        url: `${API_BASE_URL}/uploads/${data.reviewFileName}`
       })
     }
 
     if (data.roadmapFileName) {
       attachments.value.push({
         name: data.roadmapFileName,
-        url: `http://localhost:8081/uploads/${data.roadmapFileName}`
+        url: `${API_BASE_URL}/uploads/${data.roadmapFileName}`
       })
     }
 
     if (data.gadFileName) {
       attachments.value.push({
         name: data.gadFileName,
-        url: `http://localhost:8081/uploads/${data.gadFileName}`
+        url: `${API_BASE_URL}/uploads/${data.gadFileName}`
       })
     }
   } catch (err) {

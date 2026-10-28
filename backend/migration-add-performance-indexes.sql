@@ -76,7 +76,15 @@ CREATE INDEX IF NOT EXISTS idx_proposal_priority_agendas_proposal
 CREATE INDEX IF NOT EXISTS idx_proposal_limitations_proposal
     ON proposal_limitations (proposal_id);
 
--- Verification (run after applying; expect the 16 idx_* names above):
+-- 8) Users: role lookup for status-change notifications.
+--    Query: UserRepository.findByRoleIn (ProposalService.recipientsFor).
+--    Before this index, a proposal status change loaded every user in the system
+--    (userRepository.findAll()); it now fetches only the accounts in the roles the
+--    status concerns, which this index makes a cheap lookup.
+CREATE INDEX IF NOT EXISTS idx_users_role
+    ON users (role);
+
+-- Verification (run after applying; expect the 17 idx_* names above):
 --   SELECT indexname, indexdef FROM pg_indexes
 --    WHERE schemaname = 'public' AND indexname LIKE 'idx_%'
 --    ORDER BY indexname;

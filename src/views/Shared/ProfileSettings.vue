@@ -237,7 +237,8 @@ const userStore = useUserDataStore()
 const activeTab = ref('personal')
 const currentUserId = ref(null)
 
-// Static configuration datasets
+// Specializations offered by the Manage Profile form. This is a fixed list of
+// research areas, not user data.
 const specializationsList = [
   'Social Sciences',
   'Health Sciences',
@@ -251,6 +252,9 @@ const specializationsList = [
   'Data Analytics'
 ]
 
+// The Notification Routing options a user can subscribe to. The selection made
+// here is stored on the account (see saveNotif) - the options are configuration,
+// the choice is data.
 const proposalNotifications = [
   'New Proposal Assigned',
   'Proponent Submitted Revision',
@@ -261,11 +265,6 @@ const proposalNotifications = [
 const deadlineNotifications = [
   'Evaluation Deadline Reminders',
   'Revision Deadline Reminders'
-]
-
-const systemNotifications = [
-  'Email Reminders',
-  'System Notifications'
 ]
 
 // Security Form Reactive Binding
@@ -291,7 +290,6 @@ const personalForm = reactive({
 const notifications = reactive({
   proposals: [],
   deadlines: [],
-  system: [],
 })
 
 // Fetch current user details on mount
@@ -301,8 +299,10 @@ const loadUserProfile = async () => {
     const storedUser = userStore.user
     if (storedUser) {
       currentUserId.value = storedUser.id
-      
-      // Load from local session storage first so fields are never blank (even for mock/offline users)
+
+      // Prefill from the signed-in session so the form is never blank while the
+      // request is in flight. The authoritative values are then read from the
+      // backend below.
       personalForm.fullName = storedUser.name || ''
       personalForm.email = storedUser.email || ''
       personalForm.department = storedUser.departmentOffice || ''
@@ -310,7 +310,7 @@ const loadUserProfile = async () => {
       personalForm.specialization = storedUser.specialization ? storedUser.specialization.split(',') : []
       securityForm.oldName = storedUser.name || ''
 
-      // Attempt dynamic load from live PostgreSQL database
+      // Load the account from PostgreSQL.
       if (storedUser.id) {
         const response = await api.get(`/api/users/${storedUser.id}`)
         const user = response.data
@@ -321,11 +321,27 @@ const loadUserProfile = async () => {
           personalForm.contact = user.contactNumber || ''
           personalForm.specialization = user.specialization ? user.specialization.split(',') : []
           securityForm.oldName = user.name || ''
+
+          // Notification Routing: the selection stored on the account, so it is the
+          // same on every browser and every instance.
+          notifications.proposals = Array.isArray(user.notifyProposals)
+            ? [...user.notifyProposals]
+            : []
+          notifications.deadlines = Array.isArray(user.notifyDeadlines)
+            ? [...user.notifyDeadlines]
+            : []
         }
       }
     }
   } catch (error) {
-    console.warn("Failed to retrieve live profile from database, using cached local session.", error)
+    // The stored values stay on screen, but the reason is reported instead of being
+    // swallowed: the previous version silently treated a failed load as "offline
+    // mode" and continued as if the backend had answered.
+    console.error('Failed to load the account from the backend:', error)
+    await showAlert('Your profile could not be loaded. Please try again.', {
+      type: 'error',
+      title: 'Load Failed',
+    })
   }
 }
 
@@ -344,31 +360,23 @@ const saveSecurity = async () => {
     return showAlert('New password confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
   }
 
-  const updatedUserObj = {
-    ...userStore.user,
-    name: securityForm.newName.trim() ? securityForm.newName.trim() : userStore.user.name,
-    password: securityForm.newPassword.trim() ? securityForm.newPassword.trim() : userStore.user.password
-  }
-
   try {
     const payload = {}
     if (securityForm.newName) payload.name = securityForm.newName
     if (securityForm.newPassword) payload.password = securityForm.newPassword
 
-    if (currentUserId.value) {
-      // 1. Live database save
-      const response = await api.put(`/api/users/${currentUserId.value}`, payload)
-      if (response.data) {
-        userStore.setUser({
-          ...userStore.user,
-          name: response.data.name
-        })
-      }
-    } else {
-      // 2. Direct local save (offline fallback)
-      userStore.setUser(updatedUserObj)
+    if (!currentUserId.value) {
+      throw new Error('No signed-in account was found.')
     }
-    
+
+    const response = await api.put(`/api/users/${currentUserId.value}`, payload)
+    if (response.data) {
+      userStore.setUser({
+        ...userStore.user,
+        name: response.data.name
+      })
+    }
+
     await showAlert('Security settings updated successfully!', { type: 'success' })
     securityForm.newName = ''
     securityForm.newPassword = ''
@@ -376,32 +384,22 @@ const saveSecurity = async () => {
     securityForm.confirmPassword = ''
     loadUserProfile()
   } catch (error) {
-    console.warn("PostgreSQL save failed, applying fallback local update.", error)
-    
-    // Fallback save to keep offline / demo working seamlessly
-    userStore.setUser(updatedUserObj)
-    
-    await showAlert('Security settings updated successfully (offline mode)!', { type: 'success' })
-    securityForm.newName = ''
-    securityForm.newPassword = ''
-    securityForm.confirmName = ''
-    securityForm.confirmPassword = ''
-    loadUserProfile()
+    // The change is reported as failed. The previous version wrote the new name and
+    // password into the browser's local session instead and then said "Security
+    // settings updated successfully (offline mode)!" - the account in the database
+    // still had the old credentials, so the next login with the "new" password
+    // failed.
+    console.error('Could not update the account credentials:', error)
+    await showAlert(
+      'Your security settings could not be updated. Please check your connection and try again.',
+      { type: 'error', title: 'Update Failed' },
+    )
   }
 }
 
 const savePersonal = async () => {
   if (!personalForm.fullName.trim() || !personalForm.email.trim()) {
     return showAlert('Full Name and Email Address are required.', { type: 'warning', title: 'Validation Error' })
-  }
-
-  const updatedUserObj = {
-    ...userStore.user,
-    name: personalForm.fullName.trim(),
-    email: personalForm.email.trim(),
-    departmentOffice: personalForm.department.trim(),
-    contactNumber: personalForm.contact.trim(),
-    specialization: personalForm.specialization.join(',')
   }
 
   try {
@@ -413,39 +411,69 @@ const savePersonal = async () => {
       specialization: personalForm.specialization.join(',')
     }
 
-    if (currentUserId.value) {
-      // 1. Live database save
-      const response = await api.put(`/api/users/${currentUserId.value}`, payload)
-      if (response.data) {
-        userStore.setUser({
-          ...userStore.user,
-          name: response.data.name,
-          email: response.data.email,
-          departmentOffice: response.data.departmentOffice,
-          contactNumber: response.data.contactNumber,
-          specialization: response.data.specialization
-        })
-      }
-    } else {
-      // 2. Direct local save (offline fallback)
-      userStore.setUser(updatedUserObj)
+    if (!currentUserId.value) {
+      throw new Error('No signed-in account was found.')
     }
-    
+
+    const response = await api.put(`/api/users/${currentUserId.value}`, payload)
+    if (response.data) {
+      userStore.setUser({
+        ...userStore.user,
+        name: response.data.name,
+        email: response.data.email,
+        departmentOffice: response.data.departmentOffice,
+        contactNumber: response.data.contactNumber,
+        specialization: response.data.specialization
+      })
+    }
+
     await showAlert('Personal info saved successfully!', { type: 'success' })
     loadUserProfile()
   } catch (error) {
-    console.warn("PostgreSQL save failed, applying fallback local update.", error)
-    
-    // Fallback save to keep offline / demo working seamlessly
-    userStore.setUser(updatedUserObj)
-    
-    await showAlert('Personal info saved successfully (offline mode)!', { type: 'success' })
-    loadUserProfile()
+    // No local "offline mode" success: an unsaved profile is reported as unsaved.
+    console.error('Could not save the profile:', error)
+    await showAlert(
+      'Your personal information could not be saved. Please check your connection and try again.',
+      { type: 'error', title: 'Save Failed' },
+    )
   }
 }
 
+/**
+ * Saves the Notification Routing selection on the account.
+ *
+ * The two option lists used to be hardcoded and this button only displayed a
+ * confirmation dialog, so nothing was ever stored and the selection was lost on
+ * reload. The selection is now written to `notify_proposals` / `notify_deadlines`
+ * on the account, which is what makes the page truthful.
+ */
 const saveNotif = async () => {
-  await showAlert('Notification preferences updated successfully!', { type: 'success' })
+  try {
+    if (!currentUserId.value) {
+      throw new Error('No signed-in account was found.')
+    }
+
+    const response = await api.put(`/api/users/${currentUserId.value}`, {
+      notifyProposals: notifications.proposals,
+      notifyDeadlines: notifications.deadlines,
+    })
+
+    if (response.data) {
+      userStore.setUser({
+        ...userStore.user,
+        notifyProposals: response.data.notifyProposals ?? [],
+        notifyDeadlines: response.data.notifyDeadlines ?? [],
+      })
+    }
+
+    await showAlert('Notification preferences updated successfully!', { type: 'success' })
+  } catch (error) {
+    console.error('Could not save the notification preferences:', error)
+    await showAlert(
+      'Your notification preferences could not be saved. Please check your connection and try again.',
+      { type: 'error', title: 'Save Failed' },
+    )
+  }
 }
 </script>
 

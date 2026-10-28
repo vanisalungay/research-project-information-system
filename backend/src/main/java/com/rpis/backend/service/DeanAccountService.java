@@ -3,6 +3,7 @@ package com.rpis.backend.service;
 import com.rpis.backend.dto.DeanAccountRequest;
 import com.rpis.backend.model.EndorsementRequestEvent;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
 import com.rpis.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +36,14 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DeanAccountService {
 
-    /** The Dean / Department Chair role identifier. */
-    public static final String ROLE_DEAN = "RPS_DEAN";
+    /**
+     * The Dean / Department Chair role identifier. The value comes from
+     * {@link UserRoles#DEAN}: the Dean is an independent role, not an RPS sub-role.
+     */
+    public static final String ROLE_DEAN = UserRoles.DEAN;
 
     /** The role an account is returned to when the Dean role is revoked. */
-    public static final String ROLE_PROPONENT = "PROPONENT";
+    public static final String ROLE_PROPONENT = UserRoles.PROPONENT;
 
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_INACTIVE = "INACTIVE";
@@ -49,6 +53,7 @@ public class DeanAccountService {
 
     private final UserRepository userRepository;
     private final EndorsementRequestEventRepository eventRepository;
+    private final PasswordService passwordService;
 
     /** Every Dean account, by name. */
     public List<User> listDeans() {
@@ -157,7 +162,9 @@ public class DeanAccountService {
         User dean = new User();
         dean.setName(name);
         dean.setEmail(email);
-        dean.setPassword(password);
+        // The administrator-chosen initial password is hashed before it is stored, so
+        // this path cannot put a readable password in the column either.
+        dean.setPassword(passwordService.hash(password));
         dean.setRole(ROLE_DEAN);
         dean.setStatus(STATUS_APPROVED);
         dean.setEmailVerified(true);

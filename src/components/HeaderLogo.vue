@@ -177,6 +177,7 @@ const switchRoleLabel = computed(() => {
 const formatRole = (role) => {
   const roleMap = {
     'PROPONENT': 'Proponent',
+    'DEAN': 'Dean',
     'RPS_ADMIN': 'RPS Admin',
     'RPS_STAFF': 'RPS Staff',
     'OVCRIGE': 'OVCRIGE',

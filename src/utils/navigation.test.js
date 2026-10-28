@@ -113,7 +113,7 @@ test('the Proponent can reach the endorsement workflow and Certifications', () =
 })
 
 test('the Dean can reach the endorsement requests and the letter settings', () => {
-  const paths = pathsFor('RPS_DEAN')
+  const paths = pathsFor('DEAN')
 
   assert.ok(paths.includes('/dean-requests'), 'a Dean must reach the endorsement requests')
   assert.ok(paths.includes('/dean-endorsement-settings'), 'a Dean must reach the letter settings')
