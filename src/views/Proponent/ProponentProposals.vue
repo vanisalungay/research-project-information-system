@@ -96,7 +96,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 // The Dean endorsement the proposal is being continued from, when the Proponent
 // arrived through "Continue to Proposal Submission".
-import { fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
+import { endorsementProposalPrefill, fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -252,11 +252,11 @@ const openEndorsedProposal = async (id) => {
         name: endorsement.proposalAnnouncementName || '',
       }
     }
-    step1Ref.value?.loadProposal({
-      project_title: endorsement.proposalTitle,
-      college: endorsement.college,
-      proposal_announcement_id: endorsement.proposalAnnouncementId,
-    })
+    // Program Title and Project Title are carried over as the two independent values they
+    // are, in the shape the Create Proposal form actually reads (`endorsementProposalPrefill`
+    // returns the proposal DTO keys loadProposal maps). The Call for Proposal travels in
+    // `selectedCall` above, which is what attaches the saved proposal to it.
+    step1Ref.value?.loadProposal(endorsementProposalPrefill(endorsement))
     showModal.value = true
     router.replace({ path: '/proposals' })
   } catch (err) {

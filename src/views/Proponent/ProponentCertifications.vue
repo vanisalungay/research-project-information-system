@@ -1,14 +1,9 @@
 <template>
-  <div class="end-page">
-    <div class="end-page-header">
-      <h2>Certifications</h2>
-      <p class="end-subtitle">
-        Documents issued to you by the university. An endorsement letter appears here
-        automatically once your Dean approves a Request for Endorsement — you never
-        upload it yourself.
-      </p>
-    </div>
-
+  <!-- The "Issued Certifications" section of the consolidated My Endorsements page: the
+       official endorsement letters the Dean has issued. An entry exists only after an
+       approval - the backend creates it inside the approval transaction - so a request is
+       never shown as an issued document before it has been approved. -->
+  <div>
     <div v-if="loading" class="end-card is-empty">
       <p>Loading your certifications…</p>
     </div>
@@ -31,56 +26,58 @@
           projects, the official endorsement letter is filed here.
         </p>
         <div class="end-actions">
-          <router-link class="end-btn is-primary" to="/endorsements">
+          <button class="end-btn is-primary" type="button" @click="emit('open-requests')">
             View my endorsement requests
-          </router-link>
+          </button>
         </div>
       </div>
 
-      <table v-else class="end-table end-card">
-        <thead>
-          <tr>
-            <th>Document</th>
-            <th>Type</th>
-            <th>Proposal title</th>
-            <th>Endorsement date</th>
-            <th>Issuing Dean</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in certifications" :key="item.id">
-            <td>
-              {{ item.title }}
-              <div class="end-muted">{{ item.fileName }}</div>
-            </td>
-            <td>{{ item.documentTypeLabel || documentTypeLabel(item.documentType) }}</td>
-            <td>
-              <router-link
-                v-if="item.endorsementRequestId"
-                class="end-btn is-link"
-                :to="`/endorsements/${item.endorsementRequestId}`"
-              >
-                {{ endorsementTitle(item) }}
-              </router-link>
-              <span v-else>{{ endorsementTitle(item) }}</span>
-            </td>
-            <td>{{ formatEndorsementDate(item.endorsementDate) || '—' }}</td>
-            <td>{{ item.issuingDeanName || '—' }}</td>
-            <td>
-              <span class="end-badge is-approved">{{ item.status }}</span>
-            </td>
-            <td>
-              <template v-if="item.documentAvailable">
-                <button class="end-btn is-link" @click="preview(item)">View</button>
-                <button class="end-btn is-link" @click="download(item)">Download</button>
-              </template>
-              <span v-else class="end-muted">Not available</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="end-card end-table-scroll">
+        <table class="end-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Type</th>
+              <th>Proposal title</th>
+              <th>Endorsement date</th>
+              <th>Issuing Dean</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in certifications" :key="item.id">
+              <td>
+                {{ item.title }}
+                <div class="end-muted">{{ item.fileName }}</div>
+              </td>
+              <td>{{ item.documentTypeLabel || documentTypeLabel(item.documentType) }}</td>
+              <td>
+                <router-link
+                  v-if="item.endorsementRequestId"
+                  class="end-btn is-link"
+                  :to="`/endorsements/${item.endorsementRequestId}`"
+                >
+                  {{ endorsementTitle(item) }}
+                </router-link>
+                <span v-else>{{ endorsementTitle(item) }}</span>
+              </td>
+              <td>{{ formatEndorsementDate(item.endorsementDate) || '—' }}</td>
+              <td>{{ item.issuingDeanName || '—' }}</td>
+              <td>
+                <span class="end-badge is-approved">{{ item.status }}</span>
+              </td>
+              <td>
+                <template v-if="item.documentAvailable">
+                  <button class="end-btn is-link" @click="preview(item)">View</button>
+                  <button class="end-btn is-link" @click="download(item)">Download</button>
+                </template>
+                <span v-else class="end-muted">Not available</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
   </div>
 </template>
@@ -96,6 +93,13 @@ import {
   openDocumentBlob,
   saveDocumentBlob,
 } from '@/utils/endorsement.js'
+
+/**
+ * `open-requests` asks the page to switch back to the request list: the empty state is the
+ * only place this section needs to move the Proponent on. The section never navigates on
+ * its own.
+ */
+const emit = defineEmits(['open-requests'])
 
 const certifications = ref([])
 const loading = ref(true)

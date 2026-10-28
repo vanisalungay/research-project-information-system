@@ -31,3 +31,14 @@ export function unreadBadgeLabel(count) {
   if (value === 0) return ''
   return value > 99 ? '99+' : String(value)
 }
+
+/**
+ * The most recent notifications, in the order the API returns them (newest first).
+ * `limit` keeps a preview short; a missing or odd list reports an empty preview instead
+ * of failing, and a non-positive limit returns nothing rather than the whole list.
+ */
+export function recentNotifications(notifications, limit = 5) {
+  const list = Array.isArray(notifications) ? notifications : []
+  const size = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Math.trunc(Number(limit)) : 0
+  return list.slice(0, size)
+}

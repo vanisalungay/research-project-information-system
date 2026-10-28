@@ -1,8 +1,11 @@
 package com.rpis.backend.service;
 
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import com.rpis.backend.dto.EndorsementDecisionRequest;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
+import com.rpis.backend.model.Certification;
 import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
@@ -213,11 +216,21 @@ class EndorsementWorkflowPostgresTest {
 
     private EndorsementRequestCreateRequest newRequest(String title) {
         EndorsementRequestCreateRequest request = new EndorsementRequestCreateRequest();
-        request.setProposalTitle(title);
+        request.setProjectTitle(title);
         request.setProposalAnnouncementId(call.getId());
         request.setCollege(COLLEGE);
         request.setResearchSummary("A brief summary for the Dean.");
         request.setNotes("Please review before the deadline.");
+        return request;
+    }
+
+    /**
+     * A request whose two titles differ, so the Program Title can never be mistaken for
+     * the Project Title (or the other way round) in any assertion below.
+     */
+    private EndorsementRequestCreateRequest newRequest(String projectTitle, String programTitle) {
+        EndorsementRequestCreateRequest request = newRequest(projectTitle);
+        request.setProgramTitle(programTitle);
         return request;
     }
 
@@ -654,5 +667,118 @@ class EndorsementWorkflowPostgresTest {
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> endorsementService.linkProposal(request.getId(), saved.getId()));
         assertTrue(error.getMessage().contains("approved"), error.getMessage());
+    }
+    // ==================== PROGRAM TITLE vs PROJECT TITLE ====================
+
+    /**
+     * The two titles are distinct values: neither is ever derived from the other, and the
+     * deprecated single-title field keeps carrying the PROJECT title so a client built
+     * against the previous API version is unaffected.
+     */
+    @Test
+    void theProgramTitleAndTheProjectTitleAreStoredAndReturnedIndependently() {
+        authenticateAs(proponent);
+        EndorsementRequestResponse request = endorsementService.create(
+                newRequest("Mangrove Rehabilitation Study", "MSUN RIIDE - Blue Economy"));
+
+        assertEquals("Mangrove Rehabilitation Study", request.getProjectTitle());
+        assertEquals("MSUN RIIDE - Blue Economy", request.getProgramTitle());
+        // The deprecated alias is the project title - never the program title.
+        assertEquals("Mangrove Rehabilitation Study", request.getProposalTitle());
+
+        EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
+        assertEquals("Mangrove Rehabilitation Study", stored.getProjectTitle());
+        assertEquals("MSUN RIIDE - Blue Economy", stored.getProgramTitle());
+
+        // Both values are recorded on the creation entry of the audit trail.
+        String created = eventRepository
+                .findByEndorsementRequestIdOrderByCreatedAtAsc(request.getId()).stream()
+                .filter(event -> "CREATED".equals(event.getEventType()))
+                .map(event -> event.getDetail())
+                .findFirst().orElseThrow();
+        assertTrue(created.contains("Mangrove Rehabilitation Study"), created);
+        assertTrue(created.contains("MSUN RIIDE - Blue Economy"), created);
+    }
+
+    /** The Project Title is required; the Program Title is optional. */
+    @Test
+    void theProjectTitleIsRequiredAndTheProgramTitleIsOptional() {
+        authenticateAs(proponent);
+
+        IllegalArgumentException missing = assertThrows(IllegalArgumentException.class,
+                () -> endorsementService.create(newRequest(null, "MSUN RIIDE - Blue Economy")));
+        assertTrue(missing.getMessage().contains("project title"), missing.getMessage());
+
+        EndorsementRequestCreateRequest blankProgram = newRequest("A Study Without A Program");
+        blankProgram.setProgramTitle("   ");
+        EndorsementRequestResponse saved = endorsementService.create(blankProgram);
+        assertNull(saved.getProgramTitle());
+        assertEquals("A Study Without A Program", saved.getProjectTitle());
+    }
+
+    /**
+     * A client that still sends only the previous single-title field keeps working: the
+     * value is taken as the project title and no program title is invented for it.
+     */
+    @Test
+    void aLegacySingleTitlePayloadStillCreatesTheRequest() {
+        authenticateAs(proponent);
+        EndorsementRequestCreateRequest legacy = newRequest(null);
+        legacy.setProposalTitle("Legacy Single Title");
+
+        EndorsementRequestResponse created = endorsementService.create(legacy);
+
+        assertEquals("Legacy Single Title", created.getProjectTitle());
+        assertEquals("Legacy Single Title", created.getProposalTitle());
+        assertNull(created.getProgramTitle());
+    }
+
+    /**
+     * The Dean's approval keeps both titles, and the official letter prints the PROJECT
+     * title: the letter endorses the project, not the programme it belongs to. The
+     * Certifications entry is named after the same project title.
+     */
+    @Test
+    void theIssuedLetterAndCertificationNameTheProjectTitleNotTheProgramTitle() throws Exception {
+        authenticateAs(proponent);
+        EndorsementRequestResponse request = endorsementService.create(
+                newRequest("Coral Restoration Study", "MSUN RIIDE - Coastal Program"));
+
+        authenticateAs(dean);
+        EndorsementRequestResponse approved = endorsementService.approve(request.getId(), approval());
+
+        assertEquals("Coral Restoration Study", approved.getProjectTitle());
+        assertEquals("MSUN RIIDE - Coastal Program", approved.getProgramTitle());
+
+        Certification certification = certificationRepository
+                .findByEndorsementRequestId(request.getId()).orElseThrow();
+        assertEquals("Endorsement Letter - Coral Restoration Study", certification.getTitle());
+
+        // The stored PDF is the authority: it names the project title and it does not
+        // print the program title anywhere.
+        EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
+        String letter = normalizedTextOf(Files.readAllBytes(
+                Paths.get("uploads").toAbsolutePath().normalize().resolve(stored.getLetterFilePath())));
+        assertTrue(letter.contains("Coral Restoration Study"), letter);
+        assertFalse(letter.contains("MSUN RIIDE - Coastal Program"), letter);
+    }
+
+    /**
+     * The page text with every run of whitespace collapsed. A phrase the renderer wrapped
+     * onto the next visual line comes back from the extractor with a line break inside it,
+     * so the assertions match against this normalized form (same helper as
+     * {@link EndorsementLetterServiceTest}).
+     */
+    private String normalizedTextOf(byte[] pdf) throws Exception {
+        PdfReader reader = new PdfReader(pdf);
+        try {
+            StringBuilder text = new StringBuilder();
+            for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+                text.append(new PdfTextExtractor(reader).getTextFromPage(page)).append('\n');
+            }
+            return text.toString().replaceAll("\\s+", " ").trim();
+        } finally {
+            reader.close();
+        }
     }
 }

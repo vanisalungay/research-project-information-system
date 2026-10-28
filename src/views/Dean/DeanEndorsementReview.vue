@@ -45,8 +45,12 @@
             </span>
           </div>
           <div class="end-field">
-            <span class="end-label">Proposal / Program Title</span>
-            <span class="end-value">{{ request.proposalTitle }}</span>
+            <span class="end-label">Program Title</span>
+            <span class="end-value">{{ request.programTitle || '—' }}</span>
+          </div>
+          <div class="end-field">
+            <span class="end-label">Project Title</span>
+            <span class="end-value">{{ request.projectTitle }}</span>
           </div>
           <div class="end-field">
             <span class="end-label">Call for Proposal</span>

@@ -16,6 +16,12 @@
  * Run the rules with: npm test
  */
 import api from './api.js'
+import {
+  CREATE_NEW_PROGRAM_TITLE,
+  MAX_PROGRAM_TITLE_LENGTH,
+  isCreatingProgramTitle,
+} from './programTitleOptions.js'
+import { formatTimestamp } from './timestamps.js'
 
 /** Base path of the endorsement endpoints. */
 export const ENDORSEMENTS_ENDPOINT = '/api/endorsements'
@@ -94,6 +100,37 @@ export function isRejected(status) {
   return normalizeEndorsementStatus(status) === ENDORSEMENT_STATUS.REJECTED
 }
 
+/**
+ * The counts the dashboard shows for the Proponent's endorsement requests: the total and
+ * one count per business state. A request whose status is not one of the three states is
+ * counted in the total only, so the numbers never claim more than the records.
+ */
+export function endorsementSummaryCounts(requests) {
+  const list = Array.isArray(requests) ? requests : []
+  const counts = { total: list.length, pending: 0, approved: 0, rejected: 0 }
+  for (const request of list) {
+    const status = normalizeEndorsementStatus(request?.status)
+    if (status === ENDORSEMENT_STATUS.PENDING) counts.pending += 1
+    else if (status === ENDORSEMENT_STATUS.APPROVED) counts.approved += 1
+    else if (status === ENDORSEMENT_STATUS.REJECTED) counts.rejected += 1
+  }
+  return counts
+}
+
+/**
+ * How many of the given requests have an issued endorsement letter.
+ *
+ * <p>Only an approved request carries one - the backend creates the letter (and its
+ * Certifications entry) inside the approval transaction - so a pending or rejected
+ * request is never counted as an issued document here, and no separate Certifications
+ * request is needed to know the number.
+ */
+export function issuedLetterCount(requests) {
+  return (Array.isArray(requests) ? requests : []).filter(
+    (request) => request?.hasLetter === true,
+  ).length
+}
+
 /** Filter options of the Dean's request list. */
 export const ENDORSEMENT_FILTERS = [
   { value: '', label: 'All requests' },
@@ -101,6 +138,53 @@ export const ENDORSEMENT_FILTERS = [
   { value: ENDORSEMENT_STATUS.APPROVED, label: 'Approved' },
   { value: ENDORSEMENT_STATUS.REJECTED, label: 'Rejected' },
 ]
+
+/**
+ * The sections of the consolidated My Endorsements page, in the order they are shown.
+ *
+ * <p>They are declared here - not inside the page - so the page, the `?tab=` deep links
+ * (the redirects from the old Request for Endorsement and Certifications URLs) and the
+ * tests all agree on the ids and the wording, and so a typo cannot quietly hide a whole
+ * section of the workflow.
+ */
+export const ENDORSEMENT_TABS = [
+  {
+    id: 'requests',
+    label: 'My Requests',
+    description:
+      'Every Request for Endorsement you have raised, with its current status and the official letter once your Dean has endorsed it.',
+  },
+  {
+    id: 'new',
+    label: 'Request Endorsement',
+    description:
+      'Ask your College Dean / Department Chair to endorse your project before you fill in the full proposal. Only the preliminary information below is needed at this stage.',
+  },
+  {
+    id: 'certifications',
+    label: 'Issued Certifications',
+    description:
+      'The official endorsement letters your Dean has issued. A letter is filed here automatically once a request is approved — you never upload it yourself.',
+  },
+]
+
+/** The section the consolidated page opens on: the tracking list of requests. */
+export const DEFAULT_ENDORSEMENT_TAB = 'requests'
+
+/**
+ * The section a `?tab=` query value means. A missing, unknown or non-string value falls
+ * back to the default section, so an old or hand-edited link can never open a blank page.
+ */
+export function endorsementTabFromQuery(value) {
+  const candidate = typeof value === 'string' ? value.trim() : ''
+  return ENDORSEMENT_TABS.some((tab) => tab.id === candidate) ? candidate : DEFAULT_ENDORSEMENT_TAB
+}
+
+/** The section definition of an id, or the default one when the id is unknown. */
+export function endorsementTab(value) {
+  const id = endorsementTabFromQuery(value)
+  return ENDORSEMENT_TABS.find((tab) => tab.id === id)
+}
 
 /** Label of a funding program (call type) as reported by the backend. */
 export function fundingProgramLabel(request) {
@@ -146,17 +230,9 @@ export function formatEndorsementDate(value) {
 
 /** A timestamp as a readable local date and time; '' when it is missing. */
 export function formatEndorsementTimestamp(value) {
-  const text = String(value ?? '').trim()
-  if (!text) return ''
-  const date = new Date(text)
-  if (Number.isNaN(date.getTime())) return text
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  // The format itself is the application's shared one (utils/timestamps.js), so an
+  // endorsement timestamp and a notification timestamp read the same way.
+  return formatTimestamp(value)
 }
 
 /** Today as YYYY-MM-DD, the default of the endorsement date field. */
@@ -172,18 +248,34 @@ function isBlank(value) {
   return !String(value ?? '').trim()
 }
 
+/** Maximum length of the Project Title; it matches the stored column. */
+export const MAX_PROJECT_TITLE_LENGTH = 500
+
 /**
  * Client-side validation of the Request for Endorsement form. It mirrors the
  * backend rules so the Proponent sees the problem before submitting; the backend
  * validates the same payload again and is the authority.
+ *
+ * <p>Program Title and Project Title are validated as the two independent fields they
+ * are: the Program Title follows the Create Proposal rule (optional, but the
+ * "create a new program title" flow must produce a value once it is used) and the
+ * Project Title is always required. Neither value can satisfy the other's rule.
  */
 export function validateEndorsementRequest(form = {}) {
   const errors = {}
 
-  if (isBlank(form.proposalTitle)) {
-    errors.proposalTitle = 'The proposal/program title is required.'
-  } else if (String(form.proposalTitle).trim().length > 500) {
-    errors.proposalTitle = 'The title must be 500 characters or fewer.'
+  const programTitle = String(form.programTitle ?? '').trim()
+  if (isCreatingProgramTitle(form.programTitleChoice) && programTitle === '') {
+    errors.programTitle = 'Enter the new program title, or cancel to choose an existing one.'
+  } else if (programTitle.length > MAX_PROGRAM_TITLE_LENGTH) {
+    errors.programTitle = `The program title must be ${MAX_PROGRAM_TITLE_LENGTH} characters or fewer.`
+  }
+
+  const projectTitle = String(form.projectTitle ?? '').trim()
+  if (projectTitle === '') {
+    errors.projectTitle = 'The project title is required.'
+  } else if (projectTitle.length > MAX_PROJECT_TITLE_LENGTH) {
+    errors.projectTitle = `The project title must be ${MAX_PROJECT_TITLE_LENGTH} characters or fewer.`
   }
 
   if (isBlank(form.proposalAnnouncementId)) {
@@ -202,15 +294,43 @@ export function isEndorsementRequestValid(form = {}) {
   return Object.keys(validateEndorsementRequest(form)).length === 0
 }
 
-/** The payload sent to the backend, trimmed. */
+/**
+ * The payload sent to the backend, trimmed. Program Title and Project Title travel as
+ * two separate values - the program title is omitted when the field was left empty
+ * (it is optional) and is never copied into the project title.
+ */
 export function buildEndorsementRequestPayload(form = {}) {
+  const programTitle = String(form.programTitle ?? '').trim()
   return {
-    proposalTitle: String(form.proposalTitle ?? '').trim(),
+    // The sentinel that marks "create a new program title" is a control value, never a
+    // title: only what the Proponent actually typed can be submitted.
+    programTitle:
+      programTitle === '' || isCreatingProgramTitle(programTitle) ? null : programTitle,
+    projectTitle: String(form.projectTitle ?? '').trim(),
     proposalAnnouncementId: form.proposalAnnouncementId ? Number(form.proposalAnnouncementId) : null,
     college: String(form.college ?? '').trim(),
     department: isBlank(form.department) ? null : String(form.department).trim(),
     researchSummary: isBlank(form.researchSummary) ? null : String(form.researchSummary).trim(),
     notes: isBlank(form.notes) ? null : String(form.notes).trim(),
+  }
+}
+
+/**
+ * The values the Create Proposal form is prefilled with from an approved endorsement.
+ *
+ * <p>The keys are the ones the Create Proposal form's `loadProposal` reads (the proposal
+ * DTO shape, camelCase), and the two titles are carried over independently: the program
+ * title is never substituted for the project title or the other way round. An
+ * endorsement saved before the two fields were split carries its single title as the
+ * project title (`proposalTitle`), which is what it always was.
+ */
+export function endorsementProposalPrefill(endorsement = {}) {
+  const programTitle = String(endorsement?.programTitle ?? '').trim()
+  const projectTitle = String(endorsement?.projectTitle ?? endorsement?.proposalTitle ?? '').trim()
+  return {
+    programTitle,
+    projectTitle,
+    college: String(endorsement?.college ?? '').trim(),
   }
 }
 

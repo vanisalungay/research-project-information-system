@@ -24,7 +24,22 @@ public class EndorsementRequestResponse {
     private String referenceNumber;
     private String status;
 
+    /**
+     * The Program Title of the project, or null when the Proponent left the field empty
+     * (the field is optional, exactly like the Create Proposal form).
+     */
+    private String programTitle;
+
+    /** The title of the specific project being endorsed. */
+    private String projectTitle;
+
+    /**
+     * Deprecated alias of {@link #projectTitle}, kept so a client built against the
+     * previous API version keeps showing the project title. It never carries the program
+     * title.
+     */
     private String proposalTitle;
+
     private String college;
     private String department;
     private String researchSummary;

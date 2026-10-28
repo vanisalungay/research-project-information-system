@@ -12,6 +12,45 @@
   max-width: 1040px;
 }
 
+/* Pages whose main content is a wide table use the whole area between the sidebar and the
+   right edge of the screen. The shell (layouts/DefaultLayout.vue) already provides the
+   gutter through .app-content, so no second width cap is applied here - that cap was what
+   left the large blank area on the right of the My Endorsements page. It is the same
+   convention the My Projects page uses (.proposals-content has padding only). */
+.end-page--fluid {
+  max-width: none;
+}
+
+/* A table wider than the screen scrolls inside its own card instead of stretching the
+   page. The minimum width keeps the columns readable instead of crushing them; the
+   My Endorsements page raises it further (see .end-page--fluid below). */
+.end-table-scroll {
+  overflow-x: auto;
+}
+
+.end-table-scroll .end-table {
+  min-width: 560px;
+}
+
+.end-page--fluid .end-table {
+  min-width: 720px;
+}
+
+/* The header labels stay on one line, so the columns are distributed evenly instead of
+   breaking "Project title" and "Call for Proposal" onto two lines. */
+.end-page--fluid .end-table th {
+  white-space: nowrap;
+}
+
+/* The Call for Proposals card of the Proponent dashboard shows the call's own name above
+   its details: larger than a field value, smaller than the page title. */
+.end-call-name {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
 .end-page-header h2 {
   margin: 0 0 6px;
   font-size: 1.5rem;
@@ -117,6 +156,72 @@
   font-size: 0.75rem;
   color: #dc2626;
 }
+/* Program Title and Project Title: two separate fields side by side, exactly as the
+   Create Proposal form lays them out. On a narrow screen the row collapses to a single
+   column so neither field is squeezed. */
+.end-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+/* The inline "create a new program title" flow, shown under the field once the proponent
+   chooses "Create New Program Title" (or double clicks the control). */
+.end-program-title-new-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.end-program-title-new-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.end-program-title-new-cancel {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.end-program-title-new-cancel:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.end-program-title-new-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* An explanatory line under a field (why the list is empty, or why it could not be
+   loaded). It is only a warning, never an error, unless it says so. */
+.end-field-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.end-field-hint.is-error {
+  color: #b45309;
+}
+
+@media (max-width: 640px) {
+  .end-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 
 .end-note {
   margin: 0 0 16px;
@@ -290,6 +395,92 @@
 .end-toolbar .end-select {
   width: auto;
   min-width: 190px;
+}
+
+/* The request count sits at the far end of the toolbar, so the row lines up with the table
+   below it instead of leaving the right end empty. Only the alignment is set here: the
+   muted colour still comes from .end-muted, so nothing about the look changes. */
+.end-toolbar-count {
+  margin-left: auto;
+}
+
+/* ===== Sections of the consolidated My Endorsements page =====
+   The three parts of the endorsement workflow (the requests, the request form and the
+   issued letters) are tabs of one page. The pill follows the hub pattern already used
+   elsewhere in the application: white by default, navy with the yellow label when
+   active. */
+.end-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.end-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e3e6ef;
+  background: #ffffff;
+  color: #25245b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.end-tab:hover {
+  border-color: #25245b;
+}
+
+.end-tab:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
+}
+
+.end-tab.active {
+  background: #25245b;
+  border-color: #25245b;
+  color: #ffd400;
+  font-weight: 600;
+}
+
+/* How many requests the tracking section holds, so the count is visible without
+   switching to it. */
+.end-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #25245b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.end-tab.active .end-tab-count {
+  background: #ffd400;
+  color: #25245b;
+}
+
+@media (max-width: 640px) {
+  /* The tabs stay on one scrollable line instead of stacking into a tall block. */
+  .end-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .end-tab {
+    flex-shrink: 0;
+  }
 }
 
 .end-muted {

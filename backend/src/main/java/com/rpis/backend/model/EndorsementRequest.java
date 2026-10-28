@@ -14,10 +14,13 @@ import java.time.LocalDateTime;
  * A Faculty Proponent's request for a Dean's / Department Chair's endorsement.
  *
  * <p>It carries only the preliminary information needed to endorse a project -
- * the proposal title, the Call for Proposal it answers and the organizational unit
- * - because it is raised <em>before</em> the full proposal submission. It is
- * assigned to the Dean authorized for its college and moves through the three
- * business states {@code PENDING} → {@code APPROVED} / {@code REJECTED}.
+ * the Program Title and the Project Title, the Call for Proposal it answers and the
+ * organizational unit - because it is raised <em>before</em> the full proposal
+ * submission. The two titles are independent values: the Program Title is optional
+ * (the programme the project belongs to) and the Project Title is the required title
+ * of the project itself. A request is assigned to the Dean authorized for its college
+ * and moves through the three business states {@code PENDING} → {@code APPROVED} /
+ * {@code REJECTED}.
  *
  * <p>The approving identity is never taken from the client: {@link #decidedByUserId}
  * is written from the authenticated Dean's token (see
@@ -62,8 +65,25 @@ public class EndorsementRequest {
 
     private String department;
 
+    /**
+     * The Program Title the Proponent selected or created - the programme the project
+     * belongs to. It is <em>optional</em>, exactly like the Create Proposal form, so it
+     * is nullable and it never substitutes for {@link #projectTitle}.
+     */
+    @Column(name = "program_title")
+    private String programTitle;
+
+    /**
+     * The title of the specific project being endorsed. Required.
+     *
+     * <p>The column keeps its historic name {@code proposal_title}. It has always held
+     * the project's title - it is what the official endorsement letter prints and what
+     * the Certifications entry is named after - so renaming the column would rewrite
+     * every existing record for no behavioural gain. The API exposes this value as
+     * {@code projectTitle}.
+     */
     @Column(name = "proposal_title", nullable = false)
-    private String proposalTitle;
+    private String projectTitle;
 
     @Column(name = "proposal_announcement_id", nullable = false)
     private Long proposalAnnouncementId;

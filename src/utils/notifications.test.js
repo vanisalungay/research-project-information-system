@@ -15,7 +15,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-import { isUnreadNotification, unreadBadgeLabel, unreadCountOf } from './notifications.js'
+import { isUnreadNotification, recentNotifications, unreadBadgeLabel, unreadCountOf } from './notifications.js'
 
 const read = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8')
 
@@ -68,6 +68,29 @@ test('the badge label is empty at zero and capped above 99', () => {
   assert.equal(unreadBadgeLabel('3'), '3')
   assert.equal(unreadBadgeLabel('nope'), '')
   assert.equal(unreadBadgeLabel(undefined), '')
+})
+
+test('a preview shows the newest notifications and never more than it is asked for', () => {
+  const list = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]
+
+  // The API returns the list newest first, so the preview is its head.
+  assert.deepEqual(
+    recentNotifications(list, 3).map((item) => item.id),
+    [1, 2, 3],
+  )
+  // The dashboard's default preview length.
+  assert.equal(recentNotifications(list).length, 5)
+  assert.equal(recentNotifications(list, 99).length, 6)
+
+  // An empty, missing or odd list reports an empty preview instead of failing, and a
+  // non-positive limit shows nothing rather than the whole list.
+  assert.deepEqual(recentNotifications([], 5), [])
+  assert.deepEqual(recentNotifications(null, 5), [])
+  assert.deepEqual(recentNotifications(undefined, 5), [])
+  assert.deepEqual(recentNotifications({}, 5), [])
+  assert.deepEqual(recentNotifications(list, 0), [])
+  assert.deepEqual(recentNotifications(list, -1), [])
+  assert.deepEqual(recentNotifications(list, 'nope'), [])
 })
 
 /* ===== Shell tokens ===== */

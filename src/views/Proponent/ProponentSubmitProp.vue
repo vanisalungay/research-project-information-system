@@ -1167,7 +1167,7 @@ import {
 } from '@/utils/documentExport'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
-import { CREATE_NEW_PROGRAM_TITLE } from '@/utils/programTitleOptions'
+import { CREATE_NEW_PROGRAM_TITLE, programTitlesFromProposals } from '@/utils/programTitleOptions'
 import {
   PROJECT_DURATION_OPTIONS,
   PROJECT_END_DATE_HINT,
@@ -1347,12 +1347,9 @@ const fetchExistingProgramTitles = async () => {
   programTitlesError.value = ''
   try {
     const res = await api.get('/api/proposals')
-    const proposals = Array.isArray(res.data) ? res.data : []
-    const titles = proposals
-      .map((p) => (p && typeof p.programTitle === 'string' ? p.programTitle.trim() : ''))
-      .filter((title) => title !== '')
-    // De-duplicate the trimmed titles so each distinct value appears only once.
-    existingProgramTitles.value = [...new Set(titles)].sort((a, b) => a.localeCompare(b))
+    // The extraction rule is shared with the Request for Endorsement form
+    // (utils/programTitleOptions.js), so both forms offer exactly the same titles.
+    existingProgramTitles.value = programTitlesFromProposals(res.data)
   } catch (err) {
     // A genuine API failure must never be reported as "no titles exist".
     console.error(

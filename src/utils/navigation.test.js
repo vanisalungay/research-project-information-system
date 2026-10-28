@@ -20,8 +20,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { ENDORSEMENT_TABS } from './endorsement.js'
+
 const NAV_FILE = fileURLToPath(new URL('../components/NavMenu.vue', import.meta.url))
 const STORE_FILE = fileURLToPath(new URL('../stores/userData.js', import.meta.url))
+const ROUTER_FILE = fileURLToPath(new URL('../router/index.js', import.meta.url))
 
 /** The role keys declared by the application's role vocabulary. */
 function roleKeys() {
@@ -98,17 +101,88 @@ test('every role a navigation item is offered to exists in the role vocabulary',
   }
 })
 
-test('the Proponent can reach the endorsement workflow and Certifications', () => {
-  const paths = pathsFor('PROPONENT')
+test('the Proponent reaches the whole endorsement workflow through one sidebar item', () => {
+  const main = navItems().filter(
+    (item) => item.roles.includes('PROPONENT') && item.section === 'main',
+  )
 
-  for (const required of [
-    '/proposals',
-    '/request-endorsement',
-    '/endorsements',
-    '/certifications',
-    '/proponent-proposal-monitoring',
+  // Dashboard, My Projects, My Endorsements, Notifications, Proposal Monitoring - in that
+  // order, and nothing else. The Request for Endorsement form and the issued letters are
+  // sections of the My Endorsements page, so they must never reappear as items of their own.
+  assert.deepEqual(
+    main.map((item) => item.text),
+    ['Dashboard', 'My Projects', 'My Endorsements', 'Notifications', 'Proposal Monitoring'],
+    'the Proponent main navigation must be exactly the five agreed items',
+  )
+  assert.deepEqual(
+    main.map((item) => item.path),
+    [
+      '/home',
+      '/proposals',
+      '/endorsements',
+      '/notifications',
+      '/proponent-proposal-monitoring',
+    ],
+    'each Proponent item must point at its own route',
+  )
+
+  const paths = pathsFor('PROPONENT')
+  for (const gone of ['/request-endorsement', '/certifications']) {
+    assert.ok(
+      !paths.includes(gone),
+      `the Proponent must not be offered a separate ${gone} item`,
+    )
+  }
+})
+
+test('the consolidated endorsement page is the only endorsement route left', () => {
+  const source = readFileSync(ROUTER_FILE, 'utf8')
+
+  // The page and the per-request detail route it links to.
+  assert.match(
+    source,
+    /path:\s*'endorsements',\s*\n\s*name:\s*'ProponentEndorsements',\s*\n\s*component:\s*ProponentEndorsements/,
+    'the consolidated My Endorsements page must still be routed',
+  )
+  assert.match(source, /path:\s*'endorsements\/:id'/, 'the request detail route must stay')
+
+  // The two URLs that used to be pages are redirects into the sections of that page, so
+  // old bookmarks and links cannot land on a page that no longer exists.
+  for (const [path, tab] of [
+    ['request-endorsement', 'new'],
+    ['certifications', 'certifications'],
   ]) {
-    assert.ok(paths.includes(required), `a Proponent must reach ${required}`)
+    assert.match(
+      source,
+      new RegExp(
+        `path:\\s*'${path}',\\s*\\n\\s*redirect:\\s*\\{\\s*path:\\s*'\\/endorsements',\\s*query:\\s*\\{\\s*tab:\\s*'${tab}'\\s*\\}`,
+      ),
+      `${path} must redirect to the consolidated page's ${tab} section`,
+    )
+    // The section the redirect names must exist, or the link would fall back silently.
+    assert.ok(
+      ENDORSEMENT_TABS.some((definition) => definition.id === tab),
+      `the redirect to ?tab=${tab} must name a real section of the page`,
+    )
+  }
+
+  // Nothing renders the two standalone pages any more, and no component is imported only
+  // to be left unused.
+  assert.ok(
+    !/component:\s*ProponentCertifications/.test(source),
+    'the standalone Certifications page must not be routed',
+  )
+  assert.ok(
+    !/component:\s*ProponentEndorsementRequestForm/.test(source),
+    'the Request for Endorsement form must not be routed on its own',
+  )
+
+  // The Proponent-only guard still covers the page and both old URLs.
+  for (const path of ['/request-endorsement', '/endorsements', '/certifications']) {
+    assert.ok(
+      source.includes(`path.startsWith('${path}')`),
+      `the ${path} route must stay restricted to the Proponent`,
+    )
   }
 })
 

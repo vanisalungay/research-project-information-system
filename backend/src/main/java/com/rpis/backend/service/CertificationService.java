@@ -59,7 +59,7 @@ public class CertificationService {
         certification.setEndorsementRequestId(request.getId());
         certification.setProposalId(request.getProposalId());
         certification.setDocumentType(Certification.DOCUMENT_TYPE_ENDORSEMENT_LETTER);
-        certification.setTitle("Endorsement Letter - " + request.getProposalTitle());
+        certification.setTitle("Endorsement Letter - " + request.getProjectTitle());
         certification.setFileName(request.getLetterFileName());
         certification.setFilePath(request.getLetterFilePath());
         certification.setEndorsementDate(request.getEndorsementDate());

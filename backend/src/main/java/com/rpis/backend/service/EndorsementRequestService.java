@@ -80,6 +80,20 @@ public class EndorsementRequestService {
     /** Reference and document code format: MSUN-ORPS-END-<code>-<year>. */
     static final String REFERENCE_FORMAT = "MSUN-ORPS-END-%03d-%d";
 
+    /**
+     * Maximum length of the Project Title. It matches the width of the
+     * {@code endorsement_requests.proposal_title} column, so the readable message is
+     * returned instead of a database error.
+     */
+    static final int MAX_PROJECT_TITLE_LENGTH = 500;
+
+    /**
+     * Maximum length of the Program Title. It matches {@code proposals.program_title},
+     * so a title created on the endorsement form can always be carried over to the
+     * proposal unchanged.
+     */
+    static final int MAX_PROGRAM_TITLE_LENGTH = 255;
+
     /** Where issued letters and their signature snapshots are stored. */
     static final String ENDORSEMENTS_FOLDER = "endorsements";
 
@@ -116,9 +130,24 @@ public class EndorsementRequestService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Account not found."));
 
-        String proposalTitle = trimmed(request.getProposalTitle());
-        if (proposalTitle == null) {
-            throw new IllegalArgumentException("The proposal/program title is required.");
+        // The two titles are independent, exactly as on the Create Proposal form: the
+        // Program Title is optional (the programme the project belongs to) and the
+        // Project Title is required (the title of the project itself). The previous
+        // single-title field is only a fallback for a client that still sends it, and it
+        // is read as the project title - never as the program title.
+        String projectTitle = firstNonBlank(trimmed(request.getProjectTitle()),
+                trimmed(request.getProposalTitle()));
+        if (projectTitle == null) {
+            throw new IllegalArgumentException("The project title is required.");
+        }
+        if (projectTitle.length() > MAX_PROJECT_TITLE_LENGTH) {
+            throw new IllegalArgumentException("The project title must be "
+                    + MAX_PROJECT_TITLE_LENGTH + " characters or fewer.");
+        }
+        String programTitle = trimmed(request.getProgramTitle());
+        if (programTitle != null && programTitle.length() > MAX_PROGRAM_TITLE_LENGTH) {
+            throw new IllegalArgumentException("The program title must be "
+                    + MAX_PROGRAM_TITLE_LENGTH + " characters or fewer.");
         }
         String college = trimmed(request.getCollege());
         if (college == null) {
@@ -134,7 +163,8 @@ public class EndorsementRequestService {
         entity.setProponent(proponent);
         entity.setCollege(college);
         entity.setDepartment(trimmed(request.getDepartment()));
-        entity.setProposalTitle(proposalTitle);
+        entity.setProgramTitle(programTitle);
+        entity.setProjectTitle(projectTitle);
         entity.setProposalAnnouncementId(announcement.getId());
         entity.setResearchSummary(trimmed(request.getResearchSummary()));
         entity.setNotes(trimmed(request.getNotes()));
@@ -145,7 +175,9 @@ public class EndorsementRequestService {
 
         EndorsementRequest saved = requestRepository.save(entity);
         audit(saved, EndorsementRequestEvent.TYPE_CREATED, proponent,
-                "Request created for \"" + proposalTitle + "\" under " + announcement.getName() + ".");
+                "Request created for \"" + projectTitle + "\""
+                        + (programTitle == null ? "" : " (Program: \"" + programTitle + "\")")
+                        + " under " + announcement.getName() + ".");
         if (dean != null) {
             audit(saved, EndorsementRequestEvent.TYPE_ASSIGNED, proponent,
                     "Routed to " + dean.getName() + deanScopeNote(dean) + ".");
@@ -341,9 +373,11 @@ public class EndorsementRequestService {
         }
 
         String documentCode = entity.getReferenceNumber();
+        // The letter names the PROJECT TITLE: it is the title of the project being
+        // endorsed, never the program title.
         EndorsementLetterService.GeneratedLetter letter = letterService.generate(
                 new EndorsementLetterService.LetterContext(settings, documentCode, entity.getCollege(),
-                        endorsementDate, entity.getProposalTitle(), entity.getProponent().getName(),
+                        endorsementDate, entity.getProjectTitle(), entity.getProponent().getName(),
                         entity.getDepartment(), endorserName, designation, signature));
 
         StoredFile letterFile = storeFile(letter.content(), "endorsement-letter.pdf");
@@ -499,7 +533,7 @@ public class EndorsementRequestService {
 
         EndorsementLetterService.GeneratedLetter letter = letterService.generate(
                 new EndorsementLetterService.LetterContext(settings, entity.getReferenceNumber(),
-                        entity.getCollege(), endorsementDate, entity.getProposalTitle(),
+                        entity.getCollege(), endorsementDate, entity.getProjectTitle(),
                         entity.getProponent().getName(), entity.getDepartment(), endorserName,
                         designation, signature));
 
@@ -873,7 +907,11 @@ public class EndorsementRequestService {
         response.setId(entity.getId());
         response.setReferenceNumber(entity.getReferenceNumber());
         response.setStatus(entity.getStatus());
-        response.setProposalTitle(entity.getProposalTitle());
+        response.setProgramTitle(entity.getProgramTitle());
+        response.setProjectTitle(entity.getProjectTitle());
+        // Deprecated alias for a client built against the previous API version: the single
+        // title it expects is the PROJECT title. It is never the program title.
+        response.setProposalTitle(entity.getProjectTitle());
         response.setCollege(entity.getCollege());
         response.setDepartment(entity.getDepartment());
         response.setResearchSummary(entity.getResearchSummary());

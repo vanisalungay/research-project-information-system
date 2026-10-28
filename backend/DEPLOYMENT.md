@@ -116,6 +116,7 @@ for f in \
   migration-add-budget-file-path.sql \
   migration-add-cooperating-agencies.sql \
   migration-add-endorsement-workflow.sql \
+  migration-add-endorsement-titles.sql \
   migration-add-field-level-remarks.sql \
   migration-add-notification-announcement-link.sql \
   migration-add-notification-fields.sql \

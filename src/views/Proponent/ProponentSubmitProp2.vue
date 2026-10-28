@@ -237,7 +237,7 @@
                 <p class="endorsed-note">
                   These details come from the official endorsement letter issued by the
                   Dean and cannot be edited here. The signed letter is filed in your
-                  <router-link to="/certifications">Certifications</router-link>.
+                  <router-link to="/endorsements?tab=certifications">My Endorsements</router-link>.
                 </p>
               </div>
 

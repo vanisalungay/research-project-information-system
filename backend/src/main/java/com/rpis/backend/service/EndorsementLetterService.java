@@ -152,7 +152,11 @@ public class EndorsementLetterService {
             String documentCode,
             String college,
             LocalDate endorsementDate,
-            String proposalTitle,
+            /**
+             * The Project Title being endorsed. The letter prints this value, never the
+             * Program Title: the letter endorses the project itself.
+             */
+            String projectTitle,
             String proponentName,
             String department,
             String deanName,
@@ -353,14 +357,14 @@ public class EndorsementLetterService {
     }
 
     /**
-     * The opening paragraph, with the proposal title and the faculty name in bold, as
+     * The opening paragraph, with the project title and the faculty name in bold, as
      * the official letter prints them.
      */
     private Paragraph submissionParagraph(LetterContext context, Font body, Font bold) {
         Paragraph paragraph = new Paragraph(14f);
         paragraph.add(new Chunk("Respectfully endorsed for your review and appropriate action is the "
                 + "Internally Funded Project Proposal (IFP) entitled \u201c", body));
-        paragraph.add(new Chunk(blankToEmpty(context.proposalTitle()), bold));
+        paragraph.add(new Chunk(blankToEmpty(context.projectTitle()), bold));
         paragraph.add(new Chunk("\u201d, submitted by ", body));
         paragraph.add(new Chunk(blankToEmpty(context.proponentName()), bold));
         paragraph.add(new Chunk(" of the " + unitOf(context) + ".", body));

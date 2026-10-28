@@ -27,6 +27,30 @@ export const PROGRAM_TITLE_PLACEHOLDER = 'Select a program title or create a new
 export const CREATE_NEW_PROGRAM_TITLE_LABEL = 'Create New Program Title'
 
 /**
+ * Maximum length of a program title. It matches the `program_title` column of a
+ * proposal, so a title created here can be carried over to a proposal unchanged.
+ */
+export const MAX_PROGRAM_TITLE_LENGTH = 255
+
+/**
+ * The distinct program titles a Proponent may reuse, taken from their own proposals:
+ * trimmed, empty values dropped, duplicates removed and sorted alphabetically.
+ *
+ * The Create Proposal form and the Request for Endorsement form both read their Program
+ * Title choices from here, so the two forms cannot drift apart and no second
+ * implementation of "which titles may be reused" exists.
+ */
+export function programTitlesFromProposals(proposals) {
+  const titles = (Array.isArray(proposals) ? proposals : [])
+    .map((proposal) =>
+      proposal && typeof proposal.programTitle === 'string' ? proposal.programTitle.trim() : '',
+    )
+    .filter((title) => title !== '')
+  // De-duplicate the trimmed titles so each distinct value appears only once.
+  return [...new Set(titles)].sort((a, b) => a.localeCompare(b))
+}
+
+/**
  * The options of the field, in the order they are listed.
  * `titles` are the proponent's own reusable titles; `selected` is the current value.
  */

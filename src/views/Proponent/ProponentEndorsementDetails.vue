@@ -1,5 +1,5 @@
 <template>
-  <div class="end-page">
+  <div class="end-page end-page--fluid">
     <div class="end-page-header">
       <h2>Endorsement Request</h2>
       <p class="end-subtitle">
@@ -39,8 +39,12 @@
 
         <div class="end-grid">
           <div class="end-field">
-            <span class="end-label">Proposal / Program Title</span>
-            <span class="end-value">{{ request.proposalTitle }}</span>
+            <span class="end-label">Program Title</span>
+            <span class="end-value">{{ request.programTitle || '—' }}</span>
+          </div>
+          <div class="end-field">
+            <span class="end-label">Project Title</span>
+            <span class="end-value">{{ request.projectTitle }}</span>
           </div>
           <div class="end-field">
             <span class="end-label">Call for Proposal</span>
@@ -119,7 +123,9 @@
           <button class="end-btn is-primary" :disabled="busy" @click="downloadLetter">
             Download
           </button>
-          <router-link class="end-btn" to="/certifications">Open Certifications</router-link>
+          <router-link class="end-btn" to="/endorsements?tab=certifications">
+            Open Issued Certifications
+          </router-link>
         </div>
       </div>
 

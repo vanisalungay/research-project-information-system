@@ -1,0 +1,784 @@
+/**
+ * dashboard.css
+ * ---------------------------------------------------------------------------
+ * The design layer of the role dashboards (today the Proponent dashboard).
+ *
+ * Every class is prefixed with "dash-" so nothing here can leak into another page, and
+ * the palette comes from the shell tokens in assets/css/base.css (navy #262342, royal
+ * blue #315bff, gold #ffd000, lavender content #f5f5fc) plus the type/spacing/radius
+ * scales declared there. The shared primitives the rest of the application already uses
+ * (.end-page, .end-btn, .end-badge, .end-table, .end-muted) are reused rather than
+ * redefined, so the dashboard cannot drift away from the other screens.
+ *
+ * Imported by the dashboard component only.
+ */
+
+/* ===== Page =====
+   The dashboard fills the content area the shell provides (.app-content is a flex child
+   with min-width: 0), so it never needs a width of its own - only a consistent gap
+   between its sections. */
+.dash-page {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+}
+
+/* ===== Welcome banner =====
+   The one gradient on the page: a compact navy-to-indigo band that carries the greeting,
+   the summary line and the signed-in user's initials. */
+.dash-banner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: var(--radius-xl, 14px);
+  background: linear-gradient(120deg, #262342 0%, #2f2b63 55%, #3a3a86 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 28px rgba(38, 35, 66, 0.18);
+  overflow: hidden;
+}
+
+/* The gold hairline echoes the shell's header border and anchors the banner to the brand. */
+.dash-banner::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--rpis-accent, #ffd000) 0%, rgba(255, 208, 0, 0) 65%);
+}
+
+.dash-banner-text {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.dash-banner-title {
+  margin: 0 0 4px;
+  font-size: var(--fs-xl, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.dash-banner-sub {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.55;
+  color: var(--rpis-on-dark-soft, #c8c8e8);
+}
+
+/* Initials avatar: no image is uploaded anywhere, so the name itself is the avatar. */
+.dash-avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: var(--fs-lg, 1.125rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+}
+
+/* ===== Section shell =====
+   One card style for every section: same radius, padding and border, with a soft shadow
+   instead of a heavy outline. */
+.dash-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e6e8f4;
+  border-radius: var(--radius-xl, 14px);
+  background: var(--color-card-background, #ffffff);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.06);
+}
+
+.dash-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The small rounded icon chip that labels a section. */
+.dash-section-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eef1ff;
+  color: var(--rpis-badge, #315bff);
+}
+
+.dash-section-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.9;
+}
+
+.dash-section-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+/* The actions of a section sit at the far end of its heading row. */
+.dash-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ===== Featured Call for Proposals =====
+   The call is the one thing a proponent must act on, so it carries an indigo accent edge
+   and the strongest type on the page. */
+.dash-call {
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-call::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--rpis-badge, #315bff) 0%, #6d5bd0 100%);
+}
+
+.dash-call-title {
+  margin: 0;
+  font-size: var(--fs-lg, 1.125rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.dash-call-desc {
+  margin: 0;
+  max-width: 90ch;
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.6;
+  color: #4b5570;
+  white-space: pre-line;
+}
+
+/* The metadata of a call: a responsive grid of icon + label + value cells. It is capped
+   so the values stay readable on a very wide screen instead of stretching. */
+.dash-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px 18px;
+  max-width: 1000px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg, 12px);
+  background: #f7f8ff;
+  border: 1px solid #eceefb;
+}
+
+.dash-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dash-meta-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #7c86a8;
+}
+
+.dash-meta-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.9;
+}
+
+.dash-meta-body {
+  min-width: 0;
+}
+
+.dash-meta-label {
+  display: block;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #78809a;
+}
+
+.dash-meta-value {
+  display: block;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  color: #25245b;
+  overflow-wrap: anywhere;
+}
+
+/* The deadline gets its own emphasis so it is never missed. */
+.dash-deadline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff5d6;
+  border: 1px solid #ffe49a;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+.dash-deadline svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.dash-call-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ===== Statistic cards =====
+   Equal height, equal padding, one restrained accent per meaning. */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 14px;
+}
+
+/* The six proposal cards stay balanced at every width instead of leaving one card alone on
+   a row: one row of six when the page is wide, three and three on everything from a small
+   tablet up, and the shared responsive grid on a phone. */
+@media (min-width: 560px) and (max-width: 1399px) {
+  .dash-stats--six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1400px) {
+  .dash-stats--six {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.dash-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid #e8eaf6;
+  border-radius: var(--radius-lg, 12px);
+  background: #fdfdff;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+/* The accent bar is the only colour difference between the cards. */
+.dash-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+  background: var(--dash-accent, #7c86a8);
+}
+
+.dash-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-stat-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--dash-accent-soft, #eef0f8);
+  color: var(--dash-accent, #7c86a8);
+}
+
+.dash-stat-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+
+.dash-stat-label {
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7591;
+  overflow-wrap: anywhere;
+}
+
+.dash-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--dash-accent, #25245b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Meaning of each metric: neutral indigo for the total, blue for work in progress,
+   amber while it waits, green when it is approved, red when it comes back. */
+.dash-stat--indigo { --dash-accent: #4b46c8; --dash-accent-soft: #eceafd; }
+.dash-stat--blue   { --dash-accent: #315bff; --dash-accent-soft: #e9efff; }
+.dash-stat--violet { --dash-accent: #7c3aed; --dash-accent-soft: #f3ebfe; }
+.dash-stat--amber  { --dash-accent: #b45309; --dash-accent-soft: #fdf1dc; }
+.dash-stat--green  { --dash-accent: #047857; --dash-accent-soft: #e3f6ef; }
+.dash-stat--red    { --dash-accent: #b91c1c; --dash-accent-soft: #fdeaea; }
+
+
+/* ===== Notification rows =====
+   Every row has the same padding so the titles and the dates line up; an unread row is
+   marked by a blue edge and a very light tint instead of a heavy background. */
+.dash-notes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.dash-note:not(:last-child) {
+  border-bottom: 1px solid #eef0f8;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dash-note--unread {
+  background: #f5f8ff;
+  box-shadow: inset 3px 0 0 var(--rpis-badge, #315bff);
+}
+
+.dash-note-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eef1ff;
+  color: var(--rpis-badge, #315bff);
+}
+
+.dash-note-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.9;
+}
+
+.dash-note-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dash-note-title {
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.dash-note-text {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.dash-note-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dash-note-date {
+  font-size: var(--fs-xs, 0.75rem);
+  color: #78809a;
+}
+
+.dash-note-action {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ===== Quick actions =====
+   Compact tiles: the first action is the primary one, the rest are secondary. */
+.dash-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.dash-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #e8eaf6;
+  border-radius: var(--radius-lg, 12px);
+  background: #fdfdff;
+  color: #25245b;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.dash-action:hover {
+  border-color: var(--rpis-badge, #315bff);
+  box-shadow: 0 8px 20px rgba(49, 91, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.dash-action:focus-visible {
+  outline: 2px solid var(--rpis-badge, #315bff);
+  outline-offset: 2px;
+}
+
+.dash-action--primary {
+  background: linear-gradient(135deg, #315bff 0%, #4b46c8 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.dash-action--primary:hover {
+  box-shadow: 0 10px 24px rgba(49, 91, 255, 0.28);
+}
+
+.dash-action-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #eef1ff;
+  color: var(--rpis-badge, #315bff);
+}
+
+.dash-action-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.9;
+}
+
+.dash-action--primary .dash-action-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.dash-action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dash-action-hint {
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 500;
+  color: #78809a;
+}
+
+.dash-action--primary .dash-action-hint {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+/* ===== Empty and loading states ===== */
+.dash-empty {
+  margin: 0;
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.55;
+  color: #78809a;
+}
+
+/* Skeleton placeholders while a section loads: the same shape as the content that
+   replaces them, so the page does not jump. */
+.dash-skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eef0f8 25%, #f7f8fc 37%, #eef0f8 63%);
+  background-size: 400% 100%;
+  animation: dash-shimmer 1.4s ease infinite;
+}
+
+.dash-skeleton--title { height: 18px; width: 42%; }
+.dash-skeleton--line { height: 12px; }
+.dash-skeleton--stat { height: 92px; border-radius: var(--radius-lg, 12px); }
+.dash-skeleton--row { height: 54px; }
+
+@keyframes dash-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* ===== Section layout =====
+   Sections stack by default and only pair up when two real columns fit, so nothing is
+   ever squeezed or stretched. */
+.dash-row {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+@media (min-width: 1200px) {
+  /* The featured call keeps two thirds of the row; the quick actions take the rest. */
+  .dash-row--main {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  /* Endorsements and notifications sit side by side once both can hold a table. */
+  .dash-row--half {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ===== Small screens =====
+   Nothing may overflow or be clipped: the banner, the metadata and the buttons reflow. */
+@media (max-width: 720px) {
+  .dash-banner {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .dash-banner-title {
+    font-size: 1.25rem;
+  }
+
+  .dash-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: var(--fs-base, 1rem);
+  }
+
+  .dash-section {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .dash-page,
+  .dash-row {
+    gap: 16px;
+  }
+
+  /* One metadata cell per row, so a long value never has to squeeze. */
+  .dash-meta {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  /* The two call actions become full-width rows, which is easier to tap. */
+  .dash-call-actions .end-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .dash-section-actions {
+    margin-left: 0;
+  }
+
+  /* A notification stacks instead of squeezing its text into a few pixels: the icon and
+     the message share the first line, the action takes the next one. */
+  .dash-note {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+
+  .dash-note-body {
+    flex: 1 1 auto;
+  }
+
+  .dash-note-action {
+    flex: 1 1 100%;
+    align-self: flex-start;
+    margin-left: 42px;
+  }
+
+  /* The action tiles keep their labels readable: a long word may break rather than push
+     the tile wider than the card. */
+  .dash-action {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .dash-action-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dash-action-text > span {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ===== Dark theme =====
+   The shell keeps its palette in both themes (see base.css), and the dashboard follows
+   the same rule: the surfaces go dark, the accents lighten and the text stays readable.
+   The !important flags are needed because the global dark block in base.css forces the
+   text colour of every span/p/label and the background of every card with !important. */
+@media (prefers-color-scheme: dark) {
+  .dash-section,
+  .dash-stat,
+  .dash-action {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+  }
+
+  .dash-section-title,
+  .dash-call-title,
+  .dash-note-title {
+    color: #f1f5f9 !important;
+  }
+
+  .dash-call-desc,
+  .dash-note-text,
+  .dash-empty {
+    color: #94a3b8 !important;
+  }
+
+  .dash-stat-label,
+  .dash-meta-label,
+  .dash-note-date,
+  .dash-action-hint {
+    color: #94a3b8 !important;
+  }
+
+  .dash-meta {
+    background: #16213a !important;
+    border-color: #334155 !important;
+  }
+
+  .dash-meta-value {
+    color: #dbe4ff !important;
+  }
+
+  .dash-meta-icon {
+    color: #8fa0c8 !important;
+  }
+
+  .dash-section-icon,
+  .dash-action-icon,
+  .dash-note-icon {
+    background: #22304d !important;
+    color: #8ab4ff !important;
+  }
+
+  .dash-deadline {
+    background: #4a3a17 !important;
+    border-color: #6b551f !important;
+    color: #fcd34d !important;
+  }
+
+  .dash-note--unread {
+    background: #223052 !important;
+  }
+
+  .dash-note:not(:last-child) {
+    border-bottom-color: #334155 !important;
+  }
+
+  .dash-skeleton {
+    background: linear-gradient(90deg, #22304d 25%, #2b3b5e 37%, #22304d 63%) !important;
+  }
+
+  /* The accents lighten so the numbers keep their meaning on a dark surface. */
+  .dash-stat--indigo { --dash-accent: #a5b4fc; --dash-accent-soft: #2b2b4d; }
+  .dash-stat--blue   { --dash-accent: #93b4ff; --dash-accent-soft: #1f2f55; }
+  .dash-stat--violet { --dash-accent: #c4b5fd; --dash-accent-soft: #33265a; }
+  .dash-stat--amber  { --dash-accent: #fcd34d; --dash-accent-soft: #4a3a17; }
+  .dash-stat--green  { --dash-accent: #6ee7b7; --dash-accent-soft: #1c4034; }
+  .dash-stat--red    { --dash-accent: #fca5a5; --dash-accent-soft: #4a2222; }
+
+  .dash-stat-value {
+    color: var(--dash-accent) !important;
+  }
+
+  /* The shared badges and buttons of the dashboard, kept readable on a dark surface.
+     Scoped to this page so no other screen changes. */
+  .dash-page .end-badge.is-approved { background: #123a2c !important; color: #6ee7b7 !important; }
+  .dash-page .end-badge.is-pending { background: #4a3a17 !important; color: #fcd34d !important; }
+  .dash-page .end-badge.is-rejected { background: #4a2222 !important; color: #fca5a5 !important; }
+
+  .dash-page .end-btn {
+    background: #22304d !important;
+    border-color: #334155 !important;
+    color: #dbe4ff !important;
+  }
+
+  .dash-page .end-btn.is-primary {
+    background: #315bff !important;
+    border-color: #315bff !important;
+    color: #ffffff !important;
+  }
+
+  .dash-page .end-btn.is-link {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #8ab4ff !important;
+  }
+}
+
+/* Motion is a courtesy, never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+  .dash-skeleton {
+    animation: none;
+  }
+
+  .dash-stat,
+  .dash-action,
+  .dash-note {
+    transition: none;
+  }
+
+  .dash-action:hover {
+    transform: none;
+  }
+}
+

@@ -38,7 +38,7 @@
           <tr>
             <th>Reference</th>
             <th>Proponent</th>
-            <th>Proposal title</th>
+            <th>Project title</th>
             <th>Call for Proposal</th>
             <th>College</th>
             <th>Submitted</th>
@@ -53,7 +53,10 @@
               {{ request.proponentName }}
               <div class="end-muted">{{ request.proponentEmail }}</div>
             </td>
-            <td>{{ request.proposalTitle }}</td>
+            <td>
+              {{ request.projectTitle }}
+              <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+            </td>
             <td>
               {{ request.proposalAnnouncementName || '—' }}
               <div class="end-muted">{{ fundingProgramLabel(request) }}</div>

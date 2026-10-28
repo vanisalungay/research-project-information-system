@@ -50,7 +50,7 @@
             <tr>
               <th>Reference</th>
               <th>Proponent</th>
-              <th>Proposal title</th>
+              <th>Project title</th>
               <th>College</th>
               <th>Submitted</th>
               <th>Action</th>
@@ -60,7 +60,10 @@
             <tr v-for="request in pending" :key="request.id">
               <td>{{ request.referenceNumber }}</td>
               <td>{{ request.proponentName }}</td>
-              <td>{{ request.proposalTitle }}</td>
+              <td>
+                {{ request.projectTitle }}
+                <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+              </td>
               <td>{{ request.college }}</td>
               <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
               <td>
@@ -80,7 +83,7 @@
           <thead>
             <tr>
               <th>Reference</th>
-              <th>Proposal title</th>
+              <th>Project title</th>
               <th>Decided</th>
               <th>Status</th>
               <th>Action</th>
@@ -89,7 +92,10 @@
           <tbody>
             <tr v-for="request in decided" :key="request.id">
               <td>{{ request.referenceNumber }}</td>
-              <td>{{ request.proposalTitle }}</td>
+              <td>
+                {{ request.projectTitle }}
+                <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+              </td>
               <td>{{ formatEndorsementTimestamp(request.decidedAt) }}</td>
               <td>
                 <span class="end-badge" :class="endorsementStatusTone(request.status)">

@@ -1135,7 +1135,11 @@ public class SyntheticTestDataSeeder implements ApplicationRunner {
             request.setCollege(dean.getAssignedCollege() != null ? dean.getAssignedCollege()
                     : COLLEGES[i % COLLEGES.length]);
             request.setDepartment(DEPARTMENTS[i % DEPARTMENTS.length]);
-            request.setProposalTitle(MARKER + " " + PROJECT_TOPICS[i % PROJECT_TOPICS.length]
+            // Two independent titles, as on the Create Proposal form: the program title is
+            // optional and the project title is required. The program title is left empty
+            // for every third request so both shapes of record exist in the test data.
+            request.setProgramTitle(i % 3 == 0 ? null : PROGRAM_TITLES[i % PROGRAM_TITLES.length]);
+            request.setProjectTitle(MARKER + " " + PROJECT_TOPICS[i % PROJECT_TOPICS.length]
                     + " (endorsement " + i + ")");
             request.setProposalAnnouncementId(announcement.getId());
             request.setResearchSummary("Synthetic research summary submitted with the endorsement request.");

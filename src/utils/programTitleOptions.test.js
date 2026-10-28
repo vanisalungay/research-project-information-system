@@ -17,11 +17,13 @@ import assert from 'node:assert/strict'
 import {
   CREATE_NEW_PROGRAM_TITLE,
   CREATE_NEW_PROGRAM_TITLE_LABEL,
+  MAX_PROGRAM_TITLE_LENGTH,
   PROGRAM_TITLE_PLACEHOLDER,
   isCreatingProgramTitle,
   programTitleClickAction,
   programTitleLabel,
   programTitleOptions,
+  programTitlesFromProposals,
 } from './programTitleOptions.js'
 
 const TITLES = ['Aquaculture Program', 'Fisheries Program']
@@ -101,4 +103,32 @@ test('one click opens or closes the list, a double click asks to create', () => 
   assert.equal(programTitleClickAction(2, false), 'create')
   assert.equal(programTitleClickAction(2, true), 'create')
   assert.equal(programTitleClickAction(3, true), 'create')
+})
+
+test('the reusable titles are read from the proposals, trimmed, deduplicated and sorted', () => {
+  assert.deepEqual(
+    programTitlesFromProposals([
+      { programTitle: 'Fisheries Program' },
+      { programTitle: '  Aquaculture Program  ' },
+      { programTitle: 'Fisheries Program' },
+      { programTitle: '' },
+      { programTitle: '   ' },
+      { programTitle: null },
+      {},
+      null,
+    ]),
+    ['Aquaculture Program', 'Fisheries Program'],
+  )
+
+  // The same rule serves the Create Proposal form and the Request for Endorsement form,
+  // so an odd or missing response can never throw.
+  assert.deepEqual(programTitlesFromProposals([]), [])
+  assert.deepEqual(programTitlesFromProposals(null), [])
+  assert.deepEqual(programTitlesFromProposals(), [])
+})
+
+test('the program title width matches what a proposal can store', () => {
+  // proposals.program_title is VARCHAR(255): a title created on the endorsement form has
+  // to fit it, because it is carried over to the proposal unchanged.
+  assert.equal(MAX_PROGRAM_TITLE_LENGTH, 255)
 })

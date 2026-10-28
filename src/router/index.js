@@ -98,10 +98,10 @@ import ProponentAnnouncementDetails from '@/views/Proponent/ProponentAnnouncemen
 import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
 import ProponentQuarterlyReports from '@/views/Proponent/ProponentQuarterlyReports.vue'
 import ProponentQuarterlyReportForm from '@/views/Proponent/ProponentQuarterlyReportForm.vue'
-import ProponentEndorsementRequestForm from '@/views/Proponent/ProponentEndorsementRequestForm.vue'
+/* The Request for Endorsement form is no longer a route: it is a section of the
+   consolidated ProponentEndorsements page, which imports it directly. */
 import ProponentEndorsements from '@/views/Proponent/ProponentEndorsements.vue'
 import ProponentEndorsementDetails from '@/views/Proponent/ProponentEndorsementDetails.vue'
-import ProponentCertifications from '@/views/Proponent/ProponentCertifications.vue'
 import QuarterlyReportsMaster from '@/components/QuarterlyReportsMaster.vue'
 
 /* DEAN / DEPARTMENT CHAIR */
@@ -205,13 +205,9 @@ const routes = [
       },
       { path: 'proposals', component: ProponentProposals },
       {
-        // The Request for Endorsement the Proponent raises before starting the full
-        // proposal submission.
-        path: 'request-endorsement',
-        name: 'ProponentEndorsementRequestForm',
-        component: ProponentEndorsementRequestForm,
-      },
-      {
+        // The whole endorsement workflow is one page with three sections: raising a
+        // Request for Endorsement, tracking the submitted requests and opening the
+        // official letters the Dean has issued (see ProponentEndorsements.vue).
         path: 'endorsements',
         name: 'ProponentEndorsements',
         component: ProponentEndorsements,
@@ -221,11 +217,16 @@ const routes = [
         name: 'ProponentEndorsementDetails',
         component: ProponentEndorsementDetails,
       },
+      // The two URLs that used to be separate pages stay alive as redirects: they are in
+      // bookmarks, in the browser history and in messages already sent, and each one now
+      // opens the section of the consolidated page that replaced it.
       {
-        // The issued endorsement letters, filed automatically after the Dean approves.
+        path: 'request-endorsement',
+        redirect: { path: '/endorsements', query: { tab: 'new' } },
+      },
+      {
         path: 'certifications',
-        name: 'ProponentCertifications',
-        component: ProponentCertifications,
+        redirect: { path: '/endorsements', query: { tab: 'certifications' } },
       },
       { path: 'revisions', component: ProponentRevision },
       { path: 'evalCriteria', component: ProponentEvalCriteria },
@@ -330,6 +331,9 @@ const ROLE_ONLY_ROUTES = [
     roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
   },
   {
+    // The consolidated endorsement page and its detail route. The two URLs that are now
+    // redirects are listed too: they still belong to the Proponent, so a redirect can
+    // never be used to reach that page from another role.
     match: (path) =>
       path.startsWith('/request-endorsement') ||
       path.startsWith('/endorsements') ||

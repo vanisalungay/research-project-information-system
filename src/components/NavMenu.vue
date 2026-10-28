@@ -180,23 +180,12 @@ const allNavItems = [
     section: 'main',
   },
   {
-    iconKey: 'endorse',
-    text: 'Request for Endorsement',
-    path: '/request-endorsement',
-    roles: [UserRole.PROPONENT],
-    section: 'main',
-  },
-  {
+    // One item for the whole endorsement workflow. The consolidated My Endorsements page
+    // holds the request form, the tracking list and the issued letters as sections, so
+    // there is deliberately no second item for any of them.
     iconKey: 'endorse',
     text: 'My Endorsements',
     path: '/endorsements',
-    roles: [UserRole.PROPONENT],
-    section: 'main',
-  },
-  {
-    iconKey: 'proposals',
-    text: 'Certifications',
-    path: '/certifications',
     roles: [UserRole.PROPONENT],
     section: 'main',
   },
