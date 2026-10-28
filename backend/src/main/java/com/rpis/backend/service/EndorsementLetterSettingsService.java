@@ -1,25 +1,24 @@
 package com.rpis.backend.service;
 
-import com.rpis.backend.dto.EndorsementLetterSettingsRequest;
-import com.rpis.backend.dto.EndorsementLetterSettingsResponse;
 import com.rpis.backend.model.EndorsementLetterSettings;
 import com.rpis.backend.repository.EndorsementLetterSettingsRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 /**
  * The institutional facts the official endorsement letter is addressed with.
  *
- * <p>They live in one administrative settings row instead of being hardcoded,
- * because the ORPS Director's name and surname are not available anywhere in the
- * repository: inventing them would put a fabricated recipient on an official
- * university document. The row is created on first read (optionally seeded from the
- * {@code rpis.endorsement.*} properties of a deployment) and an RPS_ADMIN maintains
- * it. {@link #requireComplete()} refuses to issue a letter while the Director is not
- * configured.
+ * <p>They live in one administrative settings row instead of being hardcoded. The row
+ * is created on first read, seeded from the {@code rpis.endorsement.*} properties of a
+ * deployment when they are set, and falls back to the official defaults otherwise.
+ *
+ * <p><b>The ORPS Director is no longer part of the workflow.</b> The settings are read
+ * for the institutional wording only - the office and the university, both of which
+ * have official defaults - so nothing here can block an endorsement or the issuance of
+ * a letter, and the letter is addressed to the office rather than to a named person.
+ * The row and any historical values are kept so existing documents keep their wording;
+ * there is no screen or endpoint that edits it any more.
  */
 @Service
 public class EndorsementLetterSettingsService {
@@ -47,7 +46,12 @@ public class EndorsementLetterSettingsService {
         this.seedUniversityName = seedUniversityName;
     }
 
-    /** The settings row, created with the documented defaults when absent. */
+    /**
+     * The settings row, created with the official defaults when it is absent.
+     *
+     * <p>This is the only read path and it never fails: the values it carries are
+     * wording, not a requirement, so any caller can generate a document with it.
+     */
     @Transactional
     public EndorsementLetterSettings getSettings() {
         return settingsRepository.findById(EndorsementLetterSettings.SETTINGS_ID)
@@ -68,56 +72,9 @@ public class EndorsementLetterSettingsService {
         return settingsRepository.save(settings);
     }
 
-    /** Saves the settings. Only an RPS_ADMIN reaches this (see SecurityConfig). */
-    @Transactional
-    public EndorsementLetterSettings update(EndorsementLetterSettingsRequest request,
-            Long actorId, String actorName) {
-        EndorsementLetterSettings settings = getSettings();
-
-        settings.setDirectorName(blankToNull(request.getDirectorName()));
-        settings.setDirectorSurname(blankToNull(request.getDirectorSurname()));
-        settings.setDirectorDesignation(orDefault(request.getDirectorDesignation(),
-                EndorsementLetterSettings.DEFAULT_DIRECTOR_DESIGNATION));
-        settings.setOfficeName(orDefault(request.getOfficeName(),
-                EndorsementLetterSettings.DEFAULT_OFFICE_NAME));
-        settings.setUniversityName(orDefault(request.getUniversityName(),
-                EndorsementLetterSettings.DEFAULT_UNIVERSITY_NAME));
-        settings.setUpdatedByUserId(actorId);
-        settings.setUpdatedByName(actorName);
-        settings.setUpdatedAt(LocalDateTime.now());
-
-        return settingsRepository.save(settings);
-    }
-
-    /**
-     * The settings, or an explicit failure when the official letter cannot be
-     * addressed yet. Called before any letter is generated.
-     */
-    @Transactional
-    public EndorsementLetterSettings requireComplete() {
-        EndorsementLetterSettings settings = getSettings();
-        if (!settings.isComplete()) {
-            throw new IllegalStateException(
-                    "The Office of Research and Publication Services (ORPS) Director is not "
-                            + "configured yet, so the official endorsement letter cannot be issued. "
-                            + "An administrator must supply the Director's name and surname in "
-                            + "Endorsement Letter Settings.");
-        }
-        return settings;
-    }
-
-    public EndorsementLetterSettingsResponse toResponse(EndorsementLetterSettings settings) {
-        EndorsementLetterSettingsResponse response = new EndorsementLetterSettingsResponse();
-        response.setDirectorName(settings.getDirectorName());
-        response.setDirectorSurname(settings.getDirectorSurname());
-        response.setDirectorDesignation(settings.getDirectorDesignation());
-        response.setOfficeName(settings.getOfficeName());
-        response.setUniversityName(settings.getUniversityName());
-        response.setComplete(settings.isComplete());
-        response.setUpdatedByName(settings.getUpdatedByName());
-        response.setUpdatedAt(settings.getUpdatedAt());
-        return response;
-    }
+    // The settings are read-only now. The ORPS Director is no longer configured in this
+    // workflow, so there is no screen or endpoint that writes this row; the stored values
+    // (and the historical letters that carry them) are preserved.
 
     private static String blankToNull(String value) {
         if (value == null || value.isBlank()) {

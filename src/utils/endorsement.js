@@ -116,15 +116,12 @@ export function fundingProgramLabel(request) {
  * The backend is the authority; this only explains the state on screen, so a Dean
  * never clicks Approve and then reads an error.
  */
-export function approveBlockedReason(request, { hasSignature = true, settingsComplete = true } = {}) {
+export function approveBlockedReason(request, { hasSignature = true } = {}) {
   if (!isPending(request?.status)) {
     return `This request is already ${endorsementStatusLabel(request?.status).toLowerCase()}.`
   }
   if (request?.letterTemplateAvailable === false) {
     return `No official endorsement letter is configured for ${fundingProgramLabel(request)} yet, so it cannot be endorsed.`
-  }
-  if (!settingsComplete) {
-    return 'The ORPS Director is not configured yet, so the official letter cannot be issued. An administrator must set the Director in Endorsement Letter Settings.'
   }
   if (!hasSignature) {
     return 'Save your electronic signature in Manage Profile → Electronic Signature before approving: the official letter is signed with it.'
@@ -257,29 +254,6 @@ export function buildRejectionPayload(form = {}) {
   return { rejectionReason: String(form.rejectionReason ?? '').trim() }
 }
 
-/**
- * The message shown while the ORPS Director is not configured, or '' when the
- * administrative settings are complete. No letter can be issued until the Director
- * is supplied, because the official letter is addressed to them.
- */
-export function letterSettingsNotice(settings) {
-  if (!settings || settings.complete !== false) return ''
-  return 'The ORPS Director is not configured yet, so no endorsement letter can be issued. An administrator must supply the Director in Endorsement Letter Settings.'
-}
-
-/** The payload that saves the endorsement letter settings. */
-export function buildLetterSettingsPayload(form = {}) {
-  return {
-    directorName: isBlank(form.directorName) ? null : String(form.directorName).trim(),
-    directorSurname: isBlank(form.directorSurname) ? null : String(form.directorSurname).trim(),
-    directorDesignation: isBlank(form.directorDesignation)
-      ? null
-      : String(form.directorDesignation).trim(),
-    officeName: isBlank(form.officeName) ? null : String(form.officeName).trim(),
-    universityName: isBlank(form.universityName) ? null : String(form.universityName).trim(),
-  }
-}
-
 // ==================== API ====================
 // Every call goes through the shared axios client, which attaches the bearer token.
 // The backend resolves the caller from that token, so nothing here can act on
@@ -331,18 +305,6 @@ export async function reissueEndorsementLetter(id, payload) {
 /** Links an approved endorsement to the proposal the Proponent continued to. */
 export async function linkEndorsementToProposal(id, proposalId) {
   const response = await api.put(`${ENDORSEMENTS_ENDPOINT}/${id}/proposal`, { proposalId })
-  return response.data
-}
-
-/** The institutional facts printed on the letter. */
-export async function fetchLetterSettings() {
-  const response = await api.get(`${ENDORSEMENTS_ENDPOINT}/letter-settings`)
-  return response.data
-}
-
-/** Saves the letter settings (RPS_ADMIN only). */
-export async function saveLetterSettings(payload) {
-  const response = await api.put(`${ENDORSEMENTS_ENDPOINT}/letter-settings`, payload)
   return response.data
 }
 

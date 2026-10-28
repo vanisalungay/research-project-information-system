@@ -108,7 +108,6 @@ import QuarterlyReportsMaster from '@/components/QuarterlyReportsMaster.vue'
 import DeanDashboard from '../views/Dashboard/DeanDashboard.vue'
 import DeanEndorsementRequests from '@/views/Dean/DeanEndorsementRequests.vue'
 import DeanEndorsementReview from '@/views/Dean/DeanEndorsementReview.vue'
-import EndorsementLetterSettings from '@/views/Dean/EndorsementLetterSettings.vue'
 
 const routes = [
   {
@@ -273,11 +272,6 @@ const routes = [
         name: 'DeanEndorsementReview',
         component: DeanEndorsementReview,
       },
-      {
-        path: 'dean-endorsement-settings',
-        name: 'DeanEndorsementSettings',
-        component: EndorsementLetterSettings,
-      },
       { path: 'dean-notification', component: NotificationPage },
     ],
   },
@@ -332,9 +326,7 @@ router.beforeEach((to, from, next) => {
 const ROLE_ONLY_ROUTES = [
   {
     match: (path) =>
-      path.startsWith('/dean-dashboard') ||
-      path.startsWith('/dean-requests') ||
-      path.startsWith('/dean-endorsement-settings'),
+      path.startsWith('/dean-dashboard') || path.startsWith('/dean-requests'),
     roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
   },
   {

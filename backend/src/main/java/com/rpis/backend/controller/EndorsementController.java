@@ -2,14 +2,11 @@ package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.EndorsementDecisionRequest;
 import com.rpis.backend.dto.EndorsementEventResponse;
-import com.rpis.backend.dto.EndorsementLetterSettingsRequest;
-import com.rpis.backend.dto.EndorsementLetterSettingsResponse;
 import com.rpis.backend.dto.EndorsementLinkRequest;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.security.CurrentUser;
-import com.rpis.backend.service.EndorsementLetterSettingsService;
 import com.rpis.backend.service.EndorsementRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -36,7 +33,6 @@ import java.util.Map;
 public class EndorsementController {
 
     private final EndorsementRequestService endorsementService;
-    private final EndorsementLetterSettingsService settingsService;
     private final CurrentUser currentUser;
 
     // ==================== PROPONENT ====================
@@ -140,25 +136,6 @@ public class EndorsementController {
             @RequestBody EndorsementLinkRequest request) {
         return ResponseEntity.ok(
                 endorsementService.linkProposal(id, request == null ? null : request.getProposalId()));
-    }
-
-    // ==================== LETTER SETTINGS ====================
-
-    /**
-     * The institutional facts the letter is addressed with. Readable by any
-     * authenticated user (the UI shows them), writable only by an RPS_ADMIN.
-     */
-    @GetMapping("/letter-settings")
-    public ResponseEntity<EndorsementLetterSettingsResponse> letterSettings() {
-        return ResponseEntity.ok(settingsService.toResponse(settingsService.getSettings()));
-    }
-
-    @PutMapping("/letter-settings")
-    public ResponseEntity<EndorsementLetterSettingsResponse> updateLetterSettings(
-            @RequestBody EndorsementLetterSettingsRequest request) {
-        Long actorId = currentUser.requireUserId();
-        return ResponseEntity.ok(settingsService.toResponse(
-                settingsService.update(request, actorId, endorsementService.accountName(actorId))));
     }
 
     // ==================== ERROR MAPPING ====================

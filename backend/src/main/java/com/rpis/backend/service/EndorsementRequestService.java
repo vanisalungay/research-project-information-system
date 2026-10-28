@@ -320,7 +320,11 @@ public class EndorsementRequestService {
         // The IFP wording may only be used for a Call for Proposal that has an official
         // endorsement letter template.
         EndorsementLetterTemplates.requireImplemented(announcement.getFundingProgram());
-        EndorsementLetterSettings settings = settingsService.requireComplete();
+        // The office and the university printed on the letter come from the settings row,
+        // which carries the official wording as its default. This is NOT a requirement:
+        // the ORPS Director is no longer configured anywhere, so a missing or empty
+        // settings row must never block an endorsement.
+        EndorsementLetterSettings settings = settingsService.getSettings();
 
         String endorserName = firstNonBlank(trimmed(request.getEndorserName()), dean.getName());
         String designation = firstNonBlank(trimmed(request.getEndorserDesignation()),
@@ -473,7 +477,8 @@ public class EndorsementRequestService {
                 .orElseThrow(() -> new IllegalStateException(
                         "The Call for Proposal of this request no longer exists."));
         EndorsementLetterTemplates.requireImplemented(announcement.getFundingProgram());
-        EndorsementLetterSettings settings = settingsService.requireComplete();
+        // Optional wording only, never a requirement; see EndorsementLetterSettingsService.
+        EndorsementLetterSettings settings = settingsService.getSettings();
 
         Long signerId = entity.getDecidedByUserId();
         byte[] signature = signerId == null ? null : readSignature(signerId);

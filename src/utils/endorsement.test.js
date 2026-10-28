@@ -24,13 +24,13 @@ import {
   isEndorsementRequestValid,
   isPending,
   isRejected,
-  letterSettingsNotice,
   normalizeEndorsementStatus,
   suggestedLetterFileName,
   validateApproval,
   validateEndorsementRequest,
   validateRejection,
 } from './endorsement.js'
+import * as endorsementModule from './endorsement.js'
 
 const VALID_REQUEST = {
   proposalTitle: 'Mangrove Rehabilitation Study',
@@ -170,7 +170,9 @@ test('the Approve action explains why it is unavailable', () => {
     }),
     /No official endorsement letter is configured for Externally Funded Project Proposal/,
   )
-  assert.match(approveBlockedReason(pending, { settingsComplete: false }), /ORPS Director/)
+  // The obsolete ORPS Director configuration can never block approval: the option that
+  // used to carry it is gone, and passing it changes nothing.
+  assert.equal(approveBlockedReason(pending, { settingsComplete: false }), '')
   assert.match(approveBlockedReason(pending, { hasSignature: false }), /electronic signature/)
 })
 
@@ -186,10 +188,14 @@ test('a non-IFP call reports its program', () => {
   assert.equal(fundingProgramLabel({}), 'Unspecified funding program')
 })
 
-test('the Director notice appears only while the settings are incomplete', () => {
-  assert.equal(letterSettingsNotice({ complete: true }), '')
-  assert.equal(letterSettingsNotice(null), '')
-  assert.match(letterSettingsNotice({ complete: false }), /ORPS Director is not configured/)
+test('the obsolete letter-settings helpers are gone from the module', () => {
+  // Removing them is what makes "a missing ORPS Director cannot block an endorsement"
+  // structural instead of a rule someone has to remember: no client helper is left that
+  // fetches, saves or reports that configuration.
+  assert.equal(endorsementModule.fetchLetterSettings, undefined)
+  assert.equal(endorsementModule.saveLetterSettings, undefined)
+  assert.equal(endorsementModule.letterSettingsNotice, undefined)
+  assert.equal(endorsementModule.buildLetterSettingsPayload, undefined)
 })
 
 test('the issued letter has a stable suggested file name', () => {

@@ -3,16 +3,9 @@
     <div class="end-page-header">
       <h2>Welcome, {{ displayName }}!</h2>
       <p class="end-subtitle">
-        Review and decide the endorsement requests of your college, and keep the
-        official endorsement letter details up to date.
+        Review and decide the endorsement requests of your college. Everything waiting for
+        your decision, and everything you have decided recently, is summarised below.
       </p>
-    </div>
-
-    <div v-if="settingsNotice" class="end-banner is-info">
-      <span>{{ settingsNotice }}</span>
-      <router-link class="end-banner-link" to="/dean-endorsement-settings">
-        Open letter settings
-      </router-link>
     </div>
 
     <div class="end-stats">
@@ -125,9 +118,7 @@ import {
   endorsementStatusLabel,
   endorsementStatusTone,
   fetchEndorsementRequests,
-  fetchLetterSettings,
   formatEndorsementTimestamp,
-  letterSettingsNotice,
 } from '@/utils/endorsement.js'
 
 const userStore = useUserDataStore()
@@ -136,7 +127,6 @@ const displayName = computed(() => userStore.user?.name || 'Dean')
 const requests = ref([])
 const loading = ref(true)
 const error = ref('')
-const settingsNotice = ref('')
 
 const pending = computed(() =>
   requests.value.filter((request) => request.status === ENDORSEMENT_STATUS.PENDING),
@@ -163,15 +153,5 @@ async function load() {
   }
 }
 
-async function loadSettingsNotice() {
-  try {
-    settingsNotice.value = letterSettingsNotice(await fetchLetterSettings())
-  } catch {
-    settingsNotice.value = ''
-  }
-}
-
-onMounted(async () => {
-  await Promise.all([load(), loadSettingsNotice()])
-})
+onMounted(load)
 </script>

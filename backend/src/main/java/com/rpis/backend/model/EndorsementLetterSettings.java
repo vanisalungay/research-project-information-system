@@ -8,15 +8,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * The institutional facts the official endorsement letter is addressed with. They
- * are held as a single administrative setting (row id = 1) rather than hardcoded,
- * because the Director's name and surname are not available anywhere in the
- * repository and must be supplied by an authorized administrator - inventing them
- * would put a fabricated recipient on an official university document.
+ * The institutional wording of the official endorsement letter: the office and the
+ * university it is addressed with. They are held as a single administrative setting
+ * (row id = 1) rather than hardcoded, and default to the official wording.
  *
- * <p>The office name, the designation and the university name default to the
- * wording of the official template (and the university name is the one already used
- * throughout RPIS).
+ * <p><b>The ORPS Director is no longer part of the workflow.</b> The letter is addressed
+ * to the office, so the Director's name and surname are not required by anything: the
+ * fields below are legacy data that is preserved (nothing is dropped from the database),
+ * and no screen, endpoint or validation asks for them any more.
  */
 @Entity
 @Table(name = "endorsement_letter_settings")
@@ -36,11 +35,17 @@ public class EndorsementLetterSettings {
     @Id
     private Long id = SETTINGS_ID;
 
-    /** Given name(s) of the ORPS Director the letter is addressed to. */
+    /**
+     * Given name(s) of the ORPS Director. Legacy: nothing reads this any more (the letter
+     * is addressed to the office). The column and its stored values are kept as they are.
+     */
     @Column(name = "director_name")
     private String directorName;
 
-    /** Surname of the ORPS Director, used in the salutation ("Dear Director <Surname>:"). */
+    /**
+     * Surname of the ORPS Director, formerly used in the salutation. Legacy, like
+     * {@link #directorName}: preserved, never required.
+     */
     @Column(name = "director_surname")
     private String directorSurname;
 
@@ -62,10 +67,7 @@ public class EndorsementLetterSettings {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    /** True when every field the official letter needs is present. */
-    @Transient
-    public boolean isComplete() {
-        return directorName != null && !directorName.isBlank()
-                && directorSurname != null && !directorSurname.isBlank();
-    }
+    // The "is the Director configured?" check is gone with the ORPS Director requirement:
+    // the letter is addressed to the office, so nothing here has to be complete before a
+    // document can be issued.
 }

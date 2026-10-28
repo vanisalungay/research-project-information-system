@@ -29,8 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>These are the rules the feature rests on: only a Faculty Proponent may raise a
  * request, only a Dean may approve or reject one, only an RPS administrator may grant
- * the Dean role or change the endorsement letter settings, and no route is reachable
- * anonymously. The service layer re-checks ownership and scope on top of this.
+ * the Dean role, and no route is reachable anonymously. The service layer re-checks
+ * ownership and scope on top of this.
  *
  * <p>Runs against the isolated {@code rpis_test} database only.
  */
@@ -148,20 +148,23 @@ class EndorsementSecurityTest {
         mockMvc.perform(withToken(get("/api/endorsements"), deanToken)).andExpect(status().isOk());
     }
 
-    // ==================== LETTER SETTINGS ====================
+    // ==================== LETTER SETTINGS (REMOVED) ====================
 
+    /**
+     * The obsolete endorsement letter settings are gone: the ORPS Director is no longer
+     * configured in this workflow, so the route that used to read and write that
+     * configuration no longer exists. Asserting it keeps a reintroduction visible.
+     *
+     * <p>The URL is now just an unknown value: a GET falls through to the "one request by
+     * id" route, which refuses a non-numeric id with 400, and a PUT has no mapping for that
+     * path at all (405). Either way nothing reads or writes the old configuration.
+     */
     @Test
-    void onlyAnAdministratorMayChangeTheLetterSettings() throws Exception {
-        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), proponentToken))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), deanToken))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), staffToken))
-                .andExpect(status().isForbidden());
-
-        // Reading them is allowed for every authenticated user.
+    void theObsoleteLetterSettingsRouteIsGone() throws Exception {
         mockMvc.perform(withToken(get("/api/endorsements/letter-settings"), deanToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), adminToken))
+                .andExpect(status().isMethodNotAllowed());
     }
 
     // ==================== DEAN ACCOUNTS ====================
@@ -214,7 +217,7 @@ class EndorsementSecurityTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(withToken(post("/api/users/deans"), deanToken))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(withToken(put("/api/endorsements/letter-settings"), deanToken))
+        mockMvc.perform(withToken(post("/api/users/seed"), deanToken))
                 .andExpect(status().isForbidden());
         mockMvc.perform(withToken(put("/api/proposals/1/field-remarks"), deanToken))
                 .andExpect(status().isForbidden());

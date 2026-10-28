@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,12 +49,11 @@ class EndorsementLetterServiceTest {
     void setUp() {
         // No configured font file: the service uses its built-in Helvetica fallback.
         service = new EndorsementLetterService("");
+        // No ORPS Director is configured anywhere: the obsolete name and surname fields are
+        // left unset on purpose, and the office/university fall back to the official
+        // defaults the entity carries. Every test below therefore renders a letter for a
+        // deployment where that configuration was never supplied.
         settings = new EndorsementLetterSettings();
-        settings.setDirectorName("Dr. Eduardo");
-        settings.setDirectorSurname("Salazar");
-        settings.setDirectorDesignation("Director");
-        settings.setOfficeName("Office of Research and Publication Services (ORPS)");
-        settings.setUniversityName("Mindanao State University at Naawan");
     }
 
     private EndorsementLetterService.LetterContext context(String title) {
@@ -178,17 +178,36 @@ class EndorsementLetterServiceTest {
 
         assertTrue(text.contains(COLLEGE), text);
         assertTrue(text.contains("Date: October 27, 2026"), text);
-        assertTrue(text.contains("Dr. Eduardo Salazar"), text);
+        assertTrue(text.contains("The Director"), text);
         assertTrue(text.contains("Office of Research and Publication Services (ORPS)"), text);
         assertTrue(text.contains("Mindanao State University at Naawan"), text);
         assertTrue(text.contains("Subject: Endorsement of Internally Funded Project Proposal"), text);
-        assertTrue(text.contains("Dear Director Salazar:"), text);
+        assertTrue(text.contains("Dear Madam:"), text);
         assertTrue(text.contains(TITLE), text);
         assertTrue(text.contains(PROPONENT), text);
         assertTrue(text.contains(COLLEGE + "."), text);
         assertTrue(text.contains("Respectfully yours,"), text);
         assertTrue(text.contains(DEAN), text);
         assertTrue(text.contains("Dean, " + COLLEGE), text);
+    }
+
+    /**
+     * The addressee no longer depends on the obsolete ORPS Director configuration: the
+     * letter is addressed to the office, and the office and the university are printed
+     * from the settings row's official defaults when nothing was ever configured.
+     */
+    @Test
+    void theAddresseeIsTheOfficeAndNeedsNoDirectorConfiguration() throws Exception {
+        String text = normalizedTextOf(service.generate(context(TITLE)).content());
+
+        assertTrue(text.contains("The Director"), text);
+        assertTrue(text.contains(EndorsementLetterSettings.DEFAULT_OFFICE_NAME), text);
+        assertTrue(text.contains(EndorsementLetterSettings.DEFAULT_UNIVERSITY_NAME), text);
+        assertTrue(text.contains("Dear Madam:"), text);
+
+        // The obsolete fields are not printed at all - not even as a placeholder.
+        assertFalse(text.contains("Salazar"), text);
+        assertFalse(text.contains("Dear Director "), text);
     }
 
     @Test

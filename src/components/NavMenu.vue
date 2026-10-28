@@ -78,7 +78,7 @@ const allNavItems = [
     iconKey: 'dashboard',
     text: 'Dashboard',
     path: '/home',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
+    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF, UserRole.PROPONENT, UserRole.DEAN, UserRole.OVCAF, UserRole.OVCRIGE, UserRole.REC, UserRole.OC],
     section: 'main',
   },
 
@@ -151,9 +151,11 @@ const allNavItems = [
     section: 'main',
   },
 
-  // Dean / Department Chair: reviews and decides the endorsement requests of their
-  // own college. Shown in the sidebar so the endorsement workflow is reachable from
-  // the main navigation, as the monitoring pages are.
+  // Dean / Department Chair: the whole Dean workflow in three items - the dashboard
+  // (the shared /home item above, which renders the Dean dashboard for this role), the
+  // endorsement requests of their own college, and notifications. There is deliberately
+  // no Endorsement Letter Settings entry: the ORPS Director is no longer configured, so
+  // nothing has to be set up before a request can be reviewed or decided.
   {
     iconKey: 'endorse',
     text: 'Endorsement Requests',
@@ -166,13 +168,6 @@ const allNavItems = [
     text: 'Notifications',
     path: '/notifications',
     roles: [UserRole.DEAN],
-    section: 'main',
-  },
-  {
-    iconKey: 'settings',
-    text: 'Endorsement Letter Settings',
-    path: '/dean-endorsement-settings',
-    roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
     section: 'main',
   },
 
@@ -324,7 +319,13 @@ const showHelpCard = computed(
   () => !props.collapsed && HELP_CARD_ROLES.includes(userStore.user?.role),
 )
 
-const isSelected = (path) => route.path === path
+/**
+ * True when the item is the page the user is on. A nested route counts as its parent,
+ * so /dean-requests/7 keeps "Endorsement Requests" highlighted (and /proposals/7 keeps
+ * "Proposals"): the item the user actually navigated from stays marked while they are
+ * inside it.
+ */
+const isSelected = (path) => route.path === path || route.path.startsWith(`${path}/`)
 
 /**
  * The unread count badge. It is attached to the Notifications link only and comes from

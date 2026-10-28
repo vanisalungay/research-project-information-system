@@ -20,13 +20,6 @@
     </div>
 
     <template v-else>
-      <div v-if="settingsNotice" class="end-banner is-info">
-        <span>{{ settingsNotice }}</span>
-        <router-link class="end-banner-link" to="/dean-endorsement-settings">
-          Open letter settings
-        </router-link>
-      </div>
-
       <div class="end-toolbar">
         <select v-model="statusFilter" class="end-select" @change="load">
           <option v-for="option in filters" :key="option.value" :value="option.value">
@@ -92,11 +85,9 @@ import {
   endorsementStatusLabel,
   endorsementStatusTone,
   fetchEndorsementRequests,
-  fetchLetterSettings,
   formatEndorsementTimestamp,
   fundingProgramLabel,
   isPending,
-  letterSettingsNotice,
 } from '@/utils/endorsement.js'
 
 const filters = ENDORSEMENT_FILTERS
@@ -104,7 +95,6 @@ const requests = ref([])
 const loading = ref(true)
 const error = ref('')
 const statusFilter = ref('')
-const settingsNotice = ref('')
 
 async function load() {
   loading.value = true
@@ -119,16 +109,5 @@ async function load() {
   }
 }
 
-async function loadSettingsNotice() {
-  try {
-    settingsNotice.value = letterSettingsNotice(await fetchLetterSettings())
-  } catch {
-    // The notice is informative only; a failure must not hide the request list.
-    settingsNotice.value = ''
-  }
-}
-
-onMounted(async () => {
-  await Promise.all([load(), loadSettingsNotice()])
-})
+onMounted(load)
 </script>

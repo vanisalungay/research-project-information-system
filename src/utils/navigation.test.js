@@ -112,21 +112,87 @@ test('the Proponent can reach the endorsement workflow and Certifications', () =
   }
 })
 
-test('the Dean can reach the endorsement requests and the letter settings', () => {
-  const paths = pathsFor('DEAN')
+test('the Dean sees exactly the three Dean items, and nothing obsolete', () => {
+  const items = navItems().filter((item) => item.roles.includes('DEAN'))
+  const main = items.filter((item) => item.section === 'main')
+  const bottom = items.filter((item) => item.section === 'bottom')
 
-  assert.ok(paths.includes('/dean-requests'), 'a Dean must reach the endorsement requests')
-  assert.ok(paths.includes('/dean-endorsement-settings'), 'a Dean must reach the letter settings')
+  // Dashboard, Endorsement Requests, Notifications - in that order, and nothing else.
+  assert.deepEqual(
+    main.map((item) => item.text),
+    ['Dashboard', 'Endorsement Requests', 'Notifications'],
+    'the Dean main navigation must be exactly Dashboard, Endorsement Requests, Notifications',
+  )
+  assert.deepEqual(
+    main.map((item) => item.path),
+    ['/home', '/dean-requests', '/notifications'],
+    'each Dean item must point at its own route',
+  )
+
+  // Dashboard is the shared /home route, which renders the Dean dashboard for this role,
+  // so clicking it always returns to the Dean dashboard.
+  const dashboard = main.find((item) => item.text === 'Dashboard')
+  assert.ok(dashboard.roles.includes('DEAN'), 'Dashboard must be offered to the Dean')
+
+  // Profile Settings stays: Manage Profile -> Electronic Signature is where the Dean
+  // saves the signature the endorsement letter is signed with.
+  assert.deepEqual(bottom.map((item) => item.text), ['Profile Settings'])
+
+  // The obsolete letter-settings screen is gone from every role's navigation.
+  for (const role of roleKeys()) {
+    assert.ok(
+      !pathsFor(role).includes('/dean-endorsement-settings'),
+      `${role} must not be offered the obsolete endorsement letter settings`,
+    )
+  }
 })
 
-test('the administrator can reach the Dean accounts and the letter settings', () => {
+test('the Dean sidebar is the same on every Dean route', () => {
+  // The visible items are a static configuration filtered by the signed-in role only, so
+  // every Dean page - including a direct load or a refresh of any of them - produces the
+  // same three items. Nothing in the filter may depend on the current route.
+  const source = readFileSync(NAV_FILE, 'utf8')
+  const start = source.indexOf('const filteredItems')
+  const end = source.indexOf('const mainNavItems')
+  assert.ok(start !== -1 && end > start, 'the navigation filter must be declared')
+
+  const filter = source.slice(start, end)
+  assert.match(filter, /userStore\.user\??\.role/, 'the items must be filtered by role')
+  assert.ok(
+    !filter.includes('route.path'),
+    'the visible items must not depend on the current route',
+  )
+
+  assert.deepEqual(
+    pathsFor('DEAN'),
+    ['/home', '/dean-requests', '/notifications', '/manage-profile'],
+    'the same items on every Dean route: the three Dean items plus the shared Profile Settings',
+  )
+})
+
+test('a nested Dean route keeps its parent item highlighted', () => {
+  const source = readFileSync(NAV_FILE, 'utf8')
+  const match = source.match(/const isSelected = \(path\) => ([^\n]+)\n/)
+  assert.ok(match, 'isSelected must be a single-line arrow function in NavMenu.vue')
+
+  // Evaluate the shipped expression with a stub route, so this asserts the behaviour
+  // rather than the text of the line.
+  const onReview = new Function('route', `return (path) => ${match[1]}`)({
+    path: '/dean-requests/7',
+  })
+  assert.equal(onReview('/dean-requests'), true, 'the review page keeps its list highlighted')
+  assert.equal(onReview('/home'), false, 'an unrelated item is not highlighted')
+  assert.equal(onReview('/notifications'), false)
+
+  const onList = new Function('route', `return (path) => ${match[1]}`)({ path: '/dean-requests' })
+  assert.equal(onList('/dean-requests'), true, 'the list page highlights its own item')
+  assert.equal(onList('/notifications'), false)
+})
+
+test('the administrator can reach the Dean accounts and the Call for Proposal', () => {
   const paths = pathsFor('RPS_ADMIN')
 
   assert.ok(paths.includes('/user-accounts'), 'an administrator must reach the user accounts')
-  assert.ok(
-    paths.includes('/dean-endorsement-settings'),
-    'an administrator must reach the endorsement letter settings',
-  )
   assert.ok(
     paths.includes('/proposal-announcements'),
     'an administrator must reach the Call for Proposal management',

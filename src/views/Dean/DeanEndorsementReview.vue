@@ -269,7 +269,6 @@ import {
   fetchEndorsementDocument,
   fetchEndorsementEvents,
   fetchEndorsementRequest,
-  fetchLetterSettings,
   formatEndorsementDate,
   formatEndorsementTimestamp,
   fundingProgramLabel,
@@ -298,7 +297,6 @@ const busy = ref(false)
 const actionMessage = ref('')
 const actionError = ref('')
 const hasSignature = ref(false)
-const settings = ref(null)
 
 const showApprovalErrors = ref(false)
 const showRejectionErrors = ref(false)
@@ -319,10 +317,7 @@ const rejectionErrors = computed(() => validateRejection(rejectionForm))
  * every rule; this only explains the state on screen.
  */
 const blockedReason = computed(() =>
-  approveBlockedReason(request.value, {
-    hasSignature: hasSignature.value,
-    settingsComplete: settings.value?.complete !== false,
-  }),
+  approveBlockedReason(request.value, { hasSignature: hasSignature.value }),
 )
 
 const EVENT_LABELS = {
@@ -359,14 +354,6 @@ async function loadSignatureState() {
     hasSignature.value = signatures.length > 0
   } catch {
     hasSignature.value = false
-  }
-}
-
-async function loadSettings() {
-  try {
-    settings.value = await fetchLetterSettings()
-  } catch {
-    settings.value = null
   }
 }
 
@@ -491,6 +478,6 @@ async function downloadLetter() {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadSignatureState(), loadSettings()])
+  await Promise.all([load(), loadSignatureState()])
 })
 </script>

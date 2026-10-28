@@ -74,8 +74,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/seed").hasRole(UserRoles.RPS_ADMIN)
 
                         // Dean endorsement workflow. The requesting Proponent raises the
-                        // request; only a Dean may approve, reject or reissue it; the
-                        // letter settings are writable by an RPS_ADMIN only. Every route
+                        // request; only a Dean may approve, reject or reissue it. Every route
                         // is additionally scoped in EndorsementRequestService, so the
                         // frontend never decides who may see or decide what.
                         .requestMatchers(HttpMethod.POST, "/api/endorsements").hasRole(UserRoles.PROPONENT)
@@ -83,7 +82,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/endorsements/*/reject").hasRole(UserRoles.DEAN)
                         .requestMatchers(HttpMethod.PUT, "/api/endorsements/*/reissue")
                         .hasAnyRole(UserRoles.DEAN, UserRoles.RPS_ADMIN)
-                        .requestMatchers(HttpMethod.PUT, "/api/endorsements/letter-settings").hasRole(UserRoles.RPS_ADMIN)
                         .requestMatchers("/api/endorsements/**", "/api/endorsements").authenticated()
 
                         // Certifications: the Proponent's own documents (the service

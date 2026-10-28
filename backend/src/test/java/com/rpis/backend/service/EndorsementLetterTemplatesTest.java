@@ -12,6 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The funding-program registry behind the letter templates: only the Internally
  * Funded Project (IFP) letter exists, so a call for any other program must be
  * refused rather than silently rendered with IFP wording.
+ *
+ * <p>The ORPS Director configuration is no longer part of this registry or of the
+ * letter: the letter is addressed to the office, so no administrative setup can
+ * block it.
  */
 class EndorsementLetterTemplatesTest {
 
@@ -50,17 +54,5 @@ class EndorsementLetterTemplatesTest {
     void theImplementedProgramIsAcceptedByTheGuard() {
         EndorsementLetterTemplates.requireImplemented("IFP");
         EndorsementLetterTemplates.requireImplemented(null);
-    }
-
-    @Test
-    void theLetterSettingsReportWhenTheDirectorIsMissing() {
-        EndorsementLetterSettings settings = new EndorsementLetterSettings();
-        assertFalse(settings.isComplete());
-
-        settings.setDirectorName("Dr. Eduardo");
-        assertFalse(settings.isComplete());
-
-        settings.setDirectorSurname("Salazar");
-        assertTrue(settings.isComplete());
     }
 }

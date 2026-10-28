@@ -77,6 +77,17 @@ public class EndorsementLetterService {
     /** Single line spacing of the official template, in points. */
     static final float LINE_HEIGHT = 14f;
 
+    /**
+     * The addressee line of the letter: the office the endorsement is sent to, never a
+     * named person. The ORPS Director's name and surname used to be configured for this
+     * line; that configuration is obsolete, so the line is fixed and no name has to be
+     * supplied (or invented) anywhere.
+     */
+    private static final String ADDRESSEE = "The Director";
+
+    /** The salutation. It no longer names the Director, so it needs no configuration. */
+    private static final String SALUTATION = "Dear Madam:";
+
     // ---- Letterhead source image and the template's crop rectangles -------------
     static final int LETTERHEAD_PIXELS_WIDE = 1768;
     static final int LETTERHEAD_PIXELS_TALL = 2500;
@@ -303,9 +314,10 @@ public class EndorsementLetterService {
      * The letter body, in the order and with the wording of the official template.
      * Only the placeholders are populated, and they are populated from the saved
      * records: the proposal title and the faculty name from the endorsement request,
-     * the college/department from the request, the date from the endorsement date,
-     * and the Director, the office and the university from the administrative
-     * settings.
+     * the college/department from the request, the date from the endorsement date, and
+     * the office and the university from the administrative settings (which carry the
+     * official wording as their defaults). The addressee and the salutation are fixed:
+     * the letter is addressed to the office, not to a named person.
      */
     private List<Paragraph> bodyParagraphs(LetterContext context, Font body, Font bold) {
         EndorsementLetterSettings settings = context.settings();
@@ -316,17 +328,19 @@ public class EndorsementLetterService {
         paragraphs.add(line("Date: " + formatDate(context.endorsementDate()), body));
         paragraphs.add(spacer());
 
-        // Addressee block: the ORPS Director, in bold, then the office and the
-        // university, exactly as the template prints them.
-        paragraphs.add(line(directorFullName(settings), bold));
-        paragraphs.add(line(settings.getDirectorDesignation(), body));
+        // Addressee block: the office the letter is sent to. The ORPS Director's personal
+        // name and surname are deliberately not printed any more - that configuration is
+        // obsolete and a name would otherwise have to be invented. The office and the
+        // university come from the settings row, which carries the official wording as
+        // its default, so they are always available.
+        paragraphs.add(line(ADDRESSEE, bold));
         paragraphs.add(line(settings.getOfficeName(), body));
         paragraphs.add(line(settings.getUniversityName(), body));
         paragraphs.add(spacer());
 
         paragraphs.add(line("Subject: Endorsement of Internally Funded Project Proposal", bold));
         paragraphs.add(spacer());
-        paragraphs.add(line("Dear Director " + settings.getDirectorSurname() + ":", body));
+        paragraphs.add(line(SALUTATION, body));
         paragraphs.add(spacer());
 
         paragraphs.add(submissionParagraph(context, body, bold));
@@ -389,15 +403,6 @@ public class EndorsementLetterService {
     /** Words that already name an organizational unit in the RPIS college values. */
     private static final List<String> UNIT_WORDS = List.of(
             "college", "school", "institute", "department", "integrated", "faculty", "campus");
-
-    private static String directorFullName(EndorsementLetterSettings settings) {
-        String name = settings.getDirectorName() == null ? "" : settings.getDirectorName().trim();
-        String surname = settings.getDirectorSurname() == null
-                ? ""
-                : settings.getDirectorSurname().trim();
-        String full = (name + " " + surname).trim();
-        return full.isEmpty() ? "\u2014" : full;
-    }
 
     /**
      * Draws the closing and the signature block. The closing line, the Dean's

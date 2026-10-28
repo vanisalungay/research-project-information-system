@@ -1,7 +1,6 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.EndorsementDecisionRequest;
-import com.rpis.backend.dto.EndorsementLetterSettingsRequest;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
 import com.rpis.backend.model.EndorsementRequest;
@@ -77,8 +76,6 @@ class EndorsementWorkflowPostgresTest {
     @Autowired
     private EndorsementRequestService endorsementService;
     @Autowired
-    private EndorsementLetterSettingsService settingsService;
-    @Autowired
     private CertificationService certificationService;
     @Autowired
     private UserSignatureService signatureService;
@@ -133,8 +130,9 @@ class EndorsementWorkflowPostgresTest {
         signatureService.saveSignature(dean.getId(), signatureUpload());
         dean = userRepository.findById(dean.getId()).orElseThrow();
 
-        // The administrative letter settings must be complete before a letter is issued.
-        settingsService.update(letterSettings("Dr. Eduardo", "Salazar"), admin.getId(), admin.getName());
+        // Nothing else is configured. In particular there is no ORPS Director and no letter
+        // settings row: every test below therefore proves the endorsement workflow works
+        // without that obsolete configuration.
     }
 
     @AfterEach
@@ -188,13 +186,6 @@ class EndorsementWorkflowPostgresTest {
         announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
         announcement.setFundingProgram(fundingProgram);
         return announcementRepository.saveAndFlush(announcement);
-    }
-
-    private EndorsementLetterSettingsRequest letterSettings(String name, String surname) {
-        EndorsementLetterSettingsRequest request = new EndorsementLetterSettingsRequest();
-        request.setDirectorName(name);
-        request.setDirectorSurname(surname);
-        return request;
     }
 
     private MockMultipartFile signatureUpload() {
@@ -546,19 +537,27 @@ class EndorsementWorkflowPostgresTest {
         assertEquals("PENDING", requestRepository.findById(request.getId()).orElseThrow().getStatus());
     }
 
+    /**
+     * The regression this change fixes: an unconfigured ORPS Director used to make approval
+     * impossible (409 CONFLICT) even though nothing else was wrong. The settings are now
+     * wording only, so an empty settings table must not stop the Dean - the letter is
+     * addressed to the office instead of to a named person.
+     */
     @Test
-    void anIncompleteLetterSettingBlocksIssuance() {
-        EndorsementRequestResponse request = submittedRequest("No Director configured");
+    void anApprovalNeedsNoLetterSettingsConfiguration() {
+        EndorsementRequestResponse request = submittedRequest("No letter settings configured");
 
-        // Clearing the settings leaves the Director unset, which must block the letter.
+        // setUp configures nothing; clearing again makes the empty state explicit so the
+        // test cannot pass by accident on a database that still holds a settings row.
         settingsRepository.deleteAll();
 
         authenticateAs(dean);
-        IllegalStateException error = assertThrows(IllegalStateException.class,
-                () -> endorsementService.approve(request.getId(), approval()));
-        assertTrue(error.getMessage().contains("Director is not configured"), error.getMessage());
-        assertEquals("PENDING", requestRepository.findById(request.getId()).orElseThrow().getStatus());
-        assertEquals(0, certificationRepository.findAll().size());
+        EndorsementRequestResponse approved = endorsementService.approve(request.getId(), approval());
+
+        assertEquals("APPROVED", approved.getStatus());
+        assertTrue(approved.isHasLetter(), "the official letter must still be issued");
+        assertEquals(1, certificationRepository.findAll().size(),
+                "the issued letter must still be filed in Certifications");
     }
 
     @Test
