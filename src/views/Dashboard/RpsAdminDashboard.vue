@@ -114,114 +114,6 @@
       </div>
     </div>
 
-    <!-- Proposal Stats Row -->
-    <h3 class="section-title" style="margin-top: 28px;">Proposal Overview</h3>
-    <div class="stats-row">
-      <div class="stat-card blue-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Total Proposals</span>
-          <h3 class="stat-value">{{ totalProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper blue">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card yellow-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Pending Review</span>
-          <h3 class="stat-value">{{ pendingProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper yellow">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card green-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Endorsed</span>
-          <h3 class="stat-value">{{ endorsedProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper green">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="stat-card purple-accent">
-        <div class="stat-meta">
-          <span class="stat-label">Completed</span>
-          <h3 class="stat-value">{{ completedProposals }}</h3>
-        </div>
-        <div class="stat-icon-wrapper purple">
-          <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 13l4 4L19 7"/>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent Submissions -->
-    <div class="main-panel">
-      <div class="panel-header">
-        <h3>RECENT SUBMISSIONS</h3>
-        <button class="view-all-btn" @click="$router.push('/rps-subproposal')">View All &rarr;</button>
-      </div>
-
-      <div v-if="recentProposals.length > 0" class="table-container">
-        <table class="proposal-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Project Leader</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th class="text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="prop in recentProposals" :key="prop.id">
-              <td class="font-bold">{{ prop.projectTitle || 'Untitled' }}</td>
-              <td>{{ prop.projectLeader || prop.proponent?.name || 'Unknown' }}</td>
-              <td>
-                <span :class="['status-badge', getStatusClass(prop.status)]">{{ formatStatus(prop.status) }}</span>
-              </td>
-              <td>{{ formatDate(prop.createdAt) }}</td>
-              <td class="text-right">
-                <button class="table-review-btn" @click="$router.push(`/proposal/${prop.id}`)">View</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-else class="empty-state">
-        <h3>No Proposals Yet</h3>
-        <p>Research proposals will appear here once faculty submit drafts.</p>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions-panel">
-      <h3 class="section-title">Quick Actions</h3>
-      <div class="quick-action-row">
-        <button class="hub-btn primary" @click="$router.push('/user-accounts')">
-          Manage User Accounts
-        </button>
-        <button class="hub-btn secondary" @click="$router.push('/rps-subproposal')">
-          View All Proposals
-        </button>
-        <button class="hub-btn secondary" @click="$router.push('/notifications')">
-          Notifications
-        </button>
-      </div>
-    </div>
-
     <!-- Success Toast -->
     <div v-if="showToast" class="toast" :class="toastType">
       {{ toastMessage }}
@@ -234,7 +126,6 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 
 const users = ref([])
-const proposals = ref([])
 const isLoading = ref(true)
 const actionLoading = ref(false)
 const showToast = ref(false)
@@ -248,15 +139,6 @@ const approvedUsers = computed(() => users.value.filter(u => u.status === 'APPRO
 const rejectedUsers = computed(() => users.value.filter(u => u.status === 'REJECTED').length)
 const pendingUsersList = computed(() => users.value.filter(u => u.status === 'PENDING').slice(0, 5))
 
-// Proposal stats
-const totalProposals = computed(() => proposals.value.length)
-const pendingProposals = computed(() => proposals.value.filter(p => p.status === 'SUBMITTED' || p.status === 'PENDING').length)
-const endorsedProposals = computed(() => proposals.value.filter(p => p.status === 'ENDORSED' || p.status === 'APPROVED' || p.status === 'REC_APPROVED').length)
-const completedProposals = computed(() => proposals.value.filter(p => p.status === 'COMPLETED' || p.status === 'RELEASED' || p.status === 'IMPLEMENTATION').length)
-const recentProposals = computed(() => {
-  return [...proposals.value].sort((a, b) => b.id - a.id).slice(0, 5)
-})
-
 const formatRole = (role) => {
   const map = { PROPONENT: 'Proponent', DEAN: 'Dean', RPS_ADMIN: 'RPS Admin', RPS_STAFF: 'RPS Staff', OVCRIGE: 'OVCRIGE', OVCAF: 'OVCAF', REC: 'REC', OC: 'Chancellor' }
   return map[role] || role
@@ -265,19 +147,6 @@ const formatRole = (role) => {
 const getRoleClass = (role) => {
   const map = { PROPONENT: 'role-proponent', DEAN: 'role-dean', RPS_ADMIN: 'role-admin', RPS_STAFF: 'role-staff', OVCRIGE: 'role-ovcrige', OVCAF: 'role-ovcaf', REC: 'role-rec', OC: 'role-oc' }
   return map[role] || ''
-}
-
-const formatStatus = (status) => {
-  const map = { DRAFT: 'Draft', SUBMITTED: 'Submitted', PENDING: 'Pending', ENDORSED: 'Endorsed', UNDER_REVIEW: 'Under Review', APPROVED: 'Approved', REJECTED: 'Rejected', REVISION: 'Revision', RPS_RETURNED: 'Returned', COMPLETED: 'Completed', RELEASED: 'Released', IMPLEMENTATION: 'Implementation' }
-  return map[status] || status
-}
-
-const getStatusClass = (status) => {
-  if (['APPROVED', 'COMPLETED', 'RELEASED', 'IMPLEMENTATION'].includes(status)) return 'status-green'
-  if (['ENDORSED', 'REC_APPROVED'].includes(status)) return 'status-blue'
-  if (['SUBMITTED', 'PENDING', 'UNDER_REVIEW'].includes(status)) return 'status-yellow'
-  if (['REJECTED', 'REVISION', 'RPS_RETURNED'].includes(status)) return 'status-red'
-  return 'status-gray'
 }
 
 const formatDate = (dateString) => {
@@ -323,15 +192,14 @@ const rejectUser = async (user) => {
 const loadDashboardData = async () => {
   try {
     isLoading.value = true
-    const [usersRes, proposalsRes] = await Promise.all([
-      api.get('/api/users'),
-      api.get('/api/proposals')
-    ])
+    // This dashboard shows the account queue only. The two sections that read
+    // /api/proposals were removed, so the request is not made any more; the endpoint and
+    // every other page that uses it are unchanged.
+    const usersRes = await api.get('/api/users')
     users.value = (Array.isArray(usersRes.data) ? usersRes.data : []).map(u => ({
       ...u,
       status: (u.status || 'APPROVED').toUpperCase()
     }))
-    proposals.value = Array.isArray(proposalsRes.data) ? proposalsRes.data : []
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   } finally {
@@ -434,7 +302,6 @@ onMounted(loadDashboardData)
 .green-accent { border-left: 4px solid #10b981; }
 .yellow-accent { border-left: 4px solid #f59e0b; }
 .red-accent { border-left: 4px solid #ef4444; }
-.purple-accent { border-left: 4px solid #8b5cf6; }
 
 .stat-meta { text-align: left; }
 
@@ -471,7 +338,6 @@ onMounted(loadDashboardData)
 .green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 .yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 .red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
 
 /* Main Panel */
 .main-panel {
@@ -588,21 +454,6 @@ onMounted(loadDashboardData)
 .role-rec { background: #ede9fe; color: #6d28d9; }
 .role-oc { background: #fee2e2; color: #991b1b; }
 
-/* Status Badges */
-.status-badge {
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.status-green { background: #dcfce7; color: #166534; }
-.status-blue { background: #dbeafe; color: #1e40af; }
-.status-yellow { background: #fef3c7; color: #92400e; }
-.status-red { background: #fee2e2; color: #991b1b; }
-.status-gray { background: #f1f5f9; color: #64748b; }
-
 /* Action Buttons */
 .action-btns {
   display: flex;
@@ -640,20 +491,6 @@ onMounted(loadDashboardData)
 .reject-btn:hover:not(:disabled) { background: #dc2626; }
 .reject-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.table-review-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.table-review-btn:hover { background: #1d40cc; }
-
 /* Empty State */
 .empty-state {
   text-align: center;
@@ -672,48 +509,6 @@ onMounted(loadDashboardData)
   color: #64748b;
   margin: 0;
 }
-
-/* Quick Actions */
-.quick-actions-panel {
-  background: #ffd803;
-  border-radius: 14px;
-  padding: 24px;
-}
-
-.quick-actions-panel .section-title {
-  color: #000;
-  margin-bottom: 14px;
-}
-
-.quick-action-row {
-  display: flex;
-  gap: 12px;
-}
-
-.hub-btn {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: none;
-  flex: 1;
-}
-
-.hub-btn.primary {
-  background: #000;
-  color: #ffd803;
-}
-
-.hub-btn.primary:hover { background: #1e293b; }
-
-.hub-btn.secondary {
-  background: rgba(0, 0, 0, 0.08);
-  color: #000;
-}
-
-.hub-btn.secondary:hover { background: rgba(0, 0, 0, 0.14); }
 
 /* Toast */
 .toast {
@@ -740,7 +535,6 @@ onMounted(loadDashboardData)
 
 @media (max-width: 900px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .quick-action-row { flex-direction: column; }
 }
 
 @media (max-width: 540px) {

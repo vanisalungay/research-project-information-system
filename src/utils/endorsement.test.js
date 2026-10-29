@@ -210,6 +210,8 @@ test('the request payload carries the two titles as separate values', () => {
   assert.deepEqual(buildEndorsementRequestPayload(VALID_REQUEST), {
     programTitle: 'MSUN RIIDE - Blue Economy and Marine Resources',
     projectTitle: 'Mangrove Rehabilitation Study',
+    // The deprecated alias an older API validates, always the project title.
+    proposalTitle: 'Mangrove Rehabilitation Study',
     proposalAnnouncementId: 3,
     college: 'College of Fisheries and Marine Sciences (CFMS)',
     department: null,
@@ -229,6 +231,7 @@ test('the request payload carries the two titles as separate values', () => {
     {
       programTitle: 'Padded Program',
       projectTitle: 'Padded Project',
+      proposalTitle: 'Padded Project',
       proposalAnnouncementId: 3,
       college: 'College of Fisheries and Marine Sciences (CFMS)',
       department: 'Department of Marine Biology',
@@ -250,6 +253,59 @@ test('the request payload carries the two titles as separate values', () => {
       programTitleChoice: CREATE_NEW_PROGRAM_TITLE,
     }).programTitle,
     null,
+  )
+})
+
+test('the project title is also sent as the deprecated alias the older API reads', () => {
+  // Compatibility bridge for a backend instance built before the Program/Project split:
+  // such an instance validates the single `proposalTitle` field only, so without the
+  // alias a form whose project title IS filled is refused with
+  // "The proposal/program title is required."
+  const payload = buildEndorsementRequestPayload(VALID_REQUEST)
+
+  assert.equal(payload.proposalTitle, payload.projectTitle)
+  assert.equal(payload.proposalTitle, 'Mangrove Rehabilitation Study')
+  // The alias is the project title only: the program title can never fill it.
+  assert.notEqual(payload.proposalTitle, payload.programTitle)
+
+  // It follows the project title through trimming, and an empty project title stays
+  // empty - the required-field rule is unchanged.
+  assert.equal(
+    buildEndorsementRequestPayload({ ...VALID_REQUEST, projectTitle: '  Padded Project  ' })
+      .proposalTitle,
+    'Padded Project',
+  )
+  assert.equal(
+    buildEndorsementRequestPayload({ ...VALID_REQUEST, projectTitle: '' }).proposalTitle,
+    '',
+  )
+  assert.equal(isEndorsementRequestValid({ ...VALID_REQUEST, projectTitle: '' }), false)
+})
+
+test('a selected program title and a typed project title leave the form valid', () => {
+  // The reported failure, whichever way the program title was chosen: reusing one of the
+  // Proponent's own titles, or creating a new one.
+  assert.deepEqual(
+    validateEndorsementRequest({
+      ...VALID_REQUEST,
+      programTitleChoice: 'MSUN RIIDE - Blue Economy and Marine Resources',
+    }),
+    {},
+  )
+  assert.deepEqual(
+    validateEndorsementRequest({
+      ...VALID_REQUEST,
+      programTitleChoice: CREATE_NEW_PROGRAM_TITLE,
+      programTitle: 'Brand New Program',
+    }),
+    {},
+  )
+  assert.equal(
+    isEndorsementRequestValid({
+      ...VALID_REQUEST,
+      programTitleChoice: 'MSUN RIIDE - Blue Economy and Marine Resources',
+    }),
+    true,
   )
 })
 

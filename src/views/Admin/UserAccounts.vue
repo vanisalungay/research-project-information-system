@@ -1,14 +1,16 @@
 <template>
   <div class="page">
+    <!-- Page header: the title on the left, the single Create Account action aligned
+         on the right. Both are vertically centred, and the row stacks on a small
+         screen instead of squeezing the two apart. -->
     <div class="header">
       <h2>User Accounts</h2>
 
-      <button class="create-btn" @click="showModal = true">
-        + Create Account
-      </button>
-      <button class="dean-btn" @click="showDeanModal = true">
-        Dean Accounts
-      </button>
+      <div class="header-actions">
+        <button class="create-btn" @click="showModal = true">
+          + Create Account
+        </button>
+      </div>
     </div>
 
     <!-- Search -->
@@ -32,43 +34,57 @@
       <button class="retry-btn" @click="loadUsers">Retry</button>
     </div>
 
-    <!-- Table -->
-    <table v-else>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+    <!-- Table. The wrapper scrolls sideways on a narrow screen instead of letting the
+         table overflow the page container. -->
+    <div v-else class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-      <tbody>
-        <tr v-for="user in filteredUsers" :key="user.id">
-          <td>{{ user.name }}</td>
-          <td>{{ user.email }}</td>
-          <td>
-            <span class="role-badge" :class="getRoleClass(user.role)">
-              {{ formatRole(user.role) }}
-            </span>
-          </td>
-          <td>
-            <span class="status-badge" :class="getStatusClass(user.status)">
-              {{ user.status || 'APPROVED' }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button class="reset-btn" @click="openResetModal(user)">
-              Reset Password
-            </button>
-          </td>
-        </tr>
-        <tr v-if="filteredUsers.length === 0">
-          <td colspan="5" class="empty">No users found.</td>
-        </tr>
-      </tbody>
-    </table>
+        <tbody>
+          <tr v-for="user in filteredUsers" :key="user.id">
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <span class="role-badge" :class="getRoleClass(user.role)">
+                {{ formatRole(user.role) }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" :class="getStatusClass(user.status)">
+                {{ user.status || 'APPROVED' }}
+              </span>
+            </td>
+            <td class="actions-cell">
+              <button class="reset-btn" @click="openResetModal(user)">
+                Reset Password
+              </button>
+              <!-- A Dean account keeps its Dean role management: the designation and the
+                   college it endorses for, or revoking the role. The role itself is
+                   granted when the account is created, through the standard Create
+                   Account flow above. -->
+              <button
+                v-if="isDean(user)"
+                class="dean-manage-btn"
+                @click="openDeanModal(user)"
+              >
+                Manage Dean Role
+              </button>
+            </td>
+          </tr>
+          <tr v-if="filteredUsers.length === 0">
+            <td colspan="5" class="empty">No users found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Create User Modal -->
     <CreateUserModal
@@ -77,11 +93,13 @@
       @created="loadUsers"
     />
 
-    <!-- Dean / Department Chair accounts: an administrator grants or revokes the
-         Dean role and sets the college the Dean endorses for. -->
+    <!-- Dean role management for one existing Dean account, opened from that account's
+         row. Dean accounts are created through the standard Create Account flow above,
+         so this screen only edits the designation / college or revokes the role. -->
     <DeanAccountsModal
       v-if="showDeanModal"
-      @close="showDeanModal = false"
+      :dean-id="selectedDeanId"
+      @close="closeDeanModal"
       @changed="loadUsers"
     />
 
@@ -137,12 +155,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
+import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import DeanAccountsModal from '@/views/Admin/DeanAccountsModal.vue'
 
 const users = ref([])
 const showModal = ref(false)
+// The Dean role management screen is opened for one account at a time, from that
+// account's row, so it needs the id of the Dean it was opened for.
 const showDeanModal = ref(false)
+const selectedDeanId = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const search = ref('')
@@ -216,6 +238,20 @@ const loadUsers = async () => {
   }
 }
 
+/** True when the account holds the Dean role (the canonical `DEAN` value). */
+const isDean = (user) => String(user?.role || '').toUpperCase() === UserRole.DEAN
+
+/** Opens the Dean role management screen for the account of the clicked row. */
+const openDeanModal = (user) => {
+  selectedDeanId.value = user.id
+  showDeanModal.value = true
+}
+
+const closeDeanModal = () => {
+  showDeanModal.value = false
+  selectedDeanId.value = null
+}
+
 const openResetModal = (user) => {
   selectedUser.value = user
   newPassword.value = ''
@@ -280,14 +316,26 @@ onMounted(loadUsers)
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
 .header h2 {
+  margin: 0;
   font-size: 24px;
   color: #1f2937;
+}
+
+/* The single page action. `margin-left: auto` keeps it on the right even when the
+   header wraps. */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .create-btn {
@@ -304,21 +352,16 @@ onMounted(loadUsers)
   background: #1b44d6;
 }
 
-/* The Dean accounts action sits beside Create Account: it opens the administrative
-   screen that grants or revokes the Dean role. */
-.dean-btn {
-  margin-left: 10px;
-  padding: 10px 18px;
-  background: #ffffff;
-  color: #2452ff;
-  border: 1px solid #2452ff;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
+/* On a narrow screen the title and the action stack, so neither is squeezed. */
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.dean-btn:hover {
-  background: #eff6ff;
+  .header-actions {
+    margin-left: 0;
+  }
 }
 
 .toolbar {
@@ -359,8 +402,14 @@ onMounted(loadUsers)
   cursor: pointer;
 }
 
+/* The table keeps its own horizontal scroll so the page container never overflows. */
+.table-scroll {
+  overflow-x: auto;
+}
+
 table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   background: #fff;
   border-radius: 8px;
@@ -440,6 +489,23 @@ td {
 
 .reset-btn:hover {
   background: #d97706;
+}
+
+/* The Dean row action: a quiet secondary button, the same size as Reset Password. */
+.dean-manage-btn {
+  margin-left: 8px;
+  padding: 6px 14px;
+  background: #ffffff;
+  color: #2452ff;
+  border: 1px solid #2452ff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dean-manage-btn:hover {
+  background: #eff6ff;
 }
 
 /* Modal */

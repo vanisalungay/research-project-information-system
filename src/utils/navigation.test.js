@@ -74,6 +74,51 @@ function pathsFor(role) {
     .map((item) => item.path)
 }
 
+/** The role vocabulary as the object the component imports (key -> stored value). */
+function userRoleObject() {
+  const source = readFileSync(STORE_FILE, 'utf8')
+  const block = source.match(/export const UserRole = \{([\s\S]*?)\n\}/)
+  assert.ok(block, 'the role vocabulary must be declared in src/stores/userData.js')
+
+  const vocabulary = {}
+  for (const match of block[1].matchAll(/([A-Z_]+):\s*'([A-Z_]+)'/g)) {
+    vocabulary[match[1]] = match[2]
+  }
+  return vocabulary
+}
+
+/**
+ * The items the sidebar actually renders for a role.
+ *
+ * This evaluates the shipped `allNavItems` array with the shipped filter expression, which
+ * is exactly what the component does at run time - so it checks what ends up on screen
+ * rather than what the configuration appears to say. `filteredItems` renders nothing at all
+ * while no user is signed in, which is the guard inside the evaluated body.
+ */
+function renderedSidebar(role) {
+  const source = readFileSync(NAV_FILE, 'utf8')
+  const start = source.indexOf('const allNavItems = [')
+  assert.notEqual(start, -1, 'allNavItems must be declared in NavMenu.vue')
+  const end = source.indexOf('\n]', start)
+  assert.ok(end > start, 'the allNavItems array must be closed at the start of a line')
+
+  const guard = source.match(/const filteredItems = computed\(\(\) => \{([\s\S]*?)\n\}\)/)
+  assert.ok(guard, 'the visible items must be computed by `filteredItems` in NavMenu.vue')
+
+  const allNavItems = new Function('UserRole', `return ${source.slice(source.indexOf('[', start), end + 2)}`)(
+    userRoleObject(),
+  )
+  const visible = new Function('allNavItems', 'userStore', guard[1].trim())(
+    allNavItems,
+    { user: { role } },
+  )
+
+  return {
+    main: visible.filter((item) => item.section === 'main').map((item) => item.text),
+    bottom: visible.filter((item) => item.section === 'bottom').map((item) => item.text),
+  }
+}
+
 test('every navigation item is well formed', () => {
   const items = navItems()
   assert.ok(items.length > 0, 'the navigation must not be empty')
@@ -263,13 +308,111 @@ test('a nested Dean route keeps its parent item highlighted', () => {
   assert.equal(onList('/notifications'), false)
 })
 
-test('the administrator can reach the Dean accounts and the Call for Proposal', () => {
-  const paths = pathsFor('RPS_ADMIN')
+test('the administrator sees exactly Dashboard, User Accounts and Notifications', () => {
+  const items = navItems().filter((item) => item.roles.includes('RPS_ADMIN'))
+  const main = items.filter((item) => item.section === 'main')
 
-  assert.ok(paths.includes('/user-accounts'), 'an administrator must reach the user accounts')
-  assert.ok(
-    paths.includes('/proposal-announcements'),
-    'an administrator must reach the Call for Proposal management',
+  // The administrator manages accounts and reads their own notifications. The ORPS staff
+  // surfaces - the Call for Proposal, the Priority Agendas, the quarterly reports and the
+  // review queues - belong to RPS Staff and must never reappear in this list.
+  assert.deepEqual(
+    main.map((item) => item.text),
+    ['Dashboard', 'User Accounts', 'Notifications'],
+    'the administrator main navigation must be exactly these three items',
+  )
+  assert.deepEqual(
+    main.map((item) => item.path),
+    ['/home', '/user-accounts', '/notifications'],
+    'each administrator item must point at its own route',
+  )
+
+  for (const staffPath of [
+    '/proposal-announcements',
+    '/priority-agendas',
+    '/rps-quarterly-reports',
+    '/rps-proposal-monitoring',
+    '/rps-subproposal',
+    '/budget-processing',
+  ]) {
+    assert.ok(
+      !pathsFor('RPS_ADMIN').includes(staffPath),
+      `the administrator must not be offered ${staffPath}, which is an ORPS staff surface`,
+    )
+  }
+
+  // Profile Settings is shared by every role - it is not a staff item - so it stays.
+  assert.deepEqual(
+    items.filter((item) => item.section === 'bottom').map((item) => item.text),
+    ['Profile Settings'],
+  )
+})
+
+test('restricting the administrator leaves every RPS Staff item in place', () => {
+  const main = navItems().filter(
+    (item) => item.roles.includes('RPS_STAFF') && item.section === 'main',
+  )
+
+  assert.deepEqual(
+    main.map((item) => item.text),
+    [
+      'Dashboard',
+      'Submitted Proposals',
+      'Proposal Announcements',
+      'Priority Agendas',
+      'Notifications',
+      'Budget Processing',
+      'Proposal Monitoring',
+      'Quarterly Reports',
+    ],
+    'the ORPS staff navigation must keep every item it is authorized to use',
+  )
+  assert.deepEqual(
+    main.map((item) => item.path),
+    [
+      '/home',
+      '/rps-subproposal',
+      '/proposal-announcements',
+      '/priority-agendas',
+      '/notifications',
+      '/budget-processing',
+      '/rps-proposal-monitoring',
+      '/rps-quarterly-reports',
+    ],
+    'each ORPS staff item must point at its own route',
+  )
+})
+
+test('the sidebar the administrator actually sees is the three administrator items', () => {
+  // This is the evaluation NavMenu performs for the signed-in role, not a reading of the
+  // configuration: the shipped array with the shipped filter applied.
+  const admin = renderedSidebar('RPS_ADMIN')
+
+  assert.deepEqual(
+    admin.main,
+    ['Dashboard', 'User Accounts', 'Notifications'],
+    'the rendered administrator sidebar must be exactly these three items',
+  )
+  assert.deepEqual(
+    admin.bottom,
+    ['Profile Settings'],
+    'Profile Settings is shared by every role, so it stays',
+  )
+
+  // The same evaluation for ORPS staff, which is what proves the restriction was applied to
+  // the administrator alone.
+  assert.deepEqual(
+    renderedSidebar('RPS_STAFF').main,
+    [
+      'Dashboard',
+      'Submitted Proposals',
+      'Proposal Announcements',
+      'Priority Agendas',
+      'Notifications',
+      'Budget Processing',
+      'Proposal Monitoring',
+      'Quarterly Reports',
+    ],
+    'the rendered ORPS staff sidebar must be unchanged',
   )
 })
 

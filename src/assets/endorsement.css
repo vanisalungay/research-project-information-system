@@ -572,3 +572,176 @@
 .end-stat.is-rejected .end-stat-value {
   color: #b91c1c;
 }
+
+/* ===== Dean dashboard and Dean endorsement requests =====
+   The two Dean screens (views/Dashboard/DeanDashboard.vue and
+   views/Dean/DeanEndorsementRequests.vue) carry .end-page--dean. Everything below is
+   scoped to that modifier, so the other endorsement screens - the Proponent's My
+   Endorsements, the request form and the issued letters - keep exactly the look they had.
+
+   Both pages also carry .end-page--fluid, so their content uses the whole area between the
+   sidebar and the right edge of the screen: .end-page on its own caps a page at 1040px,
+   and that cap is what left the large blank area on the right of these two pages. */
+
+/* --- Page frame ---
+   One rhythm for the header, the statistics and the cards, so the sections line up
+   instead of each one spacing itself. */
+.end-page--dean .end-page-header {
+  margin-bottom: 22px;
+}
+
+.end-page--dean .end-page-header h2 {
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+/* Secondary text is a shade darker than the shared grey: #64748b is only 4.4:1 on the
+   lavender content background, under the 4.5:1 WCAG AA floor, where #475569 is 7:1. */
+.end-page--dean .end-subtitle {
+  margin-bottom: 0;
+  color: #475569;
+}
+
+/* --- Cards ---
+   One padding, radius, border and shadow for every card on both pages, the same section
+   shell the role dashboards already use. */
+.end-page--dean .end-card {
+  padding: 24px;
+  border-radius: 14px;
+  border-color: #e6e8f4;
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+}
+
+.end-page--dean .end-card + .end-card {
+  margin-top: 20px;
+}
+
+.end-page--dean .end-section-title {
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+/* A section title that shares its row with an action takes no bottom gap: the toolbar
+   under it carries the spacing. */
+.end-page--dean .end-toolbar .end-section-title {
+  margin-bottom: 0;
+}
+
+/* --- Statistic cards ---
+   Three equal cards that fill the row; the value keeps the tone colour it already had. */
+.end-page--dean .end-stats {
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.end-page--dean .end-stat {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border-color: #e6e8f4;
+  box-shadow: 0 1px 2px rgba(38, 35, 66, 0.04);
+}
+
+.end-page--dean .end-stat-label {
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+.end-page--dean .end-stat-value {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Filter toolbar --- */
+.end-page--dean .end-toolbar {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.end-page--dean .end-toolbar .end-select {
+  min-width: 200px;
+}
+
+/* The action of a toolbar (See all requests) sits at the far end of its row, so the
+   toolbar lines up with the table under it instead of leaving the right end empty. */
+.end-page--dean .end-toolbar > .end-btn {
+  margin-left: auto;
+}
+
+/* --- Table ---
+   The header keeps the blue band the application already paints behind every table head;
+   only the label colour is corrected. The shared grey sat at 2.2:1 on that blue and was
+   hard to read, white is 10.3:1. The blue is written out here as well, so the header
+   cannot lose its band if that other rule ever changes. */
+.end-page--dean .end-table thead th {
+  background: #3c3b6e;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 12px;
+  border-bottom: none;
+}
+
+.end-page--dean .end-table tbody td {
+  padding: 14px 12px;
+}
+
+/* The second line of a cell (program title, e-mail, funding program) is metadata: a shade
+   darker than the shared #94a3b8, which is only 2.6:1 on white. */
+.end-page--dean .end-muted {
+  color: #64748b;
+}
+
+/* The row under the pointer is the one being read. */
+.end-page--dean .end-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* The row action is a text link: give it a hover surface and a focus target instead of a
+   bare word. */
+.end-page--dean .end-btn.is-link {
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.end-page--dean .end-btn.is-link:hover {
+  background: #eef1ff;
+  color: #1d40cc;
+}
+
+/* --- Small screens ---
+   The table keeps its readable minimum width and scrolls inside its own card
+   (.end-table-scroll), so a wide table never widens the page itself. */
+@media (max-width: 720px) {
+  .end-page--dean .end-card {
+    padding: 18px;
+  }
+
+  .end-page--dean .end-stat {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .end-page--dean .end-page-header h2 {
+    font-size: 1.35rem;
+  }
+
+  /* One card per row: two cards would leave the third one alone underneath. */
+  .end-page--dean .end-stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* The filter takes its own row and the count follows it, instead of both being
+     squeezed onto one line. */
+  .end-page--dean .end-toolbar .end-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .end-page--dean .end-toolbar-count,
+  .end-page--dean .end-toolbar > .end-btn {
+    margin-left: 0;
+  }
+}

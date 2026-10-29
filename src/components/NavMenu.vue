@@ -102,14 +102,19 @@ const allNavItems = [
     iconKey: 'calendar',
     text: 'Proposal Announcements',
     path: '/proposal-announcements',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    // RPS Staff only. The Call for Proposal is an ORPS staff surface, and the
+    // administrator's sidebar is deliberately limited to Dashboard, User Accounts and
+    // Notifications - so RPS_ADMIN must not be listed here.
+    roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
   {
     iconKey: 'evalCriteria',
     text: 'Priority Agendas',
     path: '/priority-agendas',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    // RPS Staff only, for the same reason as the Call for Proposal above: the
+    // administrator maintains accounts, not the proposal master data.
+    roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
   {
@@ -147,7 +152,9 @@ const allNavItems = [
     iconKey: 'monitoring',
     text: 'Quarterly Reports',
     path: '/rps-quarterly-reports',
-    roles: [UserRole.RPS_ADMIN, UserRole.RPS_STAFF],
+    // RPS Staff only: reviewing the quarterly reports is an ORPS staff duty. The
+    // administrator does not see this item.
+    roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
 

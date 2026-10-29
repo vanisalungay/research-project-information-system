@@ -1,5 +1,5 @@
 <template>
-  <div class="end-page">
+  <div class="end-page end-page--fluid end-page--dean">
     <div class="end-page-header">
       <h2>Endorsement Requests</h2>
       <p class="end-subtitle">
@@ -26,56 +26,58 @@
             {{ option.label }}
           </option>
         </select>
-        <span class="end-muted">{{ requests.length }} request(s)</span>
+        <span class="end-muted end-toolbar-count">{{ requests.length }} request(s)</span>
       </div>
 
       <div v-if="requests.length === 0" class="end-card is-empty">
         <p>There are no endorsement requests{{ statusFilter ? ' with this status' : '' }}.</p>
       </div>
 
-      <table v-else class="end-table end-card">
-        <thead>
-          <tr>
-            <th>Reference</th>
-            <th>Proponent</th>
-            <th>Project title</th>
-            <th>Call for Proposal</th>
-            <th>College</th>
-            <th>Submitted</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="request in requests" :key="request.id">
-            <td>{{ request.referenceNumber }}</td>
-            <td>
-              {{ request.proponentName }}
-              <div class="end-muted">{{ request.proponentEmail }}</div>
-            </td>
-            <td>
-              {{ request.projectTitle }}
-              <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
-            </td>
-            <td>
-              {{ request.proposalAnnouncementName || '—' }}
-              <div class="end-muted">{{ fundingProgramLabel(request) }}</div>
-            </td>
-            <td>{{ request.college }}</td>
-            <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
-            <td>
-              <span class="end-badge" :class="endorsementStatusTone(request.status)">
-                {{ endorsementStatusLabel(request.status) }}
-              </span>
-            </td>
-            <td>
-              <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
-                {{ isPending(request.status) ? 'Review' : 'View' }}
-              </router-link>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="end-card end-table-scroll">
+        <table class="end-table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Proponent</th>
+              <th>Project title</th>
+              <th>Call for Proposal</th>
+              <th>College</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="request in requests" :key="request.id">
+              <td>{{ request.referenceNumber }}</td>
+              <td>
+                {{ request.proponentName }}
+                <div class="end-muted">{{ request.proponentEmail }}</div>
+              </td>
+              <td>
+                {{ request.projectTitle }}
+                <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+              </td>
+              <td>
+                {{ request.proposalAnnouncementName || '—' }}
+                <div class="end-muted">{{ fundingProgramLabel(request) }}</div>
+              </td>
+              <td>{{ request.college }}</td>
+              <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
+              <td>
+                <span class="end-badge" :class="endorsementStatusTone(request.status)">
+                  {{ endorsementStatusLabel(request.status) }}
+                </span>
+              </td>
+              <td>
+                <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
+                  {{ isPending(request.status) ? 'Review' : 'View' }}
+                </router-link>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
   </div>
 </template>

@@ -7,6 +7,7 @@ import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
 import com.rpis.backend.model.Certification;
 import com.rpis.backend.model.EndorsementRequest;
+import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
@@ -370,6 +371,43 @@ class EndorsementWorkflowPostgresTest {
         assertTrue(events.stream()
                 .filter(e -> "APPROVED".equals(e.getEventType()))
                 .allMatch(e -> dean.getId().equals(e.getActorId())));
+    }
+
+    /**
+     * The regression this change fixes: the Dean's endorsement notification carried only
+     * the request's Call for Proposals, so clicking it opened the Proponent's announcement
+     * page, which the Dean is not authorized to open (403 "not authorized to view this
+     * announcement"). The notification now carries the endorsement request itself - the
+     * record the click opens - and the Call for Proposals stays on the card only.
+     */
+    @Test
+    void theEndorsementNotificationCarriesTheRequestItIsAbout() {
+        EndorsementRequestResponse request = submittedRequest("Notification Target Study");
+
+        Notification waitingForTheDean = notificationRepository
+                .findByUserOrderByCreatedAtDesc(dean).stream()
+                .filter(notification -> notification.getMessage() != null
+                        && notification.getMessage().contains("waiting for your endorsement"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("the Dean must be notified of the request"));
+        assertEquals("ENDORSEMENT", waitingForTheDean.getType());
+        assertEquals(request.getId(), waitingForTheDean.getProposalId(),
+                "the notification must carry the endorsement request the click opens");
+        assertEquals(call.getId(), waitingForTheDean.getProposalAnnouncementId(),
+                "the Call for Proposals is kept for the card only");
+
+        authenticateAs(dean);
+        endorsementService.approve(request.getId(), approval());
+
+        Notification endorsed = notificationRepository
+                .findByUserOrderByCreatedAtDesc(proponent).stream()
+                .filter(notification -> notification.getMessage() != null
+                        && notification.getMessage().contains("was endorsed"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("the Proponent must be notified"));
+        assertEquals("ENDORSEMENT", endorsed.getType());
+        assertEquals(request.getId(), endorsed.getProposalId(),
+                "the Proponent's notification must open the request too");
     }
 
     @Test

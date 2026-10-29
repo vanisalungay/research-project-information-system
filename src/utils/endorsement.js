@@ -298,15 +298,27 @@ export function isEndorsementRequestValid(form = {}) {
  * The payload sent to the backend, trimmed. Program Title and Project Title travel as
  * two separate values - the program title is omitted when the field was left empty
  * (it is optional) and is never copied into the project title.
+ *
+ * <p>The project title is also sent under the deprecated {@code proposalTitle} field,
+ * which the API still reads as the project title. It is a compatibility bridge, not a
+ * second title: an instance built before the two titles were split validates that single
+ * field only, so without the alias a form whose project title IS filled is refused with
+ * "The proposal/program title is required." The current backend reads {@code projectTitle}
+ * first and both versions store the value in the same column, so the alias changes
+ * nothing on a current server and can never carry the program title.
  */
 export function buildEndorsementRequestPayload(form = {}) {
   const programTitle = String(form.programTitle ?? '').trim()
+  const projectTitle = String(form.projectTitle ?? '').trim()
   return {
     // The sentinel that marks "create a new program title" is a control value, never a
     // title: only what the Proponent actually typed can be submitted.
     programTitle:
       programTitle === '' || isCreatingProgramTitle(programTitle) ? null : programTitle,
-    projectTitle: String(form.projectTitle ?? '').trim(),
+    projectTitle,
+    // Deprecated alias of the project title: an API instance built before the two titles
+    // were split validates this field, and the current API reads projectTitle first.
+    proposalTitle: projectTitle,
     proposalAnnouncementId: form.proposalAnnouncementId ? Number(form.proposalAnnouncementId) : null,
     college: String(form.college ?? '').trim(),
     department: isBlank(form.department) ? null : String(form.department).trim(),

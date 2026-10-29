@@ -252,6 +252,17 @@
         <p v-else class="end-muted">No history recorded yet.</p>
       </div>
     </template>
+
+    <!-- The host of this page's confirm dialogs (approve, reject, reissue). The handlers
+         in the script await showConfirm(), which is resolved by this dialog component:
+         without it the confirmation never settles and the buttons appear to do nothing. -->
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -259,6 +270,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import '@/assets/endorsement.css'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import { loadAccountSignatures } from '@/utils/proposalSignature.js'
@@ -291,7 +303,7 @@ import {
 
 const route = useRoute()
 const userStore = useUserDataStore()
-const { showConfirm } = useDialog()
+const { dialogState, showConfirm } = useDialog()
 
 const request = ref(null)
 const events = ref([])

@@ -2,6 +2,7 @@ package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.DeanAccountRequest;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.DeanAccountService;
 import com.rpis.backend.service.UserService;
@@ -186,16 +187,51 @@ public class UserController {
     // to RPS_ADMIN and refuses to write unless the target is the isolated test
     // database.
 
+    /**
+     * Creates an account with the role the administrator selected.
+     *
+     * <p>The Dean role is the single exception: it carries an endorsement scope, so it is
+     * provisioned by {@link DeanAccountService} - the one implementation of the Dean
+     * rules - which validates the payload, hashes the initial password, records the
+     * account as approved and writes the assignment to the audit trail. That service also
+     * refuses any caller who is not an RPS administrator, so sharing this route with the
+     * Dean role does not let an RPS Staff account mint one. Every other role keeps going
+     * through the general service, unchanged.
+     */
     @PostMapping("/admin/create")
     public ResponseEntity<?> createStaffAccount(
             @RequestBody User user) {
         try {
-            User createdUser = userService.createStaffAccount(user);
+            User createdUser = isDeanRole(user)
+                    ? createDeanAccount(user)
+                    : userService.createStaffAccount(user);
             createdUser.setPassword(null);
             return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    /** True when the submitted payload asks for the Dean role. */
+    private static boolean isDeanRole(User user) {
+        return user != null && UserRoles.DEAN.equalsIgnoreCase(user.getRole());
+    }
+
+    /**
+     * Provisions a Dean through the existing Dean account service, so the standard Create
+     * Account form and the Dean-specific validation, password hashing, college scope and
+     * audit trail can never drift apart. No {@code userId} is set, so this always creates
+     * a new account and never promotes an existing one by accident; the service itself
+     * enforces that only an RPS administrator may reach it (403 otherwise).
+     */
+    private User createDeanAccount(User user) {
+        DeanAccountRequest request = new DeanAccountRequest();
+        request.setName(user.getName());
+        request.setEmail(user.getEmail());
+        request.setPassword(user.getPassword());
+        request.setDesignation(user.getDesignation());
+        request.setAssignedCollege(user.getAssignedCollege());
+        return deanAccountService.save(request, currentUser.requireUserId(), currentUser.getRole());
     }
 
     /**
@@ -220,8 +256,11 @@ public class UserController {
     // ===== Dean / Department Chair accounts (RPS_ADMIN only) =====
     // The Dean is an ordinary RPIS account with the Dean role, so these routes extend
     // the existing account management instead of introducing a second account system.
-    // SecurityConfig restricts them to RPS_ADMIN and the service re-checks the role,
-    // so the Dean role can never be granted through the general account routes.
+    // The standard Create Account route (/admin/create) also accepts the Dean role, but
+    // it delegates to DeanAccountService rather than provisioning a Dean itself, so there
+    // is exactly one implementation of the Dean rules. SecurityConfig restricts these
+    // routes to RPS_ADMIN and the service re-checks the role, so the Dean role can never
+    // be granted by a caller who is not an administrator.
 
     /** The Dean accounts, for the administrator's list. */
     @GetMapping("/deans")
@@ -236,14 +275,14 @@ public class UserController {
      * college scope) to an existing account when {@code userId} is supplied.
      */
     @PostMapping("/deans")
-    public ResponseEntity<User> saveDean(@RequestBody DeanAccountRequest request) {
+    public ResponseEntity<?> saveDean(@RequestBody DeanAccountRequest request) {
         try {
             User dean = deanAccountService.save(request, currentUser.requireUserId(),
                     currentUser.getRole());
             dean.setPassword(null);
             return new ResponseEntity<>(dean, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

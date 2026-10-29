@@ -32,6 +32,13 @@ public class Notification {
     @Column(name = "type")
     private String type;
 
+    /**
+     * The record this notification is about, interpreted by {@link #type}: the proposal
+     * for a proposal notification, and the endorsement request for an endorsement
+     * notification ({@code ENDORSEMENT}), which is what clicking the notification opens.
+     * Null when the notification is about an announcement instead - see
+     * {@link #proposalAnnouncementId}.
+     */
     @Column(name = "proposal_id")
     private Long proposalId;
 

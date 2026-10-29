@@ -58,12 +58,45 @@
             <select id="role" v-model="user.role" :disabled="isLoading">
               <option value="RPS_STAFF">RPS STAFF (Technical review & support)</option>
               <option value="RPS_ADMIN">RPS ADMIN (System administrator)</option>
+              <option value="DEAN">Dean (Dean / Department Chair)</option>
               <option value="OVCAF">OVCAF (Vice Chancellor for Administration & Finance)</option>
               <option value="OVCRIGE">OVCRIGE (Vice Chancellor for Research)</option>
               <option value="REC">REC (Research Evaluation Committee)</option>
               <option value="OC">OC (Office of the Chancellor)</option>
             </select>
           </div>
+
+          <!-- Dean-specific fields, shown only for the Dean role. The Dean is an
+               ordinary account whose role carries an endorsement scope: it needs a
+               designation for the letter it signs and the one college it endorses for.
+               These are the only two extra fields, and they are sent only for this role. -->
+          <template v-if="isDean">
+            <div class="field-group">
+              <label for="designation">Designation / Title</label>
+              <input
+                id="designation"
+                v-model="user.designation"
+                placeholder="e.g. Dean, Department Chair"
+                :disabled="isLoading"
+                required
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="assignedCollege">Assigned College</label>
+              <select
+                id="assignedCollege"
+                v-model="user.assignedCollege"
+                :disabled="isLoading"
+                required
+              >
+                <option value="" disabled>Select the college this Dean endorses for</option>
+                <option v-for="college in colleges" :key="college" :value="college">
+                  {{ college }}
+                </option>
+              </select>
+            </div>
+          </template>
 
           <div class="buttons">
             <button 
@@ -90,20 +123,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import api from '@/utils/api'
+import { UserRole } from '@/stores/userData'
+import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
 
 const emit = defineEmits(['close', 'created'])
+
+// The official colleges, from the one place the whole application reads them
+// (the Create Proposal form and the Dean's scope selector use the same list).
+const colleges = RPIS_COLLEGES
 
 const user = ref({
   name: '',
   email: '',
   password: '',
-  role: 'RPS_STAFF'
+  role: 'RPS_STAFF',
+  // Dean-specific fields. They are only sent when the Dean role is selected.
+  designation: '',
+  assignedCollege: ''
 })
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+/** True while the Dean role is selected - the only role with extra fields. */
+const isDean = computed(() => user.value.role === UserRole.DEAN)
 
 const createUser = async () => {
   if (!user.value.name || !user.value.email || !user.value.password) {
@@ -111,13 +156,43 @@ const createUser = async () => {
     return
   }
 
+  // A Dean signs the official endorsement letter with their designation and only
+  // reaches the endorsement requests of one college, so both are required here. The
+  // backend validates them again (DeanAccountService), so this is only the first of
+  // the two checks.
+  if (isDean.value && !user.value.designation.trim()) {
+    errorMessage.value = "The Dean's designation / title is required."
+    return
+  }
+
+  if (isDean.value && !user.value.assignedCollege) {
+    errorMessage.value = 'Select the college this Dean is authorized to endorse for.'
+    return
+  }
+
   try {
     isLoading.value = true
     errorMessage.value = ""
 
+    // One endpoint for every role. The backend recognises the Dean role and routes it
+    // to the Dean provisioning logic (its own validation, a hashed password and an
+    // audit entry), which only an RPS administrator is allowed to reach. The Dean
+    // fields are added for that role only, so every other role's payload is unchanged.
+    const payload = {
+      name: user.value.name,
+      email: user.value.email,
+      password: user.value.password,
+      role: user.value.role
+    }
+
+    if (isDean.value) {
+      payload.designation = user.value.designation.trim()
+      payload.assignedCollege = user.value.assignedCollege
+    }
+
     await api.post(
       "/api/users/admin/create",
-      user.value
+      payload
     )
 
     emit("created")

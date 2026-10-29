@@ -148,10 +148,7 @@ import { useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
-import {
-  ANNOUNCEMENT_DETAILS_ROUTE,
-  announcementIdFromNotification,
-} from '@/utils/notificationTarget'
+import { notificationDestination } from '@/utils/notificationTarget'
 import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
@@ -245,10 +242,14 @@ const handleNotificationClick = (notification) => {
     markAsRead(notification.id)
   }
 
-  // Call for Proposals notification: open the exact announcement it refers to.
-  const announcementId = announcementIdFromNotification(notification)
-  if (announcementId) {
-    router.push({ name: ANNOUNCEMENT_DETAILS_ROUTE, params: { id: announcementId } })
+  // The destination the notification itself carries: an endorsement notification opens
+  // the endorsement request it is about (the Dean's review screen, or the Proponent's own
+  // request), a Call for Proposals notification opens that exact announcement. Both are
+  // resolved from the saved record and the signed-in role, never from the notification
+  // text, and only ever to a page that role may open.
+  const destination = notificationDestination(notification, userStore.user?.role)
+  if (destination) {
+    router.push(destination)
     return
   }
 

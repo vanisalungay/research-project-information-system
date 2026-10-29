@@ -93,15 +93,16 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists.");
         }
 
-        // The Dean role is deliberately NOT creatable through the general account
-        // route: it carries an endorsement scope and may only be granted by an
-        // RPS_ADMIN through the Dean account endpoints (DeanAccountService), which also
-        // records the assignment in the audit trail. Everything else keeps working as
-        // before.
+        // The Dean role is deliberately NOT created by this general service: it carries an
+        // endorsement scope, so it is provisioned by DeanAccountService, which validates
+        // it, hashes the password, writes the audit entry and refuses any caller who is
+        // not an RPS administrator. UserController delegates the Dean role there, so this
+        // guard is the backstop that keeps any other caller of this method from minting a
+        // Dean. Everything else keeps working as before.
         if (UserRoles.DEAN.equalsIgnoreCase(user.getRole())) {
             throw new IllegalArgumentException(
-                    "The Dean role cannot be assigned here. Use the Dean accounts action, which "
-                            + "only an RPS administrator may perform.");
+                    "The Dean role is provisioned by the Dean account service, which only an "
+                            + "RPS administrator may use.");
         }
 
         user.setPassword(passwordService.hash(user.getPassword()));

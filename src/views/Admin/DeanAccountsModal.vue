@@ -2,15 +2,16 @@
   <div class="overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>Dean / Department Chair Accounts</h2>
+        <h2>Dean Role Management</h2>
         <button class="close-x" @click="$emit('close')" :disabled="isLoading">&times;</button>
       </div>
 
       <div class="modal-body">
         <p class="subtitle">
           A Dean is an ordinary RPIS account with the Dean role, so it signs in through
-          the same login. Assign the role to an account that already exists instead of
-          creating a second one whenever possible.
+          the same login. The account is created on the User Accounts page through the
+          standard Create Account form; this screen manages an account that already holds
+          the role - the college it endorses for, its designation, or revoking the role.
         </p>
 
         <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
@@ -46,11 +47,10 @@
           </tbody>
         </table>
 
-        <!-- FORM -->
-        <form class="form-group" @submit.prevent="submit">
-          <h3 class="form-title">
-            {{ form.userId ? 'Update Dean account' : 'Create a Dean account' }}
-          </h3>
+        <!-- EDIT ONLY. The account is created through the standard Create Account form on
+             the User Accounts page, so there is no create form here. -->
+        <form v-if="form.userId" class="form-group" @submit.prevent="submit">
+          <h3 class="form-title">Update {{ form.name }}</h3>
 
           <div class="field-group">
             <label for="deanName">Full Name</label>
@@ -59,27 +59,7 @@
 
           <div class="field-group">
             <label for="deanEmail">Institutional Email</label>
-            <input
-              id="deanEmail"
-              v-model="form.email"
-              type="email"
-              placeholder="dean@msunaawan.edu.ph"
-              :disabled="isLoading || Boolean(form.userId)"
-              required
-            />
-          </div>
-
-          <div v-if="!form.userId" class="field-group">
-            <label for="deanPassword">Initial Password</label>
-            <input
-              id="deanPassword"
-              v-model="form.password"
-              type="password"
-              minlength="6"
-              placeholder="Min. 6 characters, chosen by you"
-              :disabled="isLoading"
-              required
-            />
+            <input id="deanEmail" v-model="form.email" type="email" :disabled="true" required />
           </div>
 
           <div class="field-group">
@@ -111,20 +91,13 @@
           </div>
 
           <div class="buttons">
-            <button
-              v-if="form.userId"
-              type="button"
-              class="cancel-btn"
-              @click="resetForm"
-              :disabled="isLoading"
-            >
-              Cancel edit
-            </button>
             <button type="submit" class="create-btn" :disabled="isLoading">
-              {{ isLoading ? 'Saving…' : form.userId ? 'Save Dean' : 'Create Dean Account' }}
+              {{ isLoading ? 'Saving…' : 'Save Dean' }}
             </button>
           </div>
         </form>
+
+        <p v-else class="empty">Select a Dean above to manage the role.</p>
       </div>
     </div>
   </div>
@@ -135,6 +108,11 @@ import { onMounted, reactive, ref } from 'vue'
 import api from '@/utils/api'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
 
+const props = defineProps({
+  /** The Dean account whose role management was opened, from its row in the table. */
+  deanId: { type: [Number, String], default: null },
+})
+
 const emit = defineEmits(['close', 'changed'])
 
 const colleges = RPIS_COLLEGES
@@ -143,11 +121,13 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+// The account is created on the User Accounts page through the standard Create
+// Account form, so this screen never creates one: `userId` is always set before the
+// form can be submitted, and an existing account's password is never touched.
 const form = reactive({
   userId: null,
   name: '',
   email: '',
-  password: '',
   assignedCollege: '',
   designation: '',
   status: 'APPROVED',
@@ -163,11 +143,10 @@ async function loadDeans() {
   }
 }
 
-function resetForm() {
+function clearForm() {
   form.userId = null
   form.name = ''
   form.email = ''
-  form.password = ''
   form.assignedCollege = ''
   form.designation = ''
   form.status = 'APPROVED'
@@ -179,30 +158,42 @@ function edit(dean) {
   form.userId = dean.id
   form.name = dean.name || ''
   form.email = dean.email || ''
-  form.password = ''
   form.assignedCollege = dean.assignedCollege || ''
   form.designation = dean.designation || ''
   form.status = dean.status || 'APPROVED'
 }
 
+/** Loads the Dean list and preselects the Dean this screen was opened for. */
+async function load() {
+  await loadDeans()
+  const requested = deans.value.find((dean) => String(dean.id) === String(props.deanId))
+  if (requested) {
+    edit(requested)
+  }
+}
+
 async function submit() {
+  if (!form.userId) {
+    errorMessage.value = 'Select a Dean account to manage.'
+    return
+  }
+
   isLoading.value = true
   errorMessage.value = ''
   successMessage.value = ''
   try {
+    // Only the scope and the status of an account that already holds the Dean role are
+    // changed here. The backend re-checks that the caller is an RPS administrator and
+    // records the change in the audit trail.
     await api.post('/api/users/deans', {
       userId: form.userId,
       name: form.name,
       email: form.email,
-      password: form.password || null,
       assignedCollege: form.assignedCollege || null,
       designation: form.designation || null,
       status: form.status,
     })
-    successMessage.value = form.userId
-      ? 'The Dean account was updated.'
-      : 'The Dean account was created.'
-    resetForm()
+    successMessage.value = 'The Dean account was updated.'
     await loadDeans()
     emit('changed')
   } catch (error) {
@@ -219,7 +210,7 @@ async function revoke(dean) {
   try {
     await api.delete(`/api/users/deans/${dean.id}`)
     successMessage.value = `${dean.name} no longer holds the Dean role; the account keeps working as a Faculty Proponent.`
-    resetForm()
+    clearForm()
     await loadDeans()
     emit('changed')
   } catch (error) {
@@ -229,7 +220,7 @@ async function revoke(dean) {
   }
 }
 
-onMounted(loadDeans)
+onMounted(load)
 </script>
 
 <style scoped>

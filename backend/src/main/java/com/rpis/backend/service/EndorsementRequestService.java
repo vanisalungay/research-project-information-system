@@ -77,6 +77,9 @@ public class EndorsementRequestService {
     /** The ORPS staff role. */
     public static final String ROLE_STAFF = UserRoles.RPS_STAFF;
 
+    /** The notification type of every endorsement notification. */
+    static final String NOTIFICATION_TYPE_ENDORSEMENT = "ENDORSEMENT";
+
     /** Reference and document code format: MSUN-ORPS-END-<code>-<year>. */
     static final String REFERENCE_FORMAT = "MSUN-ORPS-END-%03d-%d";
 
@@ -849,14 +852,23 @@ public class EndorsementRequestService {
     /**
      * Raises an in-app notification. A notification is a courtesy: it must never fail
      * an action that has already issued the official letter.
+     *
+     * <p>The notification carries the endorsement request it is about
+     * ({@code proposal_id}), so clicking it opens that exact request: the Dean's review
+     * screen for the Dean who decides it, the Proponent's own request for the Proponent.
+     * The Call for Proposals the request answers is carried separately
+     * ({@code proposal_announcement_id}) and is displayed on the notification card only -
+     * a Dean is not authorized to open a Proponent's announcement page, so it must never
+     * be the destination of the click.
      */
     private void notifyUser(User recipient, EndorsementRequest entity, String title, String message) {
         if (recipient == null || recipient.getId() == null) {
             return;
         }
         try {
-            notificationService.createNotification(recipient.getId(), message, title, "ENDORSEMENT",
-                    null, entity.getProposalAnnouncementId());
+            notificationService.createNotification(recipient.getId(), message, title,
+                    NOTIFICATION_TYPE_ENDORSEMENT, entity.getId(),
+                    entity.getProposalAnnouncementId());
         } catch (RuntimeException e) {
             log.warn("Endorsement notification for account {} could not be created: {}",
                     recipient.getId(), e.getMessage());

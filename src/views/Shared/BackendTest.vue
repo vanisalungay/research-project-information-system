@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import api from '@/utils/api';
+import api, { API_BASE_URL } from '@/utils/api';
 
 const healthStatus = ref('');
 const healthMessage = ref('Not tested yet.');
@@ -54,7 +54,7 @@ const testHealth = async () => {
     healthMessage.value = response.data; // Should say "RPIS backend is running"
   } catch (error) {
     healthStatus.value = 'Error';
-    healthMessage.value = 'Failed to connect. Make sure your Spring Boot application is running on port 8081.';
+    healthMessage.value = `Failed to connect. Make sure your Spring Boot application is running on ${API_BASE_URL}.`;
   }
 };
 

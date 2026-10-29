@@ -150,8 +150,8 @@ public class DeanAccountService {
         }
         if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException(
-                    "An account already exists for that email. Assign the Dean role to it instead "
-                            + "of creating a second account.");
+                    "An account already exists for that email address. Use a different "
+                            + "institutional email to create a new Dean account.");
         }
         String password = blankToNull(request.getPassword());
         if (password == null || password.length() < 6) {

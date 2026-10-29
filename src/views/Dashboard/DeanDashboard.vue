@@ -1,5 +1,5 @@
 <template>
-  <div class="end-page">
+  <div class="end-page end-page--fluid end-page--dean">
     <div class="end-page-header">
       <h2>Welcome, {{ displayName }}!</h2>
       <p class="end-subtitle">
@@ -37,7 +37,7 @@
     <template v-else>
       <div class="end-card">
         <div class="end-toolbar">
-          <h3 class="end-section-title" style="margin: 0">Pending endorsement requests</h3>
+          <h3 class="end-section-title">Pending endorsement requests</h3>
           <router-link class="end-btn is-link" to="/dean-requests">See all requests</router-link>
         </div>
 
@@ -45,71 +45,75 @@
           Nothing is waiting for your endorsement right now.
         </div>
 
-        <table v-else class="end-table">
-          <thead>
-            <tr>
-              <th>Reference</th>
-              <th>Proponent</th>
-              <th>Project title</th>
-              <th>College</th>
-              <th>Submitted</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="request in pending" :key="request.id">
-              <td>{{ request.referenceNumber }}</td>
-              <td>{{ request.proponentName }}</td>
-              <td>
-                {{ request.projectTitle }}
-                <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
-              </td>
-              <td>{{ request.college }}</td>
-              <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
-              <td>
-                <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
-                  Review
-                </router-link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="end-table-scroll">
+          <table class="end-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Proponent</th>
+                <th>Project title</th>
+                <th>College</th>
+                <th>Submitted</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="request in pending" :key="request.id">
+                <td>{{ request.referenceNumber }}</td>
+                <td>{{ request.proponentName }}</td>
+                <td>
+                  {{ request.projectTitle }}
+                  <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+                </td>
+                <td>{{ request.college }}</td>
+                <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
+                <td>
+                  <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
+                    Review
+                  </router-link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="end-card">
         <h3 class="end-section-title">Recently decided</h3>
         <div v-if="decided.length === 0" class="end-muted">No decisions recorded yet.</div>
-        <table v-else class="end-table">
-          <thead>
-            <tr>
-              <th>Reference</th>
-              <th>Project title</th>
-              <th>Decided</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="request in decided" :key="request.id">
-              <td>{{ request.referenceNumber }}</td>
-              <td>
-                {{ request.projectTitle }}
-                <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
-              </td>
-              <td>{{ formatEndorsementTimestamp(request.decidedAt) }}</td>
-              <td>
-                <span class="end-badge" :class="endorsementStatusTone(request.status)">
-                  {{ endorsementStatusLabel(request.status) }}
-                </span>
-              </td>
-              <td>
-                <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
-                  View
-                </router-link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="end-table-scroll">
+          <table class="end-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Project title</th>
+                <th>Decided</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="request in decided" :key="request.id">
+                <td>{{ request.referenceNumber }}</td>
+                <td>
+                  {{ request.projectTitle }}
+                  <div v-if="request.programTitle" class="end-muted">{{ request.programTitle }}</div>
+                </td>
+                <td>{{ formatEndorsementTimestamp(request.decidedAt) }}</td>
+                <td>
+                  <span class="end-badge" :class="endorsementStatusTone(request.status)">
+                    {{ endorsementStatusLabel(request.status) }}
+                  </span>
+                </td>
+                <td>
+                  <router-link class="end-btn is-link" :to="`/dean-requests/${request.id}`">
+                    View
+                  </router-link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </template>
   </div>
