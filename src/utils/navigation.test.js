@@ -239,8 +239,8 @@ test('the Dean sees exactly the three Dean items, and nothing obsolete', () => {
   // Dashboard, Endorsement Requests, Notifications - in that order, and nothing else.
   assert.deepEqual(
     main.map((item) => item.text),
-    ['Dashboard', 'Endorsement Requests', 'Notifications'],
-    'the Dean main navigation must be exactly Dashboard, Endorsement Requests, Notifications',
+    ['Dashboard', 'Approval Requests', 'Notifications'],
+    'the Dean main navigation must be exactly Dashboard, Approval Requests, Notifications',
   )
   assert.deepEqual(
     main.map((item) => item.path),

@@ -1,32 +1,58 @@
 <template>
-  <div class="dashboard-container">
-    <!-- DASHBOARD HEADER -->
-    <div class="dashboard-header">
-      <div class="header-text">
-        <h2>RPS Overview</h2>
-        <p>Administrative and publication services monitoring panel.</p>
+  <!--
+    The RPS Staff overview dashboard.
+
+    Every panel below reads the records the RPS pages already use: the proposal list
+    (GET /api/proposals) and the Proposal Announcement list (GET /api/proposal-announcements).
+    The screen answers "what needs my attention?" and links to the full pages, which keep
+    their own filters, tables and actions.
+
+    Only the presentation lives here. The markup reuses the shared design layer
+    (assets/dashboard.css and assets/endorsement.css) - the same cards, pills, tables and
+    spacing the Proponent and Dean dashboards already use - so no request, no binding and no
+    action changed: the panels are the same ones, in the same order, with the same data.
+  -->
+  <div class="dash-page">
+    <!-- ===================== HEADER / WELCOME ===================== -->
+    <section class="dash-banner">
+      <span class="dash-avatar" aria-hidden="true" v-html="icons.users"></span>
+      <div class="dash-banner-text">
+        <h2 class="dash-banner-title">RPS Overview</h2>
+        <p class="dash-banner-sub">Administrative and publication services monitoring panel.</p>
       </div>
       <button class="refresh-btn" @click="refreshDashboard" :disabled="isRefreshing">
-        <svg class="refresh-icon" :class="{ spinning: isRefreshing }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          class="refresh-icon"
+          :class="{ spinning: isRefreshing }"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l5.67-5.67"></path>
         </svg>
         <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh Data' }}</span>
       </button>
-    </div>
+    </section>
 
-    <!-- PROPOSAL ANNOUNCEMENTS -->
-    <section class="announcements-section">
-      <div class="announcements-panel">
-        <div class="section-header">
+    <!-- ===== ROW 1: PROPOSAL ANNOUNCEMENTS (2/3) + ENDORSED PROPOSALS (1/3) ===== -->
+    <div class="dash-row dash-row--main">
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.megaphone"></span>
           <div class="section-heading">
-            <h3>Proposal announcements</h3>
+            <h3 class="dash-section-title">Proposal announcements</h3>
             <p class="section-sub">Current proposal calls, submission periods and announcement details.</p>
           </div>
-          <button class="section-link" @click="$router.push('/proposal-announcements')">
-            <span>View all announcements</span>
-            <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
-          </button>
-        </div>
+          <div class="dash-section-actions">
+            <button class="section-link" @click="$router.push('/proposal-announcements')">
+              <span>View all announcements</span>
+              <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </header>
 
         <div v-if="announcementsLoading" class="panel-state">Loading proposal announcements...</div>
         <div v-else-if="announcementsError" class="panel-state error-text">{{ announcementsError }}</div>
@@ -74,90 +100,20 @@
             </div>
           </article>
         </div>
-      </div>
-    </section>
-
-    <!-- PANELS GRID -->
-    <div class="panels-grid">
-      <!-- PANEL A: AWAITING RPS ACTION -->
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-heading">
-            <h3>Awaiting RPS Action</h3>
-            <p class="panel-sub">Newest submissions to review</p>
-          </div>
-          <button class="panel-link" @click="$router.push('/rps-subproposal')">View all submissions &rarr;</button>
-        </div>
-
-        <div v-if="isLoading" class="panel-state">Loading submissions...</div>
-        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
-        <div v-else-if="awaitingAction.length === 0" class="panel-state">No submissions awaiting action.</div>
-        <div v-else class="panel-table-wrap">
-          <table class="panel-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Project Leader</th>
-                <th>Status</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="prop in awaitingAction" :key="prop.id">
-                <td class="cell-title">{{ prop.projectTitle || 'Untitled Project' }}</td>
-                <td>{{ prop.projectLeader || 'Unknown' }}</td>
-                <td>
-                  <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
-                </td>
-                <td class="text-right">
-                  <button class="row-btn" @click="$router.push(`/proposal/${prop.id}`)">Review</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </section>
 
-      <!-- PANEL B: REVISION REQUESTS -->
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-heading">
-            <h3>Revision Requests</h3>
+      <!-- Endorsed proposals: the same list and the same count as before, in the right column -->
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.endorse"></span>
+          <h3 class="dash-section-title">Endorsed Proposals</h3>
+          <div class="dash-section-actions">
+            <button class="section-link" @click="$router.push('/rpsendorsed-prop')">
+              <span>View all</span>
+              <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+            </button>
           </div>
-          <button class="panel-link" @click="$router.push('/rps-revision-requests')">View all &rarr;</button>
-        </div>
-
-        <p class="panel-summary">
-          <strong>{{ revisionRequests.length }}</strong>
-          revision request{{ revisionRequests.length === 1 ? '' : 's' }}
-        </p>
-
-        <div v-if="isLoading" class="panel-state">Loading revision requests...</div>
-        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
-        <div v-else-if="revisionRequests.length === 0" class="panel-state">No revision requests found.</div>
-        <ul v-else class="item-list">
-          <li v-for="prop in revisionRequests.slice(0, 5)" :key="prop.id" class="item" :class="{ urgent: isOverdue(prop) }">
-            <div class="item-main">
-              <div class="item-title">{{ prop.projectTitle || 'Untitled' }}</div>
-              <div class="item-meta">
-                {{ prop.projectLeader || prop.proponent?.name || 'Unknown' }} &bull;
-                {{ prop.documentId || prop.proposalCode || '—' }}
-              </div>
-              <div class="item-meta">{{ revDateLabel(prop) }}</div>
-            </div>
-            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
-          </li>
-        </ul>
-      </section>
-
-      <!-- PANEL C: ENDORSED PROPOSALS -->
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-heading">
-            <h3>Endorsed Proposals</h3>
-          </div>
-          <button class="panel-link" @click="$router.push('/rpsendorsed-prop')">View all &rarr;</button>
-        </div>
+        </header>
 
         <p class="panel-summary">
           <strong>{{ endorsedProposals.length }}</strong>
@@ -180,60 +136,165 @@
           </li>
         </ul>
       </section>
+    </div>
 
-      <!-- PANEL D: BUDGET PROCESSING -->
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-heading">
-            <h3>Budget Processing</h3>
-            <p class="panel-sub">Approved research project budgets</p>
+    <!-- ===== ROW 2: AWAITING RPS ACTION (2/3) + REVISION REQUESTS (1/3) ===== -->
+    <div class="dash-row dash-row--main">
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.proposals"></span>
+          <div class="section-heading">
+            <h3 class="dash-section-title">Awaiting RPS Action</h3>
+            <p class="section-sub">Newest submissions to review</p>
           </div>
-          <button class="panel-link" @click="$router.push('/budget-processing')">Open budget processing &rarr;</button>
-        </div>
+          <div class="dash-section-actions">
+            <button class="section-link" @click="$router.push('/rps-subproposal')">
+              <span>View all submissions</span>
+              <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </header>
 
-        <div class="budget-filters">
-          <button
-            v-for="filter in budgetFilters"
-            :key="filter"
-            class="budget-filter"
-            :class="{ active: budgetFilter === filter }"
-            @click="budgetFilter = filter"
-          >
-            {{ filter }}
-          </button>
-        </div>
-
-        <div v-if="isLoading" class="panel-state">Loading budget records...</div>
+        <div v-if="isLoading" class="panel-state">Loading submissions...</div>
         <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
-        <div v-else-if="filteredBudget.length === 0" class="panel-state">No budget records available.</div>
-        <div v-else class="panel-table-wrap">
-          <table class="panel-table">
+        <div v-else-if="awaitingAction.length === 0" class="panel-state">No submissions awaiting action.</div>
+        <div v-else class="end-table-scroll">
+          <table class="end-table panel-table">
             <thead>
               <tr>
-                <th>Document ID</th>
-                <th>Proposal Title</th>
+                <th>Title</th>
                 <th>Project Leader</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="prop in filteredBudget.slice(0, 5)" :key="prop.id">
-                <td class="cell-id">{{ prop.documentId || prop.proposalCode || '—' }}</td>
-                <td class="cell-title">{{ prop.projectTitle || 'Untitled' }}</td>
-                <td>{{ prop.projectLeader || prop.proponent?.name || 'N/A' }}</td>
+              <tr v-for="prop in awaitingAction" :key="prop.id">
+                <td class="cell-title">{{ prop.projectTitle || 'Untitled Project' }}</td>
+                <td>{{ prop.projectLeader || 'Unknown' }}</td>
                 <td>
                   <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="row-btn" @click="$router.push({ name: 'ProposalDetails', params: { id: prop.id } })">View</button>
+                  <button class="row-btn" @click="$router.push(`/proposal/${prop.id}`)">
+                    <span>Review</span>
+                    <span class="row-btn-arrow" aria-hidden="true">&rarr;</span>
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
+
+      <!-- Revision requests: the same rows, limit and deadline label as before -->
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.revisions"></span>
+          <h3 class="dash-section-title">Revision Requests</h3>
+          <div class="dash-section-actions">
+            <button class="section-link" @click="$router.push('/rps-revision-requests')">
+              <span>View all</span>
+              <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </header>
+
+        <p class="panel-summary">
+          <strong>{{ revisionRequests.length }}</strong>
+          revision request{{ revisionRequests.length === 1 ? '' : 's' }}
+        </p>
+
+        <div v-if="isLoading" class="panel-state">Loading revision requests...</div>
+        <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+        <div v-else-if="revisionRequests.length === 0" class="panel-state">No revision requests found.</div>
+        <ul v-else class="item-list">
+          <li
+            v-for="prop in revisionRequests.slice(0, 5)"
+            :key="prop.id"
+            class="item"
+            :class="{ urgent: isOverdue(prop) }"
+          >
+            <div class="item-main">
+              <div class="item-title">{{ prop.projectTitle || 'Untitled' }}</div>
+              <div class="item-meta">
+                {{ prop.projectLeader || prop.proponent?.name || 'Unknown' }} &bull;
+                {{ prop.documentId || prop.proposalCode || '—' }}
+              </div>
+              <div class="item-meta item-due">
+                <span class="item-icon" aria-hidden="true" v-html="icons.calendar"></span>
+                <span>{{ revDateLabel(prop) }}</span>
+              </div>
+            </div>
+            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+          </li>
+        </ul>
+      </section>
     </div>
+
+    <!-- ===== ROW 3: BUDGET PROCESSING (FULL WIDTH) ===== -->
+    <section class="dash-section">
+      <header class="dash-section-head">
+        <span class="dash-section-icon" v-html="icons.budget"></span>
+        <div class="section-heading">
+          <h3 class="dash-section-title">Budget Processing</h3>
+          <p class="section-sub">Approved research project budgets</p>
+        </div>
+        <div class="dash-section-actions">
+          <button class="section-link" @click="$router.push('/budget-processing')">
+            <span>Open budget processing</span>
+            <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="budget-filters">
+        <button
+          v-for="filter in budgetFilters"
+          :key="filter"
+          class="budget-filter"
+          :class="{ active: budgetFilter === filter }"
+          @click="budgetFilter = filter"
+        >
+          {{ filter }}
+        </button>
+      </div>
+
+      <div v-if="isLoading" class="panel-state">Loading budget records...</div>
+      <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
+      <div v-else-if="filteredBudget.length === 0" class="panel-state">No budget records available.</div>
+      <div v-else class="end-table-scroll">
+        <table class="end-table panel-table">
+          <thead>
+            <tr>
+              <th>Document ID</th>
+              <th>Proposal Title</th>
+              <th>Project Leader</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="prop in filteredBudget.slice(0, 5)" :key="prop.id">
+              <td class="cell-id">{{ prop.documentId || prop.proposalCode || '—' }}</td>
+              <td class="cell-title">{{ prop.projectTitle || 'Untitled' }}</td>
+              <td>{{ prop.projectLeader || prop.proponent?.name || 'N/A' }}</td>
+              <td>
+                <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+              </td>
+              <td class="text-right">
+                <button
+                  class="row-btn"
+                  @click="$router.push({ name: 'ProposalDetails', params: { id: prop.id } })"
+                >
+                  <span>View</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -241,6 +302,44 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
 import { announcementStatus } from '@/utils/announcementStatus'
+
+// The shared design layer: the same cards, pills, tables and spacing the Proponent and Dean
+// dashboards already use. Importing it changes how this page looks and nothing else - every
+// request, computed value and action below is untouched.
+import '@/assets/dashboard.css'
+import '@/assets/endorsement.css'
+
+/**
+ * The icons of the page. They are inline SVGs on purpose: the application ships no icon
+ * dependency, and one helper keeps every icon the same size, stroke and alignment. The map
+ * is presentation only - no panel, request or binding depends on it.
+ */
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
+
+const icons = {
+  users: svg(
+    '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
+      '<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  ),
+  megaphone: svg(
+    '<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/>' +
+      '<path d="M15 8.5a4 4 0 0 1 0 7"/><path d="M18 6a8 8 0 0 1 0 12"/>',
+  ),
+  proposals: svg(
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+      '<path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  ),
+  endorse: svg(
+    '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  ),
+  revisions: svg('<path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/>'),
+  budget: svg('<path d="M12 3v18"/><path d="M16 7H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7"/>'),
+  calendar: svg(
+    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/>',
+  ),
+}
 
 // Single data source reused from the existing dashboard. The backend returns all
 // proposals, so every panel below is derived client-side using the exact same
@@ -468,64 +567,36 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dashboard-container {
-  /* Fill the content area (which has 32px padding) with the light page background. */
-  margin: -32px;
-  padding: 22px 26px 30px;
-  background: #f3f4f6;
-  min-height: calc(100vh - 169px);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-family: 'Inter', sans-serif;
-}
+/* ============================================================================
+   RPS dashboard presentation.
 
-/* HEADER */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
-}
+   The page reuses the shared design layer: assets/dashboard.css provides the
+   welcome banner, the section cards, the grid and the pastel accents, and
+   assets/endorsement.css provides the buttons, the status badges and the
+   tables. Only what is specific to this screen is declared here, so nothing can
+   leak into another page.
+   ============================================================================ */
 
-.header-text h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #20234f;
-  line-height: 1.2;
-}
-
-.header-text p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  font-weight: 400;
-  color: #77809a;
-  line-height: 1.4;
-}
-
+/* ===== Header: the refresh action inside the banner ===== */
 .refresh-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 13px;
-  background: #ffffff;
-  border: 1px solid #e6e8ef;
-  border-radius: 7px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #25245b;
+  gap: 8px;
+  margin-left: auto;
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
   font-family: inherit;
-  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #25245b;
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .refresh-btn:disabled {
@@ -534,8 +605,8 @@ onMounted(() => {
 }
 
 .refresh-icon {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .spinning {
@@ -543,176 +614,209 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* PROPOSAL ANNOUNCEMENTS */
-.announcements-section {
-  width: 100%;
+/* The banner avatar carries an icon injected with v-html, so it is reached through :deep(). */
+.dash-avatar :deep(svg) {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.8;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.section-heading h3 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #25245b;
-  line-height: 1.2;
+/* ===== Section headings ===== */
+.section-heading {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .section-sub {
-  margin: 3px 0 0;
-  font-size: 10px;
-  font-weight: 400;
-  color: #78809a;
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
   line-height: 1.4;
+  color: #78809a;
 }
 
 .section-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 8px;
   background: transparent;
-  border: none;
-  padding: 0;
-  font-size: 10px;
-  font-weight: 600;
-  color: #25245b;
+  color: #315bff;
   font-family: inherit;
-  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
   white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .section-link:hover {
-  text-decoration: underline;
+  background: #eef1ff;
+  color: #1d40cc;
 }
 
 .section-link-arrow {
-  font-size: 11px;
+  font-size: 0.875rem;
   line-height: 1;
 }
 
-.announcements-panel {
-  width: 100%;
-  box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid #e5e7ef;
-  border-radius: 13px;
-  padding: 14px;
+/* The count a list panel already shows above its rows. */
+.panel-summary {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #78809a;
 }
 
+.panel-summary strong {
+  font-size: 1.125rem;
+  color: #1c1a3c;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading, error and empty messages. */
+.panel-state {
+  padding: 10px 2px;
+  font-size: 0.875rem;
+  color: #78809a;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+
+/* ===== Proposal announcements =====
+   Two cards per row while the panel has the room, one below 720px. The tone of a
+   card still follows the status the card already shows: Open, Scheduled or Closed. */
 .announcement-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
+  gap: 14px;
   align-items: start;
 }
 
 .announcement-card {
-  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 13px;
-  border: 1px solid #e6e8ef;
+  padding: 16px;
+  border: 1px solid #e8eaf6;
   border-radius: 12px;
-  background: #ffffff;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  background: #fdfdff;
 }
 
-/* OPEN / ACCEPTING SUBMISSIONS */
 .announcement-card.is-open {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: #f6fef9;
+  border-color: #cdf0d9;
 }
 
-/* EXPIRED */
-.announcement-card.is-expired {
-  background: #f7f7fc;
-  border-color: #e6e6f0;
-}
-
-/* UPCOMING */
 .announcement-card.is-upcoming {
-  background: #f5f8ff;
-  border-color: #dce6fa;
+  background: #f7f9ff;
+  border-color: #dfe6fb;
 }
 
-/* NEUTRAL (draft / other) */
+.announcement-card.is-expired {
+  background: #fafafc;
+  border-color: #e8e8f2;
+}
+
 .announcement-card.is-neutral {
-  background: #fafafb;
-  border-color: #e6e8ef;
+  background: #fbfbfd;
+  border-color: #e8eaf6;
 }
 
 .announcement-status-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
 .status-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
   flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #9ca3af;
 }
 
 .status-label {
-  font-size: 8.5px;
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.04em;
   color: #64748b;
-  line-height: 1.2;
 }
 
 .status-badge {
   flex-shrink: 0;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 8px;
-  font-weight: 600;
+  font-size: 0.6875rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  background: #e5e7eb;
-  color: #374151;
+  letter-spacing: 0.04em;
+  background: #eef0f6;
+  color: #4b5570;
 }
 
-.is-open .status-dot { background: #16a34a; }
-.is-open .status-label { color: #166534; }
-.is-open .status-badge { background: #dcfce7; color: #166534; }
+.is-open .status-dot {
+  background: #10b981;
+}
 
-.is-expired .status-dot { background: #8b8ba7; }
-.is-expired .status-label { color: #777792; }
-.is-expired .status-badge { background: #e8e8f3; color: #777792; }
+.is-open .status-label {
+  color: #047857;
+}
 
-.is-upcoming .status-dot { background: #2563eb; }
-.is-upcoming .status-label { color: #2563eb; }
-.is-upcoming .status-badge { background: #dbeafe; color: #1d4ed8; }
+.is-open .status-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.is-upcoming .status-dot {
+  background: #7c3aed;
+}
+
+.is-upcoming .status-label {
+  color: #6d28d9;
+}
+
+.is-upcoming .status-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.is-expired .status-dot {
+  background: #8b8ba7;
+}
+
+.is-expired .status-label {
+  color: #6b7591;
+}
+
+.is-expired .status-badge {
+  background: #eceef6;
+  color: #5b6484;
+}
 
 .announcement-title {
-  margin: 10px 0 8px;
-  font-size: 14px;
+  margin: 12px 0 10px;
+  font-size: 1rem;
   font-weight: 700;
-  color: #25245b;
-  line-height: 1.3;
+  line-height: 1.35;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
 }
 
 .announcement-meta {
@@ -731,190 +835,153 @@ onMounted(() => {
 
 .meta-label {
   display: block;
-  font-size: 7.5px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.04em;
   color: #78809a;
 }
 
 .meta-value {
   display: block;
   margin-top: 2px;
-  font-size: 9.5px;
+  font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1.35;
   color: #25245b;
-  line-height: 1.3;
 }
 
 .announcement-progress {
-  margin-top: 11px;
+  margin-top: 14px;
 }
 
 .progress-track {
   width: 100%;
-  height: 4.5px;
-  background: #d1fae5;
+  height: 5px;
   border-radius: 999px;
+  background: #e6e9f6;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #16a34a;
   border-radius: 999px;
+  background: linear-gradient(90deg, #315bff 0%, #7c3aed 100%);
   transition: width 0.18s ease;
 }
 
-.is-expired .progress-track { background: #dad9e8; }
-.is-expired .progress-fill { background: #8b8ba7; }
-.is-upcoming .progress-track { background: #dbeafe; }
-.is-upcoming .progress-fill { background: #93b4f5; }
+.is-open .progress-track {
+  background: #d6f2e1;
+}
+
+.is-open .progress-fill {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.is-upcoming .progress-track {
+  background: #e3e8fb;
+}
+
+.is-upcoming .progress-fill {
+  background: #a5b4fc;
+}
+
+.is-expired .progress-track {
+  background: #e6e8f2;
+}
+
+.is-expired .progress-fill {
+  background: #b8bcd2;
+}
 
 .progress-dates {
   display: flex;
   justify-content: space-between;
   margin-top: 6px;
-  font-size: 7.5px;
+  font-size: 0.6875rem;
   color: #78809a;
 }
 
-/* PANELS GRID */
-.panels-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
-}
 
-.panel {
-  background: #ffffff;
-  border: 1px solid #e6e8ef;
-  border-radius: 12px;
-  padding: 16px;
-  box-sizing: border-box;
-}
-
-.panel-header {
+/* ===== Revision requests and endorsed proposals =====
+   One row per record, with the same title, meta and status the panel already
+   rendered. An overdue revision keeps the red tint it already had. */
+.item-list {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.panel-heading h3 {
+  flex-direction: column;
+  gap: 10px;
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #20234f;
-}
-
-.panel-sub {
-  margin: 3px 0 0;
-  font-size: 11px;
-  color: #77809a;
-}
-
-.panel-link {
-  background: none;
-  border: none;
   padding: 0;
-  font-size: 11px;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e8eaf6;
+  border-radius: 10px;
+  background: #fdfdff;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.item:hover {
+  border-color: #d5daf0;
+  background: #fafbff;
+}
+
+.item.urgent {
+  background: #fff6f6;
+  border-color: #f8d4d4;
+}
+
+.item-main {
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #25245b;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
+  line-height: 1.4;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
 }
 
-.panel-link:hover {
-  text-decoration: underline;
+.item-meta {
+  margin-top: 3px;
+  font-size: 0.75rem;
+  color: #78809a;
+  overflow-wrap: anywhere;
 }
 
-.panel-summary {
-  margin: 0 0 10px;
-  font-size: 11px;
-  color: #77809a;
+/* The date line of a revision keeps its calendar glyph beside the label. */
+.item-due {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.panel-summary strong {
-  font-size: 14px;
-  color: #20234f;
+.item-icon {
+  display: inline-flex;
+  color: #78809a;
 }
 
-.panel-state {
-  padding: 14px 2px;
-  font-size: 12px;
-  color: #77809a;
+.item-icon :deep(svg) {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2;
 }
 
-.error-text {
-  color: #d64545;
-}
-
-/* TABLES */
-.panel-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.panel-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.panel-table th {
-  padding: 7px 8px;
-  text-align: left;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #77809a;
-  border-bottom: 1px solid #e6e8ef;
-  white-space: nowrap;
-}
-
-.panel-table td {
-  padding: 8px;
-  font-size: 11px;
-  color: #1e234f;
-  border-bottom: 1px solid #eef0f5;
-  vertical-align: middle;
-}
-
-.panel-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.panel-table tbody tr:hover {
-  background: #f8fafc;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.cell-title {
-  font-weight: 500;
-}
-
-.cell-id {
-  font-size: 10px;
-  font-weight: 500;
-  color: #25245b;
-  white-space: nowrap;
-}
-
-/* BADGES */
+/* ===== Status pills =====
+   The label and the tone are the ones the panel already used. */
 .badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 4px 11px;
   border-radius: 999px;
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 0.6875rem;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -926,8 +993,8 @@ onMounted(() => {
 
 .badge.revision,
 .badge.returned {
-  background: #fde8e8;
-  color: #b91c1c;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .badge.endorsed {
@@ -936,32 +1003,34 @@ onMounted(() => {
 }
 
 .badge.approved {
-  background: #dcfce7;
-  color: #166534;
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .badge.released {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
-/* ROW ACTION BUTTON */
+/* ===== Row action ===== */
 .row-btn {
-  background: #ffd400;
-  color: #25245b;
-  border: none;
-  height: 27px;
-  padding: 0 11px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: #315bff;
+  color: #ffffff;
   font-family: inherit;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .row-btn:hover {
-  background: #f0c800;
+  background: #1d40cc;
+  box-shadow: 0 6px 16px rgba(49, 91, 255, 0.24);
 }
 
 .row-btn:focus-visible {
@@ -969,108 +1038,93 @@ onMounted(() => {
   outline-offset: 2px;
 }
 
-/* ITEM LISTS (Revision + Endorsed) */
-.item-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.row-btn-arrow {
+  font-size: 0.8125rem;
+  line-height: 1;
 }
 
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 9px 11px;
-  background: #ffffff;
-  border: 1px solid #e6e8ef;
-  border-radius: 8px;
-}
-
-.item.urgent {
-  background: #fef6f6;
-  border-color: #f6c9c9;
-}
-
-.item-main {
-  min-width: 0;
-}
-
-.item-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1e234f;
-  line-height: 1.35;
-}
-
-.item-meta {
-  margin-top: 2px;
-  font-size: 9px;
-  color: #77809a;
-  overflow-wrap: anywhere;
-}
-
-/* BUDGET FILTERS */
+/* ===== Budget filters ===== */
 .budget-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 8px;
 }
 
 .budget-filter {
-  padding: 4px 10px;
+  padding: 6px 14px;
+  border: 1px solid #e3e6f2;
   border-radius: 999px;
-  border: 1px solid #e6e8ef;
   background: #ffffff;
-  color: #25245b;
-  font-size: 10px;
-  font-weight: 500;
+  color: #4b5570;
   font-family: inherit;
-  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .budget-filter:hover {
-  border-color: #25245b;
+  border-color: #c3cbf0;
+  color: #25245b;
 }
 
 .budget-filter.active {
-  background: #25245b;
-  border-color: #25245b;
-  color: #ffd400;
+  background: #315bff;
+  border-color: #315bff;
+  color: #ffffff;
+}
+
+/* ===== Tables =====
+   The shared .end-table is used as it is; only the two things a dashboard row
+   needs are adjusted here - the header keeps the light band, and the cells line
+   up with the action button beside them. */
+.panel-table th {
+  background: #f6f7fd;
+  font-weight: 700;
+}
+
+.panel-table th.text-right,
+.panel-table td.text-right {
+  text-align: right;
+}
+
+.panel-table td {
+  vertical-align: middle;
+}
+
+.panel-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.cell-title {
   font-weight: 600;
+  color: #1c1a3c;
 }
 
-/* RESPONSIVE */
-@media (max-width: 900px) {
-  .panels-grid {
-    grid-template-columns: 1fr;
-  }
+.cell-id {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5b6484;
+  white-space: nowrap;
 }
 
-@media (max-width: 760px) {
+/* ===== Small screens ===== */
+@media (max-width: 720px) {
   .announcement-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 560px) {
-  .dashboard-container {
-    padding: 16px 14px 24px;
+  .refresh-btn {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
   }
 
-  .dashboard-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .section-header {
+  .item {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 </style>
+
