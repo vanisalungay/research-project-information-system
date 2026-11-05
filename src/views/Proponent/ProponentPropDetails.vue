@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
@@ -343,6 +343,11 @@ function downloadPdf() {
 onMounted(() => {
   fetchProposal()
 })
+
+// Vue Router reuses this component when only the id changes, so the route id is watched:
+// opening another proposal, or Back/Forward between two, reloads the right record.
+watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
+
 </script>
 
 <style scoped>

@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -258,6 +258,14 @@ onMounted(() => {
   fetchProposal()
   loadFieldRemarks()
 })
+
+// Vue Router reuses this component when only the id changes, so the route id is watched:
+// opening another proposal, or Back/Forward between two, reloads the right record.
+watch(() => route.params.id, () => {
+  fetchProposal()
+  loadFieldRemarks()
+})
+
 
 const goBack = () => {
   window.history.back()

@@ -708,7 +708,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
@@ -837,6 +837,16 @@ const fetchProposal = async () => {
 
 onMounted(fetchProposal)
 
+/**
+ * The route is the single source of truth. Vue Router reuses this component when only the id
+ * changes (/detailed-proposal?id=52 -> ?id=36, or Back/Forward between two proposals), so
+ * without this watcher the previous proposal's data stayed on screen under the new id. Every
+ * id now reloads its own record and its own field remarks.
+ */
+watch(
+  () => route.query.id,
+  () => fetchProposal(),
+)
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -1713,6 +1723,135 @@ const formatReviewerPosition = (position) => {
 
   .copy-action-bar .btn-duplicate {
     width: 100%;
+  }
+}
+/* ===== Review design layer =====================================================
+   The same design the approved review-prop page uses, applied to this page's own rules, so
+   that every proposal - whatever its id, sections, optional fields or documents - renders the
+   same way. Nothing in the markup changed: no field, badge, document or action can be lost by
+   these rules. */
+.proposal-detail-page {
+  width: 100%;
+}
+
+.content-card {
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+}
+
+/* The navy section band from the approved design. */
+.card-header {
+  padding: 14px 20px;
+  background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
+  border-bottom: none;
+}
+
+.card-number {
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--rpis-accent, #ffd000);
+  border-radius: 8px;
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.card-header h2 {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #ffffff;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* Header card: the same shape as the shared review header. */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.06);
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.header-info h1 {
+  margin: 0 0 6px;
+  font-size: var(--fs-xl, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-id {
+  font-size: var(--fs-sm, 0.875rem);
+  color: #5b5b7a;
+  overflow-wrap: anywhere;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Summary cards in the aside, when the page shows them. */
+.sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 4px 14px rgba(38, 35, 66, 0.05);
+}
+
+.sidebar-card h3 {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #1c1a3c;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .page-header,
+  .header-left {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    margin-left: 0;
+  }
+
+  .info-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-body {
+    padding: 14px;
   }
 }
 </style>

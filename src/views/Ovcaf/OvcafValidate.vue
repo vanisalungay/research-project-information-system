@@ -145,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
@@ -234,6 +234,10 @@ const loadProposal = async () => {
 }
 
 onMounted(loadProposal)
+
+// Vue Router reuses this component when only the id changes, so the route id is watched:
+// opening another proposal, or Back/Forward between two, reloads the right record.
+watch(() => route.params.id, () => loadProposal())
 
 const endorseToOc = () => {
   approvalType.value = 'oc'

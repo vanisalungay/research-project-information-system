@@ -201,3 +201,82 @@ test('the submission history shown on the detail pages is on the shared design',
   assert.ok(history.includes('/versions'), 'the version endpoint is unchanged')
   assert.ok(history.includes('toggleDetails'), 'the details toggle still works')
 })
+
+/** Every page that renders whichever proposal the route points at. */
+const DETAIL_PAGES = [
+  '../views/Proponent/ProponentDetiailedProp.vue',
+  '../views/Proponent/ProponentPropDetails.vue',
+  '../views/Proponent/ProponentProposalMonitoring.vue',
+  '../views/Rps/RpsProposalDetails.vue',
+  '../views/Rps/RpsProposalReview.vue',
+  '../views/Rps/RpsProposalMonitoringDetails.vue',
+  '../views/Rps/RpsForwardRevision.vue',
+  '../views/Ovc/OvcReviewProposal.vue',
+  '../views/Ovcaf/OvcafProposalDetails.vue',
+  '../views/Ovcaf/OvcafValidate.vue',
+  '../views/Oc/OCFinalApproval.vue',
+  '../views/Oc/OcDetailedProposal.vue',
+  '../views/Rec/RecDetailedProp.vue',
+  '../views/Rec/RecReviewForm.vue',
+]
+
+/**
+ * The source with its comments removed, so documentation is never mistaken for code. Both
+ * comment styles are stripped: a block comment in this very file mentions
+ * "/detailed-proposal?id=52", which is exactly the kind of text a naive scan would flag.
+ */
+const codeOnly = (source) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('//'))
+    .join('\n')
+
+test('the design is universal: no detail page pins a proposal id', () => {
+  // A literal id in any of these would tie the page - or its data - to one record instead of
+  // rendering whichever proposal the route points at.
+  for (const file of DETAIL_PAGES) {
+    const code = codeOnly(read(file))
+    assert.ok(
+      !/(?<![\w-])(?:id|proposalId)\s*[:=]\s*['\"]?\d+/.test(code),
+      file + ' must not hardcode a proposal id',
+    )
+  }
+})
+
+test('each detail page takes its id from the route and reacts when it changes', () => {
+  // Vue Router reuses the component when only the id changes, so a page that only loads on
+  // mount would keep showing the previous proposal under the new id.
+  const REACTIVE = [
+    '../views/Proponent/ProponentDetiailedProp.vue',
+    '../views/Proponent/ProponentPropDetails.vue',
+    '../views/Rps/RpsProposalDetails.vue',
+    '../views/Rps/RpsForwardRevision.vue',
+    '../views/Ovc/OvcReviewProposal.vue',
+    '../views/Ovcaf/OvcafProposalDetails.vue',
+    '../views/Ovcaf/OvcafValidate.vue',
+    '../views/Rec/RecDetailedProp.vue',
+    '../views/Rec/RecReviewForm.vue',
+  ]
+
+  for (const file of REACTIVE) {
+    const source = read(file)
+    assert.ok(/route\.(params|query)\.id/.test(source), file + ' must read the id from the route')
+    assert.match(source, /watch\(/, file + ' must reload when the route id changes')
+  }
+})
+
+test('the shared components carry no proposal data of their own', () => {
+  for (const [name, source] of [
+    ['header', HEADER],
+    ['sidebar', SIDEBAR],
+    ['page shell', PAGE],
+    ['field section', FIELD_SECTION],
+  ]) {
+    assert.ok(!/MSUN|RIIDE|DAGAT|PUNLA/.test(source), name + ' must not carry sample proposal data')
+    assert.ok(
+      !/(?<![\w-])(?:id|proposalId)\s*[:=]\s*['\"]?\d+/.test(codeOnly(source)),
+      name + ' must not pin a proposal id',
+    )
+  }
+})

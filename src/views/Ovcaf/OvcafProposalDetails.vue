@@ -173,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/utils/api';
 
@@ -323,6 +323,10 @@ onMounted(async () => {
     document.addEventListener('click', handleOutsideClick);
 });
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
+
+// Vue Router reuses this component when only the id changes, so the route id is watched:
+// opening another proposal, or Back/Forward between two, reloads the right record.
+watch(() => route.params.id, () => fetchProposal());
 
 const handleOutsideClick = (e) => {
     if (dropdownRef.value && !dropdownRef.value.contains(e.target)) dropdownOpen.value = false;
