@@ -223,7 +223,7 @@
                 class="download-btn"
                 @click="downloadAttachment('technology-roadmap.pdf')"
               >
-                ⬇ Download
+                DOWNLOAD
               </button>
             </div>
           </div>
@@ -298,7 +298,7 @@
                 class="download-btn"
                 @click="downloadAttachment('gad-score.pdf')"
               >
-                ⬇ Download
+                DOWNLOAD
               </button>
             </div>
           </div>
@@ -405,7 +405,7 @@
               class="download-btn"
               @click="downloadAttachment('Project-Line-Item-Budget.pdf')"
             >
-              ⬇ Download
+              DOWNLOAD
             </button>
           </div>
         </div>
@@ -477,7 +477,7 @@
                 class="download-btn"
                 @click="downloadAttachment(attachment.filePath)"
               >
-                ⬇ Download
+                DOWNLOAD
               </button>
 
             </div>

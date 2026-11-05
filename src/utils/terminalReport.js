@@ -596,14 +596,15 @@ function standardSummaryRows(proposal) {
     text(p.address) ||
     [text(p.addressMunicipality), text(p.addressProvince)].filter(hasText).join(', ')
   const email = text(p.proponent?.email) || text(p.contactValue)
-  const leader = [text(p.projectLeader), text(p.projectLeaderSex)].filter(hasText).join(' / ')
 
   return [
     { label: 'Program Title', detail: text(p.programTitle) },
     { label: 'Project Title', detail: text(p.projectTitle) },
-    { label: 'Project Leader/Gender', detail: leader },
+    { label: 'Project Leader', detail: text(p.projectLeader) },
+    { label: 'Gender', detail: text(p.projectLeaderSex) },
     { label: 'Agency', detail: text(p.college) },
-    { label: 'Address/Email', detail: [address, email].filter(hasText).join(' / ') },
+    { label: 'Address', detail: address },
+    { label: 'Email', detail: email },
     { label: 'Cooperating Agency', detail: text(p.cooperatingAgencies) },
     { label: 'Base Station', detail: '' },
     { label: 'Area Covered', detail: '' },

@@ -22,7 +22,7 @@
         </button>
 
         <button class="btn outline" @click="downloadAll">
-          Download All Documents
+          DOWNLOAD
         </button>
       </div>
     </div>
@@ -206,7 +206,7 @@
               <span>📄 {{ file.name }}</span>
 
               <button class="download" @click="downloadFile(file)">
-                ⬇️
+                DOWNLOAD
               </button>
             </li>
           </ul>

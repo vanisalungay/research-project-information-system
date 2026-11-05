@@ -103,7 +103,7 @@
           </table>
           <p v-else>No budget data available.</p>
 
-          <button class="download-btn" @click="downloadProject">DOWNLOAD PROJECT</button>
+          <button class="download-btn" @click="downloadProject">DOWNLOAD</button>
         </div>
       </div>
     </template>

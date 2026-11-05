@@ -364,7 +364,7 @@
           <button class="btn-secondary" @click="reviewing = false">Back to Editing</button>
           <div class="review-footer-right">
             <template v-if="isTerminalStage">
-              <button class="btn-secondary" @click="printTerminalReview">Print / Save as PDF</button>
+              <button class="btn-secondary" @click="printTerminalReview">DOWNLOAD</button>
               <button class="btn-draft" :disabled="saving" @click="saveTerminalDraft">
                 {{ saving ? 'Saving...' : 'Save as Draft' }}
               </button>

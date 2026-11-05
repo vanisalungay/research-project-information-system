@@ -18,7 +18,7 @@
         </div>
         <div class="modal-header-actions">
           <button class="btn-primary" :disabled="!fileName || downloading" @click="download">
-            {{ downloading ? 'Downloading…' : 'Download' }}
+            {{ downloading ? 'Downloading…' : 'DOWNLOAD' }}
           </button>
           <button class="close-btn" @click="emit('close')" aria-label="Close">✕</button>
         </div>

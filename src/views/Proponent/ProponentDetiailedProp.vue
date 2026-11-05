@@ -40,7 +40,7 @@
           </svg>
           Edit Draft
         </button>
-        <button class="btn-secondary" @click="printProposal">Print</button>
+        <button class="btn-secondary" @click="printProposal">DOWNLOAD</button>
       </div>
     </header>
 
@@ -313,7 +313,7 @@
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'11'" :field-key="'reviewFileName'" field-label="Review of Literature (document)" :remarks="remarksForField('reviewFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">Download</button>
+                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </div>
               <p v-else class="empty-text">No file uploaded.</p>
             </div>
@@ -343,7 +343,7 @@
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'13'" :field-key="'roadmapFileName'" field-label="Technology Roadmap (document)" :remarks="remarksForField('roadmapFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">Download</button>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
               </div>
               <p v-else class="empty-text">No file uploaded.</p>
             </div>
@@ -431,7 +431,7 @@
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'19'" :field-key="'gadFileName'" field-label="GAD Score (document)" :remarks="remarksForField('gadFileName')" readonly />
                   <p class="file-type">PDF Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </div>
               <p v-else class="empty-text">No file uploaded.</p>
             </div>
@@ -562,7 +562,7 @@
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'25'" :field-key="'beneficiariesFileName'" field-label="Line-Item Budget (document)" :remarks="remarksForField('beneficiariesFileName')" readonly />
                   <p class="file-type">Budget Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">Download</button>
+                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">DOWNLOAD</button>
               </div>
               <p v-else class="empty-text">No budget file uploaded.</p>
             </div>
@@ -674,19 +674,19 @@
             <div class="document-list">
               <div v-if="proposal.reviewFileName" class="doc-item">
                 <span>📄 Review of Literature</span>
-                <button @click="downloadFile(proposal.reviewFileName)">⬇</button>
+                <button @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.roadmapFileName" class="doc-item">
                 <span>📄 Technology Roadmap</span>
-                <button @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">⬇</button>
+                <button @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.gadFileName" class="doc-item">
                 <span>📄 GAD Score</span>
-                <button @click="downloadFile(proposal.gadFileName)">⬇</button>
+                <button @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.beneficiariesFileName" class="doc-item">
                 <span>📄 Beneficiaries</span>
-                <button @click="downloadFile(proposal.beneficiariesFileName)">⬇</button>
+                <button @click="downloadFile(proposal.beneficiariesFileName)">DOWNLOAD</button>
               </div>
             </div>
           </div>

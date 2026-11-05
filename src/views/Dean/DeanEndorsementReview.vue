@@ -115,7 +115,7 @@
 
         <div v-if="request.hasLetter" class="end-actions">
           <button class="end-btn" :disabled="busy" @click="previewLetter">View issued letter</button>
-          <button class="end-btn" :disabled="busy" @click="downloadLetter">Download</button>
+          <button class="end-btn" :disabled="busy" @click="downloadLetter">DOWNLOAD</button>
         </div>
       </div>
 

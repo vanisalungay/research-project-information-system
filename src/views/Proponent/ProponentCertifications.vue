@@ -70,7 +70,7 @@
               <td>
                 <template v-if="item.documentAvailable">
                   <button class="end-btn is-link" @click="preview(item)">View</button>
-                  <button class="end-btn is-link" @click="download(item)">Download</button>
+                  <button class="end-btn is-link" @click="download(item)">DOWNLOAD</button>
                 </template>
                 <span v-else class="end-muted">Not available</span>
               </td>

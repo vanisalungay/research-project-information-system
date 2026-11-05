@@ -13,7 +13,7 @@
 
           <div class="header-actions">
             <button class="outline" @click="showModal = true">See Detailed Proposal</button>
-            <button class="outline" @click="downloadAll">Download All Documents</button>
+            <button class="outline" @click="downloadAll">DOWNLOAD</button>
           </div>
         </div>
 
@@ -173,7 +173,7 @@
       <div class="proposal-modal">
         <!-- HEADER -->
         <div class="proposal-header">
-          <button class="download-btn" @click="downloadForm">Download Form</button>
+          <button class="download-btn" @click="downloadForm">DOWNLOAD</button>
           <button class="close-btn" @click="showModal = false">✕</button>
         </div>
 
@@ -188,7 +188,8 @@
                 <strong>Program Title:</strong> Community Water and Filtration Enhancement Program
               </p>
               <p><strong>Project Title:</strong> Community-Based Water Filtration System</p>
-              <p><strong>Project Leader/Sex:</strong> Engr. John Delos Reyes / Male</p>
+              <p><strong>Project Leader:</strong> Engr. John Delos Reyes</p>
+              <p><strong>Sex:</strong> Male</p>
               <p><strong>Project Duration:</strong> 5 months</p>
               <p><strong>Start Date:</strong> March 10, 2025</p>
               <p><strong>End Date:</strong> July 30, 2025</p>

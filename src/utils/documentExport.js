@@ -312,7 +312,15 @@ const PRINT_STYLES = `
 
   @page {
     size: A4;
-    margin: 16mm 15mm;
+    /* Chrome draws its own automatic header (date + document title) and footer (URL + page
+       number) inside the @page margin whenever that margin is 10mm or more. Keeping it below
+       10mm suppresses that browser chrome; the document carries the rest of the margin
+       itself (see the body padding below). */
+    margin: 8mm 15mm;
+  }
+
+  body {
+    padding: 8mm 0;
   }
 `
 

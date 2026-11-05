@@ -7,7 +7,7 @@
         <span>RPS / RPS DARES Evaluation</span>
       </div>
       <div class="header-actions">
-        <button class="download-btn" @click="downloadProposal">⬇ Download Proposal</button>
+        <button class="download-btn" @click="downloadProposal">DOWNLOAD</button>
       </div>
     </header>
 

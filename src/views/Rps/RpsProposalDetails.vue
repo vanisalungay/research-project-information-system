@@ -26,7 +26,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Download PDF
+          DOWNLOAD
         </button>
       </div>
     </header>
@@ -78,7 +78,7 @@
                     <h4>Review of Literature</h4>
                     <p>{{ proposal.reviewFileName }}</p>
                   </div>
-                  <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">Download</button>
+                  <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
                 </div>
                 <div v-if="proposal.roadmapFileName" class="doc-item">
                   <div class="doc-icon">📄</div>
@@ -87,7 +87,7 @@
                     <p>{{ proposal.roadmapFileName }}</p>
                   </div>
                   <button class="btn-download"
-                    @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">Download</button>
+                    @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
                 </div>
                 <div v-if="proposal.gadFileName" class="doc-item">
                   <div class="doc-icon">📄</div>
@@ -95,7 +95,7 @@
                     <h4>GAD Score</h4>
                     <p>{{ proposal.gadFileName }}</p>
                   </div>
-                  <button class="btn-download" @click="downloadFile(proposal.gadFileName)">Download</button>
+                  <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
                 </div>
               </div>
             </div>
@@ -189,7 +189,7 @@
           <div class="sidebar-card action-card">
             <h3>Actions</h3>
             <button class="btn-action btn-secondary" @click="downloadProposal">
-              Download Proposal
+              DOWNLOAD
             </button>
           </div>
         </aside>

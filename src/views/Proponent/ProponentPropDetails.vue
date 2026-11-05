@@ -26,7 +26,7 @@
 
           <button class="btn btn-save" @click="viewDetails">See Detailed Proposal</button>
 
-          <button class="btn btn-download" @click="downloadPdf">Download PDF</button>
+          <button class="btn btn-download" @click="downloadPdf">DOWNLOAD</button>
         </div>
       </div>
 

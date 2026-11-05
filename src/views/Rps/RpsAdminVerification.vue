@@ -59,7 +59,7 @@
           <strong>{{ doc.name }}</strong>
           <p>{{ doc.type }} • {{ doc.size }}</p>
         </div>
-        <button class="download">⬇ Download</button>
+        <button class="download">DOWNLOAD</button>
       </div>
     </section>
 

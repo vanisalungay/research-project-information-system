@@ -78,11 +78,11 @@ function list(value) {
 export const OFFICIAL_FORM_STYLES = `
   @page {
     size: A4;
-    /* Continuation pages start their table at 22mm; page 1 at 17.8mm. */
-    margin: 22mm 13mm 27mm;
-  }
-  @page :first {
-    margin-top: 17.8mm;
+    /* Chrome draws its own automatic header (date + document title) and footer (URL + page
+       number) inside the @page margin whenever that margin is 10mm or more. Keeping it below
+       10mm suppresses that browser chrome; the document then carries the page margins itself
+       (see the body padding below), so the official layout is unchanged. */
+    margin: 8mm 13mm;
   }
 
   * { box-sizing: border-box; }
@@ -97,6 +97,13 @@ export const OFFICIAL_FORM_STYLES = `
     line-height: 1.18;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* The sheet carries the page margins the @page rule used to reserve: the boxed header sits
+     at 17.8mm on page 1 (8mm from the rule + 9.8mm here) and the foot keeps 27mm on the last
+     page. The 13mm side margins come from the @page rule on every page. */
+  body {
+    padding: 9.8mm 0 19mm;
   }
 
   /* ---------- Boxed institutional header ---------- */
@@ -296,7 +303,8 @@ function section1(p) {
   const inner = `${head('(1) PROJECT PROFILE')}
     ${line('Program Title:', p.programTitle)}
     ${line('Project Title:', p.projectTitle)}
-    ${line('Project Leader/Sex:', [p.projectLeader, p.projectLeaderSex].filter(Boolean).join(' / '))}
+    ${line('Project Leader:', p.projectLeader)}
+    ${line('Sex:', p.projectLeaderSex)}
     ${line('Project Duration (number of months):', p.duration)}
     ${line('Project Start Date:', dateVal(p.startDate))}
     ${line('Project End Date:', dateVal(p.endDate))}
@@ -630,13 +638,14 @@ export function renderOfficialProposalForm(proposal = {}) {
 /** Wrap the official form in a standalone, print-ready HTML document. */
 export function buildOfficialProposalHtml(proposal = {}) {
   const p = proposal || {}
-  const title = p.projectTitle || p.programTitle || 'Research Project Proposal'
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${esc(title)}</title>
+  <!-- The document title is the official form name, never the proposal title: a browser
+       prints the <title> in the automatic header of the page. -->
+  <title>Full-Blown R &amp; D Project Proposal</title>
   <style>${OFFICIAL_FORM_STYLES}</style>
 </head>
 <body>

@@ -14,7 +14,7 @@
 }
 
 /* One printed sheet. A4 portrait, matching the application's existing print
-   setup (src/assets/print.css: @page size A4; margin 16mm 15mm). */
+   setup (src/assets/print.css: @page size A4; margin 8mm 15mm). */
 .doc-sheet {
   width: 210mm;
   min-height: 297mm;
@@ -393,8 +393,8 @@
 }
 
 /* ---------- Print / PDF ----------
-   Each .doc-sheet becomes one printed A4 sheet: the 265mm minimum height is A4
-   (297mm) minus the @page top/bottom margins (16mm each) set in
+   Each .doc-sheet becomes one printed A4 sheet: the 281mm minimum height is A4
+   (297mm) minus the @page top/bottom margins (8mm each) set in
    src/assets/print.css, so the footer sits at the bottom of its own page and
    never overlaps the next page's content. */
 @media print {
@@ -404,7 +404,7 @@
 
   .doc-sheet {
     width: auto;
-    min-height: 265mm;
+    min-height: 281mm;
     margin: 0;
     border: none;
     box-shadow: none;

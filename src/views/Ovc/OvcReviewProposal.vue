@@ -26,7 +26,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Download All Documents
+          DOWNLOAD
         </button>
       </div>
     </header>
@@ -204,20 +204,20 @@
             <ul class="files-list">
               <li v-if="proposal.reviewFileName" class="file-item">
                 <span>📄 Review of Literature</span>
-                <button class="download-btn" @click="downloadFile(proposal.reviewFileName)">⬇️</button>
+                <button class="download-btn" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.roadmapFileName" class="file-item">
                 <span>📄 Technology Roadmap</span>
                 <button class="download-btn"
-                  @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">⬇️</button>
+                  @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.gadFileName" class="file-item">
                 <span>📄 GAD Score</span>
-                <button class="download-btn" @click="downloadFile(proposal.gadFileName)">⬇️</button>
+                <button class="download-btn" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.budgetFileName" class="file-item">
                 <span>📄 Budget Document</span>
-                <button class="download-btn" @click="downloadFile(proposal.budgetFileName)">⬇️</button>
+                <button class="download-btn" @click="downloadFile(proposal.budgetFileName)">DOWNLOAD</button>
               </li>
               <li
                 v-if="!proposal.reviewFileName && !proposal.roadmapFileName && !proposal.gadFileName && !proposal.budgetFileName"

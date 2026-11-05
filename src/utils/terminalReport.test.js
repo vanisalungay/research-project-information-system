@@ -131,12 +131,11 @@ describe('terminalReport - prefill from the project record', () => {
 
     assert.equal(byLabel['Program Title'], 'Fisheries Program')
     assert.equal(byLabel['Project Title'], 'Fish Landing Survey')
-    assert.equal(byLabel['Project Leader/Gender'], 'Juan Dela Cruz / Male')
+    assert.equal(byLabel['Project Leader'], 'Juan Dela Cruz')
+    assert.equal(byLabel['Gender'], 'Male')
     assert.equal(byLabel['Agency'], 'College of Marine Sciences, MSU-Naawan')
-    assert.equal(
-      byLabel['Address/Email'],
-      'Naawan, Misamis Oriental / juan.delacruz@msunaawan.edu.ph'
-    )
+    assert.equal(byLabel['Address'], 'Naawan, Misamis Oriental')
+    assert.equal(byLabel['Email'], 'juan.delacruz@msunaawan.edu.ph')
     assert.equal(byLabel['Cooperating Agency'], 'LGU Naawan')
     // Summary items required by the RPIS reporting requirements.
     assert.equal(byLabel['Report Title'], 'Fish Landing Survey')
@@ -262,10 +261,10 @@ describe('terminalReport - save payload', () => {
 
   it('prints only the summary items that carry a value', () => {
     const state = filled({ summaryTotalBudget: 'PHP 25,000.00' })
-    assert.equal(summaryRowHasValue(state.summaryRows[6]), false, 'Base Station is empty')
+    assert.equal(summaryRowHasValue(state.summaryRows[8]), false, 'Base Station is empty')
     const payload = terminalReportPayload(state)
     assert.ok(payload.summaryRows.every((row) => row.detail.trim() !== ''))
-    assert.equal(payload.summaryRows.length, 8)
+    assert.equal(payload.summaryRows.length, 10)
   })
 
   it('survives a payload round trip', () => {

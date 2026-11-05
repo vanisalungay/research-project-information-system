@@ -113,7 +113,7 @@
             </p>
           </div>
           <div class="modal-header-actions">
-            <button class="btn-print" @click="printTerminalDocument">Print / Save as PDF</button>
+            <button class="btn-print" @click="printTerminalDocument">DOWNLOAD</button>
             <button class="close-btn" @click="terminalDoc = null" aria-label="Close">✕</button>
           </div>
         </div>

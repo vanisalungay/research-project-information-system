@@ -86,7 +86,7 @@
                     class="btn-download"
                     @click="downloadDoc(r, 'terminal')"
                   >
-                    Download file
+                    DOWNLOAD
                   </button>
                   <span v-if="!hasStructuredTerminal(r) && !r.terminalReportFileName" class="report-meta">
                     No terminal report content
@@ -96,7 +96,7 @@
                   <button class="btn-view" @click="view(r)">View</button>
                   <!-- A legacy uploaded workplan file (from before the interactive
                        workplan form) stays downloadable. -->
-                  <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">Download workplan file</button>
+                  <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">DOWNLOAD</button>
                 </template>
                 <button v-if="r.status === 'DRAFT'" class="btn-edit" @click="edit(r)">Edit</button>
               </div>
@@ -136,7 +136,7 @@
             <p class="modal-header-sub">{{ project?.projectTitle || '' }}</p>
           </div>
           <div class="modal-header-actions">
-            <button class="btn-secondary" @click="printTerminalDocument">Print / Save as PDF</button>
+            <button class="btn-secondary" @click="printTerminalDocument">DOWNLOAD</button>
             <button class="close-btn" aria-label="Close" @click="terminalDoc = null">✕</button>
           </div>
         </div>

@@ -112,7 +112,7 @@
                                             <p class="doc-name">{{ doc.name }}</p>
                                             <p class="doc-meta">{{ doc.size }} &bull; Uploaded {{ doc.uploadedAt }}</p>
                                         </div>
-                                        <button class="btn btn-secondary btn-sm">Download</button>
+                                        <button class="btn btn-secondary btn-sm">DOWNLOAD</button>
                                     </div>
                                 </div>
                             </div>

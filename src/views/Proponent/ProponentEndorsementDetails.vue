@@ -121,7 +121,7 @@
         <div class="end-actions">
           <button class="end-btn" :disabled="busy" @click="previewLetter">View</button>
           <button class="end-btn is-primary" :disabled="busy" @click="downloadLetter">
-            Download
+            DOWNLOAD
           </button>
           <router-link class="end-btn" to="/endorsements?tab=certifications">
             Open Issued Certifications
