@@ -95,7 +95,7 @@
                     class="end-btn is-primary row-btn"
                     @click="goToReview(proposal.id)"
                   >
-                    REVIEW PROPOSAL
+                    REVIEW
                   </button>
 
                   <button
@@ -103,7 +103,7 @@
                     class="end-btn row-btn"
                     @click="goToMeeting(proposal.id)"
                   >
-                    VIEW DETAILED PROPOSAL
+                    VIEW
                   </button>
                 </td>
               </tr>

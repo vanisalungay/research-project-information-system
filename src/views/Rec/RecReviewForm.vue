@@ -9,7 +9,7 @@
     <!-- TITLE + DOWNLOAD BUTTON -->
     <div class="top-row">
       <h2 class="review-title">Proposal Info</h2>
-      <button class="btn-download" @click="goToDetailed">VIEW DETAILED PROPOSAL</button>
+      <button class="btn-download" @click="goToDetailed">VIEW</button>
     </div>
 
     <!-- PROPOSAL INFO -->
@@ -325,7 +325,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -353,31 +353,56 @@ const proposal = ref({
   status: ''
 })
 
-// Fetch proposal data
-onMounted(async () => {
-  const proposalId = route.params.id
-  if (proposalId) {
-    try {
-      loading.value = true
-      const res = await api.get(`/api/proposals/${proposalId}`)
-      const data = res.data
-      proposal.value = {
-        id: data.id,
-        title: data.projectTitle || data.title || '',
-        program: data.programTitle || '',
-        proponent: data.projectLeader || data.proponent?.name || '',
-        date: data.createdAt || '',
-        type: data.researchType || '',
-        status: data.status || ''
-      }
-    } catch (err) {
-      console.error(err)
-      error.value = 'Failed to load proposal details.'
-    } finally {
-      loading.value = false
-    }
+/**
+ * The id of the proposal under review: the params form the REVIEW button uses, or the query
+ * form, so a refresh, a direct link and the browser's Back/Forward all resolve it the same
+ * way instead of depending on how the page happened to be opened.
+ */
+const routeProposalId = () => route.params.id ?? route.query.id ?? null
+
+/**
+ * Reads the proposal. A route without an id and a proposal that is not there are both said
+ * out loud, instead of leaving the page as an empty shell with no explanation.
+ */
+const loadProposal = async () => {
+  const proposalId = routeProposalId()
+  error.value = ''
+  if (!proposalId) {
+    error.value = 'No proposal was selected. Open one from the proposal list.'
+    loading.value = false
+    return
   }
-})
+
+  loading.value = true
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}`)
+    const data = res.data || null
+    if (!data || data.id === null || data.id === undefined) {
+      error.value = 'This proposal could not be found.'
+      return
+    }
+    proposal.value = {
+      id: data.id,
+      title: data.projectTitle || data.title || '',
+      program: data.programTitle || '',
+      proponent: data.projectLeader || data.proponent?.name || '',
+      date: data.createdAt || '',
+      type: data.researchType || '',
+      status: data.status || ''
+    }
+  } catch (err) {
+    console.error(err)
+    error.value = 'Failed to load proposal details.'
+  } finally {
+    loading.value = false
+  }
+}
+
+// The route drives the load, so another proposal, Back/Forward, a refresh and a direct link
+// all reload - nothing is kept in temporary component state.
+watch(routeProposalId, () => {
+  loadProposal()
+}, { immediate: true })
 
 const openApproveModal = () => {
   showApproveModal.value = true

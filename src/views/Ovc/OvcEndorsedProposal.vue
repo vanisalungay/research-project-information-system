@@ -28,7 +28,7 @@
             </td>
             <td>{{ proposal.updatedAt?.substring(0,10) }}</td>
             <td>
-              <button class="view" @click="goToReview(proposal.id)">REVIEW PROPOSAL</button>
+              <button class="view" @click="goToReview(proposal.id)">REVIEW</button>
             </td>
           </tr>
           <tr v-if="filteredProposals.length===0">

@@ -18,7 +18,7 @@
 
       <div class="header-actions">
         <button class="btn yellow" @click="goToDetailed">
-          VIEW DETAILED PROPOSAL
+          VIEW
         </button>
 
         <button class="btn outline" @click="downloadAll">
@@ -217,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { downloadUploadedFile } from '@/utils/fileDownload'
@@ -255,14 +255,20 @@ const goBack = () => {
 }
 
 const goToDetailed = () => {
-  if (!proposal.value.id) return
+  // The id comes from the loaded proposal, or from the route this page was opened with -
+  // never from nowhere, so the button can no longer do nothing at all.
+  const proposalId = proposal.value.id || route.params.id || route.query.id
+  if (!proposalId) {
+    error.value = 'No proposal ID found.'
+    return
+  }
 
   // REC's own detailed proposal view. This used to open /detailed-proposal, which is the
   // Proponent's page - a REC reviewer is not the Proponent and that page is not theirs.
   router.push({
     path: '/rec-prop',
     query: {
-      id: proposal.value.id
+      id: proposalId
     }
   })
 }
@@ -360,9 +366,13 @@ const loadProposal = async () => {
   }
 }
 
-onMounted(() => {
-  loadProposal()
-})
+// The route drives the load: another proposal, Back/Forward, a refresh and a direct link all
+// reload. This used to run once on mount only, so moving between proposals never refreshed.
+watch(
+  () => route.params.id ?? route.query.id ?? null,
+  () => loadProposal(),
+  { immediate: true },
+)
 </script>
 
 <style>

@@ -1,14 +1,13 @@
 <template>
-  <div class="proposal-view">
-    <!-- HEADER -->
-    <div class="proposal-header">
-      <button class="back-btn" @click="goBack">← Back</button>
-      <div class="header-info">
-        <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
-        <p class="subtitle">Proposal ID: {{ proposal.documentId || proposal.proposalCode || '—' }}</p>
-      </div>
-    </div>
-
+  <div class="proposal-view rv-page">
+    <!-- HEADER: the shared review header - Back, title, id, status and DOWNLOAD. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      :show-download="false"
+      @back="goBack"
+    />
     <!-- LOADING STATE -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
@@ -18,11 +17,21 @@
     <!-- ERROR STATE -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">Go Back</button>
+      <button class="btn-primary" @click="loadProposal">Retry</button>
+      <button class="back-btn" @click="goBack">Go Back</button>
     </div>
 
-    <!-- CONTENT -->
+    <!-- MISSING ID / NOT FOUND: said out loud instead of an empty page -->
+    <div v-else-if="missingId || notFound" class="error-state">
+      <p v-if="missingId">No proposal was selected. Open one from the proposal list.</p>
+      <p v-else>This proposal could not be found, or it is not available to your account.</p>
+      <button class="btn-primary" @click="goBack">Back to Proposals</button>
+    </div>
+
+    <!-- CONTENT: the field sections in the wide column, the summary cards beside them. -->
     <template v-else-if="proposal.id">
+      <div class="rv-body">
+        <div class="rv-main">
       <!-- 1. Project Profile -->
           <!-- Every reviewable field, rendered from the shared field registry
                (src/utils/proposalFields.js) so each field has its own remark control and
@@ -39,21 +48,41 @@
             @remark-saved="onRemarkSaved"
             @remark-removed="onRemarkRemoved"
           />
+        </div>
+
+        <!-- Proposal Status and Quick Information: the values this page already loaded. -->
+        <ProposalReviewSidebar
+          :status="proposal.status"
+          :created-at="proposal.createdAt"
+          :updated-at="proposal.updatedAt"
+          :quick="quickRows"
+        />
+      </div>
     </template>
+
+    <!-- FALLBACK: the content area is never silently empty -->
+    <div v-else class="error-state">
+      <p>No proposal details to show.</p>
+      <button class="btn-primary" @click="loadProposal">Retry</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
+import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
 const route = useRoute()
+const router = useRouter()
 
-const loading = ref(false)
+// Starts as loading so the first paint shows the spinner instead of an empty content area.
+const loading = ref(true)
 const error = ref('')
 
 // Raw proposal response: the field registry resolves values from the real
@@ -104,7 +133,10 @@ const downloadFile = (fileName) => {
   if (fileName) window.open(`/api/files/${encodeURIComponent(fileName)}`, '_blank')
 }
 
-const proposal = ref < any > ({
+// The TypeScript generic that used to be on this line is not valid JavaScript: it parses as
+// a comparison against an undefined type name and threw a ReferenceError while this
+// component was being set up, so the page rendered nothing at all.
+const proposal = ref({
   id: null,
   programTitle: '',
   projectTitle: '',
@@ -150,43 +182,96 @@ const hasPriorityAgendas = computed(() => {
   return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
 })
 
-// Fetch proposal data
-onMounted(async () => {
-  const proposalId = route.params.id || route.query.id
+/**
+ * The proposal this page shows, taken from the route so a refresh, a direct link, the
+ * browser's Back/Forward and a move to another proposal all resolve the same way. The id is
+ * a query parameter on this route (`/rec-prop?id=...`); the params form is accepted too.
+ */
+const routeProposalId = computed(() => route.params.id ?? route.query.id ?? null)
+
+/** The route carries no id at all. */
+const missingId = ref(false)
+
+/** The id was given, but no such proposal is readable by this account. */
+const notFound = ref(false)
+
+/**
+ * Reads the proposal the route points at. Every outcome is a state the template shows:
+ * loading, a failure with a retry, a missing id, a proposal that is not there, or the
+ * proposal itself - never an empty page.
+ */
+const loadProposal = async () => {
+  const proposalId = routeProposalId.value
+  error.value = ''
+  notFound.value = false
+
   if (!proposalId) {
-    error.value = 'No proposal ID provided.'
+    missingId.value = true
+    loading.value = false
+    proposal.value = { id: null }
     return
   }
 
+  missingId.value = false
   loading.value = true
-  error.value = ''
-
   try {
     const res = await api.get(`/api/proposals/${proposalId}`)
-    const data = res.data
+    const data = res.data || null
+
+    if (!data || data.id === null || data.id === undefined) {
+      proposal.value = { id: null }
+      notFound.value = true
+      return
+    }
 
     // Keep the raw API response: the field registry resolves the real entity/DTO keys.
     proposal.value = data
     await loadFieldRemarks(proposalId)
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to load proposal details.'
+    proposal.value = { id: null }
+    if (err?.response?.status === 404) notFound.value = true
+    else error.value = 'Failed to load proposal details.'
   } finally {
     loading.value = false
   }
+}
 
-  const goBack = () => {
+// The route is the single source of truth: refreshing the page, opening a link, moving
+// Back/Forward between proposals and clicking VIEW for a different proposal all reload
+// from the id. Nothing is kept in temporary component state.
+watch(routeProposalId, () => {
+  loadProposal()
+}, { immediate: true })
+
+/** The summary rows the shared sidebar shows, from the values this page already loaded. */
+const quickRows = computed(() => [
+  { label: 'Project Leader', value: proposal.value.projectLeader || 'N/A' },
+  { label: 'College', value: proposal.value.college || 'N/A' },
+  { label: 'Duration', value: proposal.value.duration ? proposal.value.duration + ' months' : 'N/A' },
+  { label: 'Research Type', value: proposal.value.researchType || 'N/A' },
+])
+
+/**
+ * Back always works: it returns to the previous page when there is one, and otherwise falls
+ * back to the REC proposal list instead of leaving the reader on a dead page. This used to
+ * be declared inside onMounted, so the template's @click had no handler at all.
+ */
+const goBack = () => {
+  if (typeof window !== 'undefined' && window.history.length > 1) {
     window.history.back()
+    return
   }
-})
+  router.push('/assigned-proposals')
+}
 </script>
 
 <style scoped>
+/* The shell already pads the content area and supplies the typeface. The 900px cap squeezed
+   the summary column until it dropped under the field sections, and the local font stack made
+   this one page read differently from the rest of the application. */
 .proposal-view {
-  max-width: 900px;
-  margin: 24px auto;
-  padding: 16px;
-  font-family: sans-serif;
+  width: 100%;
   line-height: 1.6;
 }
 

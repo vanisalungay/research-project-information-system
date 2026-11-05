@@ -1,36 +1,14 @@
 <template>
-  <div class="proposal-detail-page">
-    <!-- HEADER -->
-    <header class="page-header">
-      <div class="header-left">
-        <button class="back-btn" @click="goBack">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-          Back
-        </button>
-        <div class="header-info">
-          <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
-          <div class="header-meta">
-            <span class="proposal-id">ID: {{ proposal.documentId || proposal.proposalCode || '—' }}</span>
-            <span class="status-badge" :class="(proposal.status || '').toLowerCase()">
-              {{ proposal.status || 'DRAFT' }}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button class="btn-secondary" @click="downloadAll">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          DOWNLOAD
-        </button>
-      </div>
-    </header>
-
+  <div class="proposal-detail-page rv-page">
+    <!-- HEADER: the shared review header - Back, title, id, status and DOWNLOAD. The
+         handlers stay this page's own; only the chrome is shared. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      @back="goBack"
+      @download="downloadAll"
+    />
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
@@ -45,9 +23,9 @@
 
     <!-- Content -->
     <template v-else-if="proposal.id">
-      <div class="content-grid">
+      <div class="rv-body">
         <!-- LEFT COLUMN: Main Content -->
-        <div class="main-content">
+        <div class="rv-main">
           <!-- Every reviewable field, rendered from the shared field registry
                (src/utils/proposalFields.js) so each field has its own remark control and
                the correct entity/DTO key. Sections 01-27 are covered exhaustively. -->
@@ -66,59 +44,16 @@
         </div>
 
         <!-- RIGHT COLUMN: Sidebar -->
-        <aside class="sidebar">
-          <!-- Status Card -->
-          <div class="sidebar-card">
-            <h3>Proposal Status</h3>
-            <div class="status-indicator" :class="(proposal.status || '').toLowerCase()">
-              <span class="status-dot"></span>
-              <span class="status-text">{{ proposal.status || 'DRAFT' }}</span>
-            </div>
-            <div class="status-meta">
-              <p><strong>Created:</strong> {{ formatDate(proposal.createdAt) }}</p>
-              <p><strong>Updated:</strong> {{ formatDate(proposal.updatedAt) }}</p>
-            </div>
-          </div>
-
-          <!-- Quick Info -->
-          <div class="sidebar-card">
-            <h3>Quick Information</h3>
-            <div class="quick-info-list">
-              <div class="quick-info-item">
-                <span class="info-label">Project Leader</span>
-                <span class="info-value">{{ proposal.projectLeader || 'N/A' }}</span>
-              </div>
-              <div class="quick-info-item">
-                <span class="info-label">College</span>
-                <span class="info-value">{{ proposal.college || 'N/A' }}</span>
-              </div>
-              <div class="quick-info-item">
-                <span class="info-label">Duration</span>
-                <span class="info-value">{{ proposal.duration ? proposal.duration + ' months' : 'N/A' }}</span>
-              </div>
-              <div class="quick-info-item">
-                <span class="info-label">Research Type</span>
-                <span class="info-value">{{ proposal.researchType || 'N/A' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Review Information -->
-          <div v-if="proposal.reviewedBy" class="sidebar-card review-info-card">
-            <h3>Review Information</h3>
-            <div class="review-info-list">
-              <div class="review-info-item">
-                <span class="review-info-label">Reviewed By:</span>
-                <span class="review-info-value">{{ proposal.reviewedBy }}</span>
-              </div>
-              <div class="review-info-item">
-                <span class="review-info-label">Position:</span>
-                <span class="review-info-value reviewer-position">
-                  {{ formatReviewerPosition(proposal.reviewedByPosition) }}
-                </span>
-              </div>
-            </div>
-          </div>
+        <aside class="rv-aside">
+          <!-- Proposal Status, Quick Information and Review Information: the shared summary
+               cards. The values are the ones this page already loaded. -->
+          <ProposalReviewSidebar
+            :status="proposal.status"
+            :created-at="proposal.createdAt"
+            :updated-at="proposal.updatedAt"
+            :quick="quickRows"
+            :review="reviewRows"
+          />
 
           <!-- Status Timeline -->
           <div class="sidebar-card">
@@ -263,6 +198,8 @@ import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
+import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -426,6 +363,22 @@ const downloadAll = () => {
   })
 }
 
+/**
+ * The summary rows the shared sidebar shows. Everything here is a value this page already
+ * loaded - the component drops a row that has nothing to show, so no card is ever empty.
+ */
+const quickRows = computed(() => [
+  { label: 'Project Leader', value: proposal.value.projectLeader || 'N/A' },
+  { label: 'College', value: proposal.value.college || 'N/A' },
+  { label: 'Duration', value: proposal.value.duration ? proposal.value.duration + ' months' : 'N/A' },
+  { label: 'Research Type', value: proposal.value.researchType || 'N/A' },
+])
+
+const reviewRows = computed(() => [
+  { label: 'Reviewed By', value: proposal.value.reviewedBy || '' },
+  { label: 'Position', value: formatReviewerPosition(proposal.value.reviewedByPosition) || '' },
+])
+
 const goBack = () => {
   router.back()
 }
@@ -450,10 +403,10 @@ const formatReviewerPosition = (position) => {
 </script>
 
 <style scoped>
+/* The shell supplies the content padding and the lavender content background; a page-level
+   background and a 100vh minimum only fought with it. */
 .proposal-detail-page {
-  padding: 24px;
-  background: #f8fafc;
-  min-height: 100vh;
+  width: 100%;
 }
 
 /* HEADER */

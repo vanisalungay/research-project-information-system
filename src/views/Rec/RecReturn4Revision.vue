@@ -183,9 +183,9 @@ const userStore = useUserDataStore()
 const revisionComment = ref('')
 const checklist = ref([false, false, false, false])
 // Reviewer remarks keyed by proposal section ("12" -> remark text).
-const sectionRemarks = ref<Record<string, string>>({})
+const sectionRemarks = ref({})
 // Field-level remarks already recorded for this proposal (active round).
-const fieldRemarksResponse = ref<any>(null)
+const fieldRemarksResponse = ref(null)
 const fieldRemarks = computed(() => Object.values(buildFieldRemarkIndex(fieldRemarksResponse.value)).flat())
 
 const showConfirmModal = ref(false)
@@ -245,8 +245,8 @@ const quickTemplates = [
   'Supporting documentation is incomplete.',
 ]
 
-const filePicker = ref<HTMLInputElement | null>(null)
-const selectedFiles = ref<File[]>([])
+const filePicker = ref(null)
+const selectedFiles = ref([])
 
 const handleFiles = (event: Event) => {
   const target = event.target as HTMLInputElement

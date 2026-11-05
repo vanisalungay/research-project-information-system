@@ -512,4 +512,158 @@ const collectionState = computed(() => {
     grid-template-columns: 1fr;
   }
 }
+/* ===== Review design layer =====================================================
+   The card / grid design the proposal review and detailed-proposal pages share. These rules
+   come last on purpose: they override the older flat styling above for the same selectors, so
+   the section markup, its fields and its remark controls did not have to change at all. */
+
+/* Section card with the navy header band. The band bleeds to the card edges through
+   negative margins, so no wrapper element was needed. */
+.pf-section {
+  position: relative;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-bottom: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+  overflow: hidden;
+}
+
+.pf-section:last-child {
+  border-bottom: 1px solid #e4e4f2;
+  margin-bottom: 0;
+}
+
+.pf-section h3 {
+  margin: -20px -20px 18px;
+  padding: 14px 20px;
+  background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
+  color: #ffffff;
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+/* Two columns where the section asks for one, with a divider under every field so long
+   values stay readable and each field is separate from the next. A remark still never
+   stretches the field beside it. */
+.grid-2 {
+  gap: 0 24px;
+  align-items: start;
+}
+
+.grid-2 > div {
+  padding: 14px 0;
+  border-bottom: 1px dashed #e8e8f5;
+}
+
+.grid-2 > div:last-child {
+  border-bottom: none;
+}
+
+.pf-label {
+  margin-bottom: 4px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #6b6b8c;
+}
+
+.pf-value {
+  margin: 0;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #1c1a3c;
+}
+
+/* Narrative sections read better lighter, with a roomier line height. */
+.pf-long {
+  line-height: 1.6;
+  font-weight: 400;
+  color: #2b2b45;
+}
+
+.pf-field {
+  padding: 14px 0;
+  border-bottom: 1px dashed #e8e8f5;
+}
+
+.pf-field:last-child {
+  border-bottom: none;
+}
+
+.pf-field + .pf-field {
+  margin-top: 0;
+}
+
+.pf-subhead {
+  margin: 0 0 4px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #6b6b8c;
+}
+
+.pf-file {
+  font-size: var(--fs-sm, 0.875rem);
+  color: #1c1a3c;
+}
+
+.btn-download-sm {
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.btn-download-sm:hover {
+  background: #e0e7ff;
+}
+
+.pf-empty {
+  margin: 0;
+  font-size: var(--fs-sm, 0.875rem);
+  color: #6b6b8c;
+}
+
+/* Repeated entries: a light band with dark text, readable whatever else is on the page. */
+.proposal-table {
+  font-size: var(--fs-sm, 0.875rem);
+  margin-top: 10px;
+}
+
+.proposal-table th,
+.proposal-table td {
+  border: 1px solid #e8e8f5;
+  padding: 9px 10px;
+}
+
+.proposal-table th {
+  background: #f5f5fc;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #4b4b6b;
+}
+
+/* One column on a phone, with the card padding tightened to match, so no field is squeezed
+   and nothing overflows horizontally. */
+@media (max-width: 640px) {
+  .pf-section {
+    padding: 16px;
+  }
+
+  .pf-section h3 {
+    margin: -16px -16px 14px;
+    padding: 12px 16px;
+  }
+
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
 </style>
