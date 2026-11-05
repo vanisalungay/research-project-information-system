@@ -43,7 +43,9 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
+import { useDeanAttentionStore } from '@/stores/deanAttention'
 import { unreadBadgeLabel } from '@/utils/notifications'
+import { deanAttentionCount } from '@/utils/deanAttention'
 
 const props = defineProps({
   /** True while the shell shows the narrow icon rail instead of the full sidebar. */
@@ -53,6 +55,7 @@ const props = defineProps({
 const route = useRoute()
 const userStore = useUserDataStore()
 const notificationStore = useNotificationStore()
+const deanAttentionStore = useDeanAttentionStore()
 
 // SVG icon definitions
 const icons = {
@@ -158,25 +161,12 @@ const allNavItems = [
     section: 'main',
   },
 
-  // Dean / Department Chair: the whole Dean workflow in three items - the dashboard
-  // (the shared /home item above, which renders the Dean dashboard for this role), the
-  // endorsement requests of their own college, and notifications. There is deliberately
-  // no Endorsement Letter Settings entry: the ORPS Director is no longer configured, so
-  // nothing has to be set up before a request can be reviewed or decided.
-  {
-    iconKey: 'endorse',
-    text: 'Endorsement Requests',
-    path: '/dean-requests',
-    roles: [UserRole.DEAN],
-    section: 'main',
-  },
-  {
-    iconKey: 'notification',
-    text: 'Notifications',
-    path: '/notifications',
-    roles: [UserRole.DEAN],
-    section: 'main',
-  },
+  // Dean / Department Chair: one centralized item. The Dean dashboard (the shared /home
+  // item above, which renders the Dean dashboard for this role) now holds the summary,
+  // the endorsement requests of their own college and the notifications as sections, so
+  // the separate Endorsement Requests and Notifications sidebar links were removed for
+  // this role only. Both pages and their routes still exist and are linked from the
+  // dashboard. There is deliberately no Endorsement Letter Settings entry either.
 
   // PROPONENT
   {
@@ -324,14 +314,27 @@ const showHelpCard = computed(
 const isSelected = (path) => route.path === path || route.path.startsWith(`${path}/`)
 
 /**
- * The unread count badge. It is attached to the Notifications link only and comes from
- * the shared notification store, so it matches the header bell and the notifications
- * page - nothing is hardcoded and nothing is shown when the count is zero.
+ * The unread count badge. Every role keeps it on the Notifications link and it comes from
+ * the shared notification store, so it matches the header bell and the notifications page.
+ *
+ * The Dean has no separate Notifications item any more: the Dean dashboard is the one page
+ * that holds the endorsement requests of the Dean's own college and the Dean's
+ * notifications, so its Dashboard item carries the badge instead - the number of items
+ * waiting there. Nothing is hardcoded and nothing is shown when the count is zero.
  */
 const isNotificationsItem = (item) => item.text === 'Notifications'
 
-const badgeFor = (item) =>
-  isNotificationsItem(item) ? unreadBadgeLabel(notificationStore.unreadCount) : ''
+const isDeanDashboardItem = (item) =>
+  item.text === 'Dashboard' && userStore.user?.role === UserRole.DEAN
+
+const badgeFor = (item) => {
+  if (isDeanDashboardItem(item)) {
+    return unreadBadgeLabel(
+      deanAttentionCount(deanAttentionStore.pendingCount, notificationStore.notifications),
+    )
+  }
+  return isNotificationsItem(item) ? unreadBadgeLabel(notificationStore.unreadCount) : ''
+}
 </script>
 
 <style scoped>

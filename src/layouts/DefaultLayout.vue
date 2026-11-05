@@ -25,10 +25,12 @@ import HeaderLogo from '@/components/HeaderLogo.vue'
 import NavMenu from '@/components/NavMenu.vue'
 import { useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
+import { useDeanAttentionStore } from '@/stores/deanAttention'
 
 const route = useRoute()
 const userStore = useUserDataStore()
 const notificationStore = useNotificationStore()
+const deanAttentionStore = useDeanAttentionStore()
 
 /**
  * The sidebar is expanded on a desktop and a narrow icon rail on a smaller screen; the
@@ -66,6 +68,10 @@ watch(
   () => [userStore.user?.id ?? null, route.fullPath],
   ([userId]) => {
     notificationStore.refresh(userId)
+    // The Dean's dashboard is the one page that holds the endorsement requests and the
+    // notifications, so its sidebar badge is refreshed from the same trigger. Any other
+    // role (or a signed-out shell) resolves to zero without a request.
+    deanAttentionStore.refresh(userStore.user?.role ?? null)
   },
   { immediate: true },
 )

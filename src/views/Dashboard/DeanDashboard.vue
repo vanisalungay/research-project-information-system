@@ -89,6 +89,7 @@
                   <th>Project title</th>
                   <th>College</th>
                   <th>Submitted</th>
+                  <th>Status</th>
                   <th class="text-right">Action</th>
                 </tr>
               </thead>
@@ -102,6 +103,11 @@
                   </td>
                   <td>{{ request.college }}</td>
                   <td class="cell-id">{{ formatEndorsementTimestamp(request.createdAt) }}</td>
+                  <td>
+                    <span class="end-badge" :class="endorsementStatusTone(request.status)">
+                      {{ endorsementStatusLabel(request.status) }}
+                    </span>
+                  </td>
                   <td class="text-right">
                     <router-link class="end-btn is-primary row-btn" :to="`/dean-requests/${request.id}`">
                       Review
@@ -113,6 +119,8 @@
           </div>
         </section>
 
+        <!-- ============== RECENTLY DECIDED + NOTIFICATIONS ============== -->
+        <div class="dash-row dash-row--main">
         <!-- ===================== RECENTLY DECIDED ===================== -->
         <section class="dash-section">
           <header class="dash-section-head">
@@ -156,6 +164,47 @@
             </table>
           </div>
         </section>
+
+        <!-- ===================== NOTIFICATIONS ===================== -->
+        <aside class="dash-section">
+          <header class="dash-section-head">
+            <span class="dash-section-icon" v-html="icons.bell"></span>
+            <h3 class="dash-section-title">Notifications</h3>
+            <div class="dash-section-actions">
+              <router-link class="section-link" to="/notifications">
+                <span>View all</span>
+                <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+              </router-link>
+            </div>
+          </header>
+
+          <p v-if="notifications.length === 0" class="dash-empty">No notifications.</p>
+
+          <ul v-else class="dash-notes">
+            <li
+              v-for="notification in notifications.slice(0, 5)"
+              :key="notification.id"
+              class="dash-note dash-note--clickable"
+              :class="{ 'dash-note--unread': isUnreadNotification(notification) }"
+              @click="openNotification(notification)"
+            >
+              <span class="dash-note-icon" v-html="icons.bell"></span>
+              <div class="dash-note-body">
+                <p class="dash-note-title">{{ notification.title || 'Notification' }}</p>
+                <p class="dash-note-text">{{ notification.message }}</p>
+                <div class="dash-note-foot">
+                  <span class="dash-note-date">
+                    {{ formatEndorsementTimestamp(notification.createdAt) }}
+                  </span>
+                  <span v-if="isUnreadNotification(notification)" class="end-badge is-pending">
+                    Unread
+                  </span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </aside>
+        </div>
       </template>
     </div>
   </div>
@@ -163,9 +212,15 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
+import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import { useNotificationStore } from '@/stores/notifications'
+import { useDeanAttentionStore } from '@/stores/deanAttention'
+import { isUnreadNotification } from '@/utils/notifications.js'
+import { notificationDestination } from '@/utils/notificationTarget'
 import {
   ENDORSEMENT_STATUS,
   endorsementStatusLabel,
@@ -174,8 +229,38 @@ import {
   formatEndorsementTimestamp,
 } from '@/utils/endorsement.js'
 
+const router = useRouter()
 const userStore = useUserDataStore()
+const notificationStore = useNotificationStore()
+const deanAttentionStore = useDeanAttentionStore()
 const displayName = computed(() => userStore.user?.name || 'Dean')
+
+/**
+ * The Dean's notifications, newest first. They come from the shared store the shell already
+ * fills (the same records the notifications page and the header bell read), so the
+ * dashboard never fetches a second copy.
+ */
+const notifications = computed(() => notificationStore.recent)
+
+/**
+ * Opens the resource a notification is about. The destination is resolved from the record
+ * itself - never from its text - and a notification with no destination only marks itself
+ * read. Marking read is best effort and never blocks the navigation, exactly as the
+ * notifications page does.
+ */
+const openNotification = async (notification) => {
+  if (!notification) return
+  if (isUnreadNotification(notification)) {
+    try {
+      await api.put(`/api/notifications/${notification.id}/read`)
+    } catch (err) {
+      // Best effort: the navigation below still runs.
+    }
+  }
+  const destination = notificationDestination(notification, userStore.user?.role)
+  if (destination) router.push(destination)
+  notificationStore.refresh(userStore.user?.id ?? null)
+}
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -194,6 +279,10 @@ const icons = {
   clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/>'),
   check: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
   rejected: svg('<circle cx="12" cy="12" r="9"/><path d="m9.5 9.5 5 5M14.5 9.5l-5 5"/>'),
+  bell: svg(
+    '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+      '<path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  ),
 }
 
 const requests = ref([])
@@ -217,6 +306,10 @@ async function load() {
   error.value = ''
   try {
     requests.value = await fetchEndorsementRequests()
+    // The sidebar badge is the number of items waiting on this page: the pending requests
+    // loaded here plus the unread notifications (see utils/deanAttention.js). The count
+    // comes from the response just loaded, so no second request is made.
+    deanAttentionStore.setPendingCount(pending.value.length)
   } catch (err) {
     error.value =
       err?.response?.data?.error || 'Your endorsement requests could not be loaded.'

@@ -231,21 +231,23 @@ test('the consolidated endorsement page is the only endorsement route left', () 
   }
 })
 
-test('the Dean sees exactly the three Dean items, and nothing obsolete', () => {
+test('the Dean sees exactly the Dashboard item, and nothing obsolete', () => {
   const items = navItems().filter((item) => item.roles.includes('DEAN'))
   const main = items.filter((item) => item.section === 'main')
   const bottom = items.filter((item) => item.section === 'bottom')
 
-  // Dashboard, Endorsement Requests, Notifications - in that order, and nothing else.
+  // Dashboard only. The endorsement requests and the notifications are sections of the Dean
+  // dashboard now, so their separate sidebar links were removed for this role only; both
+  // pages and their routes still exist and are linked from the dashboard.
   assert.deepEqual(
     main.map((item) => item.text),
-    ['Dashboard', 'Endorsement Requests', 'Notifications'],
-    'the Dean main navigation must be exactly Dashboard, Endorsement Requests, Notifications',
+    ['Dashboard'],
+    'the Dean main navigation must be exactly Dashboard',
   )
   assert.deepEqual(
     main.map((item) => item.path),
-    ['/home', '/dean-requests', '/notifications'],
-    'each Dean item must point at its own route',
+    ['/home'],
+    'the Dean Dashboard item must point at the shared /home route',
   )
 
   // Dashboard is the shared /home route, which renders the Dean dashboard for this role,
@@ -284,8 +286,8 @@ test('the Dean sidebar is the same on every Dean route', () => {
 
   assert.deepEqual(
     pathsFor('DEAN'),
-    ['/home', '/dean-requests', '/notifications', '/manage-profile'],
-    'the same items on every Dean route: the three Dean items plus the shared Profile Settings',
+    ['/home', '/manage-profile'],
+    'the same items on every Dean route: the Dashboard plus the shared Profile Settings',
   )
 })
 
