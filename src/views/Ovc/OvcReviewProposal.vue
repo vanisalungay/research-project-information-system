@@ -217,7 +217,8 @@
               </li>
               <li v-if="proposal.budgetFileName" class="file-item">
                 <span>📄 Budget Document</span>
-                <button class="download-btn" @click="downloadFile(proposal.budgetFileName)">DOWNLOAD</button>
+                <button class="download-btn"
+                  @click="downloadFile(proposal.budgetFilePath || proposal.budgetFileName)">DOWNLOAD</button>
               </li>
               <li
                 v-if="!proposal.reviewFileName && !proposal.roadmapFileName && !proposal.gadFileName && !proposal.budgetFileName"
@@ -411,11 +412,14 @@ const downloadFile = (fileName) => {
 }
 
 const downloadAll = () => {
+  // The stored relative path is what the authorized /api/files route resolves; a file
+  // uploaded into a subfolder (technology-maps/, budget-files/) cannot be reached by its
+  // display name alone.
   const files = [
     proposal.value.reviewFileName,
-    proposal.value.roadmapFileName,
+    proposal.value.roadmapFilePath || proposal.value.roadmapFileName,
     proposal.value.gadFileName,
-    proposal.value.budgetFileName
+    proposal.value.budgetFilePath || proposal.value.budgetFileName
   ].filter(Boolean)
   files.forEach((file, index) => {
     setTimeout(() => downloadFile(file), index * 300)

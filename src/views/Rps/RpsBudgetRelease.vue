@@ -666,7 +666,7 @@
 
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { API_BASE_URL } from '@/utils/api'
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 
 export default {
   name: "RpsBudgetRelease",
@@ -752,18 +752,14 @@ export default {
     async downloadProposal() {
       await this._showAlert("Download Proposal PDF", { type: 'info', title: 'Download' });
     },
+    // Attachments are served by the authorized /api/files route, not by a static
+    // /uploads path (which the server does not expose).
     viewAttachment(filePath){
-
-      window.open(`${API_BASE_URL}/uploads/${filePath}`,
-      "_blank"
-      )
+      previewUploadedFile(filePath)
     },
 
     downloadAttachment(filePath){
-    const link=document.createElement("a");
-    link.href=`${API_BASE_URL}/uploads/${filePath}`;
-    link.download="";
-    link.click();
+      downloadUploadedFile(filePath)
     },
 
   backToEndorsed(){

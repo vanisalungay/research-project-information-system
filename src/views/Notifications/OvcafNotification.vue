@@ -12,7 +12,7 @@
         <p class="notif-desc">{{ notif.description }}</p>
 
         <div class="notif-actions">
-          <button class="btn-yellow" @click="$router.push('ovcaf-validate')">View Proposal</button>
+          <button class="btn-yellow" @click="$router.push('ovcaf-validate')">VIEW NOTIFICATION</button>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@
           </div>
 
           <div class="header-actions">
-            <button class="outline" @click="showModal = true">See Detailed Proposal</button>
+            <button class="outline" @click="showModal = true">VIEW DETAILED PROPOSAL</button>
             <button class="outline" @click="downloadAll">DOWNLOAD</button>
           </div>
         </div>

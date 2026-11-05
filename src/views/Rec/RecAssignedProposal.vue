@@ -46,8 +46,8 @@
             <span class="status-pill">{{ proposal.status }}</span>
           </td>
           <td>
-            <button v-if="proposal.status === 'UNDER_REVIEW'" class="review-btn" @click="goToReview(proposal.id)">Review</button>
-            <button v-else class="view-btn" @click="goToView(proposal.id)">View</button>
+            <button v-if="proposal.status === 'UNDER_REVIEW'" class="review-btn" @click="goToReview(proposal.id)">REVIEW PROPOSAL</button>
+            <button v-else class="view-btn" @click="goToView(proposal.id)">VIEW DETAILED PROPOSAL</button>
           </td>
         </tr>
       </tbody>

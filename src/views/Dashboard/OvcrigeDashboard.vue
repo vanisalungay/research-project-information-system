@@ -116,7 +116,7 @@
                 </td>
                 <td class="text-right">
                   <button class="end-btn is-primary row-btn" @click="goToReview(proposal.id)">
-                    Review
+                    REVIEW PROPOSAL
                   </button>
                 </td>
               </tr>

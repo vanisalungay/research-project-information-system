@@ -24,7 +24,7 @@
         <div class="actions">
           <button class="btn btn-edit" @click="editProposal">Edit Proposal</button>
 
-          <button class="btn btn-save" @click="viewDetails">See Detailed Proposal</button>
+          <button class="btn btn-save" @click="viewDetails">VIEW DETAILED PROPOSAL</button>
 
           <button class="btn btn-download" @click="downloadPdf">DOWNLOAD</button>
         </div>

@@ -53,7 +53,7 @@
               <span class="status pending">{{ proposal.status }}</span>
             </td>
             <td>
-              <button class="review-btn" @click="goToReview(proposal.id)">Review</button>
+              <button class="review-btn" @click="goToReview(proposal.id)">REVIEW PROPOSAL</button>
             </td>
           </tr>
           <tr v-if="filteredProposals.length===0">

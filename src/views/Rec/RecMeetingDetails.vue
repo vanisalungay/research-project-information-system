@@ -18,7 +18,7 @@
 
       <div class="header-actions">
         <button class="btn yellow" @click="goToDetailed">
-          See Detailed Proposal
+          VIEW DETAILED PROPOSAL
         </button>
 
         <button class="btn outline" @click="downloadAll">
@@ -219,7 +219,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import api, { API_BASE_URL } from '@/utils/api'
+import api from '@/utils/api'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 const router = useRouter()
 const route = useRoute()
@@ -256,28 +257,27 @@ const goBack = () => {
 const goToDetailed = () => {
   if (!proposal.value.id) return
 
+  // REC's own detailed proposal view. This used to open /detailed-proposal, which is the
+  // Proponent's page - a REC reviewer is not the Proponent and that page is not theirs.
   router.push({
-    path: '/detailed-proposal',
+    path: '/rec-prop',
     query: {
       id: proposal.value.id
     }
   })
 }
 
+// Downloads go through the authorized /api/files route (utils/fileDownload). The previous
+// implementation linked straight at `${API_BASE_URL}/uploads/<name>`, which is not a route
+// the server exposes, so every attachment download failed.
 const downloadFile = (file) => {
-  if (!file.url) return
-
-  const link = document.createElement('a')
-  link.href = file.url
-  link.download = file.name
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  if (!file || !file.path) return
+  downloadUploadedFile(file.path)
 }
 
 const downloadAll = () => {
-  attachments.value.forEach(file => {
-    downloadFile(file)
+  attachments.value.forEach((file, index) => {
+    setTimeout(() => downloadFile(file), index * 300)
   })
 }
 
@@ -328,28 +328,28 @@ const loadProposal = async () => {
     if (data.proposalFileName) {
       attachments.value.push({
         name: data.proposalFileName,
-        url: `${API_BASE_URL}/uploads/${data.proposalFileName}`
+        path: data.proposalFilePath || data.proposalFileName
       })
     }
 
     if (data.reviewFileName) {
       attachments.value.push({
         name: data.reviewFileName,
-        url: `${API_BASE_URL}/uploads/${data.reviewFileName}`
+        path: data.reviewFilePath || data.reviewFileName
       })
     }
 
     if (data.roadmapFileName) {
       attachments.value.push({
         name: data.roadmapFileName,
-        url: `${API_BASE_URL}/uploads/${data.roadmapFileName}`
+        path: data.roadmapFilePath || data.roadmapFileName
       })
     }
 
     if (data.gadFileName) {
       attachments.value.push({
         name: data.gadFileName,
-        url: `${API_BASE_URL}/uploads/${data.gadFileName}`
+        path: data.gadFilePath || data.gadFileName
       })
     }
   } catch (err) {

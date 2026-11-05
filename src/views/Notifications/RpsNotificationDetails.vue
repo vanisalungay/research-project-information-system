@@ -95,7 +95,7 @@
           class="primary-btn"
           @click="viewProposal"
         >
-          View Proposal
+          VIEW NOTIFICATION
         </button>
 
         <button

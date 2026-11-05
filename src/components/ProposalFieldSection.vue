@@ -23,8 +23,8 @@
         <div v-if="field.kind === 'file'" class="pf-file">
           <template v-if="displayValue(field)">
             <span>📄 {{ displayValue(field) }}</span>
-            <button type="button" class="btn-download-sm" @click="$emit('download', displayValue(field))">
-              Download
+            <button type="button" class="btn-download-sm" @click="$emit('download', downloadTarget(field))">
+              DOWNLOAD
             </button>
           </template>
           <span v-else class="pf-empty">No file uploaded.</span>
@@ -231,6 +231,21 @@ const displayValue = (field) => {
   const value = fieldValue(props.proposal, field)
   if (field.kind === 'list' && Array.isArray(value)) return value.join(', ')
   return value
+}
+
+/**
+ * What a Download hands to the parent: the stored relative path when the proposal carries
+ * one (a document uploaded into a subfolder such as technology-maps/ can only be fetched by
+ * that path through the authorized /api/files route), otherwise the display name the row
+ * already shows. The label and the on-screen value are unchanged.
+ */
+const downloadTarget = (field) => {
+  const pathKey = String(field.key).replace(/FileName$/, 'FilePath')
+  if (pathKey !== field.key) {
+    const path = props.proposal?.[pathKey]
+    if (path) return path
+  }
+  return displayValue(field)
 }
 
 const controlProps = (fieldKey, fieldLabel) => ({

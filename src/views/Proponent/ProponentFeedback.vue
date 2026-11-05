@@ -53,7 +53,7 @@
           </div>
 
           <button class="btn-view">
-            View Proposal
+            VIEW DETAILED PROPOSAL
           </button>
         </div>
 

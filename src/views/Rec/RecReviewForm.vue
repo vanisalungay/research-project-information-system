@@ -9,7 +9,7 @@
     <!-- TITLE + DOWNLOAD BUTTON -->
     <div class="top-row">
       <h2 class="review-title">Proposal Info</h2>
-      <button class="btn-download" @click="goToDetailed">View detailed Proposal</button>
+      <button class="btn-download" @click="goToDetailed">VIEW DETAILED PROPOSAL</button>
     </div>
 
     <!-- PROPOSAL INFO -->
