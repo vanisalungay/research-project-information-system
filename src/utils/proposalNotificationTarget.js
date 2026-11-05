@@ -36,6 +36,24 @@ export const REC_PROPOSAL_DETAILS_PATH = '/rec-prop'
 /** Name of the OVCRIGE route that opens one proposal for review. */
 export const OVCRIGE_PROPOSAL_DETAILS_ROUTE = 'OvcReviewProposal'
 
+/** The RPS roles (RPS Admin and RPS Staff) that share the RPS proposal-details page. */
+export const RPS_ROLES = ['RPS_ADMIN', 'RPS_STAFF']
+
+/** Name of the RPS route that shows one proposal. */
+export const RPS_PROPOSAL_DETAILS_ROUTE = 'ProposalDetails'
+
+/** The Office of the Chancellor role, whose proposal page is the final-approval screen. */
+export const OC_ROLE = 'OC'
+
+/** Name of the Chancellor route that opens one proposal for final approval. */
+export const OC_PROPOSAL_DETAILS_ROUTE = 'OCFinalApproval'
+
+/** The OVCAF role, whose proposal page is the financial-validation screen. */
+export const OVCAF_ROLE = 'OVCAF'
+
+/** Path of the OVCAF route that opens one proposal (the id is a path parameter). */
+export const OVCAF_PROPOSAL_DETAILS_PATH = '/ovcaf/proposals'
+
 /** A usable positive database id, or null for anything else (missing, text, 0, -1). */
 function asId(value) {
   if (value === null || value === undefined || value === '') return null
@@ -64,6 +82,15 @@ export function proposalNotificationDestination(notification, role) {
   }
   if (role === OVCRIGE_ROLE) {
     return { name: OVCRIGE_PROPOSAL_DETAILS_ROUTE, params: { id: proposalId } }
+  }
+  if (RPS_ROLES.includes(role)) {
+    return { name: RPS_PROPOSAL_DETAILS_ROUTE, params: { id: proposalId } }
+  }
+  if (role === OC_ROLE) {
+    return { name: OC_PROPOSAL_DETAILS_ROUTE, params: { id: proposalId } }
+  }
+  if (role === OVCAF_ROLE) {
+    return { path: `${OVCAF_PROPOSAL_DETAILS_PATH}/${proposalId}` }
   }
   return null
 }

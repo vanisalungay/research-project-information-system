@@ -241,12 +241,10 @@ body {
     background-color: #0f172a !important;
   }
 
-  /* Preserve high-contrast text readability on yellow/brand buttons */
-  button[class*="yellow"],
-  button[class*="primary"],
-  button[class*="submit"],
-  .create-btn,
-  .submit-btn {
+  /* The brand-yellow buttons need dark text. The blue primary buttons do NOT: they are
+     #2452ff / #315bff and their labels must stay white, so "primary", "submit" and
+     "create-btn" are no longer forced to black (that painted black on blue). */
+  button[class*="yellow"] {
     color: #000000 !important;
   }
 

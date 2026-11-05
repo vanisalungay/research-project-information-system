@@ -3,6 +3,7 @@ package com.rpis.backend.service;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.UserRepository;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -29,10 +31,42 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final ProposalAnnouncementRepository announcementRepository;
 
+    /**
+     * The notification types raised by the proposal review/processing workflow.
+     *
+     * <p>The RPS Admin does not take part in that workflow - the RPS Staff and the reviewing
+     * offices do - so these notifications are never returned to (and never marked read for)
+     * an RPS Admin account. The stored rows are left untouched: they stay in the database
+     * and every other role still reads them normally.
+     */
+    private static final Set<String> PROPOSAL_WORKFLOW_TYPES = Set.of(
+            "PROPOSAL_UPDATE", "REVIEW_REQUEST", "APPROVAL", "REVISION", "REJECTION", "FUNDING");
+
+    /** The one role that is not part of the proposal review/processing workflow. */
+    private static final String ROLE_RPS_ADMIN = UserRoles.RPS_ADMIN;
+
+    /**
+     * True when a notification must never reach this account: an RPS Admin and a
+     * proposal-workflow notification. Every other role/type pair stays visible.
+     */
+    private static boolean hiddenFrom(User user, Notification notification) {
+        if (user == null || notification == null) {
+            return false;
+        }
+        if (!ROLE_RPS_ADMIN.equalsIgnoreCase(user.getRole())) {
+            return false;
+        }
+        String type = notification.getType();
+        return type != null && PROPOSAL_WORKFLOW_TYPES.contains(type.toUpperCase(Locale.ROOT));
+    }
+
     public List<Notification> getNotificationsForUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user)
+                .stream()
+                .filter(notification -> !hiddenFrom(user, notification))
+                .collect(Collectors.toList());
         fillAnnouncementDetails(notifications);
         return notifications;
     }
@@ -152,6 +186,11 @@ public class NotificationService {
                         "You are not authorized to access this notification.");
             }
         }
+        // An account that can never see the notification must not be able to mark it read
+        // either: the row is returned untouched instead of being written.
+        if (hiddenFrom(notification.getUser(), notification)) {
+            return notification;
+        }
         notification.setIsRead(true);
         return notificationRepository.save(notification);
     }
@@ -162,7 +201,11 @@ public class NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
         for (Notification notification : notifications) {
-            notification.setIsRead(true);
+            // A notification this account can never see is left exactly as it is, so
+            // "mark all as read" cannot silently touch it.
+            if (!hiddenFrom(user, notification)) {
+                notification.setIsRead(true);
+            }
         }
         notificationRepository.saveAll(notifications);
     }

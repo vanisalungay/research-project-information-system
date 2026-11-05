@@ -1079,6 +1079,7 @@ onMounted(() => {
    up with the action button beside them. */
 .panel-table th {
   background: #f6f7fd;
+  color: #1c1a3c;
   font-weight: 700;
 }
 

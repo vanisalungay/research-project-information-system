@@ -372,6 +372,25 @@
   color: #ffffff !important;
 }
 
+/* Everything printed inside the navy document header is light: a label, value or hint that
+   also carries .doc-label/.doc-value (dark, for the white body of the sheet) must stay
+   readable on the header's #25224f band. */
+.doc-sheet .doc-header .doc-label,
+.doc-sheet .doc-header .doc-value,
+.doc-sheet .doc-header .doc-hint,
+.doc-sheet .doc-header .doc-section,
+.doc-sheet .doc-header .doc-subsection,
+.doc-sheet .doc-header .doc-note,
+.doc-sheet .doc-header .qr-cell-text,
+.doc-sheet .doc-header .qr-cell-value,
+.doc-sheet .doc-header .qr-note-text,
+.doc-sheet .doc-header p,
+.doc-sheet .doc-header span,
+.doc-sheet .doc-header small,
+.doc-sheet .doc-header strong {
+  color: #ffffff !important;
+}
+
 .doc-sheet .doc-label,
 .doc-sheet .doc-value,
 .doc-sheet .doc-section,

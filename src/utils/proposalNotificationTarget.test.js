@@ -59,8 +59,26 @@ test('the id comes from the record reference, and only a usable one resolves', (
   assert.equal(proposalIdFromNotification({}), null)
 })
 
+test('the RPS, OVCAF and Chancellor roles open the proposal on their own page', () => {
+  // The RPS Admin and RPS Staff share the RPS proposal-details screen, so a submission or
+  // review notification opens that exact proposal there - not the Proponent's page.
+  for (const role of ['RPS_ADMIN', 'RPS_STAFF']) {
+    assert.deepEqual(proposalNotificationDestination({ proposalId: 5 }, role), {
+      name: 'ProposalDetails',
+      params: { id: 5 },
+    })
+  }
+  assert.deepEqual(proposalNotificationDestination({ proposalId: 5 }, 'OC'), {
+    name: 'OCFinalApproval',
+    params: { id: 5 },
+  })
+  assert.deepEqual(proposalNotificationDestination({ proposalId: 5 }, 'OVCAF'), {
+    path: '/ovcaf/proposals/5',
+  })
+})
+
 test('a role without a proposal page never gets a destination', () => {
-  for (const role of ['PROPONENT', 'RPS_STAFF', 'DEAN', 'OVCAF', 'OC', undefined]) {
+  for (const role of ['PROPONENT', 'DEAN', undefined, 'UNKNOWN']) {
     assert.equal(
       proposalNotificationDestination({ proposalId: 3 }, role),
       null,

@@ -30,6 +30,15 @@
         <option value="unread">Unread</option>
         <option value="read">Read</option>
       </select>
+      <!-- Filtering by kind keeps the proposal updates (the busiest kind, especially for
+           RPS) easy to pick out of the list. Nothing is hidden by default. -->
+      <select v-model="filterKind" class="filter-select">
+        <option value="all">All kinds</option>
+        <option v-if="showProposalKind" value="proposal">Proposal updates</option>
+        <option value="call">Calls for Proposals</option>
+        <option value="endorsement">Endorsements</option>
+        <option value="other">Other</option>
+      </select>
     </div>
 
     <!-- LOADING STATE -->
@@ -46,17 +55,34 @@
 
     <!-- NOTIFICATIONS LIST -->
     <template v-else>
-      <div v-if="filteredNotifications.length > 0" class="notifications-list">
-        <div 
-          v-for="notification in filteredNotifications" 
-          :key="notification.id"
-          class="notification-card"
-          :class="{ 
-            unread: !notification.isRead,
-            read: notification.isRead 
-          }"
-          @click="handleNotificationClick(notification)"
-        >
+      <div v-if="filteredNotifications.length > 0">
+        <!-- The proposal updates are gathered under their own heading (collapsed by
+             default) so the page is not one long flat list. Nothing is dropped: the groups
+             always hold every notification the filters left in. -->
+        <section v-for="group in notificationGroups" :key="group.key" class="notification-group">
+          <button
+            v-if="group.collapsible"
+            type="button"
+            class="group-header"
+            :aria-expanded="isGroupOpen(group)"
+            @click="toggleGroup(group)"
+          >
+            <span class="group-chevron" :class="{ open: isGroupOpen(group) }" aria-hidden="true">&rsaquo;</span>
+            <span class="group-title">{{ group.title }}</span>
+            <span class="group-count">{{ group.items.length }}</span>
+          </button>
+
+          <div v-show="isGroupOpen(group)" class="notifications-list">
+            <div
+              v-for="notification in group.items"
+              :key="notification.id"
+              class="notification-card"
+              :class="{
+                unread: !notification.isRead,
+                read: notification.isRead
+              }"
+              @click="handleNotificationClick(notification)"
+            >
           <div class="notification-icon">
             <span v-if="!notification.isRead" class="unread-dot"></span>
             <svg v-else class="read-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -110,7 +136,9 @@
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </div>
-        </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <!-- EMPTY STATE -->
@@ -144,12 +172,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserDataStore } from '@/stores/userData'
+import { useUserDataStore, UserRole } from '@/stores/userData'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { notificationDestination } from '@/utils/notificationTarget'
+import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
 import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
+import { groupNotifications, notificationKind } from '@/utils/notificationGroups'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -162,6 +192,15 @@ const loading = ref(false)
 const error = ref(null)
 const searchQuery = ref('')
 const filterStatus = ref('all')
+/** The kind of notification to show; the list stays newest-first within a kind. */
+const filterKind = ref('all')
+
+/**
+ * The RPS Admin takes no part in the proposal review/processing workflow, so the backend
+ * never returns those notifications for that role (see NotificationService) and the
+ * "Proposal updates" kind is offered only to the roles that actually receive them.
+ */
+const showProposalKind = computed(() => userStore.user?.role !== UserRole.RPS_ADMIN)
 
 const unreadCount = computed(() => {
   return notifications.value.filter(n => !n.isRead).length
@@ -177,6 +216,11 @@ const filteredNotifications = computed(() => {
     result = result.filter(n => n.isRead)
   }
 
+  // Filter by kind (proposal updates, calls, endorsements, ...)
+  if (filterKind.value !== 'all') {
+    result = result.filter(n => notificationKind(n) === filterKind.value)
+  }
+
   // Filter by search query
   if (searchQuery.value.trim()) {
     const keyword = searchQuery.value.toLowerCase()
@@ -189,6 +233,40 @@ const filteredNotifications = computed(() => {
   // Sort by date (newest first)
   return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
+
+/**
+ * The visible notifications, split so the proposal updates sit in their own group. Nothing
+ * is dropped: the groups always hold every notification the filters left in, newest first.
+ */
+const notificationGroups = computed(() => {
+  const { proposalUpdates, others } = groupNotifications(filteredNotifications.value)
+  const groups = []
+  if (others.length) {
+    groups.push({ key: 'others', title: '', items: others, collapsible: false })
+  }
+  if (proposalUpdates.length) {
+    groups.push({
+      key: 'proposal',
+      title: 'Proposal Updates',
+      items: proposalUpdates,
+      collapsible: true,
+    })
+  }
+  return groups
+})
+
+/** The Proposal Updates group stays collapsed until the reader opens it. */
+const showProposalUpdates = ref(false)
+
+/** The Proposal Updates group opens by itself while its kind filter is selected. */
+const isGroupOpen = (group) =>
+  !group.collapsible || showProposalUpdates.value || filterKind.value === 'proposal'
+
+const toggleGroup = (group) => {
+  if (group.collapsible) {
+    showProposalUpdates.value = !showProposalUpdates.value
+  }
+}
 
 const fetchNotifications = async () => {
   loading.value = true
@@ -253,10 +331,15 @@ const handleNotificationClick = (notification) => {
     return
   }
 
-  // Navigate to related proposal if available
-  if (notification.proposalId) {
-    // You can customize the navigation based on user role
-    window.location.href = `/detailed-proposal?id=${notification.proposalId}`
+  // A proposal notification (a submission, a review request, an approval ...) opens the
+  // proposal on the page the signed-in role owns: the RPS roles on the proposal details
+  // screen, REC on its own detailed view, OVCRIGE on the review screen, OVCAF on financial
+  // validation and the Chancellor on the final-approval screen. It used to hard-code the
+  // Proponent's /detailed-proposal URL - a page none of those roles owns - and did a full
+  // page reload. A notification with no usable reference only marks itself read.
+  const proposalDestination = proposalNotificationDestination(notification, userStore.user?.role)
+  if (proposalDestination) {
+    router.push(proposalDestination)
   }
 }
 
@@ -460,6 +543,56 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* NOTIFICATION GROUPS */
+.notification-group + .notification-group {
+  margin-top: 20px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3730a3;
+  cursor: pointer;
+  text-align: left;
+}
+
+.group-header:hover {
+  background: #e0e7ff;
+}
+
+.group-chevron {
+  display: inline-block;
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.group-chevron.open {
+  transform: rotate(90deg);
+}
+
+.group-count {
+  margin-left: auto;
+  min-width: 26px;
+  padding: 2px 8px;
+  background: #4f46e5;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 /* NOTIFICATIONS LIST */

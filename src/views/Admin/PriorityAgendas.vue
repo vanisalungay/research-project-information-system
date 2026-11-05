@@ -169,6 +169,16 @@
         </header>
 
         <div class="modal-body">
+          <!-- Reuse an existing agenda instead of retyping it. The options are the agenda
+               records this page loaded from the API, so anything saved earlier is offered
+               here. Shown only while creating: an existing agenda is edited in place, and
+               its stable key can never change. -->
+          <div v-if="!editingItemId" class="form-group">
+            <label>Reuse an existing agenda</label>
+            <AgendaPicker :agendas="agendaOptions" :target-set-id="itemForm.setId"
+              @select="applyAgendaRecord" @create="useTypedAgendaName" />
+            <p v-if="pickerHint" class="field-hint">{{ pickerHint }}</p>
+          </div>
           <div class="form-group">
             <label>Agenda name</label>
             <input v-model="itemForm.name" type="text" class="form-input"
@@ -230,7 +240,9 @@ import { ref, computed, onMounted } from 'vue'
 
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import AgendaPicker from '@/components/AgendaPicker.vue'
 import { useDialog } from '@/composables/useDialog'
+import { agendaCatalogue, agendaPrefill, frameworkKeys } from '@/utils/agendaPicker'
 
 /**
  * Administrator management of the Priority Agenda master data (section 05 of the
@@ -329,6 +341,7 @@ function closeModals() {
   showFrameworkModal.value = false
   showItemModal.value = false
   formError.value = null
+  pickerHint.value = ''
 }
 
 function openCreateFramework() {
@@ -518,6 +531,34 @@ async function toggleItem(set, item) {
       title: 'Update Failed',
     })
   }
+}
+
+// ===== REUSE AN EXISTING AGENDA =====
+
+/** The dropdown options: every agenda already saved, from every framework. */
+const agendaOptions = computed(() => agendaCatalogue(sets.value))
+
+/** Explains what the last selection filled in, or why the key was left blank. */
+const pickerHint = ref('')
+
+/** Copies a selected existing agenda into the form. Nothing is saved here. */
+function applyAgendaRecord(record) {
+  const prefill = agendaPrefill(record, {
+    existingKeys: frameworkKeys(sets.value, itemForm.value.setId),
+  })
+  itemForm.value.name = prefill.name
+  itemForm.value.subLabel = prefill.subLabel
+  itemForm.value.description = prefill.description
+  itemForm.value.agendaKey = prefill.agendaKey
+  pickerHint.value = prefill.keyTaken
+    ? '"' + prefill.name + '" is already an agenda of this framework, so its key is taken. A new key will be derived when you save.'
+    : 'Reused "' + prefill.name + '". Adjust anything before saving.'
+}
+
+/** "Create new agenda" from the dropdown: the typed name becomes the new agenda. */
+function useTypedAgendaName(name) {
+  itemForm.value.name = name
+  pickerHint.value = ''
 }
 </script>
 

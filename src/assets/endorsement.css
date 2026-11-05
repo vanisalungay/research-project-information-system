@@ -363,6 +363,10 @@
   font-size: 0.875rem;
 }
 
+/* The RPIS table head is the blue band painted behind every table head (see main.css), so
+   the label has to be light: the old #64748b grey sat at ~2.2:1 on that band and was
+   unreadable. A page that lightens the band sets its own darker label (see the dashboards'
+   .*-table th rules). */
 .end-table th {
   text-align: left;
   padding: 10px 12px;
@@ -370,7 +374,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #64748b;
+  color: #ffffff;
 }
 
 .end-table td {

@@ -283,6 +283,7 @@ onMounted(loadDashboard)
    compact row action are set here so the table lines up with the button beside it. */
 .ovcaf-table th {
   background: #f6f7fd;
+  color: #1c1a3c;
   font-weight: 700;
   white-space: nowrap;
 }
