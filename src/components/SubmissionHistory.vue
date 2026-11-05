@@ -606,4 +606,181 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
     grid-template-columns: 1fr;
   }
 }
+/* ===== Review design layer =====================================================
+   The submission / revision history shown on the proposal detail pages, brought onto the
+   shared review design: one card with the navy header band, white version cards, the same
+   label and value typography, and a responsive meta grid. These rules come last on purpose -
+   they override the older styling above for the same selectors, so the markup, the version
+   loading and the details toggle are untouched. */
+.submission-history {
+  padding: 0;
+  margin-top: 20px;
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+}
+
+.sh-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 18px;
+  background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
+}
+
+.sh-header h3 {
+  margin: 0;
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: #ffffff;
+}
+
+.sh-count {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+}
+
+.sh-muted {
+  margin: 0;
+  padding: 18px;
+  color: #6b6b8c;
+  font-size: var(--fs-sm, 0.875rem);
+  font-style: normal;
+}
+
+.sh-timeline {
+  padding: 18px;
+}
+
+.sh-item {
+  gap: 14px;
+}
+
+.sh-dot {
+  width: 12px;
+  height: 12px;
+  background: #c7c7e0;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #c7c7e0;
+}
+
+.sh-item-current .sh-dot {
+  background: var(--rpis-badge, #315bff);
+  box-shadow: 0 0 0 2px var(--rpis-badge, #315bff);
+}
+
+.sh-line {
+  background: #e8e8f5;
+}
+
+.sh-card {
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(38, 35, 66, 0.04);
+}
+
+.sh-item-current .sh-card {
+  border-color: #b9c2ff;
+  background: #ffffff;
+}
+
+.sh-version-label {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+/* Label above value, never inline: the two can never run together. */
+.sh-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sh-meta-label {
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6b6b8c;
+}
+
+.sh-meta-value {
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.sh-btn {
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid #d8d8ec;
+  border-radius: var(--radius-md, 8px);
+  background: #ffffff;
+  color: #262342;
+  font-family: inherit;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sh-btn:hover {
+  background: #f5f5fc;
+  border-color: #b9b9dc;
+}
+
+/* Repeated entries: a light band with dark text, readable on every page. */
+.sh-table th,
+.sh-table td {
+  border: 1px solid #e8e8f5;
+  padding: 8px 10px;
+  font-size: var(--fs-sm, 0.875rem);
+  color: #1c1a3c;
+}
+
+.sh-table th {
+  background: #f5f5fc;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4b4b6b;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .sh-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sh-timeline {
+    padding: 14px;
+  }
+
+  .sh-meta-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sh-item {
+    gap: 10px;
+  }
+}
+
 </style>

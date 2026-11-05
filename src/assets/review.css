@@ -180,9 +180,14 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
-.rv-download:hover {
+.rv-download:hover:not(:disabled) {
   background: #f5f5fc;
   border-color: #b9b9dc;
+}
+
+.rv-download:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 /* ===== Body: wide content column + summary column ===== */

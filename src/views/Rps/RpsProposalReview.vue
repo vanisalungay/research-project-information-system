@@ -1,16 +1,14 @@
 <template>
-  <div class="proposal-page">
-    <header class="proposal-header">
-      <button @click="goBack" class="back-btn">← Back</button>
-      <div class="header-title">
-        <h2>Proposal Review</h2>
-        <span>RPS / RPS DARES Evaluation</span>
-      </div>
-      <div class="header-actions">
-        <button class="download-btn" @click="downloadProposal">DOWNLOAD</button>
-      </div>
-    </header>
-
+  <div class="proposal-page rv-page">
+    <!-- HEADER: the shared review header - Back, title, id, status and DOWNLOAD. The
+         handlers stay this page's own; only the chrome is shared. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      @back="goBack"
+      @download="downloadProposal"
+    />
     <!-- Loading -->
     <div v-if="loading" style="text-align:center;padding:60px;">
       <p>Loading proposal details...</p>
@@ -148,6 +146,7 @@ import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import {
   PROPOSAL_FIELD_SECTIONS,
   buildFieldRemarkIndex,
@@ -156,7 +155,7 @@ import {
 
 export default {
   name: 'RpsProposalReview',
-  components: { ConfirmDialog, SdgChecklist, ProposalFieldSection },
+  components: { ConfirmDialog, SdgChecklist, ProposalFieldSection, ProposalReviewHeader },
   data() {
     return {
       proposal: {},

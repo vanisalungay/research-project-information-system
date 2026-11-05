@@ -7,7 +7,8 @@
       :document-id="proposal.documentId || proposal.proposalCode"
       :status="proposal.status"
       @back="goBack"
-      @download="downloadAll"
+      :download-loading="downloadLoading"
+      @download="downloadProposal"
     />
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
@@ -195,6 +196,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -210,6 +212,7 @@ const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
 const actionLoading = ref(false)
+const downloadLoading = ref(false)
 const showSuccess = ref(false)
 const showError = ref(false)
 const successMessage = ref('')
@@ -348,19 +351,31 @@ const downloadFile = (fileName) => {
   downloadUploadedFile(fileName)
 }
 
-const downloadAll = () => {
-  // The stored relative path is what the authorized /api/files route resolves; a file
-  // uploaded into a subfolder (technology-maps/, budget-files/) cannot be reached by its
-  // display name alone.
-  const files = [
-    proposal.value.reviewFileName,
-    proposal.value.roadmapFilePath || proposal.value.roadmapFileName,
-    proposal.value.gadFileName,
-    proposal.value.budgetFilePath || proposal.value.budgetFileName
-  ].filter(Boolean)
-  files.forEach((file, index) => {
-    setTimeout(() => downloadFile(file), index * 300)
-  })
+/**
+ * The DOWNLOAD action of the header: the complete proposal document, built and printed by
+ * the same shared helper every other role's review page uses (officialProposalForm.js).
+ *
+ * This page used to only fire the four attachment downloads here, so on a proposal without
+ * those attachments the button did nothing at all - no document, no error, no feedback. The
+ * attachments themselves are still downloadable, one by one, from the cards below.
+ */
+const downloadProposal = async () => {
+  if (!proposal.value?.id) {
+    errorMessage.value = 'The proposal is still loading. Please try again in a moment.'
+    showError.value = true
+    return
+  }
+
+  downloadLoading.value = true
+  try {
+    await downloadOfficialProposal(proposal.value)
+  } catch (err) {
+    console.error(err)
+    errorMessage.value = 'Could not prepare the proposal document. Please try again.'
+    showError.value = true
+  } finally {
+    downloadLoading.value = false
+  }
 }
 
 /**

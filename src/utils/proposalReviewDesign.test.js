@@ -124,3 +124,80 @@ test('the header keeps its actions on the far side and wraps instead of overlapp
   assert.match(CSS, /\.rv-header \{[^}]*flex-wrap: wrap/, 'the header wraps on a narrow screen')
   assert.match(CSS, /\.rv-heading-meta \{[^}]*flex-wrap: wrap/, 'the status pill never overlaps the id')
 })
+
+test('the OVCRIGE review page downloads the proposal through the shared helper', () => {
+  // The defect this guards: this page fired only the four attachment downloads from its
+  // header, so on a proposal without them the DOWNLOAD button did nothing at all.
+  const ovc = read('../views/Ovc/OvcReviewProposal.vue')
+  assert.ok(
+    ovc.includes("import { downloadOfficialProposal } from '@/utils/officialProposalForm'"),
+    'the page must use the shared document builder',
+  )
+  assert.ok(ovc.includes('@download="downloadProposal"'), 'the header calls the page handler')
+  assert.ok(
+    ovc.includes('downloadOfficialProposal(proposal.value)'),
+    'which builds the complete proposal document',
+  )
+  assert.ok(
+    !ovc.includes('@download="downloadAll"'),
+    'the attachment-only action is no longer the header action',
+  )
+  assert.ok(ovc.includes('downloadLoading'), 'the button reports that it is working')
+  assert.ok(ovc.includes('Could not prepare the proposal document'), 'a failure is reported')
+  // The attachments stay reachable one by one.
+  assert.ok(ovc.includes('downloadFile(proposal.reviewFileName)'), 'the attachment buttons stay')
+})
+
+test('every role keeps using the shared proposal-download helper', () => {
+  for (const file of [
+    '../views/Rps/RpsProposalDetails.vue',
+    '../views/Rps/RpsProposalReview.vue',
+    '../views/Ovcaf/OvcafValidate.vue',
+    '../views/Proponent/ProponentDetiailedProp.vue',
+  ]) {
+    assert.ok(
+      read(file).includes('downloadOfficialProposal('),
+      file + ' must still use the shared helper',
+    )
+  }
+  assert.ok(HEADER.includes('downloadLoading'), 'the shared header exposes the busy state')
+  assert.ok(CSS.includes('.rv-download:disabled'), 'the button shows it is busy')
+})
+
+test('every adopted page uses the shared layer and keeps its own actions', () => {
+  // A page is restyled by swapping its chrome for the shared components - never by dropping
+  // what it does. This is the list of pages that have adopted the design, each with the
+  // handlers that must still be reachable on it.
+  const ADOPTED = [
+    [
+      '../views/Ovc/OvcReviewProposal.vue',
+      ['forwardToRec', 'forwardToOc', 'returnForRevision', 'rejectProposal', 'downloadProposal', 'goBack'],
+    ],
+    ['../views/Rec/RecDetailedProp.vue', ['goBack', 'loadProposal']],
+    ['../views/Rps/RpsProposalDetails.vue', ['beginReview', 'downloadProposal', 'goBack']],
+    [
+      '../views/Rps/RpsProposalReview.vue',
+      ['endorseProposal', 'returnForRevision', 'rejectProposal', 'downloadProposal'],
+    ],
+  ]
+
+  for (const [file, handlers] of ADOPTED) {
+    const source = read(file)
+    assert.ok(source.includes('ProposalReviewHeader'), file + ' must use the shared header')
+    assert.ok(source.includes('rv-page'), file + ' must use the shared page shell')
+    for (const handler of handlers) {
+      assert.ok(source.includes(handler), file + ' must still expose ' + handler)
+    }
+  }
+})
+
+test('the submission history shown on the detail pages is on the shared design', () => {
+  const history = read('../components/SubmissionHistory.vue')
+  assert.ok(history.includes('Review design layer'), 'the history is restyled')
+  assert.ok(history.includes('linear-gradient(100deg, #262342'), 'with the navy header band')
+  assert.match(history, /\.sh-meta \{[^}]*flex-direction: column/, 'label above value')
+  assert.ok(history.includes('@media (max-width: 640px)'), 'and a phone breakpoint')
+  // The version loading and the details toggle are untouched.
+  assert.ok(history.includes('/versions'), 'the version endpoint is unchanged')
+  assert.ok(history.includes('toggleDetails'), 'the details toggle still works')
+})

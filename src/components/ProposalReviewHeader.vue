@@ -24,14 +24,15 @@
     <div class="rv-header-actions">
       <!-- The role's own review actions render here, unchanged. -->
       <slot name="actions" />
-      <button v-if="showDownload" type="button" class="rv-download" @click="$emit('download')">
+      <button v-if="showDownload" type="button" class="rv-download" :disabled="downloadLoading"
+        @click="$emit('download')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        DOWNLOAD
+        {{ downloadLoading ? 'PREPARING...' : 'DOWNLOAD' }}
       </button>
     </div>
   </header>
@@ -61,6 +62,8 @@ const props = defineProps({
   status: { type: String, default: '' },
   /** False when the page has no document to download. */
   showDownload: { type: Boolean, default: true },
+  /** True while the document is being prepared: the button waits instead of firing twice. */
+  downloadLoading: { type: Boolean, default: false },
 })
 
 defineEmits(['back', 'download'])
