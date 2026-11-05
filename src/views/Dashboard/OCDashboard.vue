@@ -1,100 +1,206 @@
 <template>
-  <div class="dashboard-content animate-fade">
-    <!-- HEADER -->
-    <div class="dashboard-header">
-      <h2>CHANCELLOR DASHBOARD</h2>
-      <p>Office of the Chancellor — Final Approval, Budget Determination & Special Orders (SO)</p>
-    </div>
+  <!--
+    The Chancellor (Office of the Chancellor) dashboard.
 
-    <!-- METRICS CARDS -->
-    <div class="summary-cards">
-      <div class="card bg-yellow">
-        <p class="card-title">Pending Final Approval</p>
-        <h2>{{ stats.pending }}</h2>
+    Only the presentation changed: the three counts and the two proposal lists are the same
+    records, read from the same endpoints with the same status filters and bound to the same
+    fields. The page reuses the shared design layer (assets/dashboard.css and
+    assets/endorsement.css) - the same banner, cards, tables and pills the other role
+    dashboards use - so every dashboard belongs to one design system.
+  -->
+  <div class="end-page end-page--fluid dash-page">
+    <!-- ===================== HEADER ===================== -->
+    <section class="dash-banner">
+      <span class="dash-avatar" aria-hidden="true" v-html="icons.chancellor"></span>
+      <div class="dash-banner-text">
+        <h2 class="dash-banner-title">CHANCELLOR DASHBOARD</h2>
+        <p class="dash-banner-sub">
+          Office of the Chancellor — Final Approval, Budget Determination &amp; Special Orders (SO)
+        </p>
       </div>
-      <div class="card bg-green">
-        <p class="card-title">Approved / Released</p>
-        <h2>{{ stats.approved }}</h2>
+    </section>
+
+    <!-- ===================== STATISTICS ===================== -->
+    <section class="dash-stats">
+      <div class="dash-stat dash-stat--amber">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.clock"></span>
+          <span class="dash-stat-label">Pending Final Approval</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.pending }}</div>
       </div>
-      <div class="card bg-blue">
-        <p class="card-title">Sent to OVCAF (Budget)</p>
-        <h2>{{ stats.sentToOvcaf }}</h2>
+
+      <div class="dash-stat dash-stat--green">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.check"></span>
+          <span class="dash-stat-label">Approved / Released</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.approved }}</div>
       </div>
-    </div>
 
-    <div v-if="isLoading" class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>Loading proposals...</p>
-    </div>
+      <div class="dash-stat dash-stat--blue">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.send"></span>
+          <span class="dash-stat-label">Sent to OVCAF (Budget)</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.sentToOvcaf }}</div>
+      </div>
+    </section>
 
-    <div v-else class="sections-container">
-      <!-- SECTION 1: Awaiting Final Executive Sign-off -->
-      <div class="section">
-        <h3>Proposals for Final Approval</h3>
+    <!-- ===================== LOADING ===================== -->
+    <section v-if="isLoading" class="dash-section">
+      <div class="loading-state">
+        <span class="loading-spinner"></span>
+        <span>Loading proposals...</span>
+      </div>
+    </section>
 
-        <div v-if="forFinalApproval.length > 0" class="table-wrapper">
-          <div class="table-header">
-            <div class="th">Proposal Title</div>
-            <div class="th">Proponent</div>
-            <div class="th">Date Endorsed</div>
-            <div class="th">Status</div>
-            <div class="th">Action</div>
-          </div>
-          <div class="table-row" v-for="p in forFinalApproval" :key="p.id">
-            <div class="td title-cell">{{ p.title }}</div>
-            <div class="td">{{ p.adviser }}</div>
-            <div class="td">{{ p.date }}</div>
-            <div class="td"><span class="status-badge pending">{{ p.status }}</span></div>
-            <div class="td">
-              <button class="action-btn" @click="reviewProposal(p.id)">Review & Approve</button>
-            </div>
-          </div>
+    <template v-else>
+      <!-- ===================== PROPOSALS FOR FINAL APPROVAL ===================== -->
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.proposals"></span>
+          <h3 class="dash-section-title">Proposals for Final Approval</h3>
+        </header>
+
+        <div v-if="forFinalApproval.length > 0" class="end-table-scroll">
+          <table class="end-table oc-table">
+            <thead>
+              <tr>
+                <th>Proposal Title</th>
+                <th>Proponent</th>
+                <th>Date Endorsed</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in forFinalApproval" :key="p.id">
+                <td class="cell-title">{{ p.title }}</td>
+                <td>{{ p.adviser }}</td>
+                <td class="cell-id">{{ p.date }}</td>
+                <td>
+                  <span class="end-badge" :class="statusTone(p.status)">{{ p.status }}</span>
+                </td>
+                <td class="text-right">
+                  <button class="end-btn is-primary row-btn" @click="reviewProposal(p.id)">
+                    Review &amp; Approve
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div v-else class="empty-banner">
-          <p>No proposals currently awaiting final executive sign-off.</p>
-        </div>
-      </div>
+        <p v-else class="dash-empty">No proposals currently awaiting final executive sign-off.</p>
+      </section>
 
-      <!-- SECTION 2: Approved / Sent to OVCAF -->
-      <div class="section">
-        <h3>Approved & Budget-Forwarded Proposals</h3>
+      <!-- ===================== APPROVED & BUDGET-FORWARDED ===================== -->
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.funds"></span>
+          <h3 class="dash-section-title">Approved &amp; Budget-Forwarded Proposals</h3>
+        </header>
 
-        <div v-if="approvedProposals.length > 0" class="table-wrapper">
-          <div class="table-header">
-            <div class="th">Proposal Title</div>
-            <div class="th">Proponent</div>
-            <div class="th">Date</div>
-            <div class="th">Status</div>
-            <div class="th">Action</div>
-          </div>
-          <div class="table-row" v-for="p in approvedProposals" :key="p.id">
-            <div class="td title-cell">{{ p.title }}</div>
-            <div class="td">{{ p.adviser }}</div>
-            <div class="td">{{ p.date }}</div>
-            <div class="td">
-              <span class="status-badge" :class="p.badgeClass">{{ p.status }}</span>
-            </div>
-            <div class="td">
-              <button class="view-btn" @click="reviewProposal(p.id)">View</button>
-            </div>
-          </div>
+        <div v-if="approvedProposals.length > 0" class="end-table-scroll">
+          <table class="end-table oc-table">
+            <thead>
+              <tr>
+                <th>Proposal Title</th>
+                <th>Proponent</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in approvedProposals" :key="p.id">
+                <td class="cell-title">{{ p.title }}</td>
+                <td>{{ p.adviser }}</td>
+                <td class="cell-id">{{ p.date }}</td>
+                <td>
+                  <span class="end-badge" :class="statusTone(p.status)">{{ p.status }}</span>
+                </td>
+                <td class="text-right">
+                  <button class="end-btn row-btn" @click="reviewProposal(p.id)">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div v-else class="empty-banner">
-          <p>Approved proposals and those forwarded to Finance/OVCAF for budget processing will appear here.</p>
-        </div>
-      </div>
-    </div>
+        <p v-else class="dash-empty">
+          Approved proposals and those forwarded to Finance/OVCAF for budget processing will appear here.
+        </p>
+      </section>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import '@/assets/dashboard.css'
+import '@/assets/endorsement.css'
 import api from '@/utils/api'
 
 const router = useRouter()
+
+/**
+ * The icons of the page. They are inline SVGs on purpose: the application ships no icon
+ * dependency, and one helper keeps every icon the same size, stroke and alignment. The map
+ * is presentation only - no count or proposal depends on it.
+ */
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
+
+const icons = {
+  chancellor: svg(
+    '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/>' +
+      '<path d="M9 21v-4h6v4"/><path d="M10 12h4"/>',
+  ),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/>'),
+  check: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
+  send: svg('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
+  proposals: svg(
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+      '<path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  ),
+  funds: svg(
+    '<circle cx="12" cy="12" r="9"/><path d="M12 7v10"/>' +
+      '<path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-2h-1a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-1a2.5 2.5 0 0 1-2.5-2"/>',
+  ),
+}
+
+/**
+ * The pastel tone of a status pill. The status text shown stays exactly what the record
+ * carries; only the colour is chosen here, by the workflow stage the status belongs to.
+ */
+const statusTone = (status) => {
+  switch (status) {
+    case 'FOR_OVCAF_APPROVAL':
+    case 'FOR_OC_APPROVAL':
+    case 'READY_FOR_RELEASE':
+      return 'is-info'
+    case 'REC_APPROVED':
+    case 'OVC_APPROVED':
+    case 'APPROVED':
+    case 'RELEASED':
+      return 'is-approved'
+    case 'REJECTED':
+    case 'REC_REJECTED':
+    case 'REVISION':
+    case 'REC_REVISION':
+      return 'is-rejected'
+    case 'SUBMITTED':
+    case 'UNDER_REVIEW':
+    case 'RPS_REVIEW':
+      return 'is-pending'
+    default:
+      return 'is-neutral'
+  }
+}
 
 const stats = ref({ pending: 0, approved: 0, sentToOvcaf: 0 })
 const forFinalApproval = ref([])
@@ -149,230 +255,96 @@ onMounted(loadDashboard)
 </script>
 
 <style scoped>
-.dashboard-content {
-  padding: 24px;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+/* ============================================================================
+   Chancellor dashboard presentation.
+
+   The page reuses the shared design layer: assets/dashboard.css provides the welcome
+   banner, the statistic cards and the section cards, and assets/endorsement.css provides
+   the table, the status pills and the buttons. Only what is specific to this screen is
+   declared here, so nothing can leak into another page.
+   ============================================================================ */
+
+/* The banner avatar carries an icon injected with v-html, so it is reached through :deep(). */
+.dash-avatar :deep(svg) {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.8;
 }
 
-.dashboard-header {
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 14px;
-  margin-bottom: 24px;
-  text-align: left;
-}
-
-.dashboard-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 4px 0;
-}
-
-.dashboard-header p {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 0;
-}
-
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  text-align: left;
-}
-
-.card-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0;
-}
-
-.card h2 {
-  margin-top: 8px;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 0;
-}
-
-.bg-yellow { border-top: 4px solid #f59e0b; }
-.bg-green { border-top: 4px solid #10b981; }
-.bg-blue { border-top: 4px solid #3b82f6; }
-
-.sections-container {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.section h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 14px 0;
-  border-left: 4px solid #3b82f6;
-  padding-left: 12px;
-}
-
-/* Table */
-.table-wrapper {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.table-header, .table-row {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
-  align-items: center;
-}
-
-.table-header {
-  background: #1e293b;
-  color: white;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.th, .td {
-  padding: 13px 14px;
-  text-align: left;
-  font-size: 13px;
-}
-
-.td {
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.table-row:last-child .td {
-  border-bottom: none;
-}
-
-.title-cell {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-/* Status Badges */
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.status-badge.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-badge.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.budget {
+/* ===== Status pills =====
+   These tones extend the shared .end-badge (is-pending / is-approved / is-rejected) with
+   the pastel tones this workflow also needs. */
+.end-badge.is-info {
   background: #dbeafe;
-  color: #1e40af;
+  color: #1d4ed8;
 }
 
-/* Buttons */
-.action-btn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 7px 15px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.action-btn:hover {
-  background: #2563eb;
-}
-
-.view-btn {
-  background: #f1f5f9;
+.end-badge.is-neutral {
+  background: #eef1f7;
   color: #475569;
-  border: 1px solid #e2e8f0;
-  padding: 7px 15px;
-  border-radius: 7px;
-  font-size: 12px;
+}
+
+/* ===== Tables =====
+   The shared .end-table is used as it is; only the header band, the row alignment and the
+   compact row action are set here so the table lines up with the button beside it. */
+.oc-table th {
+  background: #f6f7fd;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.oc-table td {
+  vertical-align: middle;
+}
+
+.oc-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.oc-table th.text-right,
+.oc-table td.text-right {
+  text-align: right;
+}
+
+.cell-title {
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
+  color: #1c1a3c;
 }
 
-.view-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+.cell-id {
+  font-size: 0.8125rem;
+  color: #5b6484;
+  white-space: nowrap;
 }
 
-/* Loading */
+/* A table row action is smaller than a page action. */
+.row-btn {
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+}
+
+/* ===== Loading ===== */
 .loading-state {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 60px;
+  gap: 10px;
+  padding: 12px 4px;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
 .loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(49, 91, 255, 0.25);
+  border-top-color: #315bff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.empty-banner {
-  padding: 32px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 10px;
-  color: #64748b;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
 @keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.animate-fade {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-  .table-header, .table-row {
-    grid-template-columns: 1fr 1fr;
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
