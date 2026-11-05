@@ -21,6 +21,12 @@
       <button class="btn-primary" @click="goBack">Go Back</button>
     </div>
 
+    <!-- Not found: the id was given but no such proposal is readable by this account -->
+    <div v-else-if="notFound" class="error-state">
+      <p>This proposal could not be found, or it is not available to your account.</p>
+      <button class="btn-primary" @click="goBack">Back to Budget Processing</button>
+    </div>
+
     <!-- Content -->
     <template v-else-if="proposal.id">
       <div class="rv-body">
@@ -133,6 +139,13 @@
       <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
     </template>
 
+    <!-- Fallback: the content area is never silently empty -->
+    <div v-else class="error-state">
+      <p>No proposal details to show.</p>
+      <button class="btn-primary" @click="load">Retry</button>
+      <button class="back-btn" @click="goBack">Go Back</button>
+    </div>
+
     <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
       @cancel="dialogState.onCancel" @close="dialogState.show = false" />
   </div>
@@ -140,7 +153,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
@@ -156,9 +169,11 @@ import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposal
 const { dialogState, showAlert, showConfirm } = useDialog()
 
 const route = useRoute()
+const router = useRouter()
 const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
+const notFound = ref(false)
 
 // Reviewer Accountability fields
 const reviewerName = ref('')
@@ -177,10 +192,36 @@ const canBeginReview = computed(() => {
 const fetchProposal = async () => {
   loading.value = true
   error.value = null
-  try {
-    const proposalId = route.params.id
+  notFound.value = false
 
+  const proposalId = route.params.id ?? route.query.id ?? null
+  if (!proposalId) {
+    error.value = 'No proposal was selected. Open one from the budget list.'
+    proposal.value = { id: null }
+    loading.value = false
+    return
+  }
+
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}`)
+    const data = res.data || null
+    if (!data || data.id === null || data.id === undefined) {
+      proposal.value = { id: null }
+      notFound.value = true
+      return
+    }
+    proposal.value = data
+  } catch (err) {
+    console.error(err)
+    proposal.value = { id: null }
+    if (err?.response?.status === 404) notFound.value = true
+    else error.value = 'Failed to load proposal details.'
+  } finally {
+    loading.value = false
+  }
+}
 // ===== Field-level remarks (active revision round) =====
+
 const remarksResponse = ref(null)
 const remarksError = ref('')
 const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
@@ -222,19 +263,6 @@ const onRemarkRemoved = (remarkId) => {
   }))
   remarksResponse.value = { ...remarksResponse.value, rounds }
 }
-    if (!proposalId) {
-      error.value = 'No proposal ID provided.'
-      return
-    }
-    const res = await api.get(`/api/proposals/${proposalId}`)
-    proposal.value = res.data
-  } catch (err) {
-    console.error(err)
-    error.value = 'Failed to load proposal details.'
-  } finally {
-    loading.value = false
-  }
-}
 
 const saveReviewerInfo = async () => {
   try {
@@ -251,24 +279,32 @@ const saveReviewerInfo = async () => {
 
 const beginReview = async () => {
   await saveReviewerInfo()
-  window.location.href = `/proposal/${proposal.value.id}/review`
+  router.push(`/proposal/${proposal.value.id}/review`)
 }
 
-onMounted(() => {
-  fetchProposal()
-  loadFieldRemarks()
-})
+/**
+ * The one load: the proposal the route points at and the remarks that go with it. Called on
+ * mount and again whenever the route id changes, so a refresh, a direct link, Back/Forward
+ * and moving between proposals all reload the right record - nothing is kept from the table
+ * that linked here.
+ */
+const load = async () => {
+  await fetchProposal()
+  await loadFieldRemarks()
+}
 
-// Vue Router reuses this component when only the id changes, so the route id is watched:
-// opening another proposal, or Back/Forward between two, reloads the right record.
-watch(() => route.params.id, () => {
-  fetchProposal()
-  loadFieldRemarks()
-})
+onMounted(load)
+
+watch(() => route.params.id ?? route.query.id ?? null, () => load())
 
 
+/** Back returns to the previous page, and falls back to the budget list when there is none. */
 const goBack = () => {
-  window.history.back()
+  if (typeof window !== 'undefined' && window.history.length > 1) {
+    window.history.back()
+    return
+  }
+  router.push('/budget-processing')
 }
 
 /** The summary rows the shared sidebar shows, from the values this page already loaded. */
