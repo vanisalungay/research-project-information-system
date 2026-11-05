@@ -387,6 +387,23 @@
   box-shadow: inset 3px 0 0 var(--rpis-badge, #315bff);
 }
 
+/* A notification that opens a record is a control: it shows a pointer and a light hover
+   surface (a blue edge, like an unread row) so it reads as clickable. */
+.dash-note--clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-note--clickable:hover {
+  background: #f5f7ff;
+  box-shadow: inset 3px 0 0 var(--rpis-badge, #315bff);
+}
+
+.dash-note--clickable:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
 .dash-note-icon {
   flex-shrink: 0;
   width: 30px;
