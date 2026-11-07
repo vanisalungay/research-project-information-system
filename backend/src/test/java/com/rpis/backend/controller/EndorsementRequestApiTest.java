@@ -177,7 +177,7 @@ class EndorsementRequestApiTest {
         if (stored == null) {
             return;
         }
-        Path resolved = Paths.get("uploads").toAbsolutePath().normalize().resolve(stored);
+        Path resolved = testUploadRoot().resolve(stored);
         try {
             Files.deleteIfExists(resolved);
         } catch (Exception ignored) {
@@ -330,5 +330,10 @@ class EndorsementRequestApiTest {
         assertEquals(requestId, endorsed.getProposalId());
 
         removeStoredFiles(requestId, deanId);
+    }
+
+    /** The upload root the test profile pins: a target-relative, test-only directory. */
+    private static Path testUploadRoot() {
+        return Paths.get("target", "test-uploads").toAbsolutePath().normalize();
     }
 }

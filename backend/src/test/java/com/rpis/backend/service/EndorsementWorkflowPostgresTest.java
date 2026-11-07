@@ -162,7 +162,7 @@ class EndorsementWorkflowPostgresTest {
 
     private void deleteStoredFile(String stored) {
         try {
-            Files.deleteIfExists(Paths.get("uploads").toAbsolutePath().normalize().resolve(stored));
+            Files.deleteIfExists(testUploadRoot().resolve(stored));
         } catch (Exception ignored) {
             // A leftover test file is not worth failing a test for.
         }
@@ -341,12 +341,12 @@ class EndorsementWorkflowPostgresTest {
 
         // The stored document is a real PDF and the signature was snapshotted beside it.
         EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
-        Path letter = Paths.get("uploads").toAbsolutePath().normalize()
+        Path letter = testUploadRoot()
                 .resolve(stored.getLetterFilePath());
         assertTrue(Files.exists(letter), "the issued letter must be stored: " + letter);
         byte[] bytes = Files.readAllBytes(letter);
         assertEquals("%PDF", new String(bytes, 0, 4));
-        assertTrue(Files.exists(Paths.get("uploads").toAbsolutePath().normalize()
+        assertTrue(Files.exists(testUploadRoot()
                 .resolve(stored.getSignatureFilePath())));
 
         // The certification entry belongs to the Proponent and points at the same file.
@@ -550,7 +550,7 @@ class EndorsementWorkflowPostgresTest {
         EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
         assertEquals("APPROVED", stored.getStatus());
         assertEquals(1, stored.getLetterVersion());
-        assertTrue(Files.exists(Paths.get("uploads").toAbsolutePath().normalize()
+        assertTrue(Files.exists(testUploadRoot()
                 .resolve(stored.getLetterFilePath())));
     }
 
@@ -586,6 +586,81 @@ class EndorsementWorkflowPostgresTest {
                 () -> endorsementService.approve(request.getId(), approval()));
         assertTrue(error.getMessage().contains("electronic signature"), error.getMessage());
         assertEquals("PENDING", requestRepository.findById(request.getId()).orElseThrow().getStatus());
+    }
+
+    // ==================== THE DOCUMENT CODE ====================
+
+    /**
+     * Every approval mints its own document code: two different endorsements can never share
+     * one, and the code is written to the request (not just returned).
+     */
+    @Test
+    void everyApprovedEndorsementReceivesItsOwnUniqueDocumentCode() {
+        EndorsementRequestResponse first = submittedRequest("First unique code");
+        EndorsementRequestResponse second = submittedRequest("Second unique code");
+
+        authenticateAs(dean);
+        EndorsementRequestResponse firstApproved = endorsementService.approve(first.getId(), approval());
+        EndorsementRequestResponse secondApproved = endorsementService.approve(second.getId(), approval());
+
+        String firstCode = firstApproved.getLetterDocumentCode();
+        String secondCode = secondApproved.getLetterDocumentCode();
+
+        assertNotNull(firstCode);
+        assertNotNull(secondCode);
+        assertNotEquals(firstCode, secondCode, "two endorsements must never share a document code");
+        assertTrue(firstCode.matches("^MSUN-ORPS-END-[0-9]+-[0-9]{4}$"), firstCode);
+        assertTrue(secondCode.matches("^MSUN-ORPS-END-[0-9]+-[0-9]{4}$"), secondCode);
+
+        assertEquals(firstCode,
+                requestRepository.findById(first.getId()).orElseThrow().getLetterDocumentCode());
+        assertEquals(secondCode,
+                requestRepository.findById(second.getId()).orElseThrow().getLetterDocumentCode());
+        assertEquals(first.getReferenceNumber(), firstCode);
+    }
+
+    /**
+     * Reopening the endorsement, downloading the letter and reissuing it all keep the code the
+     * letter was issued with - it is never regenerated.
+     */
+    @Test
+    void theDocumentCodeIsStableAcrossReloadDownloadAndReissue() {
+        EndorsementRequestResponse request = submittedRequest("Stable code");
+        authenticateAs(dean);
+        EndorsementRequestResponse approved = endorsementService.approve(request.getId(), approval());
+        String issued = approved.getLetterDocumentCode();
+        assertNotNull(issued);
+
+        assertEquals(issued, endorsementService.getForCurrentUser(request.getId()).getLetterDocumentCode());
+
+        EndorsementRequestService.StoredLetter firstRead = endorsementService.loadLetter(request.getId());
+        EndorsementRequestService.StoredLetter secondRead = endorsementService.loadLetter(request.getId());
+        assertEquals(firstRead.fileName(), secondRead.fileName());
+        assertTrue(firstRead.stored().size() > 0);
+
+        authenticateAs(admin);
+        EndorsementRequestResponse reissued = endorsementService.reissue(request.getId(), approval());
+        assertEquals(issued, reissued.getLetterDocumentCode(),
+                "a reissue must keep the original document code");
+        assertEquals(2, reissued.getLetterVersion());
+        assertEquals(issued,
+                requestRepository.findById(request.getId()).orElseThrow().getLetterDocumentCode());
+    }
+
+    /** A refused approval assigns no code and issues no letter. */
+    @Test
+    void aRefusedApprovalLeavesNoDocumentCode() {
+        EndorsementRequestResponse request = submittedRequest("Refused approval");
+
+        signatureService.deleteSignature(dean.getId());
+        authenticateAs(dean);
+        assertThrows(IllegalArgumentException.class,
+                () -> endorsementService.approve(request.getId(), approval()));
+
+        EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
+        assertEquals("PENDING", stored.getStatus());
+        assertNull(stored.getLetterDocumentCode());
+        assertNull(stored.getLetterFilePath());
     }
 
     /**
@@ -639,9 +714,9 @@ class EndorsementWorkflowPostgresTest {
         EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
         assertNotEquals(firstPath, stored.getLetterFilePath(),
                 "a reissue must write a new file instead of overwriting the issued one");
-        assertTrue(Files.exists(Paths.get("uploads").toAbsolutePath().normalize()
+        assertTrue(Files.exists(testUploadRoot()
                 .resolve(firstPath)), "the superseded letter must be preserved");
-        assertTrue(Files.exists(Paths.get("uploads").toAbsolutePath().normalize()
+        assertTrue(Files.exists(testUploadRoot()
                 .resolve(stored.getLetterFilePath())));
 
         // The Proponent keeps exactly one certification, now pointing at the new version.
@@ -796,9 +871,14 @@ class EndorsementWorkflowPostgresTest {
         // print the program title anywhere.
         EndorsementRequest stored = requestRepository.findById(request.getId()).orElseThrow();
         String letter = normalizedTextOf(Files.readAllBytes(
-                Paths.get("uploads").toAbsolutePath().normalize().resolve(stored.getLetterFilePath())));
+                testUploadRoot().resolve(stored.getLetterFilePath())));
         assertTrue(letter.contains("Coral Restoration Study"), letter);
         assertFalse(letter.contains("MSUN RIIDE - Coastal Program"), letter);
+    }
+
+    /** The upload root the test profile pins: a target-relative, test-only directory. */
+    private static Path testUploadRoot() {
+        return Paths.get("target", "test-uploads").toAbsolutePath().normalize();
     }
 
     /**

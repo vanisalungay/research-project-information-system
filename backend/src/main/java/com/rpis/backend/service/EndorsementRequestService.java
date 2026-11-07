@@ -375,7 +375,20 @@ public class EndorsementRequestService {
                             + "before approving a request: the official letter is signed with it.");
         }
 
-        String documentCode = entity.getReferenceNumber();
+        // The document code is issued once per endorsement and is never replaced: an
+        // existing code is reused as-is, and a request that has none (a legacy row)
+        // receives a fresh, unique code from the DB-backed sequence here, at approval
+        // time. The code IS the request's reference number, which the sequence makes
+        // unique across every endorsement and which the request header and the downloaded
+        // file name already use - so the letter, the header and the file name can never
+        // disagree.
+        String documentCode = trimmed(entity.getLetterDocumentCode());
+        if (documentCode == null) {
+            documentCode = trimmed(entity.getReferenceNumber());
+        }
+        if (documentCode == null) {
+            documentCode = nextReference();
+        }
         // The letter names the PROJECT TITLE: it is the title of the project being
         // endorsed, never the program title.
         EndorsementLetterService.GeneratedLetter letter = letterService.generate(
@@ -534,8 +547,12 @@ public class EndorsementRequestService {
                 : entity.getEndorsementDate();
         int nextVersion = (entity.getLetterVersion() == null ? 1 : entity.getLetterVersion()) + 1;
 
+        // A reissue refreshes the letter but NEVER renumbers it: the code the letter was
+        // issued with is reused, so a reissued letter keeps its original document code.
+        String documentCode = firstNonBlank(trimmed(entity.getLetterDocumentCode()),
+                trimmed(entity.getReferenceNumber()));
         EndorsementLetterService.GeneratedLetter letter = letterService.generate(
-                new EndorsementLetterService.LetterContext(settings, entity.getReferenceNumber(),
+                new EndorsementLetterService.LetterContext(settings, documentCode,
                         entity.getCollege(), endorsementDate, entity.getProjectTitle(),
                         entity.getProponent().getName(), entity.getDepartment(), endorserName,
                         designation, signature));

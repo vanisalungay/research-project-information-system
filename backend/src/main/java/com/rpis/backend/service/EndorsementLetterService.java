@@ -51,12 +51,14 @@ import java.util.Locale;
  * at the bottom. The letter body flows between them and never overlaps either: the
  * footer is placed before the body is laid out, and the body frame ends above it.
  *
- * <h2>Typography</h2>
- * The official body style is Calibri 12 pt. Calibri is not redistributable and is not
- * part of the project, so the letter is rendered with the built-in Helvetica 12 pt
- * unless a font file is configured through {@code rpis.endorsement.font-path}, in
- * which case that font is used instead. This is the one deliberate typographic
- * difference from the DOCX template and it is reported as such.
+ * <h2>Typography of the current official template</h2>
+ * The official body style ("Normal (Web)") is Times New Roman 12 pt, so the letter is
+ * rendered with the built-in Times-Roman (the standard PDF equivalent of Times New Roman)
+ * unless a font file is configured through {@code rpis.endorsement.font-path}, in which
+ * case that font is used instead. The official document sets only its "College of ..."
+ * line in Monotype Corsiva 14 pt; Corsiva is a licensed font that the DOCX carries
+ * obfuscated and that is not a standard PDF font, so that one line is rendered in Times
+ * 14 pt - the single deliberate typographic difference, reported as such.
  */
 @Slf4j
 @Service
@@ -78,15 +80,18 @@ public class EndorsementLetterService {
     static final float LINE_HEIGHT = 14f;
 
     /**
-     * The addressee line of the letter: the office the endorsement is sent to, never a
-     * named person. The ORPS Director's name and surname used to be configured for this
-     * line; that configuration is obsolete, so the line is fixed and no name has to be
-     * supplied (or invented) anywhere.
+     * Neutral addressee used only while the ORPS Director's name is not configured in the
+     * endorsement letter settings. The official document addresses the letter to the
+     * Director by name ("[NAME OF THE DIRECTOR]" and "Dear Director [Surname]:"); when the
+     * settings row holds no name, the letter says "The Director" rather than inventing one.
      */
-    private static final String ADDRESSEE = "The Director";
+    private static final String ADDRESSEE_FALLBACK = "The Director";
 
-    /** The salutation. It no longer names the Director, so it needs no configuration. */
-    private static final String SALUTATION = "Dear Madam:";
+    /** Neutral salutation used while no Director surname is configured. */
+    private static final String SALUTATION_FALLBACK = "Dear Director:";
+
+    /** The "College of ..." line of the official document is set in Corsiva 14 pt. */
+    static final float COLLEGE_FONT_SIZE = 14f;
 
     // ---- Letterhead source image and the template's crop rectangles -------------
     static final int LETTERHEAD_PIXELS_WIDE = 1768;
@@ -110,12 +115,19 @@ public class EndorsementLetterService {
     static final float FOOTER_WIDTH = 596.15f;
     static final float FOOTER_HEIGHT = 64.3f;
 
-    // ---- Document Code block (template: red Arial 6 pt in a white box) ----------
-    static final float DOC_CODE_LEFT = 367.1f;
+    // ---- Document Code block (small plain text, upper right) --------------------
+    /**
+     * Vertical anchor of the block, kept from the official template so the code stays in the
+     * upper-right area of the page. The block is right-aligned to the body's right margin
+     * ({@code PAGE_WIDTH - MARGIN}) and is drawn as plain text: the template's white box and
+     * its grey border are not reproduced, so the code sits directly on the page.
+     */
     static final float DOC_CODE_TOP = 135.35f;
-    static final float DOC_CODE_WIDTH = 216f;
-    static final float DOC_CODE_HEIGHT = 111.8f;
-    private static final Color DOC_CODE_RED = new Color(0xC0, 0x00, 0x00);
+    /**
+     * The colour of the Document Code label and value: a neutral dark grey, not the
+     * institutional red the (boxed) template uses, so the block stays visually subtle.
+     */
+    private static final Color DOC_CODE_COLOR = new Color(0x40, 0x40, 0x40);
 
     // ---- Signature block --------------------------------------------------------
     private static final float SIGNATURE_MAX_WIDTH = 160f;
@@ -185,6 +197,7 @@ public class EndorsementLetterService {
 
             Font body = bodyFont(Font.NORMAL);
             Font bold = bodyFont(Font.BOLD);
+            Font college = collegeFont();
             PdfContentByte canvas = writer.getDirectContent();
 
             drawLetterhead(canvas);
@@ -194,7 +207,7 @@ public class EndorsementLetterService {
             float bottom = bodyBottom();
 
             ColumnText column = new ColumnText(canvas);
-            for (Paragraph paragraph : bodyParagraphs(context, body, bold)) {
+            for (Paragraph paragraph : bodyParagraphs(context, body, bold, college)) {
                 column.addElement(paragraph);
             }
             float yAfterBody = flowBody(document, writer, column, firstTop, bottom);
@@ -285,31 +298,28 @@ public class EndorsementLetterService {
     }
 
     /**
-     * The "Document Code" block: a white box with the red label, at the exact
-     * position, size and colour the official template uses (red Arial 6 pt, upper
-     * right of the body header). The generated document code is printed under the
-     * label so the issued letter carries its own reference. The box is drawn before
-     * the body text, exactly as the template anchors it behind the text.
+     * The "Document Code" block: the label and the generated document code as small plain
+     * text in the upper-right corner of the letter, right-aligned to the body's right margin.
+     *
+     * <p>The official template printed them inside a white box; that box (its background and
+     * its grey border) is deliberately not drawn, so the code sits directly on the page and
+     * stays visually subtle - it never competes with the letterhead, the title or the body.
+     * The generated document code is printed under the label so the issued letter carries its
+     * own reference. Drawn before the body text, in the header area.</p>
      */
     private void drawDocumentCode(PdfContentByte canvas, String documentCode) {
-        float x = DOC_CODE_LEFT;
+        float right = PAGE_WIDTH - MARGIN;
         float top = PAGE_HEIGHT - DOC_CODE_TOP;
-        float bottom = top - DOC_CODE_HEIGHT;
 
+        // Plain text in a neutral dark grey - the institution asked for black/grey, not the
+        // template's red - with no box: the label with the code printed directly under it.
+        Font label = FontFactory.getFont(FontFactory.HELVETICA, 6f, Font.BOLDITALIC, DOC_CODE_COLOR);
         canvas.saveState();
-        canvas.setColorFill(Color.WHITE);
-        canvas.setColorStroke(new Color(0xBF, 0xBF, 0xBF));
-        canvas.setLineWidth(0.75f);
-        canvas.rectangle(x, bottom, DOC_CODE_WIDTH, DOC_CODE_HEIGHT);
-        canvas.fillStroke();
-
-        Font label = FontFactory.getFont(FontFactory.HELVETICA, 6f, Font.NORMAL, DOC_CODE_RED);
-        float centerX = x + DOC_CODE_WIDTH / 2f;
-        ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER,
-                new Paragraph("Document Code", label), centerX, top - 50f, 0);
+        ColumnText.showTextAligned(canvas, Element.ALIGN_RIGHT,
+                new Paragraph("Document Code", label), right, top - 50f, 0);
         if (documentCode != null && !documentCode.isBlank()) {
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER,
-                    new Paragraph(documentCode, label), centerX, top - 60f, 0);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_RIGHT,
+                    new Paragraph(documentCode, label), right, top - 60f, 0);
         }
         canvas.restoreState();
     }
@@ -323,31 +333,34 @@ public class EndorsementLetterService {
      * official wording as their defaults). The addressee and the salutation are fixed:
      * the letter is addressed to the office, not to a named person.
      */
-    private List<Paragraph> bodyParagraphs(LetterContext context, Font body, Font bold) {
+    private List<Paragraph> bodyParagraphs(LetterContext context, Font body, Font bold, Font college) {
         EndorsementLetterSettings settings = context.settings();
         List<Paragraph> paragraphs = new ArrayList<>();
 
-        paragraphs.add(line(collegeLine(context.college()), body));
+        // "College of ..." - set in Corsiva 14 pt by the official document, rendered in
+        // Times 14 pt because Corsiva cannot be reproduced (see the class comment).
+        paragraphs.add(line(collegeLine(context.college()), college));
         paragraphs.add(spacer());
         paragraphs.add(line("Date: " + formatDate(context.endorsementDate()), body));
         paragraphs.add(spacer());
 
-        // Addressee block: the office the letter is sent to. The ORPS Director's personal
-        // name and surname are deliberately not printed any more - that configuration is
-        // obsolete and a name would otherwise have to be invented. The office and the
-        // university come from the settings row, which carries the official wording as
-        // its default, so they are always available.
-        paragraphs.add(line(ADDRESSEE, bold));
+        // The addressee block of the official document: the Director's name, the
+        // designation, the office and the university. The name comes from the endorsement
+        // letter settings; when it is not configured the neutral "The Director" is used
+        // instead of inventing a person.
+        paragraphs.add(line(directorName(settings), bold));
+        paragraphs.add(line(designation(settings), body));
         paragraphs.add(line(settings.getOfficeName(), body));
         paragraphs.add(line(settings.getUniversityName(), body));
         paragraphs.add(spacer());
 
-        paragraphs.add(line("Subject: Endorsement of Internally Funded Project Proposal", bold));
+        // The subject line of the official document, kept verbatim (see the class comment).
+        paragraphs.add(line("Subject: Endorsement of Internally Funded Project Proposal Proposal", bold));
         paragraphs.add(spacer());
-        paragraphs.add(line(SALUTATION, body));
+        paragraphs.add(line(salutation(settings), body));
         paragraphs.add(spacer());
 
-        paragraphs.add(submissionParagraph(context, body, bold));
+        paragraphs.add(submissionParagraph(context, body));
         paragraphs.add(line("The proposal has been reviewed and is hereby endorsed for consideration "
                 + "in accordance with the university\u2019s research policies, guidelines, and "
                 + "procedures.", body));
@@ -357,16 +370,41 @@ public class EndorsementLetterService {
     }
 
     /**
-     * The opening paragraph, with the project title and the faculty name in bold, as
-     * the official letter prints them.
+     * The Director's name for the addressee line: the configured given name and surname, or
+     * the neutral fallback when none is configured. No name is ever invented.
      */
-    private Paragraph submissionParagraph(LetterContext context, Font body, Font bold) {
+    private static String directorName(EndorsementLetterSettings settings) {
+        String name = (blankToEmpty(settings.getDirectorName()) + " "
+                + blankToEmpty(settings.getDirectorSurname())).trim();
+        return name.isEmpty() ? ADDRESSEE_FALLBACK : name;
+    }
+
+    /** The Director's designation, defaulting to the official "Director". */
+    private static String designation(EndorsementLetterSettings settings) {
+        String value = blankToEmpty(settings.getDirectorDesignation());
+        return value.isEmpty() ? EndorsementLetterSettings.DEFAULT_DIRECTOR_DESIGNATION : value;
+    }
+
+    /**
+     * The salutation of the official document, "Dear Director [Surname]:". When the surname
+     * is not configured the letter says "Dear Director:" rather than inventing one.
+     */
+    private static String salutation(EndorsementLetterSettings settings) {
+        String surname = blankToEmpty(settings.getDirectorSurname());
+        return surname.isEmpty() ? SALUTATION_FALLBACK : "Dear Director " + surname + ":";
+    }
+
+    /**
+     * The opening paragraph, with the project title and the faculty name inline, exactly as
+     * the official document prints them (the official template leaves them unbolded).
+     */
+    private Paragraph submissionParagraph(LetterContext context, Font body) {
         Paragraph paragraph = new Paragraph(14f);
         paragraph.add(new Chunk("Respectfully endorsed for your review and appropriate action is the "
                 + "Internally Funded Project Proposal (IFP) entitled \u201c", body));
-        paragraph.add(new Chunk(blankToEmpty(context.projectTitle()), bold));
+        paragraph.add(new Chunk(blankToEmpty(context.projectTitle()), body));
         paragraph.add(new Chunk("\u201d, submitted by ", body));
-        paragraph.add(new Chunk(blankToEmpty(context.proponentName()), bold));
+        paragraph.add(new Chunk(blankToEmpty(context.proponentName()), body));
         paragraph.add(new Chunk(" of the " + unitOf(context) + ".", body));
         paragraph.setSpacingAfter(10f);
         return paragraph;
@@ -458,13 +496,31 @@ public class EndorsementLetterService {
                 return new Font(base, BODY_FONT_SIZE, style);
             } catch (Exception e) {
                 log.warn("The configured endorsement letter font '{}' could not be loaded ({}); "
-                        + "falling back to the built-in Helvetica.", configuredFontPath,
+                        + "falling back to the built-in Times-Roman.", configuredFontPath,
                         e.getMessage());
             }
         }
         return FontFactory.getFont(
-                style == Font.BOLD ? FontFactory.HELVETICA_BOLD : FontFactory.HELVETICA,
+                style == Font.BOLD ? FontFactory.TIMES_BOLD : FontFactory.TIMES_ROMAN,
                 BODY_FONT_SIZE);
+    }
+
+    /**
+     * The font of the "College of ..." line. The official document sets it in Monotype
+     * Corsiva 14 pt; Corsiva is not a standard PDF font and cannot be reproduced (see the
+     * class comment), so Times 14 pt is used at the same size.
+     */
+    private Font collegeFont() {
+        if (configuredFontPath != null && !configuredFontPath.isBlank()) {
+            try {
+                BaseFont base = BaseFont.createFont(configuredFontPath, BaseFont.WINANSI,
+                        BaseFont.EMBEDDED);
+                return new Font(base, COLLEGE_FONT_SIZE, Font.NORMAL);
+            } catch (Exception e) {
+                // bodyFont already reported the problem; fall through to Times.
+            }
+        }
+        return FontFactory.getFont(FontFactory.TIMES_ROMAN, COLLEGE_FONT_SIZE);
     }
 
     /** One line of the letter, at the template's single line spacing. */
@@ -477,7 +533,7 @@ public class EndorsementLetterService {
     /** The blank line the official template leaves between its blocks. */
     private static Paragraph spacer() {
         Paragraph paragraph = new Paragraph(" ",
-                FontFactory.getFont(FontFactory.HELVETICA, BODY_FONT_SIZE));
+                FontFactory.getFont(FontFactory.TIMES_ROMAN, BODY_FONT_SIZE));
         paragraph.setLeading(10f);
         return paragraph;
     }

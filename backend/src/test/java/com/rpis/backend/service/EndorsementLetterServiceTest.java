@@ -15,6 +15,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -182,7 +184,7 @@ class EndorsementLetterServiceTest {
         assertTrue(text.contains("Office of Research and Publication Services (ORPS)"), text);
         assertTrue(text.contains("Mindanao State University at Naawan"), text);
         assertTrue(text.contains("Subject: Endorsement of Internally Funded Project Proposal"), text);
-        assertTrue(text.contains("Dear Madam:"), text);
+        assertTrue(text.contains("Dear Director:"), text);
         assertTrue(text.contains(TITLE), text);
         assertTrue(text.contains(PROPONENT), text);
         assertTrue(text.contains(COLLEGE + "."), text);
@@ -192,22 +194,35 @@ class EndorsementLetterServiceTest {
     }
 
     /**
-     * The addressee no longer depends on the obsolete ORPS Director configuration: the
-     * letter is addressed to the office, and the office and the university are printed
-     * from the settings row's official defaults when nothing was ever configured.
+     * The addressee block follows the official document: the Director's name (when the
+     * endorsement letter settings hold one), the designation, the office and the university,
+     * and the official salutation. The test settings carry no Director, so the neutral
+     * fallback is printed - no person is invented.
      */
     @Test
-    void theAddresseeIsTheOfficeAndNeedsNoDirectorConfiguration() throws Exception {
+    void theAddresseeBlockFollowsTheOfficialTemplate() throws Exception {
         String text = normalizedTextOf(service.generate(context(TITLE)).content());
 
         assertTrue(text.contains("The Director"), text);
         assertTrue(text.contains(EndorsementLetterSettings.DEFAULT_OFFICE_NAME), text);
         assertTrue(text.contains(EndorsementLetterSettings.DEFAULT_UNIVERSITY_NAME), text);
-        assertTrue(text.contains("Dear Madam:"), text);
-
-        // The obsolete fields are not printed at all - not even as a placeholder.
+        assertTrue(text.contains("Dear Director:"), text);
         assertFalse(text.contains("Salazar"), text);
-        assertFalse(text.contains("Dear Director "), text);
+    }
+
+    /**
+     * When the settings hold the ORPS Director's name and surname, the addressee block and
+     * the salutation of the official document are populated with them.
+     */
+    @Test
+    void theDirectorNameAndSalutationArePopulatedWhenConfigured() throws Exception {
+        settings.setDirectorName("Eduardo");
+        settings.setDirectorSurname("Salazar");
+
+        String text = normalizedTextOf(service.generate(context(TITLE)).content());
+
+        assertTrue(text.contains("Eduardo Salazar"), text);
+        assertTrue(text.contains("Dear Director Salazar:"), text);
     }
 
     @Test
@@ -231,6 +246,23 @@ class EndorsementLetterServiceTest {
 
         assertTrue(text.contains("Document Code"), text);
         assertTrue(text.contains(CODE), text);
+    }
+
+    /**
+     * The document code is plain, right-aligned text in the upper-right corner - the official
+     * template's white box and border must not be reproduced. The absence of a rectangle is
+     * checked at the source, because a filled white box with a grey border cannot be told
+     * apart from a blank page by text extraction.
+     */
+    @Test
+    void theDocumentCodeIsNotDrawnInsideABox() throws Exception {
+        String source = Files.readString(Paths.get("src", "main", "java", "com", "rpis",
+                "backend", "service", "EndorsementLetterService.java"));
+
+        assertFalse(source.contains("canvas.rectangle"),
+                "the document code must not be enclosed in a rectangle");
+        assertTrue(source.contains("Element.ALIGN_RIGHT"),
+                "the document code must be right-aligned");
     }
 
     @Test
