@@ -117,6 +117,7 @@ CREATE TABLE proposals (
     sustainability TEXT,
     gad_score DECIMAL(5,2),
     gad_file_name VARCHAR(255),
+    gad_checklist_json TEXT,                -- GAD Checklist 2 (section 19): responses, comments + derived score (JSON)
     risks TEXT,
     references_text TEXT,
     references_json TEXT,                   -- structured entries behind the literature cited (JSON)

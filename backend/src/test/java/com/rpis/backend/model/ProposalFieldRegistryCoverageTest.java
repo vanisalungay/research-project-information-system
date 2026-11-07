@@ -44,6 +44,10 @@ class ProposalFieldRegistryCoverageTest {
             // text in `referencesText`, this column only keeps the builder's entries so
             // the proponent can edit a reference again (and its italics survive)
             "referencesJson",
+            // the interactive GAD Checklist 2 (section 19): it is rendered by its own
+            // component (GadChecklist.vue) with a response, a score and a comment per item,
+            // not as a field-level remark control
+            "gadChecklist",
             // return-for-revision routing metadata
             "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",

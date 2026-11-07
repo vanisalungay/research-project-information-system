@@ -389,6 +389,23 @@ public class ProposalService {
         proposal.setSustainability(request.getSustainability());
         proposal.setGadScore(request.getGadScore());
         proposal.setGadFileName(request.getGadFileName());
+        // Section 19 - the interactive GAD Checklist 2. Only when the client sends one (a
+        // legacy client that only sends the file leaves the stored checklist untouched). The
+        // total, interpretation and completion state are RECALCULATED here from the responses,
+        // never trusted from the client, and the total is mirrored onto the legacy gadScore
+        // column so the existing screens and exports keep working. A checklist submitted with
+        // a non-draft status must be complete.
+        if (request.getGadChecklist() != null) {
+            GadChecklistData gadChecklist = request.getGadChecklist();
+            GadChecklistScoring.recalculate(gadChecklist);
+            boolean draft = request.getStatus() == null || "DRAFT".equalsIgnoreCase(request.getStatus());
+            if (!draft && !Boolean.TRUE.equals(gadChecklist.getCompleted())) {
+                throw new IllegalArgumentException(
+                        "Please select No, Partly or Yes for every GAD assessment item before submitting the proposal.");
+            }
+            proposal.setGadChecklist(gadChecklist);
+            proposal.setGadScore(gadChecklist.getTotalScore());
+        }
         proposal.setRisks(request.getRisks());
         proposal.setLimitationsText(request.getLimitationsText());
         proposal.setOtherProjectsNumber(request.getOtherProjectsNumber());

@@ -424,6 +424,11 @@
               <h2>Gender and Development (GAD) Score</h2>
             </div>
             <div class="card-body">
+              <GadChecklist
+                v-if="proposal.gadChecklist"
+                :model-value="proposal.gadChecklist"
+                readonly
+              />
               <div v-if="proposal.gadFileName" class="file-attachment">
                 <div class="file-icon">📄</div>
                 <div class="file-info">
@@ -433,7 +438,9 @@
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </div>
-              <p v-else class="empty-text">No file uploaded.</p>
+              <p v-if="!proposal.gadChecklist && !proposal.gadFileName" class="empty-text">
+                No GAD checklist or document on record.
+              </p>
             </div>
           </section>
 
@@ -716,6 +723,7 @@ import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import ProponentCallForProposal from './ProponentCallForProposal.vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
+import GadChecklist from '@/components/GadChecklist.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import { useDialog } from '@/composables/useDialog'

@@ -1,5 +1,6 @@
 package com.rpis.backend.dto;
 
+import com.rpis.backend.model.GadChecklistData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -62,6 +63,11 @@ public class ProposalRequest {
     private String sustainability;
     private BigDecimal gadScore;
     private String gadFileName;
+    // Section 19 (GAD Checklist 2): the responses and comments the proponent entered. The
+    // backend recalculates the total, its interpretation and the completion state from the
+    // responses, so this field is never trusted for the score. Null means "this client does
+    // not edit the checklist" (e.g. a legacy client) and leaves the stored value untouched.
+    private GadChecklistData gadChecklist;
     private List<LimitationDTO> limitationsTable;
     private String limitationsText;
     private String risks;

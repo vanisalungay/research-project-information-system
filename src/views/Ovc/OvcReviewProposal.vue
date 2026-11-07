@@ -42,6 +42,12 @@
             @remark-saved="onRemarkSaved"
             @remark-removed="onRemarkRemoved"
           />
+
+          <!-- Section 19: the completed GAD Checklist 2 (read-only). Every reviewer sees the
+               17 responses, their scores, the comments and the total GAD score. -->
+          <div v-if="proposal.gadChecklist" class="rv-gad-card">
+            <GadChecklist :model-value="proposal.gadChecklist" readonly />
+          </div>
         </div>
 
         <!-- RIGHT COLUMN: Sidebar -->
@@ -198,6 +204,7 @@ import { useDialog } from '@/composables/useDialog'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import SdgChecklist from '@/components/SdgChecklist.vue'
+import GadChecklist from '@/components/GadChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'

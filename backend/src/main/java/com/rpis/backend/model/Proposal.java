@@ -202,6 +202,15 @@ public class Proposal {
     @Column(name = "gad_file_name")
     private String gadFileName;
 
+    /**
+     * Section 19 - the interactive GAD Checklist 2 (responses, comments and the derived
+     * total), stored as JSON. Null for a proposal that predates the checklist, whose uploaded
+     * GAD document is still kept in {@link #gadFileName}.
+     */
+    @Convert(converter = GadChecklistDataConverter.class)
+    @Column(name = "gad_checklist_json", columnDefinition = "TEXT")
+    private GadChecklistData gadChecklist;
+
     @Column(columnDefinition = "TEXT")
     private String risks;
 

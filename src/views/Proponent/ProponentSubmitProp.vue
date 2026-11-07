@@ -778,30 +778,23 @@
           </div>
         </section>
 
-        <!-- 19. GAD Score -->
+        <!-- 19. GAD Score: the interactive GAD Checklist 2 (replaces the file upload) -->
         <section class="form-section" ref="section_gad_score">
           <div class="section-header">
             <span class="section-number">19</span>
             <h3>Gender and Development (GAD) Score</h3>
           </div>
-          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.gad_score_file }">
-            <div class="file-upload">
-              <div class="upload-area" @click="$refs.gadFile.click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="12" y1="18" x2="12" y2="12" />
-                  <line x1="9" y1="15" x2="15" y2="15" />
-                </svg>
-                <span>Upload GAD score document</span>
-              </div>
-              <input ref="gadFile" type="file" @change="handleFileUpload('gad', $event)" hidden />
-              <div v-if="proposal.gad_score_file" class="file-info">
-                <span>📄 {{ proposal.gad_score_file.name }}</span>
-                <button class="btn-remove-file" @click="proposal.gad_score_file = null">✕</button>
-              </div>
-            </div>
-            <span class="field-error" v-if="showValidation && errors.gad_score_file">{{ errors.gad_score_file }}</span>
+          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.gad_checklist }">
+            <GadChecklist
+              v-model="proposal.gad_checklist"
+              :error="showValidation ? errors.gad_checklist : ''"
+            />
+            <!-- A proposal created before the interactive checklist keeps its uploaded GAD
+                 document; it is shown here and preserved, never required again. -->
+            <p v-if="proposal.gad_score_file || proposal.gad_file_name" class="gad-legacy-file">
+              Previously uploaded GAD document:
+              <strong>{{ proposal.gad_score_file ? proposal.gad_score_file.name : proposal.gad_file_name }}</strong>
+            </p>
           </div>
         </section>
 
@@ -1148,6 +1141,7 @@ import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
+import GadChecklist from '@/components/GadChecklist.vue'
 import LineItemBudgetTemplateModal from '@/components/LineItemBudgetTemplateModal.vue'
 import LiteratureReferenceModal from '@/components/LiteratureReferenceModal.vue'
 import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
@@ -1167,6 +1161,17 @@ import {
 } from '@/utils/documentExport'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import {
+  GAD_ITEMS,
+  GAD_RESPONSE_OPTIONS,
+  emptyGadChecklist,
+  formatGadScore,
+  gadChecklistFromSaved,
+  gadChecklistPayload,
+  gadChecklistSummary,
+  gadChecklistValidation,
+  gadItemScore,
+} from '@/utils/gadChecklist'
 import { CREATE_NEW_PROGRAM_TITLE, programTitlesFromProposals } from '@/utils/programTitleOptions'
 import {
   PROJECT_DURATION_OPTIONS,
@@ -1309,6 +1314,7 @@ const sectionRefs = {
   target_beneficiaries: 'section_target_beneficiaries',
   sustainability_plan: 'section_sustainability_plan',
   gad_score_file: 'section_gad_score',
+  gad_checklist: 'section_gad_score',
   limitations: 'section_limitations',
   risks_assumptions: 'section_risks',
   logical_framework: 'section_logical_framework',
@@ -1478,6 +1484,10 @@ const getInitialProposal = () => ({
   roadmap_file_name: '',
   roadmap_file_path: '',
   gad_score_file: null,
+  // Section 19: the name of a GAD document attached to an older proposal (kept, so a save
+  // never clears it) and the interactive GAD Checklist 2 (responses + comments).
+  gad_file_name: '',
+  gad_checklist: emptyGadChecklist(),
   line_item_budget_file: null,
   // Name / stored path of the Line-Item Budget already attached to the proposal (set
   // by the upload, so a later save keeps describing the same file).
@@ -1798,6 +1808,10 @@ const loadProposal = (data) => {
   proposal.sustainability_plan = data.sustainability || ''
   proposal.risks_assumptions = data.risks || ''
   proposal.other_projects_number = data.otherProjectsNumber || ''
+  // Section 19: the interactive GAD Checklist 2. A legacy proposal keeps the stored name of
+  // its uploaded GAD document; an existing checklist is restored exactly as it was saved.
+  proposal.gad_file_name = data.gadFileName || ''
+  proposal.gad_checklist = gadChecklistFromSaved(data.gadChecklist)
   // Section 23: the references are restored from the stored plain text and, when the
   // proposal was built with the reference builder, from the structured entries too
   // (which is what keeps the italics and "Edit" working).
@@ -2185,7 +2199,10 @@ const toOfficialProposal = () => {
       involvement: r.involvement
     })),
     roadmapFileName: fileName(d.technology_roadmap_file) || d.roadmap_file_name || '',
-    gadFileName: fileName(d.gad_score_file),
+    // Section 19: keep the name of a legacy uploaded GAD document (a save never clears it)
+    // and send the interactive GAD Checklist 2 (responses + comments + derived total).
+    gadFileName: fileName(d.gad_score_file) || d.gad_file_name || '',
+    gadChecklist: gadChecklistPayload(d.gad_checklist),
     // Section 25: the Line-Item Budget document. The stored name (set by the upload)
     // wins, so a re-save never overwrites it with a local file name.
     beneficiariesFileName: d.budget_file_name || fileName(d.line_item_budget_file),
@@ -2335,6 +2352,21 @@ const proposalSectionsA = () => {
 const proposalSectionsB = () => {
   const p = proposal
 
+  // Section 19: the interactive GAD Checklist 2, printed as the assessment table plus the
+  // total GAD score and its interpretation.
+  const gadSummary = gadChecklistSummary(p.gad_checklist)
+  const gadRows = GAD_ITEMS.map((item) => {
+    const response = p.gad_checklist?.responses?.[item.key] || ''
+    const option = GAD_RESPONSE_OPTIONS.find((entry) => entry.key === response)
+    const score = gadItemScore(p.gad_checklist, item.key)
+    return [
+      item.key,
+      item.question,
+      option ? option.label : '—',
+      score === null ? '—' : formatGadScore(score)
+    ]
+  })
+
   const logFrameRows = (p.logical_framework || []).map((r) => [r.outcome_indicator, r.output_indicator])
   const personnelRows = (p.personnel_requirements || []).map((r) => [r.position, r.effort, r.responsibilities])
   const otherProjectsRows = (p.other_projects || []).map((r) => [
@@ -2372,7 +2404,15 @@ const proposalSectionsB = () => {
     section({
       number: '19',
       title: 'Gender and Development (GAD) Score',
-      body: fileField('GAD Score Document', p.gad_score_file)
+      body: `${textBlock('Total GAD Score', `${gadSummary.formattedTotal} / ${gadSummary.maxScore}`)}
+        ${textBlock(
+          'Interpretation',
+          gadSummary.completed && gadSummary.interpretation
+            ? gadSummary.interpretation.label
+            : 'Assessment incomplete - not every GAD assessment item has a response.'
+        )}
+        ${tableBlock(['Item', 'Assessment Item', 'Response', 'Score'], gadRows)}
+        ${p.gad_file_name ? textBlock('Previously uploaded GAD document', p.gad_file_name) : ''}`
     }),
     section({
       number: '20',
@@ -2525,8 +2565,9 @@ const validateStep1 = () => {
   if (isBlank(proposal.target_beneficiaries)) errors.target_beneficiaries = 'Target Beneficiaries is required.'
   if (isBlank(proposal.sustainability_plan)) errors.sustainability_plan = 'Sustainability Plan is required.'
 
-  // 19 - GAD Score
-  if (!proposal.gad_score_file) errors.gad_score_file = 'GAD Score document is required.'
+  // 19 - GAD Score: every one of the 17 GAD Checklist 2 items must have a response.
+  const gadResult = gadChecklistValidation(proposal.gad_checklist)
+  if (!gadResult.valid) errors.gad_checklist = gadResult.message
 
   // 20-21
   if (isBlank(proposal.limitations)) errors.limitations = 'Limitations is required.'
@@ -2821,6 +2862,13 @@ watch(() => props.modelValue, (isOpen) => {
 </script>
 
 <style scoped>
+/* A proposal that predates the interactive GAD checklist keeps its uploaded document name. */
+.gad-legacy-file {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: #475569;
+}
+
 /* ===== BACKDROP ===== */
 .modal-backdrop {
   position: fixed;
