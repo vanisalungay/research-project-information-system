@@ -48,11 +48,31 @@ export const TERMINAL_COVER_FIELDS = [
   { key: 'programTitle', label: 'Program Title' },
   { key: 'projectTitle', label: 'Project Title', required: true },
   { key: 'studyTitle', label: 'Study Title (if applicable)' },
-  { key: 'projectTeam', label: 'Project Team (printed as the authors)' },
+  { key: 'projectTeam', label: 'Project Team (printed as the authors)', required: true },
   { key: 'collaborators', label: 'Collaborators' },
   { key: 'implementingAgencies', label: 'Implementing Agencies' },
   { key: 'fundingAgencies', label: 'Funding Agencies' },
   { key: 'submissionMonthYear', label: 'Month and Year of Submission' },
+]
+
+/**
+ * The cover-page values the proponent actually enters. Only the Project Team (printed as the
+ * authors) is entered here. Every other cover value - program/project/study title,
+ * collaborators, implementing and funding agencies, and the month/year of submission - is
+ * taken from the project and submission records RPIS already holds, so it is neither
+ * requested nor displayed again on the cover. Those keys stay in
+ * {@link TERMINAL_COVER_FIELDS}, so a saved report keeps every value it holds.
+ *
+ * `multiline: true` is rendered as a text area, so several author names can be entered.
+ */
+export const TERMINAL_COVER_INPUT_FIELDS = [
+  {
+    key: 'projectTeam',
+    label: 'Project Team (printed as the authors)',
+    required: true,
+    multiline: true,
+    hint: 'One author per line, e.g. Juan Dela Cruz. Enter only the members who should appear as authors.',
+  },
 ]
 
 /** Columns of the summary sheet's "Project Information" table (label / detail rows). */
@@ -71,6 +91,27 @@ export const TERMINAL_OBJECTIVE_FIELDS = [
 export const TERMINAL_FINANCIAL_FIELDS = [
   { key: 'summaryTotalBudget', label: 'Total Budget' },
   { key: 'summarySourceOfFunds', label: 'Source of Fund' },
+]
+
+/** The three section headings of the summary sheet, in document order. */
+export const TERMINAL_SUMMARY_HEADINGS = {
+  projectInfo: 'Project Information Details',
+  accomplishments: 'Major Accomplishments',
+  financial: 'Financial Information Details',
+}
+
+/** The fixed rows of the "Project Information Details" table of the summary sheet. */
+export const TERMINAL_PROJECT_INFO_FIELDS = [
+  'Program Title',
+  'Project Title',
+  'Project Leader/Gender',
+  'Agency',
+  'Address/Email',
+  'Cooperating Agency',
+  'Base Station',
+  'Area Covered',
+  'Data Collection',
+  'Production Comparison',
 ]
 
 /** Preliminary narrative fields (abstract, keywords and acknowledgment). */
@@ -484,9 +525,7 @@ export function normalizeTerminalReport(report) {
   for (const field of TERMINAL_COVER_FIELDS) state[field.key] = text(source[field.key])
   for (const field of TERMINAL_FINANCIAL_FIELDS) state[field.key] = text(source[field.key])
   state.summaryAccomplishmentsTitle = text(source.summaryAccomplishmentsTitle)
-  state.summaryRows = listOf(source.summaryRows).map((row) =>
-    normalizeRow(row, TERMINAL_SUMMARY_ROW_FIELDS)
-  )
+  state.summaryRows = normalizeSummaryRows(source.summaryRows)
   state.summaryObjectives = listOf(source.summaryObjectives).map((row) =>
     normalizeRow(row, TERMINAL_OBJECTIVE_FIELDS)
   )
@@ -550,10 +589,12 @@ export function terminalReportFormState(saved, proposal, { today = new Date() } 
   const hasSaved = saved && typeof saved === 'object'
   const p = proposal && typeof proposal === 'object' ? proposal : {}
 
+  // The cover page takes its titles and date from the project and submission records RPIS
+  // already holds. The project team (the authors) is entered by the proponent and is never
+  // auto-populated, so the proponent chooses which members appear as authors.
   const prefill = {
     programTitle: text(p.programTitle),
     projectTitle: text(p.projectTitle),
-    projectTeam: text(p.projectLeader),
     collaborators: text(p.cooperatingAgencies),
     submissionMonthYear: currentMonthYear(today),
   }
@@ -561,8 +602,12 @@ export function terminalReportFormState(saved, proposal, { today = new Date() } 
     if (!hasText(state[key])) state[key] = value
   }
 
-  if (!state.summaryRows.length) {
-    state.summaryRows = standardSummaryRows(p)
+  // Fill any fixed summary row the report does not hold yet from the project record; a value
+  // already saved on the report wins, so a reopened draft keeps what the proponent entered.
+  const summaryPrefill = new Map(standardSummaryRows(p).map((row) => [row.label, row.detail]))
+  for (const row of state.summaryRows) {
+    const value = summaryPrefill.get(row.label)
+    if (value && !hasText(row.detail)) row.detail = value
   }
   if (!state.summaryAccomplishmentsTitle) {
     state.summaryAccomplishmentsTitle = ''
@@ -600,20 +645,88 @@ function standardSummaryRows(proposal) {
   return [
     { label: 'Program Title', detail: text(p.programTitle) },
     { label: 'Project Title', detail: text(p.projectTitle) },
-    { label: 'Project Leader', detail: text(p.projectLeader) },
-    { label: 'Gender', detail: text(p.projectLeaderSex) },
+    { label: 'Project Leader/Gender', detail: joinedValue(text(p.projectLeader), text(p.projectLeaderSex)) },
     { label: 'Agency', detail: text(p.college) },
-    { label: 'Address', detail: address },
-    { label: 'Email', detail: email },
+    { label: 'Address/Email', detail: joinedValue(address, email) },
     { label: 'Cooperating Agency', detail: text(p.cooperatingAgencies) },
     { label: 'Base Station', detail: '' },
     { label: 'Area Covered', detail: '' },
     { label: 'Data Collection', detail: '' },
-    // Summary items required by the RPIS reporting requirements.
-    { label: 'Report Title', detail: text(p.projectTitle) },
-    { label: 'Implementing Agencies', detail: '' },
-    { label: 'Project Duration', detail: text(p.duration) },
+    { label: 'Production Comparison', detail: '' },
   ].map((row) => normalizeRow(row, TERMINAL_SUMMARY_ROW_FIELDS))
+}
+
+/** Joins the non-empty parts with " / " - the way the summary prints a combined value. */
+function joinedValue(...parts) {
+  return parts
+    .map((part) => text(part).trim())
+    .filter((part) => part !== '')
+    .join(' / ')
+}
+
+/** The fixed rows of the Project Information Details table, in document order. */
+const SUMMARY_FIXED_LABELS = TERMINAL_PROJECT_INFO_FIELDS
+
+/** The pre-split labels an older report may hold, folded into the combined rows. */
+const SUMMARY_LEGACY_LABELS = ['Project Leader', 'Gender', 'Address', 'Email']
+
+/**
+ * Normalizes the summary rows to the fixed Project Information Details table, in order. An
+ * older report that stored the split rows ("Project Leader" / "Gender", "Address" / "Email")
+ * is folded into the combined rows, so a reopened draft keeps its values. A row the report
+ * already holds that is none of the fixed (or legacy) rows is preserved as-is.
+ *
+ * <p>Every detail stays on the report itself: the proponent edits the Terminal Report copy,
+ * so the original project record is never touched.
+ */
+function normalizeSummaryRows(sourceRows) {
+  const stored = listOf(sourceRows).map((row) => normalizeRow(row, TERMINAL_SUMMARY_ROW_FIELDS))
+  const at = (label) => {
+    const wanted = label.toLowerCase()
+    const found = stored.find((row) => row.label.trim().toLowerCase() === wanted)
+    return found ? found.detail : ''
+  }
+  const values = {
+    'Program Title': at('Program Title'),
+    'Project Title': at('Project Title'),
+    'Project Leader/Gender':
+      at('Project Leader/Gender') || joinedValue(at('Project Leader'), at('Gender')),
+    'Agency': at('Agency'),
+    'Address/Email': at('Address/Email') || joinedValue(at('Address'), at('Email')),
+    'Cooperating Agency': at('Cooperating Agency'),
+    'Base Station': at('Base Station'),
+    'Area Covered': at('Area Covered'),
+    'Data Collection': at('Data Collection'),
+    'Production Comparison': at('Production Comparison'),
+  }
+  const fixed = SUMMARY_FIXED_LABELS.map((label) => ({ label, detail: values[label] }))
+  const consumed = new Set(
+    [...SUMMARY_FIXED_LABELS, ...SUMMARY_LEGACY_LABELS].map((label) => label.toLowerCase()),
+  )
+  const extras = stored.filter((row) => row.label && !consumed.has(row.label.trim().toLowerCase()))
+  return [...fixed, ...extras]
+}
+
+/** The report's summary rows with the fixed Project Information Details table ensured. */
+export function terminalSummaryRows(rows) {
+  return normalizeSummaryRows(rows)
+}
+
+/**
+ * Formats a money value as "PHP 1,234.00". A value that already names the currency is kept as
+ * stored, a non-numeric value is returned unchanged, and an empty value stays empty.
+ */
+export function formatPhpAmount(value) {
+  const raw = text(value).trim()
+  if (raw === '') return ''
+  if (/php/i.test(raw)) return raw
+  const number = Number(raw.replace(/,/g, ''))
+  if (Number.isFinite(number)) {
+    return (
+      'PHP ' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    )
+  }
+  return raw
 }
 
 /** Words in the abstract: whitespace-separated tokens (mirrors the backend count). */
@@ -632,6 +745,19 @@ export function textParagraphs(value) {
     .split(/\n\s*\n/)
     .map((paragraph) => paragraph.trim())
     .filter((paragraph) => paragraph !== '')
+}
+
+/**
+ * The members of the project team, one per line. The field is a multiline input ("one author
+ * per line"), so the members are split on line breaks only - never on spaces or commas, so a
+ * name like "Bagares, Xarzha Maurine" stays a single member. Blank lines are skipped, and a
+ * value saved as one line is returned as exactly one member.
+ */
+export function projectTeamMembers(value) {
+  return text(value)
+    .split(/\r\n|\r|\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
 }
 
 /**
@@ -724,7 +850,50 @@ export function terminalSectionOf(key) {
   return null
 }
 
-/** True when the step of the form already holds something. */
+/**
+ * The cover values the format requires. The completion indicator turns on only when every one
+ * of them carries a value, so the project title that RPIS fills in from the project record is
+ * never enough on its own.
+ */
+function requiredCoverFields() {
+  return TERMINAL_COVER_FIELDS.filter((field) => field.required)
+}
+
+/** The narrative fields the format requires (the abstract). */
+function requiredNarrativeFields() {
+  return TERMINAL_NARRATIVE_FIELDS.filter((field) => field.required)
+}
+
+/**
+ * The summary rows only the proponent can fill. The other rows of the Project Information
+ * Details table are pre-filled from the project record, so a summary that still holds only
+ * those pre-filled rows is not complete.
+ */
+const SUMMARY_ENTERED_LABELS = new Set([
+  'Base Station',
+  'Area Covered',
+  'Data Collection',
+  'Production Comparison',
+])
+
+/** True when the proponent has entered something of their own on the summary sheet. */
+function summaryHasOwnContent(report) {
+  return (
+    TERMINAL_FINANCIAL_FIELDS.some((field) => hasText(report[field.key])) ||
+    listOf(report.summaryObjectives).some(rowHasContent) ||
+    listOf(report.summaryRows).some(
+      (row) => SUMMARY_ENTERED_LABELS.has(text(row?.label).trim()) && summaryRowHasValue(row)
+    ) ||
+    hasText(report.summaryAccomplishmentsTitle)
+  )
+}
+
+/**
+ * True when a step of the form is complete: every part the format requires is present and
+ * passes validation. A step is never complete merely because it was opened or saved, and a
+ * value that only the project record supplied (the pre-filled cover title, the pre-filled
+ * summary rows) never completes a step on its own. Optional entries never block completion.
+ */
 export function terminalSectionFilled(report, sectionKey) {
   if (!report) return false
   const section = TERMINAL_SECTIONS.find((entry) => entry.key === sectionKey)
@@ -732,18 +901,17 @@ export function terminalSectionFilled(report, sectionKey) {
 
   return section.sheets.some((sheet) => {
     if (sheet === 'cover') {
-      return TERMINAL_COVER_FIELDS.some((field) => hasText(report[field.key]))
+      // Every required cover value, including the manually entered Project Team, must be
+      // present. The pre-filled project title alone is not enough.
+      return requiredCoverFields().every((field) => hasText(report[field.key]))
     }
     if (sheet === 'summary') {
-      return (
-        TERMINAL_FINANCIAL_FIELDS.some((field) => hasText(report[field.key])) ||
-        listOf(report.summaryRows).some(summaryRowHasValue) ||
-        listOf(report.summaryObjectives).some(rowHasContent) ||
-        hasText(report.summaryAccomplishmentsTitle)
-      )
+      return summaryHasOwnContent(report)
     }
     if (sheet === 'acknowledgment' || sheet === 'abstract') {
-      return TERMINAL_NARRATIVE_FIELDS.some((field) => hasText(report[field.key]))
+      // The abstract is required; the keywords and the acknowledgment are optional.
+      const required = requiredNarrativeFields()
+      return required.length > 0 && required.every((field) => hasText(report[field.key]))
     }
     if (sheet === 'contents') {
       return listOf(report.tableOfContents).some(rowHasContent)
@@ -757,6 +925,11 @@ export function terminalSectionFilled(report, sectionKey) {
         listOf(report.appendices).some(rowHasContent) ||
         listOf(report.appendixTables).some(tableHasContent)
       )
+    }
+    const bodySection = TERMINAL_BODY_SECTIONS.find((entry) => entry.key === sheet)
+    if (bodySection?.required) {
+      // A required section must hold text; a table on its own does not satisfy the validation.
+      return sectionHasText(report[sheet])
     }
     const value = report[sheet]
     return sectionHasText(value) || listOf(value?.tables).some(tableHasContent)

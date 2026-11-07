@@ -61,6 +61,8 @@ const deanAttentionStore = useDeanAttentionStore()
 const icons = {
   dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
   notification: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>`,
+  history: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 10 9 10" /><polyline points="12 8 12 12 15 14" /></svg>`,
+  deanRole: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 3v5.5c0 4.6-3 8.4-7 9.5-4-1.1-7-4.9-7-9.5V5z" /><path d="M9.5 11.5l1.8 1.8 3.4-3.6" /></svg>`,
   proposals: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   endorse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
   budget: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
@@ -102,28 +104,43 @@ const allNavItems = [
     section: 'main',
   },
   {
-    iconKey: 'calendar',
-    text: 'Proposal Announcements',
-    path: '/proposal-announcements',
-    // RPS Staff only. The Call for Proposal is an ORPS staff surface, and the
-    // administrator's sidebar is deliberately limited to Dashboard, User Accounts and
-    // Notifications - so RPS_ADMIN must not be listed here.
-    roles: [UserRole.RPS_STAFF],
+    iconKey: 'deanRole',
+    text: 'Dean Role Management',
+    path: '/dean-role-management',
+    // The Dean role has its own page, next to User Accounts: the account itself is
+    // still listed - and still reset - from User Accounts, but assigning the role,
+    // its designation and its college lives here. RPS ADMIN only, re-checked by the
+    // route guard and by the endpoints behind the page.
+    roles: [UserRole.RPS_ADMIN],
     section: 'main',
   },
   {
     iconKey: 'evalCriteria',
     text: 'Priority Agendas',
     path: '/priority-agendas',
-    // RPS Staff only, for the same reason as the Call for Proposal above: the
-    // administrator maintains accounts, not the proposal master data.
+    // The Priority Agenda master data belongs to the administrator: the page and the API
+    // behind it were transferred from ORPS Staff, and this is the only role that may open
+    // them. The route guard and the endpoint rules enforce it too, so hiding the item is
+    // never the only protection.
+    roles: [UserRole.RPS_ADMIN],
+    section: 'main',
+  },
+  {
+    iconKey: 'calendar',
+    text: 'Proposal Announcements',
+    path: '/proposal-announcements',
+    // RPS Staff only. The Call for Proposal remains an ORPS staff surface, so RPS_ADMIN
+    // must not be listed here.
     roles: [UserRole.RPS_STAFF],
     section: 'main',
   },
   {
-    iconKey: 'notification',
-    text: 'Notifications',
-    path: '/notifications',
+    iconKey: 'history',
+    text: 'Activity Log',
+    path: '/activity-log',
+    // Replaces the Notifications item this role used to have. Only this entry was
+    // removed: every other role keeps its own Notifications link below, and the
+    // /notifications route still serves all of them.
     roles: [UserRole.RPS_ADMIN],
     section: 'main',
   },

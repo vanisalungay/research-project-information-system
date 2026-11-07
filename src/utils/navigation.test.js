@@ -310,27 +310,31 @@ test('a nested Dean route keeps its parent item highlighted', () => {
   assert.equal(onList('/notifications'), false)
 })
 
-test('the administrator sees exactly Dashboard, User Accounts and Notifications', () => {
+test('the administrator sees exactly Dashboard, User Accounts, Dean Role Management, Priority Agendas and Activity Log', () => {
   const items = navItems().filter((item) => item.roles.includes('RPS_ADMIN'))
   const main = items.filter((item) => item.section === 'main')
 
-  // The administrator manages accounts and reads their own notifications. The ORPS staff
-  // surfaces - the Call for Proposal, the Priority Agendas, the quarterly reports and the
-  // review queues - belong to RPS Staff and must never reappear in this list.
+  // The administrator manages accounts, maintains the Priority Agenda master data (that page
+  // was transferred from ORPS Staff) and reads their own notifications. The remaining ORPS
+  // staff surfaces - the Call for Proposal, the quarterly reports and the review queues -
+  // belong to RPS Staff and must never reappear in this list.
   assert.deepEqual(
     main.map((item) => item.text),
-    ['Dashboard', 'User Accounts', 'Notifications'],
-    'the administrator main navigation must be exactly these three items',
+    ['Dashboard', 'User Accounts', 'Dean Role Management', 'Priority Agendas', 'Activity Log'],
+    'the administrator main navigation must be exactly these four items',
   )
   assert.deepEqual(
     main.map((item) => item.path),
-    ['/home', '/user-accounts', '/notifications'],
+    ['/home', '/user-accounts', '/dean-role-management', '/priority-agendas', '/activity-log'],
     'each administrator item must point at its own route',
+  )
+  assert.ok(
+    !pathsFor('RPS_ADMIN').includes('/notifications'),
+    'the Notifications item was replaced by the Activity Log for the administrator only',
   )
 
   for (const staffPath of [
     '/proposal-announcements',
-    '/priority-agendas',
     '/rps-quarterly-reports',
     '/rps-proposal-monitoring',
     '/rps-subproposal',
@@ -360,7 +364,6 @@ test('restricting the administrator leaves every RPS Staff item in place', () =>
       'Dashboard',
       'Submitted Proposals',
       'Proposal Announcements',
-      'Priority Agendas',
       'Notifications',
       'Budget Processing',
       'Proposal Monitoring',
@@ -374,7 +377,6 @@ test('restricting the administrator leaves every RPS Staff item in place', () =>
       '/home',
       '/rps-subproposal',
       '/proposal-announcements',
-      '/priority-agendas',
       '/notifications',
       '/budget-processing',
       '/rps-proposal-monitoring',
@@ -384,15 +386,15 @@ test('restricting the administrator leaves every RPS Staff item in place', () =>
   )
 })
 
-test('the sidebar the administrator actually sees is the three administrator items', () => {
+test('the sidebar the administrator actually sees is exactly the administrator items', () => {
   // This is the evaluation NavMenu performs for the signed-in role, not a reading of the
   // configuration: the shipped array with the shipped filter applied.
   const admin = renderedSidebar('RPS_ADMIN')
 
   assert.deepEqual(
     admin.main,
-    ['Dashboard', 'User Accounts', 'Notifications'],
-    'the rendered administrator sidebar must be exactly these three items',
+    ['Dashboard', 'User Accounts', 'Dean Role Management', 'Priority Agendas', 'Activity Log'],
+    'the rendered administrator sidebar must be exactly these four items',
   )
   assert.deepEqual(
     admin.bottom,
@@ -408,13 +410,12 @@ test('the sidebar the administrator actually sees is the three administrator ite
       'Dashboard',
       'Submitted Proposals',
       'Proposal Announcements',
-      'Priority Agendas',
       'Notifications',
       'Budget Processing',
       'Proposal Monitoring',
       'Quarterly Reports',
     ],
-    'the rendered ORPS staff sidebar must be unchanged',
+    'the rendered ORPS staff sidebar must no longer offer the transferred page',
   )
 })
 

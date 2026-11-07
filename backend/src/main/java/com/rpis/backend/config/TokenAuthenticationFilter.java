@@ -35,6 +35,7 @@ import java.util.Collections;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
+    private final com.rpis.backend.repository.UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -63,7 +64,46 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        // An account still holding an administrator-issued temporary password may only reach
+        // the password-change endpoint and the authentication endpoints. This is the
+        // server-side half of the rule: the client redirect is a convenience, and without this
+        // a temporary password could be used against every other API.
+        if (requiresPasswordChange() && !isAllowedWhileChangingPassword(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("text/plain");
+            response.getWriter().write(
+                    "You must change your temporary password before using the application.");
+            return;
+        }
+
         filterChain.doFilter(request, response);
     }
-}
 
+    /** True when the authenticated account is still holding a temporary password. */
+    private boolean requiresPasswordChange() {
+        org.springframework.security.core.Authentication authentication =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+            return false;
+        }
+        return userRepository.findById(userId)
+                .map(user -> Boolean.TRUE.equals(user.getMustChangePassword()))
+                .orElse(false);
+    }
+
+    /**
+     * The only requests such an account may make: the password change itself, the
+     * authentication endpoints, and the reads that render the change-password page. Signing
+     * out is client-side, so it never reaches here.
+     */
+    private static boolean isAllowedWhileChangingPassword(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path == null) {
+            return false;
+        }
+        return path.startsWith("/api/users/change-password")
+                || path.startsWith("/api/users/login")
+                || path.startsWith("/api/users/google-login")
+                || path.startsWith("/api/users/me");
+    }
+}

@@ -151,7 +151,13 @@ const handleLogin = async () => {
     )
 
     if (isLoggedIn) {
-      router.push('/home')
+      // An account created by an administrator holds a temporary password: it goes straight to
+      // the change-password page and cannot reach its dashboard until it is replaced.
+      if (userStore.user?.mustChangePassword) {
+        router.push('/change-password')
+      } else {
+        router.push('/home')
+      }
     } else {
       errorMessage.value = 'Invalid email, password, or role.'
     }
@@ -170,7 +176,11 @@ const handleGoogleLogin = async (response) => {
     )
 
     if (isLoggedIn) {
-      router.push('/home')
+      if (userStore.user?.mustChangePassword) {
+        router.push('/change-password')
+      } else {
+        router.push('/home')
+      }
     } else {
       errorMessage.value = 'Google Login failed.'
     }

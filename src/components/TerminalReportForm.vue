@@ -1,29 +1,39 @@
 <template>
   <div class="tr-doc">
     <!-- ==================== COVER PAGE ==================== -->
+    <!-- The cover prints only what it should: the institutional letterhead, the project
+         title, the authors (project team), the document title and the report date. The other
+         cover details (program/project/study title, collaborators, implementing and funding
+         agencies, month and year of submission) live on the project and submission records
+         RPIS already holds and are neither requested nor repeated here. -->
     <TerminalReportSheet v-if="shows('cover')" cover :page-label="pageLabel('cover')">
-      <p class="tr-cover-title">{{ model.projectTitle || 'Project Title' }}</p>
-      <p v-if="model.projectTeam" class="tr-cover-team">{{ model.projectTeam }}</p>
+      <p class="tr-cover-title">{{ model.projectTitle }}</p>
+      <p v-if="coverTeamMembers.length" class="tr-cover-team">
+        <span
+          v-for="(member, index) in coverTeamMembers"
+          :key="index"
+          class="tr-team-member"
+        >{{ member }}</span>
+      </p>
       <p class="tr-cover-report">Terminal Report</p>
       <p v-if="model.submissionMonthYear" class="tr-cover-month">{{ model.submissionMonthYear }}</p>
 
-      <div v-if="readonly" class="tr-cover-fields">
-        <table class="tr-grid">
-          <tbody>
-            <tr v-for="field in extraCoverFields" :key="field.key">
-              <th scope="row">{{ field.label }}</th>
-              <td>{{ model[field.key] }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-else class="tr-cover-fields">
-        <div v-for="field in TERMINAL_COVER_FIELDS" :key="field.key" class="tr-field">
+      <!-- The one cover value the proponent enters: the project team, printed as the
+           authors. A multiline field lets several names be entered, one per line. -->
+      <div v-if="!readonly" class="tr-cover-fields">
+        <div v-for="field in coverInputFields" :key="field.key" class="tr-field">
           <span class="tr-field-label">
             {{ field.label }}<span v-if="field.required" class="tr-required">Required</span>
           </span>
+          <textarea
+            v-if="field.multiline"
+            v-model="model[field.key]"
+            class="tr-input tr-textarea"
+            rows="4"
+            :placeholder="field.hint"
+          ></textarea>
           <input
+            v-else
             v-model="model[field.key]"
             type="text"
             class="tr-input"
@@ -38,50 +48,43 @@
     <TerminalReportSheet v-if="shows('summary')" :page-label="pageLabel('summary')">
       <h2 class="tr-front-heading">SUMMARY FOR THE TERMINAL REPORT</h2>
 
-      <TerminalReportEntries
-        v-if="!readonly"
-        v-model="model.summaryRows"
-        :fields="TERMINAL_SUMMARY_ROW_FIELDS"
-        entry-label="Item"
-        hint="The items the official summary sheet prints. Fill in the details; an item you leave empty is not printed."
-        :wide-fields="['detail']"
-      />
-      <table v-else-if="summaryRows.length" class="tr-grid">
+      <!-- 1. Project Information Details: the proponent edits the report's own copy, so the
+           original project record is never touched. Long values use a text area. -->
+      <h3 class="tr-summary-heading">Project Information Details</h3>
+      <table class="tr-grid tr-summary-table">
         <thead>
           <tr>
-            <th>Project Information</th>
+            <th>Field</th>
             <th>Details</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, index) in summaryRows" :key="index">
-            <td>{{ row.label }}</td>
-            <td>{{ row.detail }}</td>
+          <tr v-for="row in projectInfoRows" :key="row.label">
+            <th scope="row">{{ row.label }}</th>
+            <td>
+              <textarea
+                v-if="!readonly && isLongSummaryRow(row.label)"
+                v-model="row.detail"
+                class="tr-input tr-textarea"
+                rows="2"
+              ></textarea>
+              <input v-else-if="!readonly" v-model="row.detail" type="text" class="tr-input" />
+              <span v-else>{{ row.detail || '—' }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
 
-      <div v-if="!readonly" class="tr-field">
-        <span class="tr-field-label">Caption above the objectives table</span>
-        <input
-          v-model="model.summaryAccomplishmentsTitle"
-          type="text"
-          class="tr-input"
-          placeholder="e.g. Major accomplishments of the project"
-        />
-      </div>
-      <p v-else-if="model.summaryAccomplishmentsTitle" class="tr-paragraph tr-paragraph--flush">
-        {{ model.summaryAccomplishmentsTitle }}
-      </p>
-
+      <!-- 2. Major Accomplishments: each objective is paired with its accomplishment. -->
+      <h3 class="tr-summary-heading">Major Accomplishments</h3>
       <TerminalReportEntries
         v-if="!readonly"
         v-model="model.summaryObjectives"
         :fields="TERMINAL_OBJECTIVE_FIELDS"
-        entry-label="Row"
+        entry-label="Objective"
         hint="One row per objective of the project and what was accomplished."
       />
-      <table v-else-if="summaryObjectives.length" class="tr-grid">
+      <table v-else-if="summaryObjectives.length" class="tr-grid tr-summary-table">
         <thead>
           <tr>
             <th v-for="field in TERMINAL_OBJECTIVE_FIELDS" :key="field.key">{{ field.label }}</th>
@@ -93,30 +96,50 @@
           </tr>
         </tbody>
       </table>
+      <p v-else class="tr-paragraph tr-paragraph--flush tr-paragraph--empty">No objectives recorded.</p>
 
-      <template v-if="!readonly">
-        <div v-for="field in TERMINAL_FINANCIAL_FIELDS" :key="field.key" class="tr-field">
-          <span class="tr-field-label">{{ field.label }}</span>
-          <input v-model="model[field.key]" type="text" class="tr-input" />
-        </div>
-      </template>
-      <table v-else-if="financialRows.length" class="tr-grid">
+      <!-- 3. Financial Information Details: editable on the report's own copy, so the approved
+           financial record is never modified. -->
+      <h3 class="tr-summary-heading">Financial Information Details</h3>
+      <table class="tr-grid tr-summary-table">
         <thead>
           <tr>
-            <th>Financial Information</th>
+            <th>Field</th>
             <th>Details</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="field in financialRows" :key="field.key">
-            <td>{{ field.label }}</td>
-            <td>{{ model[field.key] }}</td>
+          <tr>
+            <th scope="row">Total Budget</th>
+            <td>
+              <input
+                v-if="!readonly"
+                v-model="model.summaryTotalBudget"
+                type="text"
+                inputmode="decimal"
+                class="tr-input"
+                placeholder="PHP 0.00"
+              />
+              <span v-else>{{ formatPhpAmount(model.summaryTotalBudget) || '—' }}</span>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Source of Fund</th>
+            <td>
+              <input
+                v-if="!readonly"
+                v-model="model.summarySourceOfFunds"
+                type="text"
+                class="tr-input"
+              />
+              <span v-else>{{ model.summarySourceOfFunds || '—' }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
     </TerminalReportSheet>
 
-    <!-- ============ ACKNOWLEDGMENT / ABSTRACT ============ -->
+    <!-- ============ ACKNOWLEDGMENT ============ -->
     <TerminalReportSheet v-if="shows('acknowledgment')" :page-label="pageLabel('acknowledgment')">
       <h2 class="tr-front-heading">ACKNOWLEDGMENT</h2>
       <template v-if="readonly">
@@ -137,6 +160,8 @@
         ></textarea>
       </div>
     </TerminalReportSheet>
+
+    <!-- ============ ABSTRACT ============ -->
 
     <TerminalReportSheet v-if="shows('abstract')" :page-label="pageLabel('abstract')">
       <h2 class="tr-front-heading">ABSTRACT</h2>
@@ -235,7 +260,13 @@
              affiliation, exactly as the official format does. -->
         <template v-if="index === 0">
           <p class="tr-body-title">{{ model.projectTitle }}</p>
-          <p v-if="model.projectTeam" class="tr-body-team">{{ model.projectTeam }}</p>
+          <p v-if="coverTeamMembers.length" class="tr-body-team">
+            <span
+              v-for="(member, index) in coverTeamMembers"
+              :key="index"
+              class="tr-team-member"
+            >{{ member }}</span>
+          </p>
           <p class="tr-body-affiliation">{{ letterhead.affiliation }}</p>
         </template>
 
@@ -366,25 +397,26 @@ import {
   TERMINAL_APPENDIX_FIELDS,
   TERMINAL_BODY_KEYS,
   TERMINAL_BODY_SECTIONS,
-  TERMINAL_COVER_FIELDS,
-  TERMINAL_FINANCIAL_FIELDS,
+  TERMINAL_COVER_INPUT_FIELDS,
   TERMINAL_LETTERHEAD,
   TERMINAL_LISTS,
   TERMINAL_NARRATIVE_FIELDS,
   TERMINAL_OBJECTIVE_FIELDS,
+  TERMINAL_PROJECT_INFO_FIELDS,
   TERMINAL_REFERENCE_FIELDS,
   TERMINAL_SECTIONS,
   TERMINAL_SUBSECTION_FIELDS,
-  TERMINAL_SUMMARY_ROW_FIELDS,
   abstractWordCount,
   appendixNumbers,
   appendixTableNumbers,
   bodyTableNumbers,
+  formatPhpAmount,
   normalizeTerminalReport,
+  projectTeamMembers,
   referenceLine,
   sectionHasText,
   sectionSubsectionNumbers,
-  summaryRowHasValue,
+  terminalSummaryRows,
   textParagraphs,
 } from '@/utils/terminalReport'
 
@@ -427,7 +459,13 @@ const FRONT_SHEETS = [
 const SHEET_KEYS = ['cover', ...FRONT_SHEETS, ...TERMINAL_BODY_KEYS]
 
 const letterhead = TERMINAL_LETTERHEAD
-const narrativeFields = TERMINAL_NARRATIVE_FIELDS
+/**
+ * The narrative fields edited inside the Abstract sheet: the abstract and the keywords. The
+ * acknowledgment is edited in its own sheet above, so it is not repeated here.
+ */
+const narrativeFields = TERMINAL_NARRATIVE_FIELDS.filter((field) => field.key !== 'acknowledgment')
+/** The cover values the proponent enters (the project team, printed as the authors). */
+const coverInputFields = TERMINAL_COVER_INPUT_FIELDS
 
 function hasText(value) {
   return String(value ?? '').trim() !== ''
@@ -439,23 +477,31 @@ function hasAnyField(row, fields) {
 
 const abstractWords = computed(() => abstractWordCount(model.value?.abstractText))
 
-/** Cover fields beyond the ones the official cover page prints (RPIS requirements). */
-const extraCoverFields = computed(() =>
-  TERMINAL_COVER_FIELDS.filter(
-    (field) =>
-      !['projectTitle', 'projectTeam', 'submissionMonthYear'].includes(field.key) &&
-      hasText(model.value?.[field.key])
-  )
-)
+/** The project team members, each printed on its own line (cover page and first body page). */
+const coverTeamMembers = computed(() => projectTeamMembers(model.value?.projectTeam))
 
-const summaryRows = computed(() => (model.value?.summaryRows || []).filter(summaryRowHasValue))
+/** Rows whose value may be long and are edited in a text area instead of a single line. */
+const SUMMARY_LONG_ROWS = new Set(['Project Title', 'Agency', 'Area Covered', 'Production Comparison'])
+
+/** True when the summary row is edited in a text area. */
+function isLongSummaryRow(label) {
+  return SUMMARY_LONG_ROWS.has(label)
+}
+
+/**
+ * The "Project Information Details" rows of the summary sheet, in order. The objects are the
+ * report's own rows, so editing a detail writes to the Terminal Report copy (never to the
+ * original project record).
+ */
+const projectInfoRows = computed(() => {
+  const rows = model.value?.summaryRows || []
+  return TERMINAL_PROJECT_INFO_FIELDS.map(
+    (label) => rows.find((row) => row.label === label) || { label, detail: '' }
+  )
+})
 
 const summaryObjectives = computed(() =>
   (model.value?.summaryObjectives || []).filter((row) => hasAnyField(row, TERMINAL_OBJECTIVE_FIELDS))
-)
-
-const financialRows = computed(() =>
-  TERMINAL_FINANCIAL_FIELDS.filter((field) => hasText(model.value?.[field.key]))
 )
 
 const referenceRows = computed(() =>
@@ -501,9 +547,10 @@ function sheetHasContent(key) {
   if (key === 'cover') return true
   if (key === 'summary') {
     return (
-      summaryRows.value.length > 0 ||
+      (current.summaryRows || []).some((row) => hasText(row.detail)) ||
       summaryObjectives.value.length > 0 ||
-      financialRows.value.length > 0 ||
+      hasText(current.summaryTotalBudget) ||
+      hasText(current.summarySourceOfFunds) ||
       hasText(current.summaryAccomplishmentsTitle)
     )
   }
@@ -554,6 +601,11 @@ function normalizeModel() {
   const current = model.value
   if (!current) return
   const shape = normalizeTerminalReport(current)
+  // The summary sheet is a fixed table; ensure its rows exist on the report's own copy so
+  // every detail is editable and persists with terminal_report_json.
+  if (Array.isArray(current.summaryRows)) {
+    current.summaryRows = terminalSummaryRows(current.summaryRows)
+  }
   for (const [key, value] of Object.entries(shape)) {
     if (Array.isArray(value)) {
       if (!Array.isArray(current[key])) current[key] = value

@@ -63,6 +63,44 @@ function roleOptions() {
   )
 }
 
+test('the User Role Authority field is a dropdown that starts unselected', () => {
+  // The same control, the same markup and the same styling as Assigned College: one
+  // field-group holding a required select bound to the form state.
+  const roleSelect = CREATE_MODAL.match(/<select[^>]*\bid="role"[^>]*>/)
+  assert.ok(roleSelect, 'the role field must be a select, not a list of options')
+  assert.match(roleSelect[0], /v-model="user\.role"/, 'bound to the role the form sends')
+  assert.match(roleSelect[0], /required/, 'and required, like the college select')
+  assert.match(
+    CREATE_MODAL,
+    /id="assignedCollege"[\s\S]{0,200}required/,
+    'the Assigned College select is untouched and still required',
+  )
+
+  // A placeholder is shown until a role is chosen...
+  assert.match(
+    CREATE_MODAL,
+    /<select[^>]*\bid="role"[\s\S]*?<option value="" disabled>Select User Role<\/option>/,
+    'the dropdown offers an unselected placeholder first',
+  )
+  // ...nothing is preselected in the form state, so that placeholder really shows...
+  assert.match(
+    CREATE_MODAL,
+    /role: props\.initialRole \|\| '',/,
+    'the form must not default to a role the administrator did not choose',
+  )
+  // ...and creating without a role is refused before the request is sent.
+  assert.match(
+    CREATE_MODAL,
+    /Select the user role this account is created with\./,
+    'creating without a role must be refused',
+  )
+  assert.match(
+    CREATE_MODAL,
+    /role: user\.value\.role/,
+    'the chosen role is what gets submitted',
+  )
+})
+
 test('the Create Account form offers the Dean role, labelled "Dean"', () => {
   const dean = roleOptions().find((option) => option.value === 'DEAN')
 
@@ -204,21 +242,32 @@ test('the page header keeps the title left and the single action on the right', 
   assert.match(USER_ACCOUNTS, /\.table-scroll\s*\{[^}]*overflow-x:\s*auto/)
 })
 
-test('a Dean row keeps the Dean role management, and no other row gains it', () => {
+test('the Dean row keeps its account and its per-row actions, including the Dean role management', () => {
+  // The Dean role management is offered on the Dean's own row, and it reuses the same
+  // Dean screen the dedicated Dean Role Management page uses. The account itself stays an
+  // ordinary row of User Management with the actions every other account has.
   assert.match(
     USER_ACCOUNTS,
-    /v-if="isDean\(user\)"[\s\S]*@click="openDeanModal\(user\)"/,
-    'only a Dean row may open the Dean role management',
+    /@click="openDeanModal\(user\)"/,
+    'the Dean role management must be offered from the User Accounts table',
+  )
+  assert.match(USER_ACCOUNTS, /Manage Dean Role/, 'under its own label')
+  assert.match(USER_ACCOUNTS, /dean-manage-btn/, 'with its own button style')
+  assert.match(
+    USER_ACCOUNTS,
+    /ReplaceDeanModal/,
+    'and it reuses the Dean replacement screen',
   )
   assert.match(
     USER_ACCOUNTS,
-    /const isDean = \(user\) => String\(user\?\.role \|\| ''\)\.toUpperCase\(\) === UserRole\.DEAN/,
-    'the row action must be limited to the canonical Dean role',
+    /@click="openResetModal\(user\)"[\s\S]*Reset Password/,
+    'Reset Password stays available for every row, the Dean included',
   )
-  assert.match(
-    USER_ACCOUNTS,
-    /:dean-id="selectedDeanId"/,
-    'the Dean screen must be opened for the account of the clicked row',
+  // The Dean is still listed and still labelled: it stays an official system account.
+  assert.match(USER_ACCOUNTS, /'DEAN': 'Dean'/, 'the Dean role is still labelled in the table')
+  assert.ok(
+    !/role\s*!==\s*UserRole\.DEAN/.test(USER_ACCOUNTS),
+    'and the Dean is not filtered out of the list',
   )
 
   // Search still covers the name, the e-mail and the role, which is how a Dean is found

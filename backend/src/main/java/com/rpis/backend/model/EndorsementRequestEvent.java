@@ -38,6 +38,7 @@ public class EndorsementRequestEvent {
     public static final String TYPE_DEAN_ROLE_ASSIGNED = "DEAN_ROLE_ASSIGNED";
     public static final String TYPE_DEAN_ROLE_REVOKED = "DEAN_ROLE_REVOKED";
     public static final String TYPE_DEAN_SCOPE_CHANGED = "DEAN_SCOPE_CHANGED";
+    public static final String TYPE_DEAN_ROLE_REPLACED = "DEAN_ROLE_REPLACED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

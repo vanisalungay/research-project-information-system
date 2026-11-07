@@ -3,6 +3,8 @@ import { describe, it } from 'node:test'
 import {
   MAX_ABSTRACT_WORDS,
   TERMINAL_BODY_SECTIONS,
+  TERMINAL_COVER_FIELDS,
+  TERMINAL_COVER_INPUT_FIELDS,
   TERMINAL_LISTS,
   TERMINAL_SECTIONS,
   abstractWordCount,
@@ -113,6 +115,24 @@ describe('terminalReport - structure of the official format', () => {
       assert.ok(sheets.includes(key), `${key} is reachable from the form`)
     }
   })
+
+  it('edits the acknowledgment through the form and keeps a saved value', () => {
+    assert.ok(
+      TERMINAL_SECTIONS.some((step) => step.sheets.includes('acknowledgment')),
+      'a step of the form shows the acknowledgment'
+    )
+    const saved = terminalReportFormState(
+      { ...terminalReportFormState(null, proposal, { today: FIXED_TODAY }), acknowledgment: 'Thanks.' },
+      proposal,
+      { today: FIXED_TODAY }
+    )
+    assert.equal(saved.acknowledgment, 'Thanks.', 'a saved acknowledgment is preserved')
+    assert.equal(
+      terminalReportPayload(saved).acknowledgment,
+      'Thanks.',
+      'and it travels with the save payload'
+    )
+  })
 })
 
 describe('terminalReport - prefill from the project record', () => {
@@ -120,9 +140,26 @@ describe('terminalReport - prefill from the project record', () => {
     const state = terminalReportFormState(null, proposal, { today: FIXED_TODAY })
     assert.equal(state.programTitle, 'Fisheries Program')
     assert.equal(state.projectTitle, 'Fish Landing Survey')
-    assert.equal(state.projectTeam, 'Juan Dela Cruz')
+    // The project team (the authors) is entered by the proponent, never auto-populated.
+    assert.equal(state.projectTeam, '')
     assert.equal(state.collaborators, 'LGU Naawan')
     assert.equal(state.submissionMonthYear, 'OCTOBER 2026')
+  })
+
+  it('only asks the proponent for the project team on the cover', () => {
+    assert.deepEqual(
+      TERMINAL_COVER_INPUT_FIELDS.map((field) => field.key),
+      ['projectTeam'],
+      'the cover requests only the authors',
+    )
+    // The full data model still carries every cover value, so nothing is lost on save.
+    for (const key of ['programTitle', 'projectTitle', 'studyTitle', 'projectTeam',
+      'collaborators', 'implementingAgencies', 'fundingAgencies', 'submissionMonthYear']) {
+      assert.ok(
+        TERMINAL_COVER_FIELDS.some((field) => field.key === key),
+        `${key} stays in the data model`,
+      )
+    }
   })
 
   it('fills the summary sheet items of the official format', () => {
@@ -131,15 +168,10 @@ describe('terminalReport - prefill from the project record', () => {
 
     assert.equal(byLabel['Program Title'], 'Fisheries Program')
     assert.equal(byLabel['Project Title'], 'Fish Landing Survey')
-    assert.equal(byLabel['Project Leader'], 'Juan Dela Cruz')
-    assert.equal(byLabel['Gender'], 'Male')
+    assert.equal(byLabel['Project Leader/Gender'], 'Juan Dela Cruz / Male')
     assert.equal(byLabel['Agency'], 'College of Marine Sciences, MSU-Naawan')
-    assert.equal(byLabel['Address'], 'Naawan, Misamis Oriental')
-    assert.equal(byLabel['Email'], 'juan.delacruz@msunaawan.edu.ph')
+    assert.equal(byLabel['Address/Email'], 'Naawan, Misamis Oriental / juan.delacruz@msunaawan.edu.ph')
     assert.equal(byLabel['Cooperating Agency'], 'LGU Naawan')
-    // Summary items required by the RPIS reporting requirements.
-    assert.equal(byLabel['Report Title'], 'Fish Landing Survey')
-    assert.equal(byLabel['Project Duration'], '12')
   })
 
   it('never invents budget, location or result information', () => {
@@ -148,7 +180,7 @@ describe('terminalReport - prefill from the project record', () => {
     assert.equal(byLabel['Base Station'], '')
     assert.equal(byLabel['Area Covered'], '')
     assert.equal(byLabel['Data Collection'], '')
-    assert.equal(byLabel['Implementing Agencies'], '')
+    assert.equal(byLabel['Production Comparison'], '')
     assert.equal(state.summaryTotalBudget, '')
     assert.equal(state.summarySourceOfFunds, '')
     assert.equal(state.abstractText, '')
@@ -212,7 +244,9 @@ describe('terminalReport - prefill from the project record', () => {
     const state = terminalReportFormState(saved, proposal, { today: FIXED_TODAY })
     assert.equal(state.projectTitle, 'Edited title', 'the saved value wins over the prefill')
     assert.equal(state.abstractText, 'Saved abstract.')
-    assert.deepEqual(state.summaryRows, [{ label: 'Program Title', detail: 'Saved program' }])
+    const byLabel = Object.fromEntries(state.summaryRows.map((row) => [row.label, row.detail]))
+    assert.equal(byLabel['Program Title'], 'Saved program', 'the saved detail is kept')
+    assert.equal(byLabel['Project Title'], 'Fish Landing Survey', 'a row with no saved value is prefilled')
     assert.equal(state.resultsAndDiscussion.subsections[0].heading, 'Swine production')
     assert.equal(state.resultsAndDiscussion.subsections[0].text, 'A 24.43% decline.')
   })
@@ -261,10 +295,10 @@ describe('terminalReport - save payload', () => {
 
   it('prints only the summary items that carry a value', () => {
     const state = filled({ summaryTotalBudget: 'PHP 25,000.00' })
-    assert.equal(summaryRowHasValue(state.summaryRows[8]), false, 'Base Station is empty')
+    assert.equal(summaryRowHasValue(state.summaryRows[8]), false, 'an empty row is not printed')
     const payload = terminalReportPayload(state)
     assert.ok(payload.summaryRows.every((row) => row.detail.trim() !== ''))
-    assert.equal(payload.summaryRows.length, 10)
+    assert.equal(payload.summaryRows.length, 6, 'the six prefilled rows are kept, the empty ones dropped')
   })
 
   it('survives a payload round trip', () => {
@@ -409,23 +443,44 @@ describe('terminalReport - form steps', () => {
     assert.equal(terminalSectionOf('unknownField'), null)
   })
 
-  it('reports a step as filled once it holds something', () => {
+  it('reports a step as complete only when its required content is present', () => {
     const report = emptyTerminalReport()
     assert.equal(terminalSectionFilled(report, 'cover'), false)
     assert.equal(terminalSectionFilled(report, 'summary'), false)
     assert.equal(terminalSectionFilled(report, 'methodology'), false)
 
+    // The cover stays incomplete while only the pre-filled title is present; the manually
+    // entered Project Team is required too, and clearing it takes the check away again.
     report.programTitle = 'Fisheries Program'
+    report.projectTitle = 'Fish Landing Survey'
+    assert.equal(terminalSectionFilled(report, 'cover'), false)
+    report.projectTeam = 'Juan Dela Cruz'
     assert.equal(terminalSectionFilled(report, 'cover'), true)
+    report.projectTeam = '   '
+    assert.equal(terminalSectionFilled(report, 'cover'), false, 'a whitespace-only value does not count')
 
+    // The summary is complete only with the proponent's own content, never with the
+    // pre-filled project rows alone.
     report.summaryRows = [{ label: 'Program Title', detail: 'Fisheries Program' }]
+    assert.equal(terminalSectionFilled(report, 'summary'), false)
+    report.summaryRows = [{ label: 'Base Station', detail: 'Naawan Marine Station' }]
     assert.equal(terminalSectionFilled(report, 'summary'), true)
+
+    // The abstract is required; the keywords on their own do not complete the step.
+    report.keywords = 'fish, landings'
+    assert.equal(terminalSectionFilled(report, 'preliminary'), false)
+    report.abstractText = 'An abstract.'
+    assert.equal(terminalSectionFilled(report, 'preliminary'), true)
 
     report.methodology.subsections = [{ heading: 'Study design', text: 'Monthly sampling.' }]
     assert.equal(terminalSectionFilled(report, 'methodology'), true)
 
+    // A required section must hold text; a table on its own does not satisfy it.
     report.resultsAndDiscussion.tables = [{ caption: '', note: '', columns: ['A'], rows: [['1']] }]
+    assert.equal(terminalSectionFilled(report, 'resultsAndDiscussion'), false)
+    report.resultsAndDiscussion.text = 'The findings.'
     assert.equal(terminalSectionFilled(report, 'resultsAndDiscussion'), true)
+
     assert.equal(terminalSectionFilled(null, 'cover'), false)
   })
 })

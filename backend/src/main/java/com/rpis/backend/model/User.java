@@ -48,6 +48,15 @@ public class User {
     // NEW FIELD
     private Boolean emailVerified = false;
 
+    /**
+     * True while the account still holds an administrator-issued temporary password. The
+     * account must replace it before it can use the rest of the application: the login
+     * response carries this flag so the client can send the user to the change-password
+     * page, and the API refuses the account until the password is changed. Existing accounts
+     * default to false, so nobody is asked to change a password they chose themselves.
+     */
+    private Boolean mustChangePassword = false;
+
     private String contactNumber;
     private String specialization;
 

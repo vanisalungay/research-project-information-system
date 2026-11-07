@@ -2,6 +2,7 @@ package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalAnnouncementRequest;
 import com.rpis.backend.dto.ProposalAnnouncementUpdateRequest;
+import com.rpis.backend.model.ActivityLog;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.ProposalAnnouncementUpdate;
 import com.rpis.backend.model.User;
@@ -34,6 +35,7 @@ public class ProposalAnnouncementService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final PriorityAgendaService priorityAgendaService;
+    private final ActivityLogService activityLogService;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
@@ -269,6 +271,12 @@ public class ProposalAnnouncementService {
                     null, null, null, null, actorId);
         }
 
+        activityLogService.success(ActivityLog.ACTION_CALL_CREATED,
+                ActivityLog.MODULE_CALLS_FOR_PROPOSAL, "Created a call for proposal",
+                "Call for proposal \"" + saved.getName() + "\" was created with the status "
+                        + saved.getStatus() + " and the submission window " + saved.getStartDate()
+                        + " to " + saved.getEndDate() + ".");
+
         return saved;
     }
 
@@ -380,6 +388,15 @@ public class ProposalAnnouncementService {
                     previousEndDate, saved.getEndDate());
         }
 
+        boolean closedNow = DISPLAY_CLOSED.equals(newDisplayStatus);
+        activityLogService.success(
+                closedNow ? ActivityLog.ACTION_CALL_CLOSED : ActivityLog.ACTION_CALL_UPDATED,
+                ActivityLog.MODULE_CALLS_FOR_PROPOSAL,
+                closedNow ? "Closed a call for proposal" : "Updated a call for proposal",
+                "Call for proposal \"" + saved.getName() + "\" changed from " + previousDisplayStatus
+                        + " to " + newDisplayStatus + " (submission window " + saved.getStartDate()
+                        + " to " + saved.getEndDate() + ").");
+
         return saved;
     }
 
@@ -416,6 +433,10 @@ public class ProposalAnnouncementService {
                 previousStatus, saved.getStartDate(), saved.getEndDate(), null, actorId);
 
         notifyAllProponents(saved);
+        activityLogService.success(ActivityLog.ACTION_CALL_OPENED,
+                ActivityLog.MODULE_CALLS_FOR_PROPOSAL, "Opened a call for proposal",
+                "Call for proposal \"" + saved.getName() + "\" was opened for submissions (window "
+                        + saved.getStartDate() + " to " + saved.getEndDate() + ").");
         return saved;
     }
 

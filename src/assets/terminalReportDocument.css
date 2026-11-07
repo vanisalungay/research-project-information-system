@@ -135,6 +135,11 @@
   overflow-wrap: anywhere;
 }
 
+/* Each project team member prints on its own line, never run together into one string. */
+.tr-team-member {
+  display: block;
+}
+
 .tr-cover-report {
   margin: 0 0 0.55in;
   font-size: 15pt;
@@ -151,6 +156,14 @@
 
 .tr-cover-fields {
   margin: 0.3in 0 0;
+}
+
+/* The Project Team (authors) field: a multiline input for several author names. */
+.tr-textarea {
+  min-height: 1in;
+  line-height: 1.4;
+  resize: vertical;
+  font-family: inherit;
 }
 
 /* ---------- Headings of the report ---------- */
@@ -248,6 +261,18 @@
   color: #ffffff;
   font-weight: 700;
   text-align: center;
+}
+
+/* Summary sheet: the three labelled sections and their tables. */
+.tr-summary-heading {
+  margin: 0.16in 0 0.05in;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #000000;
+}
+
+.tr-summary-table {
+  margin-bottom: 0.14in;
 }
 
 .tr-grid--list {

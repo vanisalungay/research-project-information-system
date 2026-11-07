@@ -1,5 +1,6 @@
 package com.rpis.backend.service;
 
+import com.rpis.backend.model.ActivityLog;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.UserRepository;
@@ -18,6 +19,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordService passwordService;
+    private final InstitutionalCredentialsService credentialsService;
+    private final ActivityLogService activityLogService;
 
     /**
      * Why an authentication attempt ended the way it did.
@@ -66,7 +69,7 @@ public class UserService {
 
     public User createUser(User user) {
 
-        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+        if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
             throw new IllegalArgumentException(
                     "Only MSU Naawan email addresses are allowed.");
         }
@@ -82,9 +85,105 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Creates an account from the administrator's input - the person's name and role, plus the
+     * Dean's own fields where they apply. The institutional address and a random temporary
+     * password are generated here, on the server, so the browser never chooses them, and the
+     * credentials are handed back exactly once for the administrator to pass on.
+     */
+    public com.rpis.backend.dto.CreatedAccountResponse createStaffAccountWithGeneratedCredentials(User user) {
+        if (user == null || user.getName() == null || user.getName().isBlank()) {
+            throw new IllegalArgumentException("A full name is required.");
+        }
+
+        String email = credentialsService.availableEmailFor(user.getName());
+        boolean adjusted = !email.equalsIgnoreCase(
+                InstitutionalCredentialsService.emailFor(user.getName()));
+        String temporaryPassword = InstitutionalCredentialsService.temporaryPasswordFor(user.getName());
+
+        user.setEmail(email);
+        user.setPassword(temporaryPassword);
+        user.setMustChangePassword(true);
+
+        User saved = createStaffAccount(user);
+        activityLogService.success(ActivityLog.ACTION_ACCOUNT_CREATED,
+                ActivityLog.MODULE_USER_ACCOUNTS, "Created a new user account",
+                saved.getName() + " (" + saved.getEmail() + ") was created with the role "
+                        + saved.getRole() + ".");
+        return com.rpis.backend.dto.CreatedAccountResponse.of(saved, email, temporaryPassword, adjusted);
+    }
+
+    /**
+     * Changes the password of the signed-in account.
+     *
+     * <p>The current password is verified first, so a stolen session cannot be used to lock the
+     * owner out of their own account, and the new one is validated and hashed with the same
+     * BCrypt encoder every other password goes through. Only once the new hash is stored is the
+     * must-change flag cleared, so an account is never left able to skip the change.
+     *
+     * @return the account, with its stored hash removed by the caller
+     */
+    public User changePassword(Long userId, String currentPassword, String newPassword, String confirmPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("Your current password is required.");
+        }
+        if (!passwordService.verify(user.getPassword(), currentPassword).matches()) {
+            throw new IllegalArgumentException("Your current password is incorrect.");
+        }
+
+        validateNewPassword(newPassword, confirmPassword, currentPassword);
+
+        user.setPassword(passwordService.hash(newPassword));
+        user.setMustChangePassword(false);
+        User saved = userRepository.save(user);
+        // Only the fact that the password changed is recorded, never the password itself.
+        activityLogService.success(ActivityLog.ACTION_PASSWORD_CHANGED,
+                ActivityLog.MODULE_PROFILE, "Changed administrator password",
+                "The password of " + saved.getName() + " (" + saved.getEmail() + ") was changed.");
+        return saved;
+    }
+
+    /**
+     * The password policy a new password must satisfy: long enough, mixed case, a digit and a
+     * symbol, different from the current one, and typed the same way twice.
+     */
+    static void validateNewPassword(String newPassword, String confirmPassword, String currentPassword) {
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("The new password must be at least 8 characters long.");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("The new password and its confirmation do not match.");
+        }
+        if (newPassword.equals(currentPassword)) {
+            throw new IllegalArgumentException("The new password must be different from the current one.");
+        }
+        boolean upper = false;
+        boolean lower = false;
+        boolean digit = false;
+        boolean symbol = false;
+        for (char c : newPassword.toCharArray()) {
+            if (Character.isUpperCase(c)) upper = true;
+            else if (Character.isLowerCase(c)) lower = true;
+            else if (Character.isDigit(c)) digit = true;
+            else symbol = true;
+        }
+        if (!upper || !lower || !digit || !symbol) {
+            throw new IllegalArgumentException("The new password must include an upper-case letter, a lower-case letter, a digit and a symbol.");
+        }
+    }
+
+    /** Marks an account as holding a temporary password, so it must change it at first login. */
+    public User requirePasswordChange(User user) {
+        user.setMustChangePassword(true);
+        return userRepository.save(user);
+    }
+
     public User createStaffAccount(User user) {
 
-        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+        if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
             throw new IllegalArgumentException(
                     "Only MSU Naawan email addresses are allowed.");
         }
@@ -119,6 +218,9 @@ public class UserService {
         user.setStatus("APPROVED");
         User saved = userRepository.save(user);
         emailService.sendApprovalEmail(saved.getEmail(), saved.getName());
+        activityLogService.success(ActivityLog.ACTION_ACCOUNT_APPROVED,
+                ActivityLog.MODULE_USER_ACCOUNTS, "Approved a user account",
+                saved.getName() + " (" + saved.getEmail() + ") was approved and can sign in.");
         return saved;
     }
 
@@ -128,6 +230,9 @@ public class UserService {
         user.setStatus("REJECTED");
         User saved = userRepository.save(user);
         emailService.sendRejectionEmail(saved.getEmail(), saved.getName());
+        activityLogService.success(ActivityLog.ACTION_ACCOUNT_REJECTED,
+                ActivityLog.MODULE_USER_ACCOUNTS, "Rejected a user account",
+                saved.getName() + " (" + saved.getEmail() + ") was rejected.");
         return saved;
     }
 
@@ -156,7 +261,7 @@ public class UserService {
             // supplied e-mail address", which leaked exactly that.
             return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
         }
-        if (!user.getEmail().toLowerCase().endsWith("@msunaawan.edu.ph")) {
+        if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
             return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
         }
 
@@ -335,7 +440,17 @@ public class UserService {
             user.setNotifyDeadlines(updatedUser.getNotifyDeadlines());
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        boolean ownProfile = saved.getId() != null
+                && saved.getId().equals(activityLogService.currentActorId());
+        activityLogService.success(
+                ownProfile ? ActivityLog.ACTION_PROFILE_UPDATED : ActivityLog.ACTION_ACCOUNT_UPDATED,
+                ownProfile ? ActivityLog.MODULE_PROFILE : ActivityLog.MODULE_USER_ACCOUNTS,
+                ownProfile ? "Changed administrator profile information"
+                        : "Updated an existing user account",
+                saved.getName() + " (" + saved.getEmail() + ") was updated with the role "
+                        + saved.getRole() + ".");
+        return saved;
     }
 
     private void createIfNotExist(String name, String email, String password, String role) {

@@ -16,7 +16,7 @@
           <span>{{ errorMessage }}</span>
         </div>
 
-        <form @submit.prevent="createUser" class="form-group">
+        <form v-if="!created" @submit.prevent="createUser" class="form-group">
           <div class="field-group">
             <label for="name">Full Name</label>
             <input 
@@ -28,34 +28,48 @@
             />
           </div>
 
+          <!-- Read-only: the address is derived from the name, never typed. What is shown is a
+               preview of the naming rule; the backend derives the authoritative address when
+               the account is created and numbers it if it is already taken. -->
           <div class="field-group">
             <label for="email">Email Address</label>
-            <input 
-              id="email" 
-              type="email"
-              v-model="user.email" 
-              placeholder="e.g. jane.doe@msunaawan.edu.ph" 
-              :disabled="isLoading"
-              required 
-            />
+            <input id="email" :value="generatedEmail" readonly />
+            <p class="field-hint">
+              Generated from the name as first+middle.last@msunawaan.edu.ph - no spaces, all
+              lower case. A number is added before the domain if the address is already taken.
+            </p>
           </div>
 
           <div class="field-group">
-            <label for="password">Password</label>
-            <input 
-              id="password" 
-              type="password" 
-              v-model="user.password" 
-              placeholder="Min. 6 characters" 
-              :disabled="isLoading"
-              minlength="6"
-              required 
-            />
+            <label for="tempPassword">Temporary Password</label>
+            <input id="tempPassword" :value="created ? created.temporaryPassword : ''"
+              placeholder="Generated securely when you create the account" readonly />
+            <p class="field-hint">
+              Generated on the server and shown once, here, after the account is created.
+            </p>
           </div>
-
           <div class="field-group">
-            <label for="role">User Role Authority</label>
-            <select id="role" v-model="user.role" :disabled="isLoading">
+            <label :for="collegeAuthority ? 'collegeAuthority' : 'role'">User Role Authority</label>
+            <!-- Dean Role Management: the role is fixed to DEAN (below, locked), so this
+                 dropdown selects the college the Dean is appointed to. It binds to the same
+                 `assignedCollege` field the Assigned College selector uses, so the college is
+                 stored once in the field the backend DTO expects - not a second source of
+                 truth. Reuses the one college list (RPIS_COLLEGES); the system role and its
+                 authorization mapping are unchanged. -->
+            <select
+              v-if="collegeAuthority"
+              id="collegeAuthority"
+              v-model="user.assignedCollege"
+              :disabled="isLoading"
+              required
+            >
+              <option value="" disabled>Select College</option>
+              <option v-for="college in colleges" :key="college" :value="college">
+                {{ college }}
+              </option>
+            </select>
+            <select v-else id="role" v-model="user.role" :disabled="isLoading || lockRole" required>
+              <option value="" disabled>Select User Role</option>
               <option value="RPS_STAFF">RPS STAFF (Technical review & support)</option>
               <option value="RPS_ADMIN">RPS ADMIN (System administrator)</option>
               <option value="DEAN">Dean (Dean / Department Chair)</option>
@@ -117,6 +131,34 @@
             </button>
           </div>
         </form>
+
+        <!-- The credentials, shown only after a successful creation. Nothing is shown while
+             the form is still being filled in, and a failed attempt shows only the error. -->
+        <div v-if="created" class="credentials">
+          <h3 class="credentials-title">Account created</h3>
+          <p class="credentials-note">
+            Give these credentials to the account holder. The temporary password must be
+            changed at first login - it stops working as soon as it is.
+          </p>
+
+          <div class="cred-row">
+            <span class="cred-label">Full Name</span>
+            <span class="cred-value">{{ created.name }}</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Email</span>
+            <span class="cred-value">{{ created.email }}</span>
+            <button type="button" class="copy-btn" @click="copy(created.email, 'email')">Copy</button>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Temporary Password</span>
+            <span class="cred-value cred-password">{{ created.temporaryPassword }}</span>
+            <button type="button" class="copy-btn" @click="copy(created.temporaryPassword, 'password')">Copy</button>
+          </div>
+
+          <button type="button" class="copy-both" @click="copyBoth">Copy both credentials</button>
+          <p v-if="copyMessage" class="copy-message">{{ copyMessage }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -126,40 +168,73 @@
 import { computed, ref } from 'vue'
 import api from '@/utils/api'
 import { UserRole } from '@/stores/userData'
+import { institutionalEmail } from '@/utils/institutionalEmail'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
 
 const emit = defineEmits(['close', 'created'])
+
+/**
+ * Optional: a page that creates one kind of account can open this form already on that
+ * role and fix it, so the administrator cannot accidentally create something else. The
+ * User Accounts page passes nothing and keeps the standard behaviour.
+ */
+const props = defineProps({
+  initialRole: { type: String, default: null },
+  lockRole: { type: Boolean, default: false },
+  initialDesignation: { type: String, default: '' },
+  initialCollege: { type: String, default: '' },
+  // Dean Role Management: the office is fixed to the Dean role, so the "User Role Authority"
+  // control selects the college the Dean is appointed to instead of the system role. The role
+  // itself still comes from `initial-role` (DEAN) and stays locked, so this never changes the
+  // account's authorization.
+  collegeAuthority: { type: Boolean, default: false },
+})
 
 // The official colleges, from the one place the whole application reads them
 // (the Create Proposal form and the Dean's scope selector use the same list).
 const colleges = RPIS_COLLEGES
 
+/** What the administrator types: the person's name, their role, and the Dean's own fields. */
 const user = ref({
   name: '',
-  email: '',
-  password: '',
-  role: 'RPS_STAFF',
+  role: props.initialRole || '',
   // Dean-specific fields. They are only sent when the Dean role is selected.
-  designation: '',
-  assignedCollege: ''
+  designation: props.initialDesignation,
+  assignedCollege: props.initialCollege || ''
 })
 
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+/** The credentials returned once by a successful creation, or null before one. */
+const created = ref(null)
+const copyMessage = ref('')
+
+/** A preview of the naming rule; the backend derives the authoritative address on create. */
+const generatedEmail = computed(() => institutionalEmail(user.value.name))
+
 /** True while the Dean role is selected - the only role with extra fields. */
 const isDean = computed(() => user.value.role === UserRole.DEAN)
 
 const createUser = async () => {
-  if (!user.value.name || !user.value.email || !user.value.password) {
-    errorMessage.value = "All fields are required."
+  // A second submit while the first is in flight would create two accounts.
+  if (isLoading.value) return
+
+  if (!user.value.name || !user.value.name.trim()) {
+    errorMessage.value = 'The full name is required.'
     return
   }
 
-  // A Dean signs the official endorsement letter with their designation and only
-  // reaches the endorsement requests of one college, so both are required here. The
-  // backend validates them again (DeanAccountService), so this is only the first of
-  // the two checks.
+  // The role is chosen, never defaulted: an account created with the wrong authority is
+  // harder to undo than a second click. The backend validates it again.
+  if (!user.value.role) {
+    errorMessage.value = 'Select the user role this account is created with.'
+    return
+  }
+
+  // A Dean signs the official endorsement letter with their designation and only reaches the
+  // endorsement requests of one college, so both are required here. The backend validates them
+  // again (DeanAccountService), so this is only the first of the two checks.
   if (isDean.value && !user.value.designation.trim()) {
     errorMessage.value = "The Dean's designation / title is required."
     return
@@ -172,16 +247,14 @@ const createUser = async () => {
 
   try {
     isLoading.value = true
-    errorMessage.value = ""
+    errorMessage.value = ''
 
-    // One endpoint for every role. The backend recognises the Dean role and routes it
-    // to the Dean provisioning logic (its own validation, a hashed password and an
-    // audit entry), which only an RPS administrator is allowed to reach. The Dean
-    // fields are added for that role only, so every other role's payload is unchanged.
+    // One endpoint for every role. The backend recognises the Dean role and routes it to the
+    // Dean provisioning logic (its own validation, a hashed password and an audit entry),
+    // which only an RPS administrator is allowed to reach. The address and the temporary
+    // password are generated by the backend for every role - the browser never chooses them.
     const payload = {
-      name: user.value.name,
-      email: user.value.email,
-      password: user.value.password,
+      name: user.value.name.trim(),
       role: user.value.role
     }
 
@@ -190,18 +263,46 @@ const createUser = async () => {
       payload.assignedCollege = user.value.assignedCollege
     }
 
-    await api.post(
-      "/api/users/admin/create",
-      payload
-    )
+    const response = await api.post('/api/users/admin/create', payload)
+    const body = response.data || {}
 
-    emit("created")
-    emit("close")
+    // Shown once, here. The backend never returns these values again, so the modal stays open
+    // for the administrator to read and copy them.
+    created.value = {
+      name: body.user?.name || user.value.name.trim(),
+      email: body.email || '',
+      temporaryPassword: body.temporaryPassword || ''
+    }
+
+    emit('created')
   } catch (error) {
     console.error(error)
-    errorMessage.value = error.response?.data || "Failed to create user account. Please try again."
+    errorMessage.value =
+      error.response?.data || 'Failed to create user account. Please try again.'
   } finally {
     isLoading.value = false
+  }
+}
+
+/** Copies one credential, or both, so the administrator can pass them on as they are. */
+const copy = async (value, which) => {
+  try {
+    await navigator.clipboard.writeText(value)
+    copyMessage.value = which === 'email' ? 'Email copied.' : 'Temporary password copied.'
+  } catch (err) {
+    console.error(err)
+    copyMessage.value = 'Copy failed - select the value and copy it manually.'
+  }
+}
+
+const copyBoth = async () => {
+  const text = `Email: ${created.value.email}\nTemporary password: ${created.value.temporaryPassword}`
+  try {
+    await navigator.clipboard.writeText(text)
+    copyMessage.value = 'Both credentials copied.'
+  } catch (err) {
+    console.error(err)
+    copyMessage.value = 'Copy failed - select the values and copy them manually.'
   }
 }
 </script>
@@ -417,4 +518,103 @@ button:disabled {
     transform: translateY(0); 
   }
 }
+/* ===== Generated credentials ===== */
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.credentials {
+  margin-top: 8px;
+  padding: 16px;
+  background: #f5f5fc;
+  border: 1px solid #e4e4f2;
+  border-radius: 12px;
+}
+
+.credentials-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+.credentials-note {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5b5b7a;
+}
+
+.cred-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e0e0f0;
+}
+
+.cred-row:last-of-type {
+  border-bottom: none;
+}
+
+.cred-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b6b8c;
+}
+
+.cred-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.cred-password {
+  font-family: monospace;
+  letter-spacing: 0.02em;
+}
+
+.copy-btn {
+  padding: 5px 12px;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  background: #e0e7ff;
+}
+
+.copy-both {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #315bff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-message {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #166534;
+}
+
 </style>

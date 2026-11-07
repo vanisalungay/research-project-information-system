@@ -27,6 +27,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final TokenService tokenService;
+    private final com.rpis.backend.repository.UserRepository userRepository;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -136,7 +137,7 @@ public class SecurityConfig {
                                 "/api/priority-agendas/active", "/api/priority-agendas/lookup")
                         .authenticated()
                         .requestMatchers("/api/priority-agendas/**")
-                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
+                        .hasRole(UserRoles.RPS_ADMIN)
 
                         // Proposal Announcement management (RPS_ADMIN & RPS_STAFF only)
                         .requestMatchers("/api/proposal-announcements/**").hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
@@ -177,8 +178,16 @@ public class SecurityConfig {
                         .hasAnyRole(UserRoles.PROPONENT, UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE)
 
                         // All other API requests require authentication
+                        // Activity Log: the RPS administrator's own activity history.
+                        // RPS_ADMIN only, and ActivityLogService scopes every query to the
+                        // authenticated principal, so one administrator can never read
+                        // another's history. The routes are read-only by design.
+                        .requestMatchers("/api/activity-logs", "/api/activity-logs/**")
+                        .hasRole(UserRoles.RPS_ADMIN)
+
+                        // All other API requests require authentication
                         .anyRequest().authenticated())
-                .addFilterBefore(new TokenAuthenticationFilter(tokenService),
+                .addFilterBefore(new TokenAuthenticationFilter(tokenService, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -93,14 +93,13 @@
       @created="loadUsers"
     />
 
-    <!-- Dean role management for one existing Dean account, opened from that account's
-         row. Dean accounts are created through the standard Create Account flow above,
-         so this screen only edits the designation / college or revokes the role. -->
-    <DeanAccountsModal
-      v-if="showDeanModal"
-      :dean-id="selectedDeanId"
+    <!-- Manage Dean Role for one existing Dean account, opened from that account's row:
+         replace the sitting Dean with a new appointment, keeping the previous as history. -->
+    <ReplaceDeanModal
+      v-if="showDeanModal && selectedAssignment"
+      :assignment="selectedAssignment"
       @close="closeDeanModal"
-      @changed="loadUsers"
+      @replaced="loadUsers"
     />
 
     <!-- Reset Password Modal -->
@@ -157,14 +156,14 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
-import DeanAccountsModal from '@/views/Admin/DeanAccountsModal.vue'
+import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
 
 const users = ref([])
 const showModal = ref(false)
-// The Dean role management screen is opened for one account at a time, from that
-// account's row, so it needs the id of the Dean it was opened for.
+// The Manage Dean Role screen is opened for one account at a time, from that account's
+// row, so it carries the appointment it was opened for.
 const showDeanModal = ref(false)
-const selectedDeanId = ref(null)
+const selectedAssignment = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const search = ref('')
@@ -241,15 +240,33 @@ const loadUsers = async () => {
 /** True when the account holds the Dean role (the canonical `DEAN` value). */
 const isDean = (user) => String(user?.role || '').toUpperCase() === UserRole.DEAN
 
-/** Opens the Dean role management screen for the account of the clicked row. */
-const openDeanModal = (user) => {
-  selectedDeanId.value = user.id
+/**
+ * Opens the Manage Dean Role screen for the account of the clicked row: the sitting Dean
+ * and the appointment that will be replaced. The real appointment (with the date it
+ * started) is preferred; an account-level fallback is used if it cannot be read.
+ */
+const openDeanModal = async (user) => {
+  selectedAssignment.value = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    assignedCollege: user.assignedCollege || null,
+    designation: user.designation || 'Dean',
+    dateAssigned: null,
+  }
   showDeanModal.value = true
+  try {
+    const response = await api.get('/api/users/deans/assignments', { params: { status: 'ACTIVE' } })
+    const match = (response.data || []).find((a) => String(a.userId) === String(user.id))
+    if (match) selectedAssignment.value = match
+  } catch (error) {
+    console.error('Could not load the Dean appointment', error)
+  }
 }
 
 const closeDeanModal = () => {
   showDeanModal.value = false
-  selectedDeanId.value = null
+  selectedAssignment.value = null
 }
 
 const openResetModal = (user) => {

@@ -1,6 +1,8 @@
 package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.DeanAccountRequest;
+import com.rpis.backend.dto.DeanAssignmentResponse;
+import com.rpis.backend.dto.DeanReplacementRequest;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.security.CurrentUser;
@@ -31,6 +33,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final com.rpis.backend.service.InstitutionalCredentialsService credentialsService;
     private final TokenService tokenService;
     private final UserSignatureService signatureService;
     private final DeanAccountService deanAccountService;
@@ -144,7 +147,7 @@ public class UserController {
                 GoogleIdToken.Payload payload = idToken.getPayload();
                 String email = payload.getEmail();
 
-                if (!email.endsWith("@msunaawan.edu.ph")) {
+                if (!com.rpis.backend.service.InstitutionalCredentialsService.isInstitutionalAddress(email)) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)
                             .body("Only @msunaawan.edu.ph accounts are allowed.");
                 }
@@ -198,15 +201,40 @@ public class UserController {
      * Dean role does not let an RPS Staff account mint one. Every other role keeps going
      * through the general service, unchanged.
      */
+    /**
+     * Changes the signed-in account's password.
+     *
+     * <p>The account is taken from the authenticated principal, never from the body, so one
+     * account can never change another's password. Nothing password-shaped is ever returned:
+     * only a message.
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody com.rpis.backend.dto.ChangePasswordRequest request) {
+        try {
+            userService.changePassword(
+                    currentUser.requireUserId(),
+                    request.getCurrentPassword(),
+                    request.getNewPassword(),
+                    request.getConfirmPassword());
+            return ResponseEntity.ok(Map.of("message", "Your password has been changed."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @PostMapping("/admin/create")
     public ResponseEntity<?> createStaffAccount(
             @RequestBody User user) {
         try {
-            User createdUser = isDeanRole(user)
-                    ? createDeanAccount(user)
-                    : userService.createStaffAccount(user);
-            createdUser.setPassword(null);
-            return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+            if (isDeanRole(user)) {
+                return createDeanAccount(user);
+            }
+            // The address and the temporary password are generated on the server; the
+            // credentials come back once, here, and nowhere else.
+            com.rpis.backend.dto.CreatedAccountResponse created =
+                    userService.createStaffAccountWithGeneratedCredentials(user);
+            return new ResponseEntity<>(created, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -224,14 +252,38 @@ public class UserController {
      * a new account and never promotes an existing one by accident; the service itself
      * enforces that only an RPS administrator may reach it (403 otherwise).
      */
-    private User createDeanAccount(User user) {
+    private ResponseEntity<?> createDeanAccount(User user) {
+        // The Dean keeps its own validation, hashing, college scope and audit trail; only the
+        // credentials are generated here, the same way they are for every other role.
+        if (user.getName() == null || user.getName().isBlank()) {
+            throw new IllegalArgumentException("A full name is required.");
+        }
+        // The Dean's own validation still runs on what the administrator sent, so a foreign
+        // domain is refused with the reason the form always showed. The address the account is
+        // created with is still the generated institutional one.
+        if (user.getEmail() != null && !user.getEmail().isBlank()
+                && !com.rpis.backend.service.InstitutionalCredentialsService
+                        .isInstitutionalAddress(user.getEmail())) {
+            throw new IllegalArgumentException("Only MSU Naawan email addresses are allowed.");
+        }
+
+        String email = credentialsService.availableEmailFor(user.getName());
+        boolean adjusted = !email.equalsIgnoreCase(
+                com.rpis.backend.service.InstitutionalCredentialsService.emailFor(user.getName()));
+        String temporaryPassword =
+                com.rpis.backend.service.InstitutionalCredentialsService.temporaryPasswordFor(user.getName());
+
         DeanAccountRequest request = new DeanAccountRequest();
         request.setName(user.getName());
-        request.setEmail(user.getEmail());
-        request.setPassword(user.getPassword());
+        request.setEmail(email);
+        request.setPassword(temporaryPassword);
         request.setDesignation(user.getDesignation());
         request.setAssignedCollege(user.getAssignedCollege());
-        return deanAccountService.save(request, currentUser.requireUserId(), currentUser.getRole());
+        User created = deanAccountService.save(request, currentUser.requireUserId(), currentUser.getRole());
+        User flagged = userService.requirePasswordChange(created);
+        return new ResponseEntity<>(
+                com.rpis.backend.dto.CreatedAccountResponse.of(flagged, email, temporaryPassword, adjusted),
+                HttpStatus.CREATED);
     }
 
     /**
@@ -293,6 +345,44 @@ public class UserController {
                 currentUser.getRole());
         user.setPassword(null);
         return ResponseEntity.ok(user);
+    }
+
+    /**
+     * The Dean appointment history the Dean Role Management page shows: current and former
+     * appointments alike, so a change of leadership is readable in one list.
+     *
+     * @param status {@code ACTIVE} (default), {@code REVOKED} or {@code ALL}
+     */
+    @GetMapping("/deans/assignments")
+    public ResponseEntity<List<DeanAssignmentResponse>> getDeanAssignments(
+            @RequestParam(value = "status", required = false, defaultValue = "ACTIVE") String status) {
+        return ResponseEntity.ok(deanAccountService.listAssignments(status));
+    }
+
+    /** The accounts eligible to be appointed Dean - the replacement candidates. */
+    @GetMapping("/deans/candidates")
+    public ResponseEntity<List<User>> getDeanCandidates(
+            @RequestParam(value = "college", required = false) String college) {
+        // The password is never serialized (@JsonProperty WRITE_ONLY), so nothing is stripped;
+        // clearing it on a managed entity would only dirty the row.
+        return ResponseEntity.ok(deanAccountService.listCandidates(college));
+    }
+
+    /**
+     * Replaces the sitting Dean of a college (or the institution-wide fallback) with a new
+     * appointment. The previous Dean's appointment is closed as REVOKED and kept as
+     * history; the incoming Dean's account is given the Dean role and a new ACTIVE
+     * appointment, all in one transaction. Only an RPS administrator reaches this route.
+     */
+    @PostMapping("/deans/replace")
+    public ResponseEntity<?> replaceDean(@RequestBody DeanReplacementRequest request) {
+        try {
+            DeanAssignmentResponse assignment = deanAccountService.replaceDean(request,
+                    currentUser.requireUserId(), currentUser.getRole());
+            return ResponseEntity.ok(assignment);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**

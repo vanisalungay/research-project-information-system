@@ -1,4 +1,7 @@
+import ActivityLog from '@/views/Admin/ActivityLog.vue'
+import DeanRoleManagement from '@/views/Admin/DeanRoleManagement.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import ChangePassword from '@/views/Auth/ChangePassword.vue'
 import { UserRole, useUserDataStore } from '../stores/userData'
 
 import DefaultLayout from '../layouts/DefaultLayout.vue'
@@ -116,15 +119,18 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'notifications', component: NotificationPage },
+      { path: 'change-password', name: 'ChangePassword', component: ChangePassword },
       { path: 'home', component: Dashboard },
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
       { path: 'manage-notifications', component: Notification },
 
       { path: '/user-accounts', name: 'UserAccounts', component: UserAccounts },
+      { path: '/dean-role-management', name: 'DeanRoleManagement', component: DeanRoleManagement },
       { path: '/create-user-modal', name: 'CreateUserModal', component: CreateUserModal },
       { path: '/proposal-announcements', name: 'ProposalAnnouncements', component: ProposalAnnouncements },
       { path: '/priority-agendas', name: 'PriorityAgendas', component: PriorityAgendas },
+      { path: '/activity-log', name: 'ActivityLog', component: ActivityLog },
 
       // ================= RPS =================
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
@@ -315,6 +321,13 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  // An account that still holds an administrator-issued temporary password may only be on the
+  // change-password page: every other route bounces back there, including on a refresh. The
+  // backend refuses its other API calls as well, so this guard is never the boundary.
+  if (userStore.isLoggedIn && userStore.user?.mustChangePassword && to.path !== '/change-password') {
+    return next('/change-password')
+  }
+
   next()
 })
 
@@ -329,6 +342,25 @@ const ROLE_ONLY_ROUTES = [
     match: (path) =>
       path.startsWith('/dean-dashboard') || path.startsWith('/dean-requests'),
     roles: [UserRole.DEAN, UserRole.RPS_ADMIN],
+  },
+  {
+    // The Priority Agenda master data belongs to the administrator. It was transferred from
+    // ORPS Staff, and this guard is what stops an ORPS Staff account reaching the page by
+    // typing its URL - the sidebar item alone would never be enough.
+    match: (path) => path.startsWith('/priority-agendas'),
+    roles: [UserRole.RPS_ADMIN],
+  },
+  {
+    // The Activity Log is the administrator's own history. The endpoint re-checks both the
+    // role and the ownership of every entry, so this guard is only a convenience.
+    match: (path) => path.startsWith('/activity-log'),
+    roles: [UserRole.RPS_ADMIN],
+  },
+  {
+    // The Dean role has its own page. The endpoints behind it re-check the caller, so
+    // this guard is only a convenience that keeps the page off another role's screen.
+    match: (path) => path.startsWith('/dean-role-management'),
+    roles: [UserRole.RPS_ADMIN],
   },
   {
     // The consolidated endorsement page and its detail route. The two URLs that are now
