@@ -88,6 +88,14 @@ public final class PostgresAdvisoryLock implements AutoCloseable {
      */
     public static final int PURPOSE_REFERENCE_DATA = 3;
 
+    /**
+     * {@code objid} for seeding the cooperating agency directory. Private to that step
+     * (rather than sharing PURPOSE_REFERENCE_DATA) so seeding the agency list and seeding the
+     * priority agenda framework never block each other: each is idempotent, and serialising
+     * two independent seeds would only make one instance wait for the other.
+     */
+    public static final int PURPOSE_COOPERATING_AGENCIES = 4;
+
     private final DataSource dataSource;
     private final Connection connection;
     private final int purpose;

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import javax.sql.DataSource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -46,6 +47,8 @@ class CooperatingAgencyDirectoryPostgresTest {
     private UserRepository userRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private DataSource dataSource;
 
     private User proponent;
 
@@ -100,8 +103,8 @@ class CooperatingAgencyDirectoryPostgresTest {
     void theSeedIsIdempotentSoARestartNeverDuplicatesIt() {
         int before = cooperatingAgencyService.getAllAgencies().size();
 
-        new CooperatingAgencyInitializer(jdbcTemplate).initializeDirectory();
-        new CooperatingAgencyInitializer(jdbcTemplate).initializeDirectory();
+        new CooperatingAgencyInitializer(jdbcTemplate, dataSource, true).initializeDirectory();
+        new CooperatingAgencyInitializer(jdbcTemplate, dataSource, true).initializeDirectory();
 
         assertEquals(before, cooperatingAgencyService.getAllAgencies().size());
     }

@@ -6,6 +6,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Locale;
 
 /**
  * Refuses to let a data-writing bootstrap step run against the wrong database.
@@ -99,5 +100,53 @@ public final class DatabaseSafetyGuard {
         }
         int slash = url.lastIndexOf('/');
         return slash >= 0 && slash < url.length() - 1 ? url.substring(slash + 1) : url;
+    }
+
+    /**
+     * Fails unless the database the data source is actually connected to is the one
+     * this configuration expects.
+     *
+     * <p>The check reads the live connection metadata, so it cannot be satisfied by a
+     * configuration value that disagrees with reality. An empty expectation disables
+     * the guard, which keeps a profile that has not set {@code rpis.db.expected-name}
+     * working exactly as before.
+     *
+     * @return the actual database name, so callers can log what was verified
+     * @throws IllegalStateException when the live connection reports another database
+     */
+    public static String requireExpectedDatabase(DataSource dataSource, String expectedDatabaseName, String action) {
+        String actual = currentDatabaseName(dataSource);
+        if (expectedDatabaseName == null || expectedDatabaseName.isBlank()) {
+            return actual;
+        }
+        if (!expectedDatabaseName.equalsIgnoreCase(actual)) {
+            throw new IllegalStateException(
+                    "REFUSING TO " + action.toUpperCase(Locale.ROOT) + ": the live connection reports database \""
+                            + actual + "\" but this configuration expects \"" + expectedDatabaseName
+                            + "\". Nothing was written. Fix RPIS_DB_URL (or RPIS_DB_EXPECTED) before starting.");
+        }
+        return actual;
+    }
+
+    /**
+     * Returns the database the data source is actually connected to, read with
+     * {@code SELECT current_database()} rather than parsed out of the JDBC URL.
+     *
+     * <p>Reading it from the server is what makes the comparison reliable: a URL that
+     * carries extra parameters (for example {@code ?sslmode=require}) would otherwise
+     * make a name comparison fail even though the target is correct.
+     */
+    public static String currentDatabaseName(DataSource dataSource) {
+        if (dataSource == null) {
+            throw new IllegalStateException("No DataSource is available to verify the target database.");
+        }
+        try (Connection connection = dataSource.getConnection();
+                java.sql.Statement statement = connection.createStatement();
+                java.sql.ResultSet rows = statement.executeQuery("SELECT current_database()")) {
+            return rows.next() ? rows.getString(1) : null;
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Could not read current_database() to verify the target database: " + e.getMessage(), e);
+        }
     }
 }

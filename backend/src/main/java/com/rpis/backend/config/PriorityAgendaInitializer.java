@@ -1,7 +1,9 @@
 package com.rpis.backend.config;
 
 import com.rpis.backend.util.PostgresAdvisoryLock;
+import com.rpis.backend.util.SchemaVerification;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,26 +13,29 @@ import javax.sql.DataSource;
 import java.util.List;
 
 /**
- * Prepares the Priority Agenda master data (section 05 of the Create Proposal form):
- * it creates the constraints Hibernate cannot express and seeds the current
- * framework so the feature works out of the box.
- * <p>
- * {@code spring.jpa.hibernate.ddl-auto=update} creates the two tables from the
- * entities, but it does not create the coverage-period check, the case-insensitive
- * unique indexes or the partial unique index that guarantees at most one active set.
- * The {@code migration-add-priority-agendas.sql} script documents the same DDL; this
- * initializer is what actually applies it in the running environment, because the
- * SQL files of this project are not executed automatically.
- * <p>
- * Every step is idempotent and runs once after the application context is ready:
+ * Prepares the Priority Agenda master data (section 05 of the Create Proposal form): the
+ * constraints Hibernate cannot express, and the framework the form starts from.
+ *
+ * <h2>Schema changes are a migration, not a start-up step</h2>
+ * This class used to run CREATE UNIQUE INDEX and ALTER TABLE ADD CONSTRAINT on every
+ * application start, against whatever database RPIS_DB_URL named. The schema was therefore
+ * a side effect of booting the application: every instance of a load-balanced deployment
+ * re-applied the same DDL, and a schema change could reach a database without any operator
+ * deciding that it should. All of those statements are already shipped as
+ * backend/migration-add-priority-agendas.sql, which is where they belong.
+ *
+ * <p>Start-up now does one of two things:
  * <ul>
- *   <li>the indexes are created with {@code IF NOT EXISTS}, so a restart never fails
- *       and a concurrent start of two instances is harmless;</li>
- *   <li>the default set and its five agendas are inserted only when they are absent,
- *       so a restart never duplicates them and never overwrites a row an
- *       administrator has since edited or deactivated - in particular an
- *       administrator's newly activated framework is never replaced by the seed.</li>
+ *   <li><strong>Default</strong> (rpis.bootstrap.priority-agendas.enabled=false) - a
+ *       read-only check of the constraints and the stored master data. Nothing is created,
+ *       inserted, updated or dropped. A missing constraint is reported as a warning naming
+ *       the migration file, because the application serves traffic without it.</li>
+ *   <li><strong>Explicitly enabled</strong> - the previous behaviour, applied once, by an
+ *       operator who asked for it (a new database, or a database built from schema.sql).
+ *       Both steps stay idempotent, so an existing row is never overwritten or duplicated.</li>
  * </ul>
+ * The step is gated by an explicit property rather than by a profile, so the same rule
+ * holds for a developer, for a test run and for a deployment.
  */
 @Slf4j
 @Component
@@ -40,6 +45,9 @@ public class PriorityAgendaInitializer {
     public static final String DEFAULT_FRAMEWORK_NAME = "MSUN RIIDE";
     public static final int DEFAULT_COVERAGE_START_YEAR = 2025;
     public static final int DEFAULT_COVERAGE_END_YEAR = 2028;
+
+    /** The file that documents the DDL applied only when this step is explicitly enabled. */
+    public static final String MIGRATION_FILE = "backend/migration-add-priority-agendas.sql";
 
     /**
      * The default agenda items, in display order. The keys are exactly the stable
@@ -60,6 +68,7 @@ public class PriorityAgendaInitializer {
                     "Transforming Academia through Nurturing Growth, Leadership, Advancement, and Wisdom" });
 
     private static final String SINGLE_ACTIVE_INDEX = "uk_priority_agenda_set_single_active";
+    private static final String PERIOD_CONSTRAINT = "chk_priority_agenda_period";
 
     /** How this step is described in cluster-lock log lines. */
     private static final String LOCK_PURPOSE = "the priority agenda master data";
@@ -67,13 +76,27 @@ public class PriorityAgendaInitializer {
     private final JdbcTemplate jdbcTemplate;
     private final DataSource dataSource;
 
-    public PriorityAgendaInitializer(JdbcTemplate jdbcTemplate, DataSource dataSource) {
+    /**
+     * Whether this start-up may write the schema and seed the master data. Off unless
+     * rpis.bootstrap.priority-agendas.enabled=true, so the default start-up is a read-only
+     * verification and never a surprise migration.
+     */
+    private final boolean enabled;
+
+    public PriorityAgendaInitializer(JdbcTemplate jdbcTemplate, DataSource dataSource,
+            @Value("${rpis.bootstrap.priority-agendas.enabled:false}") boolean enabled) {
         this.jdbcTemplate = jdbcTemplate;
         this.dataSource = dataSource;
+        this.enabled = enabled;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeMasterData() {
+        if (!enabled) {
+            verifyWithoutChangingAnything();
+            return;
+        }
+
         // One instance at a time. The constraint DDL below is genuinely idempotent, but the
         // seed is a check-then-insert: two instances that both see "the framework is absent"
         // both try to insert it and the second fails on the unique index, which aborts that
@@ -98,10 +121,40 @@ public class PriorityAgendaInitializer {
     }
 
     /**
-     * Creates the constraints the entity mapping cannot declare. All are idempotent;
-     * the partial unique index is the database-level guarantee that a second active
-     * framework can never be stored, even if two administrators activate a set at the
-     * same moment.
+     * Reports the state of the schema objects and the stored master data without touching
+     * either. This is what a normal start-up runs, so a single log line shows whether a
+     * pending migration is actually outstanding. No DDL and no DML is issued.
+     */
+    private void verifyWithoutChangingAnything() {
+        try {
+            boolean constraintsPresent = SchemaVerification.relationExists(jdbcTemplate, SINGLE_ACTIVE_INDEX)
+                    && SchemaVerification.constraintExists(jdbcTemplate, PERIOD_CONSTRAINT);
+            Integer sets = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM priority_agenda_sets", Integer.class);
+            Integer agendas = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM priority_agendas", Integer.class);
+
+            if (constraintsPresent) {
+                log.info("Priority agenda master data verified read-only: constraints present, {} framework(s) "
+                        + "and {} agenda item(s) stored. Schema bootstrap is disabled, so nothing was changed.",
+                        sets, agendas);
+            } else {
+                log.warn("Priority agenda schema constraints are MISSING and schema bootstrap is disabled "
+                        + "(rpis.bootstrap.priority-agendas.enabled=false, environment variable ""
+                        + "RPIS_BOOTSTRAP_PRIORITY_AGENDAS_ENABLED). Apply {} to add them. "
+                        + "Nothing was changed by this instance.", MIGRATION_FILE);
+            }
+        } catch (Exception e) {
+            log.warn("Could not verify the priority agenda master data ({}). Nothing was changed.",
+                    e.getMessage());
+        }
+    }
+
+    /**
+     * Creates the constraints the entity mapping cannot declare. Only reached on an
+     * explicitly enabled bootstrap run. All are idempotent; the partial unique index is the
+     * database-level guarantee that a second active framework can never be stored, even if
+     * two administrators activate a set at the same moment.
      */
     private void createConstraints() {
         jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_priority_agenda_set_framework_period "
@@ -114,14 +167,15 @@ public class PriorityAgendaInitializer {
                 + "ON priority_agendas (agenda_set_id, LOWER(name))");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_priority_agendas_set_active "
                 + "ON priority_agendas (agenda_set_id, active, display_order)");
-        jdbcTemplate.execute("ALTER TABLE priority_agenda_sets DROP CONSTRAINT IF EXISTS chk_priority_agenda_period");
-        jdbcTemplate.execute("ALTER TABLE priority_agenda_sets ADD CONSTRAINT chk_priority_agenda_period "
-                + "CHECK (coverage_end_year >= coverage_start_year)");
+        jdbcTemplate.execute("ALTER TABLE priority_agenda_sets DROP CONSTRAINT IF EXISTS " + PERIOD_CONSTRAINT);
+        jdbcTemplate.execute("ALTER TABLE priority_agenda_sets ADD CONSTRAINT " + PERIOD_CONSTRAINT
+                + " CHECK (coverage_end_year >= coverage_start_year)");
     }
 
     /**
-     * Seeds the MSUN RIIDE framework only when it is missing, so the form shows the
-     * agenda list it always showed until an administrator configures a new one.
+     * Seeds the MSUN RIIDE framework only when it is missing, so the form shows the agenda
+     * list it always showed until an administrator configures a new one. Only reached on an
+     * explicitly enabled bootstrap run.
      */
     private void seedDefaultFramework() {
         int inserted = jdbcTemplate.update(
@@ -159,4 +213,3 @@ public class PriorityAgendaInitializer {
                 DEFAULT_AGENDAS.size());
     }
 }
-

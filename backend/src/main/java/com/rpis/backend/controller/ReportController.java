@@ -4,6 +4,7 @@ import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProjectReport;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProjectReportRepository;
+import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class ReportController {
 
     private final ProjectReportRepository reportRepository;
+    private final UserRepository userRepository;
     private final ProposalRepository proposalRepository;
     private final CurrentUser currentUser;
     private final UploadStorage uploadStorage;
@@ -132,6 +134,11 @@ public class ReportController {
             @RequestParam(required = false) String comments) {
 
         requireStaff();
+        // NORM-01: reject a reviewer id that does not resolve to an existing user.
+        if (!userRepository.existsById(reviewerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unknown reviewer id: " + reviewerId);
+        }
         return reportRepository.findById(reportId)
                 .map(report -> {
                     report.setReviewedBy(reviewerId);
