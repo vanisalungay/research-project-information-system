@@ -185,6 +185,16 @@ done
 ```
 
 `migration-add-performance-indexes.sql` is the slowest step, because it builds indexes.
+
+### Windows development launcher
+
+`run-backend.bat` at the repository root is the dev/localhost launcher, and it applies
+this same ordered list before starting Spring Boot. It finds `psql` on `PATH` or under
+`C:\Program Files\PostgreSQL\*`, parses host / port / database out of `RPIS_DB_URL`, and
+reuses `RPIS_DB_USER` / `RPIS_DB_PASSWORD` as the credentials. Output is quiet: a
+failure prints the tail of `backend/migration-run.log` and stops the start-up instead of
+starting against a half-updated schema. Set `RPIS_SKIP_MIGRATIONS=1` to start without
+touching the schema. The full list re-runs in under a second on a local database.
 On a large database, build them `CONCURRENTLY` outside a transaction to avoid blocking
 writes; the script's plain `CREATE INDEX IF NOT EXISTS` is fine for the current data
 volume.
