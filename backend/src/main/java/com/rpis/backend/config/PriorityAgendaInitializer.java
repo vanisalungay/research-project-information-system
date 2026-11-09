@@ -140,7 +140,7 @@ public class PriorityAgendaInitializer {
                         sets, agendas);
             } else {
                 log.warn("Priority agenda schema constraints are MISSING and schema bootstrap is disabled "
-                        + "(rpis.bootstrap.priority-agendas.enabled=false, environment variable ""
+                        + "(rpis.bootstrap.priority-agendas.enabled=false, environment variable \""
                         + "RPIS_BOOTSTRAP_PRIORITY_AGENDAS_ENABLED). Apply {} to add them. "
                         + "Nothing was changed by this instance.", MIGRATION_FILE);
             }

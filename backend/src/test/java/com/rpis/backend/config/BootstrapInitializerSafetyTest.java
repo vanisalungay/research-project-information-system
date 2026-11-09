@@ -243,7 +243,7 @@ class BootstrapInitializerSafetyTest {
 
     private static boolean plainBackwardCapableSetval(String setval, String sequence) {
         return setval.replaceAll("\\s+", " ").toLowerCase(Locale.ROOT)
-                .matches(".*setval\('" + sequence + "',\\s*\\d+.*");
+                .matches(".*setval\\('" + sequence + "',\\s*\\d+.*");
     }
 
     private static void stubReads(JdbcTemplate jdbc, String relation, Boolean isCalled, Long maxCode,

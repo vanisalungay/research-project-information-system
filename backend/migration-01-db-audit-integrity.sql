@@ -424,8 +424,8 @@ BEGIN
               JOIN pg_namespace ns ON ns.oid = t.relnamespace
              WHERE c.conname = entry.conname AND ns.nspname = 'public')
         THEN
-            -- NOTE: the inner $$ delimiters below are legal because the enclosing
-            -- block uses the unique tag $m01_checks$, not $$.
+            -- NOTE: the inner double-dollar delimiters below are legal because the
+            -- enclosing block uses a unique dollar-quote tag, not double-dollar.
             EXECUTE format('ALTER TABLE public.%I ADD CONSTRAINT %I CHECK (%s) NOT VALID',
                            entry.tbl, entry.conname, entry.expr);
         END IF;

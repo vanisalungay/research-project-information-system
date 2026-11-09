@@ -73,7 +73,11 @@ SELECT
   (SELECT count(*) FROM public.v_orphan_notifications_proposal_announcement) AS orphan_notifications_announcement,
   (SELECT count(*) FROM public.v_orphan_endorsement_request_events_actor)    AS orphan_endorsement_event_actor,
   (SELECT count(*) FROM public.v_unmatched_proposal_priority_agendas)        AS unmatched_agenda_keys,
-  (SELECT count(*) FROM public.proposals WHERE sdg IS NOT NULL AND NOT (sdg IS JSON))
+  -- A blank string is the column's "no SDGs selected" value (the legacy rows
+  -- store '' rather than NULL), so it is not a parse failure and must not be
+  -- reported as one.
+  (SELECT count(*) FROM public.proposals
+    WHERE sdg IS NOT NULL AND btrim(sdg) <> '' AND NOT (sdg IS JSON))
                                                                              AS nonparsable_proposals_sdg,
   ((SELECT count(*) FROM public.v_orphan_notifications_proposal)
    + (SELECT count(*) FROM public.v_orphan_notifications_proposal_announcement)

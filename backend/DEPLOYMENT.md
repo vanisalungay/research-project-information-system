@@ -102,34 +102,50 @@ so re-running one is harmless and a partially applied batch can simply be re-run
 
 ### Ordered application
 
-Apply them in the order below. The order matters only where a later script references
-something an earlier one created (the announcement scripts, the endorsement workflow and
-the proposal-code sequence).
+Apply them in the order below. The order matters where a later script references something
+an earlier one created. The four ordering rules, each of which the previous list got wrong:
+
+1. `migration-rename-application-cycles-to-proposal-announcements.sql` runs **first**,
+   before every script that touches `proposal_announcements`. Those scripts use
+   `ALTER TABLE proposal_announcements`, which fails while the table is still named
+   `application_cycles`; and running `migration-add-proposal-announcements.sql` before the
+   rename would create an empty table that makes the rename fail. The rename preserves the
+   existing rows.
+2. `migration-add-proposal-section-remarks.sql` (creates the table) runs **before**
+   `migration-add-field-level-remarks.sql`, which adds columns to it.
+3. `migration-add-quarterly-progress-reports.sql` runs **before**
+   `migration-add-performance-indexes.sql`, which indexes `quarterly_progress_reports`.
+4. The audit (`migration-01/02/03`) and normalization (`migration-norm-01/02`) scripts run
+   **last**, after every table and column they constrain exists.
+
+This order was verified end-to-end: it was applied to a clone of a pre-migration `rpis_db`
+and the application then started with `ddl-auto=validate` without a single missing
+column. Re-running the whole list is harmless.
 
 ```bash
 cd backend
 export PGHOST=<host> PGUSER=<user> PGDATABASE=rpis_db
 # -v ON_ERROR_STOP=1 makes psql stop at the first error instead of continuing.
 for f in \
+  migration-rename-application-cycles-to-proposal-announcements.sql \
+  migration-add-proposal-announcements.sql \
   migration-add-announcement-details.sql \
   migration-add-announcement-funding-program.sql \
+  migration-add-proposal-announcement-updates.sql \
+  migration-add-notification-announcement-link.sql \
   migration-add-budget-file-path.sql \
   migration-add-cooperating-agencies.sql \
   migration-add-endorsement-workflow.sql \
   migration-add-endorsement-titles.sql \
+  migration-add-proposal-section-remarks.sql \
   migration-add-field-level-remarks.sql \
-  migration-add-notification-announcement-link.sql \
   migration-add-notification-fields.sql \
   migration-add-notification-preferences.sql \
-  migration-add-performance-indexes.sql \
   migration-add-priority-agendas.sql \
   migration-add-proposal-address-contact.sql \
   migration-add-proposal-announcement-link.sql \
-  migration-add-proposal-announcements.sql \
-  migration-add-proposal-announcement-updates.sql \
   migration-add-proposal-code-sequence.sql \
   migration-add-proposal-id-fields.sql \
-  migration-add-proposal-section-remarks.sql \
   migration-add-proposal-versions.sql \
   migration-add-proposal-version-unique.sql \
   migration-add-quarterly-progress-reports.sql \
@@ -141,8 +157,19 @@ for f in \
   migration-add-terminal-report-content.sql \
   migration-add-user-signature.sql \
   migration-add-workplan-json.sql \
-  migration-rename-application-cycles-to-proposal-announcements.sql \
-  migration-rename-dean-role.sql
+  migration-rename-dean-role.sql \
+  migration-add-must-change-password.sql \
+  migration-add-dean-assignments.sql \
+  migration-add-gad-checklist.sql \
+  migration-add-activity-logs.sql \
+  migration-add-endorsement-document-code-unique.sql \
+  migration-add-proposal-needs-budget.sql \
+  migration-add-performance-indexes.sql \
+  migration-01-db-audit-integrity.sql \
+  migration-02-db-audit-dedupe.sql \
+  migration-03-db-audit-status-history.sql \
+  migration-norm-01-relational-integrity.sql \
+  migration-norm-02-relational-observability.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"
