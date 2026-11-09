@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  *
  * No database is involved: the JdbcTemplate is a Mockito mock and the DataSource is a mock
  * whose connection reports "lock acquired". The behaviour under test is which SQL is issued,
- * and proving it must not require touching rpis_normdev or rpis_db.
+ * and proving it must not require touching the live rpis_db.
  */
 class BootstrapInitializerSafetyTest {
 

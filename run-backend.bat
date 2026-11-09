@@ -3,14 +3,50 @@ rem Keep the environment local: the port check below sets its own variables, and
 rem must not leak into the console this script was launched from.
 setlocal
 echo Starting the Spring Boot Backend (dev profile)...
-cd backend
-set JAVA_HOME=%CD%\jdk-17.0.11+9
-rem The "dev" profile restores the previous local behaviour exactly: SQL logging on,
-rem Hibernate updating the schema from the entities, a small connection pool and the
-rem demo accounts seeded on start-up. Without a profile the conservative shared
-rem settings apply instead (no SQL log, ddl-auto=none, no demo accounts), which is
-rem what a real deployment should use.
+rem Use the script's own directory, so double-clicking the file or running it from
+rem another working directory still starts the right project.
+cd /d "%~dp0backend"
+if errorlevel 1 (
+    echo Could not change into the backend directory next to this script.
+    exit /b 1
+)
+
+rem ---- Java -------------------------------------------------------------------
+rem Prefer the JDK bundled beside the backend directory. If it is not there (it is
+rem not committed), fall back to the machine's JAVA_HOME / PATH instead of pointing
+rem JAVA_HOME at a directory that does not exist, which made Maven fail before
+rem Spring Boot even started.
+if exist "%CD%\jdk-17.0.11+9\bin\java.exe" (
+    set "JAVA_HOME=%CD%\jdk-17.0.11+9"
+) else (
+    echo Bundled JDK not found - using the system JAVA_HOME / java.
+)
+set "JAVA_OK="
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_OK=1"
+if not defined JAVA_OK (
+    where java >nul 2>&1 && set "JAVA_OK=1"
+)
+if not defined JAVA_OK (
+    echo Java not found. Install a JDK 17+ or place jdk-17.0.11+9 beside the backend directory.
+    exit /b 1
+)
+
+rem The "dev" profile restores the local development behaviour: SQL logging on, a small
+rem connection pool and the demo accounts seeded on start-up. The schema itself is owned
+rem by backend/migration-*.sql (ddl-auto=none), so a missing migration fails start-up
+rem instead of being silently created by Hibernate.
 set SPRING_PROFILES_ACTIVE=dev
+
+rem ---- Database connection ---------------------------------------------------
+rem RPIS_DB_URL is REQUIRED by application.properties and has NO default: without it
+rem start-up stops with "Could not resolve placeholder 'RPIS_DB_URL'". The values
+rem below are the local development defaults; "if not defined" keeps anything already
+rem exported in the environment (changed credentials, a different host) as the override.
+if not defined RPIS_DB_URL set "RPIS_DB_URL=jdbc:postgresql://localhost:5432/rpis_db"
+if not defined RPIS_DB_USER set "RPIS_DB_USER=postgres"
+if not defined RPIS_DB_PASSWORD set "RPIS_DB_PASSWORD=1234"
+rem The start-up guard now expects the single database name rpis_db by default, so no
+rem RPIS_DB_EXPECTED is needed unless the target clone is deliberately named otherwise.
 rem State the listening port explicitly instead of inheriting the shared default in
 rem application.properties. The front end reads VITE_API_BASE_URL from .env.local and
 rem must agree with this value, otherwise every API call fails with
@@ -36,7 +72,27 @@ rem shared with another process or the caller has already dealt with it.
 if not defined RPIS_SKIP_PORT_CHECK call :free_port %RPIS_SERVER_PORT%
 if errorlevel 1 exit /b 1
 
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+rem ---- Maven -------------------------------------------------------------------
+rem Prefer the Maven bundled beside the backend directory; otherwise use the one on
+rem PATH. Checking first turns "the system cannot find the path specified" into a
+rem readable message.
+if exist "%CD%\apache-maven-3.9.6\bin\mvn.cmd" (
+    set "MVN_CMD=%CD%\apache-maven-3.9.6\bin\mvn.cmd"
+) else (
+    set "MVN_CMD=mvn"
+)
+set "MVN_OK="
+if /i "%MVN_CMD%"=="mvn" (
+    where mvn >nul 2>&1 && set "MVN_OK=1"
+) else (
+    if exist "%MVN_CMD%" set "MVN_OK=1"
+)
+if not defined MVN_OK (
+    echo Maven not found. Place apache-maven-3.9.6 beside the backend directory or put mvn on PATH.
+    exit /b 1
+)
+
+"%MVN_CMD%" spring-boot:run
 rem Propagate Maven's exit code, so a terminal task or a caller can tell a failed
 rem start-up from a successful one.
 exit /b %ERRORLEVEL%

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Rollback for NORM-01 (relational integrity - 15 foreign keys) - rpis_normdev
+-- Rollback for NORM-01 (relational integrity - 15 foreign keys) - rpis_db
 -- =============================================================================
 -- Reverses ONLY the objects created by migration-norm-01-relational-integrity.sql
 -- Data-safe: constraints and indexes carry no data; no row is touched.

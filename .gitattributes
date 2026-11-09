@@ -1,1 +1,4 @@
 * text=auto eol=lf
+# Windows batch files must be checked out with CRLF: cmd.exe can fail to resolve
+# call/goto labels in an LF-only .bat on some Windows versions.
+*.bat text eol=crlf

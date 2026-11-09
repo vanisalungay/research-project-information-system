@@ -51,6 +51,7 @@ which means anyone who can read the repository knows them.
 | `RPIS_DB_URL` | yes | `jdbc:postgresql://<host>:5432/rpis_db` |
 | `RPIS_DB_USERNAME` | yes | Database account. Grant only the privileges the application needs. |
 | `RPIS_DB_PASSWORD` | yes | Password for that account. |
+| `RPIS_DB_EXPECTED` | no | Database name the start-up guard requires. Default `rpis_db`, the name every environment uses; set it only for a clone with a different name. |
 | `RPIS_TOKEN_SECRET` | yes | Bearer-token signing key. **Must be identical on every instance.** |
 | `RPIS_UPLOAD_DIR` | yes | Absolute path to the shared upload directory. |
 | `RPIS_SERVER_PORT` | no | Per-instance port (default 8081). |

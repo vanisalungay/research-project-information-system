@@ -47,7 +47,7 @@ public class DatabaseTargetGuard implements InitializingBean {
             // expectation is a configuration error, never an invitation to skip the check.
             throw new IllegalStateException(
                     "REFUSING TO START: rpis.db.expected-name is blank, so the target database cannot be "
-                            + "verified. Set RPIS_DB_EXPECTED (for example RPIS_DB_EXPECTED=rpis_normdev) or "
+                            + "verified. Set RPIS_DB_EXPECTED (for example RPIS_DB_EXPECTED=rpis_db) or "
                             + "remove the blank override so the configured default applies. Nothing was written.");
         }
         String actual = DatabaseSafetyGuard.requireExpectedDatabase(dataSource, expectedDatabaseName,

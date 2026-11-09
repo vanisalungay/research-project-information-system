@@ -1,8 +1,8 @@
 -- =============================================================================
--- RPIS Migration NORM-01: relational integrity (foreign keys) - rpis_normdev
+-- RPIS Migration NORM-01: relational integrity (foreign keys) - rpis_db
 -- =============================================================================
 -- AUTHORISED SCOPE. Implements ONLY the foreign keys whose preconditions were
--- verified against the live catalog of rpis_normdev (0 orphan rows each).
+-- verified against the live catalog of rpis_db (0 orphan rows each).
 --
 -- APPLIED (15 FKs):  activity_logs.user_id->users RESTRICT |
 --   quarterly_progress_reports.proposal_id->proposals RESTRICT |
