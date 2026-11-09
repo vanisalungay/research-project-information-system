@@ -78,7 +78,12 @@ BEGIN
     RAISE NOTICE 'NORM-01 preconditions OK: 0 orphans across all 15 candidate foreign keys.';
 END $norm01_guard$;
 
--- SECTION 2 - FOREIGN KEYS (15, idempotent by constraint name)
+-- SECTION 2 - FOREIGN KEYS (15, idempotent by RELATIONSHIP)
+-- An existing FK counts when it constrains the same (child table, child column)
+-- pair against the same parent table's id, whatever its name. Feature
+-- migrations create anonymous <table>_<column>_fkey constraints, and a
+-- name-only guard added a second FK for the same relationship.
+-- migration-norm-03-fk-consolidation.sql then converges name and delete action.
 DO $norm01_fks$
 DECLARE e record;
 BEGIN
@@ -100,7 +105,24 @@ BEGIN
         ('fk_dean_assignments_revoked_by','dean_assignments','revoked_by','users','SET NULL')
     ) AS t(conname, child_table, child_col, parent_table, on_delete)
     LOOP
-        IF NOT EXISTS (SELECT 1 FROM pg_constraint c WHERE c.conname = e.conname AND c.connamespace = 'public'::regnamespace) THEN
+        IF NOT EXISTS (
+            SELECT 1
+              FROM pg_constraint c
+              JOIN pg_class      t  ON t.oid = c.conrelid
+              JOIN pg_namespace  ns ON ns.oid = t.relnamespace
+              JOIN pg_class      pt ON pt.oid = c.confrelid
+             WHERE c.contype = 'f'
+               AND ns.nspname = 'public'
+               AND t.relname  = e.child_table
+               AND pt.relname = e.parent_table
+               AND array_length(c.conkey, 1) = 1
+               AND c.conkey[1]  = (SELECT a.attnum FROM pg_attribute a
+                                    WHERE a.attrelid = c.conrelid
+                                      AND a.attname  = e.child_col)
+               AND c.confkey[1] = (SELECT a.attnum FROM pg_attribute a
+                                    WHERE a.attrelid = c.confrelid
+                                      AND a.attname  = 'id'))
+        THEN
             EXECUTE format('ALTER TABLE public.%I ADD CONSTRAINT %I FOREIGN KEY (%I) REFERENCES public.%I(id) ON DELETE %s ON UPDATE NO ACTION',
                            e.child_table, e.conname, e.child_col, e.parent_table, e.on_delete);
         END IF;

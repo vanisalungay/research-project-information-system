@@ -116,12 +116,18 @@ an earlier one created. The four ordering rules, each of which the previous list
    `migration-add-field-level-remarks.sql`, which adds columns to it.
 3. `migration-add-quarterly-progress-reports.sql` runs **before**
    `migration-add-performance-indexes.sql`, which indexes `quarterly_progress_reports`.
-4. The audit (`migration-01/02/03`) and normalization (`migration-norm-01/02`) scripts run
-   **last**, after every table and column they constrain exists.
+4. The audit (`migration-01/02/03`) and normalization (`migration-norm-01/02/03`) scripts
+   run **last**, after every table and column they constrain exists.
+   `migration-norm-03-fk-consolidation.sql` is the final step: it converges each
+   relationship to exactly one foreign key (any anonymous `<table>_<column>_fkey`
+   left by a feature migration is renamed or replaced) and adds the
+   `notifications.proposal_announcement_id` foreign key.
 
 This order was verified end-to-end: it was applied to a clone of a pre-migration `rpis_db`
 and the application then started with `ddl-auto=validate` without a single missing
-column. Re-running the whole list is harmless.
+column. `migration-norm-03-fk-consolidation.sql` was verified separately against
+`rpis_db` and a scratch database that exercised its rename, rebuild, create and
+re-run paths. Re-running the whole list is harmless.
 
 ```bash
 cd backend
@@ -170,7 +176,8 @@ for f in \
   migration-02-db-audit-dedupe.sql \
   migration-03-db-audit-status-history.sql \
   migration-norm-01-relational-integrity.sql \
-  migration-norm-02-relational-observability.sql
+  migration-norm-02-relational-observability.sql \
+  migration-norm-03-fk-consolidation.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"

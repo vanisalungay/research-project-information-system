@@ -288,6 +288,14 @@ END $m01_diag$;
 -- The child columns stay plain BIGINT in the JPA entities on purpose. They must
 -- NOT also be mapped as @ManyToOne, otherwise the dev profile (ddl-auto=update)
 -- would add a second, duplicate foreign key with an auto-generated name.
+--
+-- The guard below detects an EXISTING relationship by (child table, child
+-- column -> parent table, id), not by constraint name. Feature migrations
+-- (notably migration-add-quarterly-progress-reports.sql) create anonymous
+-- <table>_<column>_fkey constraints; a name-only guard did not see those and
+-- added a second, named constraint for the same relationship. The delete
+-- action of the surviving constraint is normalised by
+-- migration-norm-03-fk-consolidation.sql.
 -- ===========================================================================
 DO $m01_fks$
 DECLARE
@@ -314,10 +322,22 @@ BEGIN
         ) AS t(conname, child_table, child_col, parent_table, on_delete)
     LOOP
         IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint c
-              JOIN pg_class     t  ON t.oid = c.conrelid
-              JOIN pg_namespace ns ON ns.oid = t.relnamespace
-             WHERE c.conname = entry.conname AND ns.nspname = 'public')
+            SELECT 1
+              FROM pg_constraint c
+              JOIN pg_class      t  ON t.oid = c.conrelid
+              JOIN pg_namespace  ns ON ns.oid = t.relnamespace
+              JOIN pg_class      pt ON pt.oid = c.confrelid
+             WHERE c.contype = 'f'
+               AND ns.nspname = 'public'
+               AND t.relname  = entry.child_table
+               AND pt.relname = entry.parent_table
+               AND array_length(c.conkey, 1) = 1
+               AND c.conkey[1]  = (SELECT a.attnum FROM pg_attribute a
+                                    WHERE a.attrelid = c.conrelid
+                                      AND a.attname  = entry.child_col)
+               AND c.confkey[1] = (SELECT a.attnum FROM pg_attribute a
+                                    WHERE a.attrelid = c.confrelid
+                                      AND a.attname  = 'id'))
         THEN
             EXECUTE format(
                 'ALTER TABLE public.%I ADD CONSTRAINT %I FOREIGN KEY (%I) '
