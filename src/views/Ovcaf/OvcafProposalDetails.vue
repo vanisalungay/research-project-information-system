@@ -18,9 +18,16 @@
                     <!-- Action Bar -->
                     <div class="action-bar">
                         <router-link to="/ovcaf/inbox" class="btn btn-secondary btn-sm">← Back to Inbox</router-link>
-                        <router-link v-if="isPending" :to="`/ovcaf/validate/${proposal.id}`"
-                            class="btn btn-primary">Proceed to Validation</router-link>
+                        <div class="action-bar-right">
+                            <button type="button" class="btn btn-secondary"
+                                :disabled="downloadLoading || !fullProposal" @click="downloadProposal">
+                                {{ downloadLoading ? 'Preparing...' : 'Download Proposal Document' }}
+                            </button>
+                            <router-link v-if="isPending" :to="`/ovcaf/validate/${proposal.id}`"
+                                class="btn btn-primary">Proceed to Validation</router-link>
+                        </div>
                     </div>
+                    <p v-if="downloadError" class="download-error">{{ downloadError }}</p>
 
                     <!-- Header Card -->
                     <div class="card proposal-header-card">
@@ -33,15 +40,35 @@
                                 </div>
                                 <h2 class="proposal-title">{{ proposal.title }}</h2>
                                 <div class="meta-row">
-                                    <span>{{ proposal.proponent }} (Proponent)</span>
-                                    <span>{{ proposal.college }} &bull; {{ proposal.department }}</span>
+                                    <span><strong>{{ projectLeader }}</strong> (Project Leader)</span>
+                                    <span>{{ proposal.college }}</span>
                                     <span>Received on {{ formatDateLong(proposal.dateReceived) }}</span>
                                 </div>
                             </div>
                             <div class="budget-box">
-                                <p class="budget-label">Proposed Budget</p>
-                                <h3 class="budget-value font-mono">{{ formatCurrency(proposal.budget) }}</h3>
-                                <p class="funding-src">Source: <strong>{{ proposal.fundingSource }}</strong></p>
+                                <p class="budget-label">In-line Item Budget</p>
+                                <template v-if="budgetFileName">
+                                    <p class="budget-document-name">📄 {{ budgetFileName }}</p>
+                                    <div class="budget-document-actions">
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                            @click="viewBudgetDocument">View</button>
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                            @click="saveBudgetDocument">Download</button>
+                                    </div>
+                                </template>
+                                <!-- A stored reference that yielded no printable name is a
+                                     retrieval problem, not a missing document. -->
+                                <p v-else-if="hasBudgetReference" class="document-error">
+                                    The Line-Item Budget document is attached, but its reference could not be
+                                    resolved.
+                                </p>
+                                <!-- The saved record could not be read, so an empty state would be
+                                     an unverified claim rather than a fact. -->
+                                <p v-else-if="sectionsError" class="document-error">
+                                    The Line-Item Budget document could not be retrieved.
+                                </p>
+                                <p v-else class="budget-document-empty">No Line-Item Budget uploaded</p>
+                                <p v-if="documentError" class="document-error">{{ documentError }}</p>
                             </div>
                         </div>
                     </div>
@@ -50,71 +77,24 @@
                     <div class="details-grid">
                         <!-- Left -->
                         <div class="col-left">
-                            <!-- Abstract -->
-                            <div class="card">
-                                <h4 class="card-title">Project Abstract</h4>
-                                <p class="abstract-text">{{ proposal.abstract }}</p>
-                                <div class="meta-grid-2">
-                                    <div><span class="field-label">Project Timeline</span>
-                                        <p class="field-value">{{ proposal.timeline }}</p>
-                                    </div>
-                                    <div><span class="field-label">Funding Program</span>
-                                        <p class="field-value">{{ proposal.fundingSource }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Budget Breakdown -->
-                            <div class="card mt-6">
-                                <h4 class="card-title">Detailed Line-Item Budget (LIB)</h4>
-                                <div class="table-container">
-                                    <table class="custom-table budget-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Category</th>
-                                                <th>Item / Description</th>
-                                                <th class="text-right">Qty</th>
-                                                <th>Unit</th>
-                                                <th class="text-right">Unit Cost</th>
-                                                <th class="text-right">Total Cost</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(row, idx) in proposal.budgetBreakdown" :key="idx">
-                                                <td><span class="category-tag"
-                                                        :class="getCategoryClass(row.category)">{{
-                                                            getCategoryShort(row.category) }}</span></td>
-                                                <td class="font-medium">{{ row.item }}</td>
-                                                <td class="text-right font-mono">{{ row.quantity }}</td>
-                                                <td>{{ row.unit }}</td>
-                                                <td class="text-right font-mono">{{ formatCurrency(row.unitCost) }}</td>
-                                                <td class="text-right font-mono font-semibold primary-text">{{
-                                                    formatCurrency(row.total) }}</td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="total-row">
-                                                <td colspan="5" class="total-label">Total Proposed Budget</td>
-                                                <td class="text-right font-mono total-amount">{{
-                                                    formatCurrency(budgetTotal) }}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Documents -->
-                            <div class="card mt-6">
-                                <h4 class="card-title">Attached Financial Documents</h4>
-                                <div class="documents-list">
-                                    <div v-for="(doc, idx) in proposal.documents" :key="idx" class="document-item">
-                                        <div>
-                                            <p class="doc-name">{{ doc.name }}</p>
-                                            <p class="doc-meta">{{ doc.size }} &bull; Uploaded {{ doc.uploadedAt }}</p>
-                                        </div>
-                                        <button class="btn btn-secondary btn-sm">DOWNLOAD</button>
-                                    </div>
-                                </div>
+                            <!-- Complete read-only proposal information, rendered from the saved
+                                 record through the same field registry the Create Proposal form and
+                                 the reviewer screens use. Nothing here is editable by OVCAF. -->
+                            <div class="card proposal-sections">
+                                <h4 class="card-title">Complete Proposal Information</h4>
+                                <p class="sections-note">
+                                    Read-only view of the submitted proposal. Every section below is
+                                    rendered from the saved record; attachments can be downloaded.
+                                </p>
+                                <p v-if="sectionsError" class="document-error">{{ sectionsError }}</p>
+                                <p v-else-if="!fullProposal" class="sections-loading">Loading proposal
+                                    sections...</p>
+                                <template v-else>
+                                    <ProposalFieldSection v-for="section in PROPOSAL_FIELD_SECTIONS"
+                                        :key="section.key" :section="section" :proposal="fullProposal"
+                                        :proposal-id="proposal.id" :editable="false"
+                                        @download="downloadAttachment" />
+                                </template>
                             </div>
                         </div>
 
@@ -169,6 +149,10 @@
                 </div>
             </main>
         </div>
+
+        <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
+        <LineItemBudgetPreviewModal v-if="showBudgetPreview" :file-path="budgetDocumentPath(budgetSource)"
+            :file-name="budgetFileName" @close="showBudgetPreview = false" />
     </div>
 </template>
 
@@ -176,6 +160,12 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/utils/api';
+import ProposalFieldSection from '@/components/ProposalFieldSection.vue';
+import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
+import { PROPOSAL_FIELD_SECTIONS } from '@/utils/proposalFields';
+import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
+import { downloadUploadedFile } from '@/utils/fileDownload';
+import { downloadOfficialProposal } from '@/utils/officialProposalForm';
 
 const route = useRoute();
 
@@ -188,6 +178,17 @@ const dropdownRef = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const proposal = ref(null);
+// The full saved proposal (GET /api/proposals/{id}), used to render every section from the
+// same field registry as the proposal form. Loaded only after the OVCAF detail route has
+// authorized the record, so a draft is never fetched or rendered here.
+const fullProposal = ref(null);
+const sectionsError = ref('');
+const documentError = ref('');
+const downloadLoading = ref(false);
+const downloadError = ref('');
+// View opens an in-page preview of the uploaded document; reset whenever the page
+// loads another proposal so the modal never shows the previous record.
+const showBudgetPreview = ref(false);
 
 // ── Computed ──────────────────────────────────────
 const isPending = computed(() =>
@@ -195,9 +196,17 @@ const isPending = computed(() =>
     proposal.value?.status === 'Under Validation' ||
     proposal.value?.rawStatus === 'FOR_OVCAF_APPROVAL'
 );
-const budgetTotal = computed(() =>
-    (proposal.value?.budgetBreakdown || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
-);
+// The header follows the exact saved record the actual proposal viewer renders
+// (GET /api/proposals/{id}); the OVCAF response is only the fallback while it loads.
+const budgetSource = computed(() => fullProposal.value || proposal.value);
+const projectLeader = computed(() => {
+    const fromForm = fullProposal.value
+        ? String(fullProposal.value.projectLeader || '').trim()
+        : '';
+    return fromForm || proposal.value?.projectLeader || 'Unknown';
+});
+const budgetFileName = computed(() => budgetDocumentName(budgetSource.value));
+const hasBudgetReference = computed(() => Boolean(budgetDocumentPath(budgetSource.value)));
 
 const checklistLabels = {
     budgetComplete: 'Line-Item Budget is complete and matches all pages',
@@ -213,6 +222,11 @@ const fetchProposal = async () => {
     try {
         loading.value = true;
         error.value = null;
+        sectionsError.value = '';
+        documentError.value = '';
+        downloadError.value = '';
+        fullProposal.value = null;
+        showBudgetPreview.value = false;
         const id = route.params.id;
         const response = await api.get(`/api/ovcaf/proposals/${id}`);
         const p = response.data;
@@ -221,25 +235,16 @@ const fetchProposal = async () => {
                 id: p.id,
                 documentId: p.documentId || '',
                 title: p.projectTitle || 'Untitled Project',
-                proponent: p.proponentName || 'Unknown',
+                // The form's Project Leader must win; `proponentName` is only the
+                // server-side fallback for records that never carried the form field.
+                projectLeader: p.projectLeader || p.proponentName || '',
                 college: p.college || 'Unknown',
-                department: p.college || 'Unknown',
-                budget: p.totalBudget || 0,
+                // Section 25 is an uploaded document, not a recomputable amount table.
+                beneficiariesFileName: p.beneficiariesFileName || '',
+                beneficiariesFilePath: p.beneficiariesFilePath || '',
                 dateReceived: p.createdAt,
                 status: mapStatus(p.status),
                 rawStatus: p.status,
-                abstract: p.executiveSummary || 'No abstract available.',
-                timeline: p.duration || 'Not specified',
-                fundingSource: p.fundingSource || 'Not specified',
-                budgetBreakdown: (p.budgetBreakdown || []).map(b => ({
-                    category: b.agency || 'Other',
-                    item: `${b.agency || 'Item'} - PS: ${b.ps || '0'}, MOOE: ${b.mooe || '0'}, EO: ${b.eo || '0'}`,
-                    quantity: 1,
-                    unit: 'lot',
-                    unitCost: parseFloat(b.total) || 0,
-                    total: parseFloat(b.total) || 0
-                })),
-                documents: [],
                 ocRemarks: p.remarks || null,
                 validationChecklist: {
                     budgetComplete: p.budgetComplete || false,
@@ -252,6 +257,7 @@ const fetchProposal = async () => {
                 remarks: p.ovcafRemarks || null,
                 history: buildHistory(p)
             };
+            await loadFullProposal(id);
         }
     } catch (err) {
         console.error('Error fetching proposal details:', err);
@@ -259,6 +265,23 @@ const fetchProposal = async () => {
         proposal.value = null;
     } finally {
         loading.value = false;
+    }
+};
+
+/**
+ * Load the complete saved proposal for the read-only field sections. The OVCAF detail
+ * response above already authorized the record, so this never renders a proposal OVCAF
+ * cannot review; a failure here degrades to a message instead of an empty page.
+ */
+const loadFullProposal = async (id) => {
+    try {
+        const res = await api.get(`/api/proposals/${id}`);
+        fullProposal.value = res.data || null;
+        sectionsError.value = fullProposal.value ? '' : 'The proposal details could not be loaded.';
+    } catch (err) {
+        console.error('Error fetching complete proposal:', err);
+        fullProposal.value = null;
+        sectionsError.value = 'The complete proposal information could not be loaded. Please try again.';
     }
 };
 
@@ -291,7 +314,7 @@ const buildHistory = (p) => {
         history.push({
             stage: 'Submission',
             action: 'Proposal Submitted',
-            user: p.proponentName || 'Proponent',
+            user: p.projectLeader || p.proponentName || 'Project Leader',
             date: new Date(p.createdAt).toLocaleString('en-PH'),
             notes: null
         });
@@ -332,8 +355,65 @@ const handleOutsideClick = (e) => {
     if (dropdownRef.value && !dropdownRef.value.contains(e.target)) dropdownOpen.value = false;
 };
 
+// ── Document actions ──────────────────────────────
+// The Line-Item Budget is the uploaded section 25 document; both actions go through the
+// authenticated /api/files route, which already enforces who may read the stored file.
+// View opens the preview modal over this page instead of navigating or opening a tab.
+const viewBudgetDocument = () => {
+    if (!budgetDocumentPath(budgetSource.value)) {
+        documentError.value = 'The Line-Item Budget document could not be retrieved.';
+        return;
+    }
+    documentError.value = '';
+    showBudgetPreview.value = true;
+};
+
+const saveBudgetDocument = async () => {
+    const path = budgetDocumentPath(budgetSource.value);
+    if (!path) {
+        documentError.value = 'The Line-Item Budget document could not be retrieved.';
+        return;
+    }
+    documentError.value = '';
+    try {
+        await downloadUploadedFile(path, budgetFileName.value);
+    } catch (err) {
+        console.error('Error downloading Line-Item Budget:', err);
+        documentError.value = 'The Line-Item Budget document could not be downloaded. Please try again.';
+    }
+};
+
+/** Download one attachment (supporting documents, maps, workplans) from a section card. */
+const downloadAttachment = async (target) => {
+    if (!target) return;
+    documentError.value = '';
+    try {
+        await downloadUploadedFile(target);
+    } catch (err) {
+        console.error('Error downloading attachment:', err);
+        documentError.value = 'The attached document could not be downloaded. Please try again.';
+    }
+};
+
+/** Build the complete official proposal document from the saved record. */
+const downloadProposal = async () => {
+    if (!fullProposal.value) {
+        downloadError.value = 'The complete proposal is still loading. Please try again.';
+        return;
+    }
+    downloadLoading.value = true;
+    downloadError.value = '';
+    try {
+        await downloadOfficialProposal(fullProposal.value);
+    } catch (err) {
+        console.error('Error preparing the proposal document:', err);
+        downloadError.value = 'Could not prepare the proposal document. Please try again.';
+    } finally {
+        downloadLoading.value = false;
+    }
+};
+
 // ── Helpers ───────────────────────────────────────
-const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 const formatDateLong = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 const getStatusClass = (s) => {
     if (!s) return '';
@@ -342,20 +422,6 @@ const getStatusClass = (s) => {
     if (s.includes('Returned')) return 'badge-returned';
     if (s.includes('Rejected')) return 'badge-rejected';
     return 'badge-info';
-};
-const getCategoryShort = (c) => {
-    if (!c) return c;
-    if (c.includes('PS') || c.includes('Personal')) return 'PS';
-    if (c.includes('MOOE') || c.includes('Maintenance')) return 'MOOE';
-    if (c.includes('CO') || c.includes('Capital')) return 'CO';
-    return c;
-};
-const getCategoryClass = (c) => {
-    if (!c) return '';
-    if (c.includes('PS') || c.includes('Personal')) return 'cat-ps';
-    if (c.includes('MOOE') || c.includes('Maintenance')) return 'cat-mooe';
-    if (c.includes('CO') || c.includes('Capital')) return 'cat-co';
-    return 'cat-other';
 };
 const getTlClass = (action) => {
     const a = (action || '').toLowerCase();
@@ -537,12 +603,12 @@ const getTlClass = (action) => {
 
 .budget-box {
     flex: 1;
-    min-width: 190px;
+    min-width: 240px;
     background-color: #f8fafc;
     padding: 1rem;
     border-radius: var(--border-radius-sm);
     border: 1px solid #e2e8f0;
-    text-align: right;
+    text-align: left;
 }
 
 .budget-label {
@@ -550,25 +616,72 @@ const getTlClass = (action) => {
     font-weight: 600;
     text-transform: uppercase;
     color: var(--text-muted);
+    margin-bottom: 0.4rem;
 }
 
-.budget-value {
-    font-size: 1.65rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin: 0.2rem 0;
+.budget-document-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
 }
 
-.funding-src {
+.budget-document-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.budget-document-empty {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.document-error {
+    margin-top: 0.5rem;
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: #dc2626;
+}
+
+.download-error {
+    margin: -1rem 0 1rem;
+    font-size: 0.85rem;
+    color: #dc2626;
+}
+
+.action-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.proposal-sections {
+    padding: 24px;
+}
+
+.sections-note {
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.sections-loading {
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
 
 .details-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: 24px;
     align-items: start;
+}
+
+.col-left,
+.col-right {
+    min-width: 0;
 }
 
 @media (max-width: 1024px) {

@@ -163,6 +163,35 @@ public class SecurityConfig {
                         // caller owns the proposal the file is attached to.
                         .requestMatchers(HttpMethod.POST, "/api/proposals/*/budget-file").hasRole(UserRoles.PROPONENT)
 
+                        // Endorsement document upload (Certification & Endorsement step,
+                        // "Endorsed By"): proponent-only. The service additionally enforces
+                        // that the caller owns the proposal the document is attached to.
+                        .requestMatchers(HttpMethod.POST, "/api/proposals/*/endorsement-document")
+                        .hasRole(UserRoles.PROPONENT)
+
+                        // "Submitted By" signature upload (Certification & Endorsement
+                        // step): proponent-only. The service additionally enforces that
+                        // the caller owns the proposal the signature is attached to.
+                        .requestMatchers(HttpMethod.POST, "/api/proposals/*/submitted-by-signature")
+                        .hasRole(UserRoles.PROPONENT)
+
+                        // OC final approval + Special Order issuance (Stage 1 of the
+                        // OC -> OVCAF workflow): the Office of the Chancellor only. The
+                        // service additionally requires the proposal to be at
+                        // FOR_OC_APPROVAL, so this route cannot approve a proposal that
+                        // is not awaiting the Chancellor's decision.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/approve-with-so")
+                        .hasRole(UserRoles.OC)
+
+                        // The generic status route serves only the two transitions its
+                        // callers own: REC's recommendation (REC_APPROVED) and OVCAF's
+                        // release readiness (READY_FOR_RELEASE). ProposalController
+                        // enforces the same allow-list. Every other transition has a
+                        // dedicated endpoint that records its own approval, so this route
+                        // can no longer be used to bypass the OC/SO or OVCAF steps.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/status")
+                        .hasAnyRole(UserRoles.REC, UserRoles.OVCAF)
+
                         // Field-level revision remarks: reviewer roles only. A Proponent must
                         // never be able to write review feedback on their own proposal.
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/field-remarks")

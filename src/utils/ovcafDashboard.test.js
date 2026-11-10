@@ -84,9 +84,12 @@ test('the status filters behind every count are unchanged', () => {
 })
 
 test('the tables keep their columns, cells and actions', () => {
-  for (const header of ['Proposal Title', 'Proponent Name', 'Status', 'Action']) {
+  // The name column is labelled Project Leader: the value is the person named on the
+  // proposal form, not the generic account that owns the record.
+  for (const header of ['Proposal Title', 'Project Leader', 'Status', 'Action']) {
     assert.ok(DASHBOARD.includes(`>${header}</th>`), `the "${header}" column must be kept`)
   }
+  assert.ok(DASHBOARD.includes('p.projectLeader'), 'the column is filled from the form value')
   for (const binding of ['{{ proposal.title }}', '{{ proposal.proponent }}', '{{ proposal.status }}']) {
     assert.ok(DASHBOARD.includes(binding), `the cell ${binding} must be kept`)
   }

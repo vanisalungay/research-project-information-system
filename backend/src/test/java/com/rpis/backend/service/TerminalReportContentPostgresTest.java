@@ -85,6 +85,10 @@ class TerminalReportContentPostgresTest {
         p.setProponent(saved);
         p.setStatus("APPROVED");
         p.setSoNumber("SO-2026-001");
+        // The OC final-approval record (SO number + the time it was recorded); without
+        // both the proposal is not eligible for any reporting stage.
+        p.setSoUploadedAt(java.time.LocalDateTime.of(2026, 1, 15, 9, 30));
+        p.setNeedsBudget(Boolean.FALSE);
         proposal = proposalRepository.saveAndFlush(p);
 
         // Stages 1-3 already submitted, so the next required stage is the Terminal Report.

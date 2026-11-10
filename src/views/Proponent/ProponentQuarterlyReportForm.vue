@@ -420,6 +420,7 @@ import {
 } from '@/utils/reportWizard'
 import { copyReportValues, copySourceId } from '@/utils/quarterlyReportCopy'
 import { workplanFormState, workplanPayload } from '@/utils/quarterlyReportFormState'
+import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
 // Official ORPS Terminal Report format shipped with the app (public/templates).
 const TERMINAL_FORMAT_URL = '/templates/ORPS-Inhouse-Terminal-Report-Format-2026-Rev01.pdf'
@@ -598,13 +599,9 @@ function qprPayload() {
   return qprFormRef.value?.buildPayload() || {}
 }
 
-const eligible = computed(() => {
-  const p = project.value
-  if (!p) return false
-  const hasSo = p.soNumber && p.soNumber.trim() !== ''
-  const approved = p.status === 'APPROVED' || p.status === 'RELEASED'
-  return hasSo && approved
-})
+// The same shared rule as the rest of the proponent interface (approved for
+// implementation AND an issued SO); the backend validates every request again.
+const eligible = computed(() => isQuarterlyReportEligible(project.value))
 
 // Stage of the report being edited, or (for a new report) the next required
 // stage reported by the backend.

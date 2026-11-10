@@ -193,6 +193,71 @@ public class Proposal {
     @Column(name = "beneficiaries_file_path", length = 500)
     private String beneficiariesFilePath;
 
+    /**
+     * Display name of the endorsement document uploaded in the Certification &amp;
+     * Endorsement step ("Endorsed By") - the file name the proponent selected. The
+     * document is a PDF (validated on both layers); this column is NULL for every
+     * proposal that was submitted before the document could be uploaded, which keeps
+     * older records working unchanged.
+     */
+    @Column(name = "endorsement_file_name")
+    private String endorsementFileName;
+
+    /**
+     * Stored path of that endorsement document, relative to the "uploads" directory
+     * (e.g. {@code endorsement-documents/<uuid>_endorsement-document.pdf}). Kept apart
+     * from {@link #endorsementFileName} so the screens can keep showing the proponent's
+     * own file name while the authorized download route resolves the real file.
+     */
+    @Column(name = "endorsement_file_path", length = 500)
+    private String endorsementFilePath;
+
+    /**
+     * "Submitted By" section of the Certification &amp; Endorsement step: the proponent's
+     * name, designation and the date entered in the form. Persisted with the draft, so
+     * reopening it restores exactly what was typed instead of starting over.
+     */
+    @Column(name = "submitted_by_name")
+    private String submittedByName;
+
+    @Column(name = "submitted_by_designation")
+    private String submittedByDesignation;
+
+    @Column(name = "submitted_by_date", length = 50)
+    private String submittedByDate;
+
+    /**
+     * Display name of the proponent's signature uploaded in that step - the file name the
+     * proponent selected. The bytes never travel in the proposal DTO; they are uploaded to
+     * the proposal's own endpoint (POST /api/proposals/{id}/submitted-by-signature), which
+     * validates the image/PDF, stores it and sets both this name and the path below.
+     */
+    @Column(name = "submitted_by_file_name")
+    private String submittedByFileName;
+
+    /**
+     * Stored path of that signature, relative to the "uploads" directory (e.g.
+     * {@code submitted-by-signatures/<uuid>_signature.png}). Kept apart from
+     * {@link #submittedByFileName} so the screens can keep showing the proponent's own
+     * file name while the authorized download route resolves the real file.
+     */
+    @Column(name = "submitted_by_file_path", length = 500)
+    private String submittedByFilePath;
+
+    /**
+     * "Endorsed By" section of the Certification &amp; Endorsement step: the endorser's
+     * name, designation and date. Persisted with the draft, so a reopened draft (or a
+     * reviewer opening the submitted proposal) sees the same certification.
+     */
+    @Column(name = "endorsed_by_name")
+    private String endorsedByName;
+
+    @Column(name = "endorsed_by_designation")
+    private String endorsedByDesignation;
+
+    @Column(name = "endorsed_by_date", length = 50)
+    private String endorsedByDate;
+
     @Column(columnDefinition = "TEXT")
     private String sustainability;
 
@@ -213,6 +278,22 @@ public class Proposal {
 
     @Column(columnDefinition = "TEXT")
     private String risks;
+
+    /**
+     * Section 21 - the structured Risk Management Plan: one entry per identified risk,
+     * each with its likelihood, impact and mitigation measure. Stored as a JSON array in
+     * {@code risk_management_json} and exposed as a real JSON array to the client, so the
+     * Create Proposal form, the revision form and every review page read the same rows.
+     *
+     * <p>{@link #risks} above keeps the legacy single-text plan: it is the readable
+     * rendering of these entries while they exist (so screens and exports that predate the
+     * table keep working) and the untouched hand-written text of a proposal that was saved
+     * before the table existed. Empty for an old proposal, which the views then display
+     * from {@code risks}.</p>
+     */
+    @Convert(converter = RiskManagementListConverter.class)
+    @Column(name = "risk_management_json", columnDefinition = "TEXT")
+    private List<RiskManagementEntry> riskManagement = new ArrayList<>();
 
     @Column(name = "references_text", columnDefinition = "TEXT")
     private String referencesText;

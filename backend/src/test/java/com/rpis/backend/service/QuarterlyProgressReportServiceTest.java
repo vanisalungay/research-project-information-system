@@ -7,11 +7,13 @@ import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.model.WorkplanObjective;
+import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -41,18 +43,22 @@ class QuarterlyProgressReportServiceTest {
 
     private QuarterlyProgressReportRepository reportRepository;
     private ProposalRepository proposalRepository;
+    private OvcafValidationRepository ovcafValidationRepository;
     private QuarterlyProgressReportService service;
 
     @BeforeEach
     void setUp() {
         reportRepository = mock(QuarterlyProgressReportRepository.class);
         proposalRepository = mock(ProposalRepository.class);
-        service = new QuarterlyProgressReportService(reportRepository, proposalRepository, new LocalUploadStorage("uploads"));
+        ovcafValidationRepository = mock(OvcafValidationRepository.class);
+        service = new QuarterlyProgressReportService(reportRepository, proposalRepository,
+                new LocalUploadStorage("uploads"), ovcafValidationRepository);
 
         Proposal proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);
         proposal.setStatus("APPROVED");
         proposal.setSoNumber("SO-2026-001");
+        proposal.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
         User proponent = new User();
         proponent.setId(7L);
         proposal.setProponent(proponent);
@@ -153,6 +159,119 @@ class QuarterlyProgressReportServiceTest {
         draft.setStatus("DRAFT");
         when(proposalRepository.findById(99L)).thenReturn(Optional.of(draft));
         assertThrows(IllegalStateException.class, () -> service.getNextStage(99L));
+    }
+
+    @Test
+    void anApprovedProposalWithoutAnIssuedSoIsNotEligible() {
+        Proposal approvedWithoutSo = new Proposal();
+        approvedWithoutSo.setId(100L);
+        approvedWithoutSo.setStatus("APPROVED");
+        approvedWithoutSo.setSoNumber("   ");
+        when(proposalRepository.findById(100L)).thenReturn(Optional.of(approvedWithoutSo));
+        assertFalse(service.isEligible(approvedWithoutSo));
+        assertThrows(IllegalStateException.class, () -> service.getNextStage(100L));
+    }
+
+    @Test
+    void anSoDoesNotMakeAnEarlyStageProposalEligible() {
+        Proposal underReview = new Proposal();
+        underReview.setId(101L);
+        underReview.setStatus("UNDER_REVIEW");
+        underReview.setSoNumber("SO-2026-010");
+        when(proposalRepository.findById(101L)).thenReturn(Optional.of(underReview));
+        assertFalse(service.isEligible(underReview));
+        assertThrows(IllegalStateException.class, () -> service.getNextStage(101L));
+    }
+
+    @Test
+    void aReleasedProposalWithAnIssuedSoIsEligible() {
+        Proposal released = new Proposal();
+        released.setId(102L);
+        released.setStatus("RELEASED");
+        released.setSoNumber("SO-2026-011");
+        released.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        assertTrue(service.isEligible(released));
+    }
+
+    /**
+     * IMPLEMENTATION is the implementation-phase status the rest of the application
+     * (proposalStatus.js / proposalSummary.js) already treats as approved for
+     * implementation. Such a project must not be silently denied reporting.
+     */
+    @Test
+    void anImplementationPhaseProposalWithAnIssuedSoIsEligible() {
+        Proposal implementing = new Proposal();
+        implementing.setId(103L);
+        implementing.setStatus("IMPLEMENTATION");
+        implementing.setSoNumber("SO-2026-012");
+        implementing.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        assertTrue(service.isEligible(implementing));
+    }
+
+    @Test
+    void theStatusComparisonToleratesCasingAndSurroundingWhitespace() {
+        Proposal mixedCase = new Proposal();
+        mixedCase.setId(104L);
+        mixedCase.setStatus(" approved ");
+        mixedCase.setSoNumber("SO-2026-013");
+        mixedCase.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        assertTrue(service.isEligible(mixedCase));
+    }
+
+    /**
+     * The SO number alone is not the OC approval record: the OC final-approval
+     * transaction writes the number and its time together. A value typed straight
+     * into the column must not make a project eligible.
+     */
+    @Test
+    void anSoNumberWithoutTheRecordedApprovalTimeIsNotEligible() {
+        Proposal manualSo = new Proposal();
+        manualSo.setId(106L);
+        manualSo.setStatus("APPROVED");
+        manualSo.setSoNumber("SO-2026-015");
+        assertFalse(service.isEligible(manualSo));
+    }
+
+    /**
+     * When the Chancellor routed the proposal through budget evaluation, the
+     * persisted OVCAF approval is part of the chain; a status that merely contains
+     * APPROVED is not.
+     */
+    @Test
+    void aBudgetRoutedProposalWithoutOvcafApprovalIsNotEligible() {
+        Proposal withBudget = new Proposal();
+        withBudget.setId(107L);
+        withBudget.setStatus("APPROVED");
+        withBudget.setSoNumber("SO-2026-016");
+        withBudget.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        withBudget.setNeedsBudget(true);
+        when(ovcafValidationRepository.existsByProposalIdAndDecisionAndBudgetEndorsedTrue(
+                107L, "APPROVED_ENDORSED")).thenReturn(false);
+        assertFalse(service.isEligible(withBudget));
+
+        when(ovcafValidationRepository.existsByProposalIdAndDecisionAndBudgetEndorsedTrue(
+                107L, "APPROVED_ENDORSED")).thenReturn(true);
+        assertTrue(service.isEligible(withBudget));
+    }
+
+    @Test
+    void aBudgetRoutedProposalAwaitingOvcafIsNotEligible() {
+        Proposal awaiting = new Proposal();
+        awaiting.setId(108L);
+        awaiting.setStatus("FOR_OVCAF_APPROVAL");
+        awaiting.setSoNumber("SO-2026-017");
+        awaiting.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        awaiting.setNeedsBudget(true);
+        assertFalse(service.isEligible(awaiting));
+    }
+
+    @Test
+    void aBlankStatusIsNotApproval() {
+        Proposal blank = new Proposal();
+        blank.setId(105L);
+        blank.setStatus("   ");
+        blank.setSoNumber("SO-2026-014");
+        assertFalse(service.isEligible(blank));
     }
 
     @Test

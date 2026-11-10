@@ -161,11 +161,11 @@
     </div>
 
     <!-- CONFIRMATION MODAL -->
-    <div v-if="showConfirm" class="modal-overlay" @click.self="showConfirm = false">
+    <div v-if="showConfirm" class="modal-overlay" @click.self="closeConfirm">
       <div class="modal so-modal">
         <div class="modal-header">
           <span>Confirm Approval & Issue Special Order</span>
-          <span class="close" @click="showConfirm = false">&times;</span>
+          <span class="close" @click="closeConfirm">&times;</span>
         </div>
         <div class="modal-body">
           <div class="check-icon">&#10003;</div>
@@ -201,14 +201,20 @@
               <strong>Without Budget:</strong> This proposal will be approved for immediate implementation.
             </p>
           </div>
+
+          <!-- The real reason a failed approval did not go through. Nothing was saved
+               on the server, so the form (including the SO number and file) stays open
+               and can be retried. -->
+          <p v-if="approvalError" class="modal-error" role="alert">{{ approvalError }}</p>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="showConfirm = false">Cancel</button>
-          <button class="btn-confirm" :disabled="!soNumber || soUploading" @click="confirmApproval">
+          <button class="btn-cancel" :disabled="soUploading" @click="closeConfirm">Cancel</button>
+          <button class="btn-confirm" :disabled="!soNumber.trim() || soUploading || actionLoading"
+            @click="confirmApproval">
             {{ soUploading ? 'Uploading & Approving...' : 'Confirm Approval' }}
           </button>
         </div>
-        <p v-if="!soNumber" class="modal-hint">Please enter the Special Order number to proceed.</p>
+        <p v-if="!soNumber.trim()" class="modal-hint">Please enter the Special Order number to proceed.</p>
       </div>
     </div>
 
@@ -232,6 +238,12 @@ import api from '@/utils/api'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 
+// Mirrors the server's Special Order rules (rpis.special-order.max-size-mb in the
+// backend configuration). The server remains authoritative; checking here as well
+// reports an invalid file before a request is sent.
+const SO_MAX_BYTES = 25 * 1024 * 1024
+const SO_EXTENSIONS = ['pdf', 'doc', 'docx']
+
 export default {
   name: 'FinalApproval',
   components: { ProposalFieldSection },
@@ -249,6 +261,7 @@ export default {
       soNumber: '',
       soFile: null,
       soUploading: false,
+      approvalError: '',
       // Field-level remarks of the active revision round.
       PROPOSAL_FIELD_SECTIONS,
       remarksResponse: null,
@@ -322,27 +335,60 @@ export default {
     },
     handleSoFileChange(event) {
       const file = event.target.files[0]
-      if (file) {
-        this.soFile = file
+      this.approvalError = ''
+      if (!file) {
+        this.soFile = null
+        return
       }
+      const extension = file.name.includes('.')
+        ? file.name.split('.').pop().toLowerCase()
+        : ''
+      if (!SO_EXTENSIONS.includes(extension)) {
+        this.soFile = null
+        event.target.value = ''
+        this.approvalError = 'Invalid file format. Please upload the Special Order as a PDF, DOC or DOCX file.'
+        return
+      }
+      if (file.size > SO_MAX_BYTES) {
+        this.soFile = null
+        event.target.value = ''
+        this.approvalError = 'The Special Order document must be 25 MB or smaller.'
+        return
+      }
+      this.soFile = file
     },
     removeSoFile() {
       this.soFile = null
+      this.approvalError = ''
       if (this.$refs.soFileInput) {
         this.$refs.soFileInput.value = ''
       }
+    },
+    closeConfirm() {
+      // Never close the form while the request is in flight, so a double click or an
+      // overlay click cannot hide (or repeat) a submission that is already running.
+      if (this.soUploading || this.actionLoading) return
+      this.showConfirm = false
+      this.approvalError = ''
     },
     async confirmApproval() {
       if (!this.soNumber || !this.soNumber.trim()) {
         return
       }
-      this.showConfirm = false
+      // One submission at a time: a second click while the first request is in
+      // flight must not create a duplicate approval/SO record.
+      if (this.soUploading || this.actionLoading) {
+        return
+      }
+      this.approvalError = ''
       this.actionLoading = true
       this.soUploading = true
       try {
         const proposalId = this.$route.params.id
 
-        // Build FormData for multipart request
+        // Build FormData for multipart request. The Content-Type (including the
+        // multipart boundary) is left to the browser/axios: setting it manually hides
+        // the boundary and makes the request unreadable to the server.
         const formData = new FormData()
         formData.append('soNumber', this.soNumber.trim())
         formData.append('needsBudget', this.needsBudget)
@@ -355,18 +401,28 @@ export default {
 
         const res = await api.put(
           `/api/proposals/${proposalId}/approve-with-so`,
-          formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
+          formData
         )
 
+        // The server confirms the whole operation; only now does the form close and
+        // the success state appear.
+        this.showConfirm = false
         this.successMessage = res.data?.message || 'Proposal approved with Special Order.'
         this.showSuccess = true
       } catch (err) {
         console.error('Approval failed:', err)
-        // Show actual error from backend if available
-        const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error occurred'
-        this.successMessage = `Approval failed: ${errorMsg}`
-        this.showSuccess = true
+        const status = err.response?.status
+        let errorMsg = err.response?.data?.error || err.response?.data?.message
+        if (!errorMsg && status === 413) {
+          errorMsg = 'The Special Order document is too large for the server. The maximum accepted size is 25 MB.'
+        }
+        if (!errorMsg) {
+          errorMsg = err.message || 'Unknown error occurred.'
+        }
+        // The proposal was not changed. Keep the confirmation form (SO number and
+        // file) open so the request can be corrected and retried, and never show the
+        // green success state for a failed approval.
+        this.approvalError = `Approval failed: ${errorMsg}`
       } finally {
         this.actionLoading = false
         this.soUploading = false
@@ -1041,6 +1097,19 @@ textarea:focus {
   font-size: 12px;
   color: #94a3b8;
   margin-top: 10px;
+}
+
+.modal-error {
+  margin-top: 14px !important;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.5;
 }
 
 @keyframes fadeIn {

@@ -7,10 +7,15 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.lowagie.text.pdf.PdfReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,6 +24,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,6 +34,7 @@ import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProposalService {
@@ -121,6 +129,125 @@ public class ProposalService {
 
     /** "PK": the header of a ZIP archive, and therefore of an OOXML (.docx) package. */
     private static final byte[] ZIP_HEADER = { 0x50, 0x4b };
+
+    // ========================
+    // ENDORSEMENT DOCUMENT (Certification & Endorsement step - "Endorsed By")
+    // ========================
+    // The Dean's signed endorsement is uploaded as a PDF. The same limits the form
+    // enforces in the browser are enforced again here, so a request that bypasses the
+    // form cannot store an oversized document or an image that merely carries a .pdf
+    // name, and the document is opened as well, so a corrupted PDF is refused too.
+
+    /** Largest accepted endorsement document: 10 MB (10 * 1024 * 1024 bytes). */
+    public static final long ENDORSEMENT_DOCUMENT_MAX_BYTES = 10L * 1024 * 1024;
+
+    /** Media type an endorsement document may declare. */
+    private static final Set<String> ENDORSEMENT_DOCUMENT_MEDIA_TYPES = Set.of("application/pdf");
+
+    /** Messages shown by the form as well, so both layers report the same reason. */
+    public static final String ENDORSEMENT_DOCUMENT_SIZE_MESSAGE =
+            "File size exceeds the 10 MB limit. Please upload a smaller PDF file.";
+    public static final String ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE =
+            "Invalid file format. Please upload the endorsement document as a PDF (.pdf) file.";
+    public static final String ENDORSEMENT_DOCUMENT_EMPTY_MESSAGE =
+            "Please choose the endorsement document (PDF) first.";
+
+    /** Folder the endorsement documents are stored in, inside the uploads root. */
+    private static final String ENDORSEMENT_DOCUMENT_DIR = "endorsement-documents";
+
+    // ========================
+    // SUBMITTED BY SIGNATURE (Certification & Endorsement step)
+    // ========================
+    // The proponent's signature shown in the "Submitted By" section is kept with the
+    // proposal (not only on the account), so a reopened draft and a reviewer both see the
+    // exact signature that was submitted. A PNG/JPEG image or a PDF is accepted.
+
+    /** Largest accepted submitted signature: 10 MB (10 * 1024 * 1024 bytes). */
+    public static final long SUBMITTED_BY_SIGNATURE_MAX_BYTES = 10L * 1024 * 1024;
+
+    /** Raster formats accepted for the submitted signature (ImageIO format names). */
+    private static final Set<String> SUBMITTED_BY_SIGNATURE_IMAGE_FORMATS = Set.of("png", "jpeg");
+
+    /** Messages shown by the form as well, so both layers report the same reason. */
+    public static final String SUBMITTED_BY_SIGNATURE_SIZE_MESSAGE =
+            "File size exceeds the 10 MB limit. Please upload a smaller signature file.";
+    public static final String SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE =
+            "Invalid file format. Please upload a PNG, JPEG or PDF file.";
+    public static final String SUBMITTED_BY_SIGNATURE_EMPTY_MESSAGE =
+            "Please choose the signature file first.";
+
+    /** Folder the submitted signatures are stored in, inside the uploads root. */
+    private static final String SUBMITTED_BY_SIGNATURE_DIR = "submitted-by-signatures";
+
+    // ========================
+    // OC FINAL APPROVAL AND SPECIAL ORDER (Stage 1 of the OC -> OVCAF workflow)
+    // ========================
+    // The Office of the Chancellor records the issued Special Order (SO) and routes
+    // the proposal to OVCAF. The upload is validated here - size, extension, declared
+    // media type and the real bytes - so a renamed file or an oversized scan is
+    // refused with a readable message instead of being stored or cut off by the
+    // container. The document itself is optional (historic proposals carry only an SO
+    // number); when one is supplied it is kept with the proposal.
+
+    /** Folder the issued Special Order documents are stored in, inside the uploads root. */
+    private static final String SPECIAL_ORDER_DIR = "special-orders";
+
+    /** Document formats accepted for an issued Special Order. */
+    private static final Set<String> SPECIAL_ORDER_FORMATS = Set.of("pdf", "doc", "docx");
+
+    /** Media types an SO upload may declare for those formats. */
+    private static final Set<String> SPECIAL_ORDER_MEDIA_TYPES = Set.of(
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/zip",
+            "application/x-zip-compressed");
+
+    /** The OLE2 compound-document header shared by legacy Word (.doc) files. */
+    private static final byte[] DOC_HEADER = {
+            (byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1 };
+
+    /**
+     * Largest accepted Special Order document, in megabytes. An official SO is a
+     * scanned document, which is routinely larger than the 10 MB form attachments;
+     * 25 MB is the intended ceiling and every deployment can override it without a
+     * code change. It is deliberately below the servlet's multipart ceiling
+     * ({@code spring.servlet.multipart.max-file-size}) so a file between this limit
+     * and the container ceiling is answered here with a readable 400 instead of an
+     * opaque 413.
+     */
+    @Value("${rpis.special-order.max-size-mb:25}")
+    private long specialOrderMaxSizeMb = 25;
+
+    public static final String SPECIAL_ORDER_NUMBER_REQUIRED_MESSAGE =
+            "A Special Order (SO) number is required to approve this proposal.";
+    public static final String SPECIAL_ORDER_NUMBER_TOO_LONG_MESSAGE =
+            "The Special Order number must be 100 characters or fewer.";
+    public static final String SPECIAL_ORDER_BUDGET_OPTION_REQUIRED_MESSAGE =
+            "Select whether the proposal requires budget before approving it.";
+    public static final String SPECIAL_ORDER_FORMAT_MESSAGE =
+            "Invalid file format. Please upload the Special Order as a PDF, DOC or DOCX file.";
+    public static final String SPECIAL_ORDER_EMPTY_MESSAGE =
+            "The uploaded Special Order document is empty. Please choose a valid file.";
+    public static final String SPECIAL_ORDER_NOT_AT_OC_MESSAGE =
+            "Only a proposal awaiting the Chancellor's final approval can be approved. "
+                    + "The proposal must be at FOR_OC_APPROVAL.";
+
+    // ========================
+    // PERSONNEL "% TIME DEVOTED" (section 24 of the Create Proposal form)
+    // ========================
+    // The column holds a percentage. The form only accepts a number and shows the %
+    // symbol beside the field, and the stored value is always the plain number between
+    // 0 and 100 - so the symbol can never be stored twice, and a legacy "50 %" is
+    // normalized instead of being kept as a string.
+
+    /** Accepted range of the personnel percentage. */
+    public static final int TIME_DEVOTED_MIN = 0;
+    public static final int TIME_DEVOTED_MAX = 100;
+
+    /** Message shown by the form as well, so both layers report the same reason. */
+    public static final String TIME_DEVOTED_MESSAGE =
+            "% Time Devoted must be a number between 0 and 100.";
 
     // ========================
     // PROPOSAL ID AND REVISION FORMAT
@@ -365,48 +492,149 @@ public class ProposalService {
                 : request.getDuration());
         proposal.setCollege(request.getCollege());
         applyAddressAndContact(proposal, request);
-        proposal.setCooperatingAgencies(request.getCooperatingAgencies());
+        // Cooperating agencies: the legacy text is only written when the request carries
+        // it. A null value means "this client does not edit the section" and preserves the
+        // stored text; an explicitly sent empty string still clears it.
+        if (request.getCooperatingAgencies() != null) {
+            proposal.setCooperatingAgencies(request.getCooperatingAgencies());
+        }
         proposal.setResearchType(request.getResearchType());
         proposal.setInnovationGoals(request.getInnovationGoals());
         proposal.setSectorRelevance(request.getSectorRelevance());
-        proposal.setSdg(request.getSdg() != null ? request.getSdg() : List.of());
+        // Only when sent: a partial save must not wipe the stored SDGs. An explicitly
+        // empty list still clears them.
+        if (request.getSdg() != null) {
+            proposal.setSdg(request.getSdg());
+        }
         proposal.setExecutiveSummary(request.getExecutiveSummary());
         proposal.setRationale(request.getRationale());
         proposal.setFramework(request.getFramework());
         proposal.setObjectivesGeneral(request.getObjectivesGeneral());
         proposal.setObjectivesSpecific(request.getObjectivesSpecific());
         proposal.setReview(request.getReview());
-        proposal.setReviewFileName(request.getReviewFileName());
+        // Uploaded-document names: null means "this save does not mention the document"
+        // and preserves the stored reference; an explicit '' is the revision form's
+        // Remove action and clears it. The bytes and stored paths are managed by the
+        // dedicated upload endpoints, never by this DTO.
+        if (request.getReviewFileName() != null) {
+            proposal.setReviewFileName(request.getReviewFileName());
+        }
         proposal.setMethodology(request.getMethodology());
-        proposal.setRoadmapFileName(request.getRoadmapFileName());
+        if (request.getRoadmapFileName() != null) {
+            proposal.setRoadmapFileName(request.getRoadmapFileName());
+        }
         proposal.setTechnologyTrl(request.getTechnologyTrl());
         proposal.setOutputs(request.getOutputs());
         proposal.setOutcomes(request.getOutcomes());
         proposal.setImpactEconomic(request.getImpactEconomic());
         proposal.setImpactSocial(request.getImpactSocial());
         proposal.setBeneficiaries(request.getBeneficiaries());
-        proposal.setBeneficiariesFileName(request.getBeneficiariesFileName());
+        if (request.getBeneficiariesFileName() != null) {
+            proposal.setBeneficiariesFileName(request.getBeneficiariesFileName());
+        }
+        // The endorsement document of the Certification & Endorsement step ("Endorsed
+        // By"): only its display name travels in the request, and only when the client
+        // sends it, so a save that does not mention the document never blanks a stored
+        // one (the bytes and the stored path are set by #attachEndorsementDocument).
+        if (request.getEndorsementFileName() != null) {
+            proposal.setEndorsementFileName(request.getEndorsementFileName());
+        }
         proposal.setSustainability(request.getSustainability());
-        proposal.setGadScore(request.getGadScore());
-        proposal.setGadFileName(request.getGadFileName());
+
+        // "Submitted By" / "Endorsed By" of the Certification & Endorsement step. Each
+        // value is only written when the request carries it, so a partial save (the
+        // revision form, an integration) preserves what was already stored; an explicit
+        // empty string still clears a field the proponent emptied.
+        if (request.getSubmittedByName() != null) {
+            proposal.setSubmittedByName(request.getSubmittedByName());
+        }
+        if (request.getSubmittedByDesignation() != null) {
+            proposal.setSubmittedByDesignation(request.getSubmittedByDesignation());
+        }
+        if (request.getSubmittedByDate() != null) {
+            proposal.setSubmittedByDate(request.getSubmittedByDate());
+        }
+        if (request.getEndorsedByName() != null) {
+            proposal.setEndorsedByName(request.getEndorsedByName());
+        }
+        if (request.getEndorsedByDesignation() != null) {
+            proposal.setEndorsedByDesignation(request.getEndorsedByDesignation());
+        }
+        if (request.getEndorsedByDate() != null) {
+            proposal.setEndorsedByDate(request.getEndorsedByDate());
+        }
+
         // Section 19 - the interactive GAD Checklist 2. Only when the client sends one (a
         // legacy client that only sends the file leaves the stored checklist untouched). The
         // total, interpretation and completion state are RECALCULATED here from the responses,
         // never trusted from the client, and the total is mirrored onto the legacy gadScore
         // column so the existing screens and exports keep working. A checklist submitted with
         // a non-draft status must be complete.
-        if (request.getGadChecklist() != null) {
-            GadChecklistData gadChecklist = request.getGadChecklist();
-            GadChecklistScoring.recalculate(gadChecklist);
+        GadChecklistData incomingChecklist = request.getGadChecklist();
+        boolean hadStoredChecklist = proposal.getGadChecklist() != null;
+        if (incomingChecklist != null) {
+            GadChecklistScoring.recalculate(incomingChecklist);
             boolean draft = request.getStatus() == null || "DRAFT".equalsIgnoreCase(request.getStatus());
-            if (!draft && !Boolean.TRUE.equals(gadChecklist.getCompleted())) {
+            if (!draft && !Boolean.TRUE.equals(incomingChecklist.getCompleted())) {
                 throw new IllegalArgumentException(
                         "Please select No, Partly or Yes for every GAD assessment item before submitting the proposal.");
             }
-            proposal.setGadChecklist(gadChecklist);
-            proposal.setGadScore(gadChecklist.getTotalScore());
+            proposal.setGadChecklist(incomingChecklist);
+            // Mirror the derived total only when the checklist is actually in use: a legacy
+            // proposal that only has a stored GAD score/file must not be zeroed by an empty
+            // checklist object, while a checklist the proponent clears on purpose (it was
+            // stored before) does update the score.
+            boolean hasResponses = incomingChecklist.getResponses() != null
+                    && incomingChecklist.getResponses().values().stream()
+                            .anyMatch(value -> value != null && !value.isBlank());
+            if (hasResponses || hadStoredChecklist) {
+                proposal.setGadScore(incomingChecklist.getTotalScore());
+            }
+        } else if (request.getGadScore() != null) {
+            proposal.setGadScore(request.getGadScore());
         }
-        proposal.setRisks(request.getRisks());
+        if (request.getGadFileName() != null) {
+            proposal.setGadFileName(request.getGadFileName());
+        }
+
+        // Server-side GAD requirement of a final submission: a proposal that neither sends
+        // nor already stores a completed checklist must carry a legacy GAD document. Old
+        // proposals (legacy document) and revision resubmissions stay accepted. A proposal
+        // that is already SUBMITTED is not a new submission either - that is the state a
+        // losing thread sees when two revision resubmissions race (the winner has already
+        // written the status), and re-validating it there would replace the integrity
+        // violation the workflow relies on with an unrelated content error.
+        if (isSubmission && !isRevisionResubmission && incomingChecklist == null
+                && !"SUBMITTED".equalsIgnoreCase(proposal.getStatus())) {
+            boolean storedChecklistComplete = proposal.getGadChecklist() != null
+                    && Boolean.TRUE.equals(proposal.getGadChecklist().getCompleted());
+            if (!storedChecklistComplete && isBlank(proposal.getGadFileName())) {
+                throw new IllegalArgumentException(
+                        "Please select No, Partly or Yes for every GAD assessment item before submitting the proposal.");
+            }
+        }
+        // The legacy single-text plan is only written when the request actually carries it,
+        // so a client that does not send the section (the RPS flows, an integration) can
+        // never blank the stored plan. An empty string still clears it deliberately.
+        if (request.getRisks() != null) {
+            proposal.setRisks(request.getRisks());
+        }
+        // Section 21 - Risk Management Plan. The structured table is the authoritative
+        // form of the plan: every complete entry is stored with its four fields kept
+        // separate, and the legacy `risks` column above is filled with the readable
+        // rendering of those entries so every screen, export and print view that predates
+        // the table keeps working. The section is only touched when the request actually
+        // carries it, so a client that does not edit it (the RPS forward flows, a legacy
+        // client) can never wipe the stored rows, and an old proposal whose plan is only
+        // hand-written text keeps that text as it is.
+        if (request.getRiskManagement() != null) {
+            List<RiskManagementEntry> riskEntries = validateRiskManagement(request.getRiskManagement(),
+                    isSubmission);
+            proposal.setRiskManagement(riskEntries);
+            if (!riskEntries.isEmpty()) {
+                proposal.setRisks(renderRiskManagement(riskEntries));
+            }
+        }
         proposal.setLimitationsText(request.getLimitationsText());
         proposal.setOtherProjectsNumber(request.getOtherProjectsNumber());
 
@@ -469,22 +697,38 @@ public class ProposalService {
         // Priority Agendas (section 05): the keys the proposal already stores are
         // captured before the child list is cleared below. They are what lets a revision
         // resubmit an agenda that belongs to an older (now deactivated) framework
-        // without ever letting a client introduce an unknown or inactive key.
-        List<String> storedAgendaKeys = proposal.getPriorityAgendas().stream()
-                .map(ProposalPriorityAgenda::getAgendaKey)
-                .filter(Objects::nonNull)
-                .toList();
+        // without ever letting a client introduce an unknown or inactive key. The list is
+        // only consulted when the request actually sends the section.
+        List<String> storedAgendaKeys = request.getPriorityAgenda() != null
+                ? proposal.getPriorityAgendas().stream()
+                        .map(ProposalPriorityAgenda::getAgendaKey)
+                        .filter(Objects::nonNull)
+                        .toList()
+                : List.of();
 
         // Clear existing child lists to overwrite (cascade all + orphan removal takes
-        // care of orphans). The limitations table is handled separately below: only
-        // the forms that actually edit it send it, so clearing it here would silently
-        // delete existing rows on every revision resubmission.
-        proposal.getSites().clear();
-        proposal.getLogFrames().clear();
-        proposal.getPersonnel().clear();
-        proposal.getBudget().clear();
-        proposal.getOtherProjects().clear();
-        proposal.getPriorityAgendas().clear();
+        // care of orphans). Each list is cleared ONLY when the request carries it: a
+        // client that does not edit a section (a partial save, the revision form, an
+        // integration) must never delete rows it never mentioned. The limitations table
+        // is handled separately below for the same reason.
+        if (request.getSites() != null) {
+            proposal.getSites().clear();
+        }
+        if (request.getLogFrame() != null) {
+            proposal.getLogFrames().clear();
+        }
+        if (request.getPersonnel() != null) {
+            proposal.getPersonnel().clear();
+        }
+        if (request.getBudget() != null) {
+            proposal.getBudget().clear();
+        }
+        if (request.getOtherProjects() != null) {
+            proposal.getOtherProjects().clear();
+        }
+        if (request.getPriorityAgenda() != null) {
+            proposal.getPriorityAgendas().clear();
+        }
 
         // Save parent proposal to generate ID if new
         proposal = proposalRepository.save(proposal);
@@ -519,10 +763,18 @@ public class ProposalService {
             }
         }
 
-        // Personnel
+        // Personnel (section 24). The "% Time Devoted" column holds a percentage, so
+        // every value is normalized to the plain number the field stores - a legacy
+        // "50 %" becomes "50" and a value outside 0-100 is capped - before it is written.
+        // A value that is not a number at all (only a legacy record can hold one) is
+        // rejected when the proposal is being submitted and kept as it is on a draft, so
+        // an old draft can always still be saved.
         if (request.getPersonnel() != null) {
+            int position = 0;
             for (ProposalRequest.PersonnelDTO p : request.getPersonnel()) {
-                ProposalPersonnel personnel = new ProposalPersonnel(null, proposal, p.getPosition(), p.getTime(),
+                position++;
+                String timeDevoted = normalizeTimeDevoted(p.getTime(), position, isSubmission);
+                ProposalPersonnel personnel = new ProposalPersonnel(null, proposal, p.getPosition(), timeDevoted,
                         p.getResponsibilities());
                 proposal.getPersonnel().add(personnel);
             }
@@ -723,6 +975,204 @@ public class ProposalService {
         proposal = proposalRepository.save(proposal);
         notifySubscribedRoles(proposal, null);
         return proposal;
+    }
+
+    /**
+     * Stage 1 of the OC -&gt; OVCAF workflow: the Chancellor's Office records the
+     * Special Order it has actually issued and hands the proposal to the next stage.
+     *
+     * <p>Everything that can be checked without side effects is checked first (SO
+     * number, budget routing, document size/format). The proposal row is then locked
+     * for the rest of the transaction and must still be at {@code FOR_OC_APPROVAL};
+     * that check is what makes a retried or concurrent request harmless - it can
+     * neither overwrite the first recorded SO nor advance a proposal a second time,
+     * and an approval can never be recorded for a proposal that is not awaiting it.
+     *
+     * <p>An uploaded document is optional (records approved before document upload
+     * existed carry only an SO number), but when one is supplied it is validated
+     * before it is stored. The stored file is deleted again if the transaction rolls
+     * back, including a commit-time failure, so a proposal can never keep a reference
+     * to a file that was removed - and a failed request never leaves a stray upload
+     * behind. When no document is supplied the previously recorded SO fields are
+     * left untouched rather than blanked.
+     *
+     * @param proposalId      the proposal awaiting the Chancellor's final approval
+     * @param soNumber        the SO number actually issued (required)
+     * @param soFile          the issued SO document (optional)
+     * @param needsBudget     whether OVCAF must still evaluate the budget (required)
+     * @param chancellorNotes optional notes recorded with the approval
+     * @return the saved proposal, now at {@code FOR_OVCAF_APPROVAL} or {@code APPROVED}
+     */
+    @Transactional
+    public Proposal approveWithSpecialOrder(Long proposalId, String soNumber, MultipartFile soFile,
+                                            Boolean needsBudget, String chancellorNotes) {
+        String normalisedSoNumber = soNumber == null ? "" : soNumber.trim();
+        if (normalisedSoNumber.isEmpty()) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_NUMBER_REQUIRED_MESSAGE);
+        }
+        if (normalisedSoNumber.length() > 100) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_NUMBER_TOO_LONG_MESSAGE);
+        }
+        if (needsBudget == null) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_BUDGET_OPTION_REQUIRED_MESSAGE);
+        }
+
+        // Read and validate the document before the row lock is taken, so an invalid
+        // or oversized upload never holds a database lock.
+        byte[] soBytes = null;
+        String soFormat = null;
+        if (soFile != null && !soFile.isEmpty()) {
+            if (soFile.getSize() > getSpecialOrderMaxBytes()) {
+                throw new IllegalArgumentException(getSpecialOrderMaxSizeMessage());
+            }
+            try {
+                soBytes = soFile.getBytes();
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "The Special Order document could not be read.");
+            }
+            soFormat = readSpecialOrderFileFormat(soFile, soBytes);
+        }
+
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        String status = proposal.getStatus() == null
+                ? ""
+                : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"FOR_OC_APPROVAL".equals(status)) {
+            throw new IllegalStateException(SPECIAL_ORDER_NOT_AT_OC_MESSAGE);
+        }
+
+        String storedPath = null;
+        if (soBytes != null) {
+            try {
+                storedPath = uploadStorage.store(soBytes, SPECIAL_ORDER_DIR, "special-order." + soFormat);
+            } catch (RuntimeException e) {
+                // Surface the storage failure as an actionable server error; nothing has
+                // been recorded on the proposal, so the previous state is intact.
+                log.error("Could not store the Special Order document of proposal {}: {}",
+                        proposalId, e.getMessage());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "The Special Order document could not be stored. Please try again.", e);
+            }
+            deleteStoredSpecialOrderOnRollback(storedPath);
+        }
+
+        try {
+            proposal.setSoNumber(normalisedSoNumber);
+            proposal.setNeedsBudget(needsBudget);
+            proposal.setSoUploadedAt(LocalDateTime.now());
+            if (storedPath != null) {
+                proposal.setSoFileName(specialOrderDisplayName(soFile, soFormat));
+                proposal.setSoFilePath(storedPath);
+            }
+            if (chancellorNotes != null && !chancellorNotes.isBlank()) {
+                proposal.setRemarks(truncate(chancellorNotes.trim(), 2000));
+            }
+            // The budget routing decision is the Chancellor's: with budget the proposal
+            // waits for OVCAF; without it, it is approved for immediate implementation.
+            proposal.setStatus(needsBudget ? "FOR_OVCAF_APPROVAL" : "APPROVED");
+
+            Proposal saved = proposalRepository.save(proposal);
+            notifySubscribedRoles(saved, null);
+            return saved;
+        } catch (RuntimeException e) {
+            // Compensates the filesystem write for a failure before commit. The rollback
+            // synchronization above covers a failure during commit as well.
+            if (storedPath != null) {
+                uploadStorage.delete(storedPath);
+            }
+            throw e;
+        }
+    }
+
+    /** Largest accepted Special Order document in bytes. */
+    public long getSpecialOrderMaxBytes() {
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        return megabytes * 1024 * 1024;
+    }
+
+    /** The readable reason shown when the SO document exceeds the configured limit. */
+    public String getSpecialOrderMaxSizeMessage() {
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        return "The Special Order document must be " + megabytes + " MB or smaller.";
+    }
+
+    /**
+     * Deletes a just-stored SO document when the surrounding transaction does not
+     * commit. The filesystem does not participate in the transaction, so without this
+     * a commit-time failure (a constraint raised while flushing, for example) would
+     * leave an orphaned upload behind.
+     */
+    private void deleteStoredSpecialOrderOnRollback(String storedPath) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    uploadStorage.delete(storedPath);
+                }
+            }
+        });
+    }
+
+    /**
+     * The real format of an uploaded Special Order document: the extension must be
+     * PDF, DOC or DOCX, a declared media type (when the client sends one) must belong
+     * to that format, and the first bytes must carry the matching signature. A file
+     * that merely has a {@code .pdf} name is therefore rejected.
+     */
+    private String readSpecialOrderFileFormat(MultipartFile file, byte[] bytes) {
+        String original = file.getOriginalFilename();
+        String name = original == null ? "" : original.replace('\\', '/');
+        int dot = name.lastIndexOf('.');
+        String extension = dot < 0 ? "" : name.substring(dot + 1).trim().toLowerCase(Locale.ROOT);
+        if (!SPECIAL_ORDER_FORMATS.contains(extension)) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_FORMAT_MESSAGE);
+        }
+
+        String declared = file.getContentType() == null
+                ? ""
+                : file.getContentType().trim().toLowerCase(Locale.ROOT);
+        boolean genericType = declared.isEmpty() || "application/octet-stream".equals(declared);
+        if (!genericType && !SPECIAL_ORDER_MEDIA_TYPES.contains(declared)) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_FORMAT_MESSAGE);
+        }
+
+        String detected;
+        if (startsWith(bytes, PDF_HEADER)) {
+            detected = "pdf";
+        } else if (startsWith(bytes, DOC_HEADER)) {
+            detected = "doc";
+        } else if (startsWith(bytes, ZIP_HEADER)) {
+            detected = "docx";
+        } else {
+            throw new IllegalArgumentException(SPECIAL_ORDER_FORMAT_MESSAGE);
+        }
+        if (!extension.equals(detected)) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_FORMAT_MESSAGE);
+        }
+        return detected;
+    }
+
+    /**
+     * The Chancellor's own file name, kept for display only: any directory part is
+     * stripped and the length is capped to the column size.
+     */
+    private String specialOrderDisplayName(MultipartFile file, String extension) {
+        String fallback = "special-order." + extension;
+        String original = file == null ? null : file.getOriginalFilename();
+        if (original == null || original.isBlank()) {
+            return fallback;
+        }
+        String name = original.replace('\\', '/');
+        name = name.substring(name.lastIndexOf('/') + 1).trim();
+        if (name.isEmpty()) {
+            return fallback;
+        }
+        return truncate(name, 255);
     }
 
     @Transactional
@@ -1055,6 +1505,169 @@ public class ProposalService {
         if (isBlank(value)) {
             throw new IllegalArgumentException(label + " is required for the address.");
         }
+    }
+
+    /**
+     * The three levels a risk entry may carry in its {@code likelihood} and
+     * {@code impact} columns. The values are matched case-insensitively and stored in
+     * their canonical form, so a client can never persist free text ("maybe", "very high")
+     * in a column the form renders as a High / Medium / Low dropdown.
+     */
+    public static final List<String> RISK_LEVELS = List.of("High", "Medium", "Low");
+
+    /**
+     * Validates and normalizes the structured Risk Management Plan (section 21) of a
+     * request.
+     * <ul>
+     *   <li>A row whose four fields are all empty carries no information (the form seeds
+     *       one empty row for a new proposal) and is dropped instead of being stored as an
+     *       empty entry.</li>
+     *   <li>{@code likelihood} and {@code impact} must be High, Medium or Low. An
+     *       unsupported value is rejected with the row number, so a modified API request
+     *       cannot store what the dropdowns never offer.</li>
+     *   <li>Every field of a row that is being <em>submitted</em> must be filled in:
+     *       whitespace-only text counts as empty. A draft is saved while the proponent is
+     *       still filling the table in, so a partial row is kept there (exactly like the
+     *       other required sections of the form, which the backend also only enforces on
+     *       submission).</li>
+     * </ul>
+     */
+    static List<RiskManagementEntry> validateRiskManagement(List<ProposalRequest.RiskManagementDTO> rows,
+            boolean submission) {
+        List<RiskManagementEntry> entries = new ArrayList<>();
+        if (rows == null) {
+            return entries;
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            ProposalRequest.RiskManagementDTO row = rows.get(i);
+            String identifiedRisks = row == null ? null : trimToNull(row.getIdentifiedRisks());
+            String likelihood = row == null ? null : trimToNull(row.getLikelihood());
+            String impact = row == null ? null : trimToNull(row.getImpact());
+            String mitigationMeasure = row == null ? null : trimToNull(row.getMitigationMeasure());
+
+            if (identifiedRisks == null && likelihood == null && impact == null && mitigationMeasure == null) {
+                continue;
+            }
+
+            if (submission) {
+                requireRiskField(identifiedRisks, i, "the identified risk is required");
+                requireRiskField(likelihood, i, "the likelihood is required");
+                requireRiskField(impact, i, "the impact is required");
+                requireRiskField(mitigationMeasure, i, "the mitigation measure is required");
+            }
+
+            entries.add(new RiskManagementEntry(identifiedRisks,
+                    normalizeRiskLevel(likelihood, i, "likelihood"),
+                    normalizeRiskLevel(impact, i, "impact"),
+                    mitigationMeasure));
+        }
+        return entries;
+    }
+
+    private static void requireRiskField(String value, int index, String message) {
+        if (value == null) {
+            throw new IllegalArgumentException("Risk entry #" + (index + 1) + ": " + message + ".");
+        }
+    }
+
+    /** Canonical High / Medium / Low, or a 400 naming the row and the column. */
+    static String normalizeRiskLevel(String value, int index, String field) {
+        if (value == null) {
+            return null;
+        }
+        String candidate = value.trim();
+        for (String level : RISK_LEVELS) {
+            if (level.equalsIgnoreCase(candidate)) {
+                return level;
+            }
+        }
+        throw new IllegalArgumentException("Risk entry #" + (index + 1) + ": " + field
+                + " must be High, Medium or Low.");
+    }
+
+    /**
+     * The readable rendering of the structured Risk Management Plan, one entry per line.
+     * It is what the legacy {@code risks} column of the proposal holds while structured
+     * entries exist, so every screen and export that predates the table still shows the
+     * plan instead of an empty field.
+     */
+    static String renderRiskManagement(List<RiskManagementEntry> entries) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < entries.size(); i++) {
+            RiskManagementEntry entry = entries.get(i);
+            if (i > 0) {
+                text.append('\n');
+            }
+            text.append(i + 1).append(". ").append(riskText(entry.getIdentifiedRisks()));
+            List<String> levels = new ArrayList<>();
+            if (!isBlank(entry.getLikelihood())) {
+                levels.add("Likelihood: " + entry.getLikelihood());
+            }
+            if (!isBlank(entry.getImpact())) {
+                levels.add("Impact: " + entry.getImpact());
+            }
+            if (!levels.isEmpty()) {
+                text.append(" (").append(String.join(", ", levels)).append(')');
+            }
+            if (!isBlank(entry.getMitigationMeasure())) {
+                text.append("\n   Mitigation: ").append(entry.getMitigationMeasure());
+            }
+        }
+        return text.toString();
+    }
+
+    private static String riskText(String value) {
+        return value == null ? "" : value;
+    }
+
+    /**
+     * Normalizes one "% Time Devoted" value (section 24) to the plain number the column
+     * stores.
+     *
+     * <ul>
+     *   <li>A blank value stays blank, so an empty row is not turned into "0".</li>
+     *   <li>A percentage symbol, spacing and a trailing decimal point are removed, so a
+     *       legacy "50 %" becomes "50" and the symbol can never be stored twice.</li>
+     *   <li>A value outside 0-100 is capped, so the column can never hold a negative
+     *       percentage or more than 100% even when a client bypasses the form.</li>
+     *   <li>A value that is not a number at all is rejected while the proposal is being
+     *       submitted (the message names the row). A draft keeps it exactly as it was,
+     *       because only a legacy record can hold such a value and saving an old draft
+     *       must never fail or silently rewrite it.</li>
+     * </ul>
+     */
+    static String normalizeTimeDevoted(String value, int position, boolean submission) {
+        String trimmed = trimToNull(value);
+        if (trimmed == null) {
+            // "" and null both mean "nothing entered"; the value is kept as it came.
+            return value;
+        }
+
+        String digits = trimmed.replace("%", "").replaceAll("\\s", "");
+        // "50." is a value still being typed; it is the number 50.
+        if (digits.endsWith(".")) {
+            digits = digits.substring(0, digits.length() - 1);
+        }
+        if (digits.isEmpty()) {
+            return value;
+        }
+
+        BigDecimal number;
+        try {
+            number = new BigDecimal(digits);
+        } catch (NumberFormatException e) {
+            if (submission) {
+                throw new IllegalArgumentException(
+                        "Personnel entry #" + position + ": " + TIME_DEVOTED_MESSAGE);
+            }
+            return trimmed;
+        }
+
+        BigDecimal capped = number
+                .max(BigDecimal.valueOf(TIME_DEVOTED_MIN))
+                .min(BigDecimal.valueOf(TIME_DEVOTED_MAX));
+        // Canonical form: "50", "12.5" - never "50.00" and never with a % symbol.
+        return capped.stripTrailingZeros().toPlainString();
     }
 
     /**
@@ -1488,6 +2101,242 @@ public class ProposalService {
         uploadStorage.delete(storedPath);
     }
 
+    /**
+     * Attaches the endorsement document of the Certification &amp; Endorsement step
+     * ("Endorsed By") to a proposal.
+     * <p>
+     * The document is attached to the caller's own proposal only (ownership is resolved
+     * from the authenticated principal, never from the request), it must be a PDF of at
+     * most {@link #ENDORSEMENT_DOCUMENT_MAX_BYTES} bytes - decided from the file name,
+     * the declared media type, the real bytes and by opening the document, so an image
+     * renamed to {@code .pdf} and a corrupted PDF are both rejected - and it is stored
+     * under a generated name while the proponent's own file name is kept for display
+     * only. Replacing the document deletes the previous one, so a proposal never
+     * accumulates orphaned uploads.
+     */
+    @Transactional
+    public Proposal attachEndorsementDocument(Long proposalId, MultipartFile file) {
+        Proposal proposal = getProposalByIdForCurrentUser(proposalId);
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_EMPTY_MESSAGE);
+        }
+        if (file.getSize() > ENDORSEMENT_DOCUMENT_MAX_BYTES) {
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_SIZE_MESSAGE);
+        }
+
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "The endorsement document could not be read.");
+        }
+
+        requireEndorsementPdf(file, bytes);
+        String storedPath = uploadStorage.store(bytes, ENDORSEMENT_DOCUMENT_DIR,
+                "endorsement-document.pdf");
+
+        String previousPath = proposal.getEndorsementFilePath();
+        proposal.setEndorsementFileName(endorsementDocumentDisplayName(file));
+        proposal.setEndorsementFilePath(storedPath);
+        Proposal saved = proposalRepository.save(proposal);
+
+        deleteStoredEndorsementDocument(previousPath);
+        return saved;
+    }
+
+    /**
+     * Verifies that an uploaded endorsement document really is a PDF: the extension must
+     * be {@code .pdf}, a declared media type (when the client sends one) must be
+     * {@code application/pdf}, the first bytes must be the PDF header, and the document
+     * must open with at least one page - which is what rejects a truncated or corrupted
+     * file that merely starts with "%PDF-".
+     */
+    private void requireEndorsementPdf(MultipartFile file, byte[] bytes) {
+        String original = file.getOriginalFilename();
+        String name = original == null ? "" : original.replace('\\', '/');
+        int dot = name.lastIndexOf('.');
+        String extension = dot < 0 ? "" : name.substring(dot + 1).trim().toLowerCase(Locale.ROOT);
+        if (!"pdf".equals(extension)) {
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE);
+        }
+
+        String declared = file.getContentType() == null
+                ? ""
+                : file.getContentType().trim().toLowerCase(Locale.ROOT);
+        boolean genericType = declared.isEmpty() || "application/octet-stream".equals(declared);
+        if (!genericType && !ENDORSEMENT_DOCUMENT_MEDIA_TYPES.contains(declared)) {
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE);
+        }
+
+        if (!startsWith(bytes, PDF_HEADER)) {
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE);
+        }
+
+        try {
+            PdfReader reader = new PdfReader(bytes);
+            int pages = reader.getNumberOfPages();
+            reader.close();
+            if (pages < 1) {
+                throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE);
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            // Not a readable PDF document: refused instead of stored.
+            throw new IllegalArgumentException(ENDORSEMENT_DOCUMENT_FORMAT_MESSAGE);
+        }
+    }
+
+    /**
+     * The proponent's own file name, kept for display only. Any directory part is
+     * stripped and the length is capped to the column size, so a crafted upload can
+     * never store a path-like value.
+     */
+    private String endorsementDocumentDisplayName(MultipartFile file) {
+        String fallback = "endorsement-document.pdf";
+        String original = file.getOriginalFilename();
+        if (original == null || original.isBlank()) {
+            return fallback;
+        }
+        String name = original.replace('\\', '/');
+        name = name.substring(name.lastIndexOf('/') + 1).trim();
+        if (name.isEmpty()) {
+            return fallback;
+        }
+        return truncate(name, 255);
+    }
+
+    /**
+     * Removes the endorsement document a previous upload stored. Only a path inside the
+     * storage root is ever touched, and a missing file (or a path left over from before
+     * this feature) is not an error - so historical records are never affected.
+     */
+    private void deleteStoredEndorsementDocument(String storedPath) {
+        uploadStorage.delete(storedPath);
+    }
+
+    /**
+     * Attaches the proponent's own signature of the Certification &amp; Endorsement step
+     * ("Submitted By") to a proposal.
+     * <p>
+     * The file is attached to the caller's own proposal only (ownership is resolved from
+     * the authenticated principal, never from the request), it must be a readable PNG or
+     * JPEG image, or a valid PDF, of at most {@link #SUBMITTED_BY_SIGNATURE_MAX_BYTES}
+     * bytes - decided from the real bytes, never only from the file name - and it is
+     * stored under a generated name while the proponent's own file name is kept for
+     * display only. Replacing the signature deletes only the previous submitted-signature
+     * file; the endorsement PDF and every other attachment are untouched.
+     */
+    @Transactional
+    public Proposal attachSubmittedBySignature(Long proposalId, MultipartFile file) {
+        Proposal proposal = getProposalByIdForCurrentUser(proposalId);
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_EMPTY_MESSAGE);
+        }
+        if (file.getSize() > SUBMITTED_BY_SIGNATURE_MAX_BYTES) {
+            throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_SIZE_MESSAGE);
+        }
+
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "The signature file could not be read.");
+        }
+
+        String extension = requireSubmittedBySignature(file, bytes);
+        String storedPath = uploadStorage.store(bytes, SUBMITTED_BY_SIGNATURE_DIR,
+                "signature." + extension);
+
+        String previousPath = proposal.getSubmittedByFilePath();
+        proposal.setSubmittedByFileName(submittedBySignatureDisplayName(file, extension));
+        proposal.setSubmittedByFilePath(storedPath);
+        Proposal saved = proposalRepository.save(proposal);
+
+        deleteStoredSubmittedBySignature(previousPath);
+        return saved;
+    }
+
+    /**
+     * Verifies the real format of an uploaded signature and returns the stored extension.
+     * A {@code .pdf} name is checked as a PDF (header and readable pages); every other
+     * name is accepted only when the bytes are a readable PNG/JPEG raster image, so an
+     * image renamed to {@code .pdf} - or any other document - is refused.
+     */
+    private String requireSubmittedBySignature(MultipartFile file, byte[] bytes) {
+        String original = file.getOriginalFilename();
+        String name = original == null ? "" : original.replace('\\', '/');
+        int dot = name.lastIndexOf('.');
+        String extension = dot < 0 ? "" : name.substring(dot + 1).trim().toLowerCase(Locale.ROOT);
+
+        if ("pdf".equals(extension)) {
+            requireEndorsementPdf(file, bytes);
+            return "pdf";
+        }
+
+        String imageFormat;
+        try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+            if (stream == null) {
+                throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE);
+            }
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
+            if (!readers.hasNext()) {
+                throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE);
+            }
+            ImageReader reader = readers.next();
+            try {
+                imageFormat = reader.getFormatName() == null
+                        ? ""
+                        : reader.getFormatName().toLowerCase(Locale.ROOT);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE);
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE);
+        }
+        if (!SUBMITTED_BY_SIGNATURE_IMAGE_FORMATS.contains(imageFormat)) {
+            throw new IllegalArgumentException(SUBMITTED_BY_SIGNATURE_FORMAT_MESSAGE);
+        }
+        return "jpeg".equals(imageFormat) ? "jpg" : imageFormat;
+    }
+
+    /** The proponent's own file name, kept for display only (directory part stripped). */
+    private String submittedBySignatureDisplayName(MultipartFile file, String extension) {
+        String fallback = "signature." + extension;
+        String original = file.getOriginalFilename();
+        if (original == null || original.isBlank()) {
+            return fallback;
+        }
+        String name = original.replace('\\', '/');
+        name = name.substring(name.lastIndexOf('/') + 1).trim();
+        if (name.isEmpty()) {
+            return fallback;
+        }
+        return truncate(name, 255);
+    }
+
+    /**
+     * Removes the submitted signature a previous upload stored. Only a path inside the
+     * storage root is ever touched, and a missing file (or a path left over from before
+     * this feature) is not an error.
+     */
+    private void deleteStoredSubmittedBySignature(String storedPath) {
+        uploadStorage.delete(storedPath);
+    }
+
+    /**
+     * Copies the reusable proposal content onto a duplicate. Uploaded documents (the
+     * technology map, the Line-Item Budget, the endorsement PDF and the submitted
+     * signature) and the certification fields are deliberately NOT copied: the existing
+     * "Make a Copy" flow starts a fresh draft whose files are uploaded again, and a copy
+     * must never silently point at another proposal's stored file.
+     */
     private void copyReusableContent(Proposal source, Proposal copy) {
         copy.setProgramTitle(source.getProgramTitle());
         copy.setProjectTitle(source.getProjectTitle());
@@ -1526,7 +2375,35 @@ public class ProposalService {
         copy.setBeneficiaries(source.getBeneficiaries());
         copy.setSustainability(source.getSustainability());
         copy.setGadScore(source.getGadScore());
+        // Section 19: the GAD Checklist 2 is duplicated map by map (a new object with new
+        // maps), so editing the copy can never change the original proposal's responses or
+        // comments. The derived totals are copied as they stood; the backend recalculates
+        // them whenever the copy is saved.
+        if (source.getGadChecklist() != null) {
+            GadChecklistData sourceChecklist = source.getGadChecklist();
+            GadChecklistData copiedChecklist = new GadChecklistData();
+            copiedChecklist.setResponses(sourceChecklist.getResponses() == null
+                    ? new LinkedHashMap<>()
+                    : new LinkedHashMap<>(sourceChecklist.getResponses()));
+            copiedChecklist.setComments(sourceChecklist.getComments() == null
+                    ? new LinkedHashMap<>()
+                    : new LinkedHashMap<>(sourceChecklist.getComments()));
+            copiedChecklist.setTotalScore(sourceChecklist.getTotalScore());
+            copiedChecklist.setInterpretation(sourceChecklist.getInterpretation());
+            copiedChecklist.setCompleted(sourceChecklist.getCompleted());
+            copy.setGadChecklist(copiedChecklist);
+        }
         copy.setRisks(source.getRisks());
+        // Section 21: the structured Risk Management Plan is duplicated entry by entry, so
+        // editing the copy can never change the original proposal's plan.
+        List<RiskManagementEntry> copiedRiskEntries = new ArrayList<>();
+        if (source.getRiskManagement() != null) {
+            for (RiskManagementEntry entry : source.getRiskManagement()) {
+                copiedRiskEntries.add(new RiskManagementEntry(entry.getIdentifiedRisks(),
+                        entry.getLikelihood(), entry.getImpact(), entry.getMitigationMeasure()));
+            }
+        }
+        copy.setRiskManagement(copiedRiskEntries);
         copy.setLimitationsText(source.getLimitationsText());
         copy.setReferencesText(source.getReferencesText());
         copy.setReferencesJson(source.getReferencesJson());

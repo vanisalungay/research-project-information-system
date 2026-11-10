@@ -197,6 +197,18 @@
                 <button class="btn-remove-file" aria-label="Remove the selected signature"
                   @click="removeSignature">✕</button>
               </div>
+              <!-- The signature already stored on a reopened draft. It stays with the
+                   proposal until the proponent explicitly replaces it. -->
+              <div v-else-if="hasSavedSubmittedSignature" class="file-info">
+                <span>📄 {{ savedSubmittedSignatureName }}</span>
+                <button type="button" class="btn-outline"
+                  @click="previewUploadedFile(submittedSignaturePath)">View</button>
+                <button type="button" class="btn-outline"
+                  @click="downloadUploadedFile(submittedSignaturePath)">Download</button>
+                <button type="button" class="btn-outline" @click="triggerUpload('submitted')">
+                  Replace
+                </button>
+              </div>
             </div>
           </section>
 
@@ -265,8 +277,8 @@
                       errors.endorsed_date }}</span>
                   </div>
                 </div>
-                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_signature }">
-                  <label>Signature <span class="req">*</span></label>
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_document }">
+                  <label>{{ ENDORSEMENT_DOCUMENT_LABEL }} <span class="req">*</span></label>
                   <div class="upload-area" @click="triggerUpload('endorsed')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -274,17 +286,36 @@
                       <line x1="12" y1="18" x2="12" y2="12" />
                       <line x1="9" y1="15" x2="15" y2="15" />
                     </svg>
-                    <span>{{ uploadedFiles.endorsed ? uploadedFiles.endorsed.name : 'Upload signature image'
-                    }}</span>
+                    <span>
+                      {{ uploadedFiles.endorsed
+                        ? uploadedFiles.endorsed.name
+                        : (hasSavedEndorsement && !endorsedDocumentError
+                          ? savedEndorsementName
+                          : ENDORSEMENT_DOCUMENT_INSTRUCTION) }}
+                    </span>
                   </div>
+                  <!-- The file dialog only offers PDF files, and the choice is validated
+                       (size, extension, declared type and the real bytes) before it is kept. -->
                   <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
-                    accept="image/*,.pdf" />
-                  <span class="field-error" v-if="showValidation && errors.endorsed_signature">{{
-                    errors.endorsed_signature }}</span>
+                    :accept="ENDORSEMENT_DOCUMENT_ACCEPT" />
+                  <p class="upload-helper">
+                    {{ ENDORSEMENT_DOCUMENT_HELPER }} · {{ ENDORSEMENT_DOCUMENT_SIZE_LABEL }}
+                    {{ ENDORSEMENT_DOCUMENT_SIZE_VALUE }}
+                  </p>
+                  <span class="field-error" v-if="showValidation && errors.endorsed_document">{{
+                    errors.endorsed_document }}</span>
+                  <span class="field-error" v-else-if="endorsedDocumentError">{{ endorsedDocumentError }}</span>
                 </div>
+                <!-- The PDF is stored with this proposal, so it stays available after saving,
+                     submitting and reopening (the same file the reviewers can read). -->
                 <div v-if="uploadedFiles.endorsed" class="file-info">
                   <span>📄 {{ uploadedFiles.endorsed.name }}</span>
-                  <button class="btn-remove-file" @click="uploadedFiles.endorsed = null">✕</button>
+                  <button class="btn-remove-file" @click="removeEndorsementDocument">✕</button>
+                </div>
+                <div v-else-if="hasSavedEndorsement" class="file-info">
+                  <span>📄 {{ savedEndorsementName }}</span>
+                  <button type="button" class="btn-outline" @click="viewEndorsementDocument">View</button>
+                  <button type="button" class="btn-outline" @click="downloadEndorsementDocument">Download</button>
                 </div>
               </template>
             </div>
@@ -336,6 +367,7 @@ import {
   formatText,
   section,
   signatureBlock,
+  textBlock,
   readFileAsDataUrl
 } from '@/utils/documentExport'
 import {
@@ -348,6 +380,21 @@ import {
   signatureKey,
   signatureLabel
 } from '@/utils/proposalSignature'
+// The "Endorsed By" upload accepts the endorsement document as a PDF only. The rules
+// (size, extension, declared type, real bytes) and the upload live in this module, so the
+// browser and the backend enforce exactly the same thing.
+import {
+  ENDORSEMENT_DOCUMENT_ACCEPT,
+  ENDORSEMENT_DOCUMENT_HELPER,
+  ENDORSEMENT_DOCUMENT_INSTRUCTION,
+  ENDORSEMENT_DOCUMENT_LABEL,
+  ENDORSEMENT_DOCUMENT_REQUIRED_ERROR,
+  ENDORSEMENT_DOCUMENT_SIZE_LABEL,
+  ENDORSEMENT_DOCUMENT_SIZE_VALUE,
+  nextEndorsementDocumentSelection,
+  verifyEndorsementDocument
+} from '@/utils/endorsementDocument'
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 
 const props = defineProps({
   open: Boolean,
@@ -368,16 +415,40 @@ const props = defineProps({
    * section behaves exactly as before (a different endorsement authority, e.g. a
    * Department Chair for a project that does not go through the Dean workflow).
    */
-  endorsement: { type: Object, default: null }
+  endorsement: { type: Object, default: null },
+  /**
+   * The endorsement document already stored on this proposal (its display name and the
+   * verified file name the authorized download route serves), or null/'' when none was
+   * uploaded yet. A saved document satisfies the required field, so reopening a draft
+   * never demands the PDF again, and it can be viewed or downloaded from here.
+   */
+  savedEndorsementFileName: { type: String, default: '' },
+  savedEndorsementFilePath: { type: String, default: '' },
+  /**
+   * The certification already stored on this proposal (submittedByName/Designation/Date
+   * and endorsedByName/Designation/Date), or null for a new proposal. Reopening a draft
+   * restores exactly what was typed instead of starting over.
+   */
+  savedCertification: { type: Object, default: null },
+  /**
+   * The signature already stored on this proposal (display name + stored path), or ''.
+   * A stored signature satisfies the required field, so a reopened draft does not demand
+   * it again, and it is offered for View / Download / Replace here.
+   */
+  savedSubmittedSignatureFileName: { type: String, default: '' },
+  savedSubmittedSignatureFilePath: { type: String, default: '' }
 })
 const emit = defineEmits([
   'close',
   'openPrevious',
   'openCriteria',
   'submitProposal',
+  'savedraft',
   'goToStep',
   'update:signature'
 ])
+
+const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
 
 const modalBodyRef = ref(null)
 const errorBannerRef = ref(null)
@@ -427,7 +498,19 @@ const close = () => emit('close')
 
 const downloadForm = async () => {
   const submittedSignature = await readFileAsDataUrl(uploadedFiles.submitted)
-  const endorsedSignature = await readFileAsDataUrl(uploadedFiles.endorsed)
+  // The endorsement document is a PDF. It is named in the printed certification page
+  // rather than drawn into it, because a PDF is not a signature image - a legacy file
+  // that is an image (an older proposal) keeps the original image rendering.
+  const endorsedDocument = uploadedFiles.endorsed
+  const endorsedIsImage = Boolean(
+    endorsedDocument && String(endorsedDocument.type || '').startsWith('image/'),
+  )
+  const endorsedSignature = endorsedIsImage ? await readFileAsDataUrl(endorsedDocument) : null
+  const endorsementDocumentLabel = endorsedDocument
+    ? endorsedDocument.name
+    : hasSavedEndorsement.value
+      ? savedEndorsementName.value
+      : ''
 
   const certStatement =
     'I hereby certify that the foregoing statements are true and accurate, and that I have no ' +
@@ -458,13 +541,14 @@ const downloadForm = async () => {
       number: '03',
       title: 'Endorsed By',
       sub: '(Department Chair / Dean)',
-      body: signatureBlock({
+      body: `${signatureBlock({
         label: 'Endorser Signature',
         name: certification.endorsed_name,
         designation: certification.endorsed_designation,
         date: certification.endorsed_date,
         imageUrl: endorsedSignature
-      })
+      })}
+        ${textBlock('Endorsement Document (PDF)', endorsementDocumentLabel)}`
     })
   ].join('')
 
@@ -504,7 +588,58 @@ const handleFile = (type, event) => {
     signaturePickerOpen.value = false
     return
   }
-  uploadedFiles[type] = file
+  // "Endorsed By": the endorsement document. Only a real PDF is accepted - the size, the
+  // extension, the declared type and the first bytes of the file are all checked, so a
+  // PNG/JPG/DOCX - or an image renamed to ".pdf" - is reported and never kept. The promise
+  // is returned so a very fast "Continue" cannot validate before the bytes are checked.
+  return setEndorsementDocument(file)
+}
+
+/* ===== ENDORSED BY: ENDORSEMENT DOCUMENT (PDF only) =====
+   The chosen document is validated here and (again, on its bytes) by the backend when
+   the proposal is saved; the stored PDF stays with the proposal and can be viewed or
+   downloaded again, so a reopened draft never asks for it twice. */
+const endorsedDocumentError = ref('')
+
+/**
+ * True when this proposal already has an endorsement document stored on the server.
+ * The stored path is the normal case; the file name counts too, because an older
+ * proposal may only carry the name. Either one satisfies the requirement on a draft.
+ */
+const hasSavedEndorsement = computed(() => Boolean(
+  String(props.savedEndorsementFilePath || '').trim()
+  || String(props.savedEndorsementFileName || '').trim()
+))
+
+const savedEndorsementName = computed(
+  () => props.savedEndorsementFileName || 'endorsement-document.pdf',
+)
+
+const endorsementDocumentPath = computed(
+  () => props.savedEndorsementFilePath || props.savedEndorsementFileName,
+)
+
+/** Validates a chosen file and keeps it only when it passes. */
+const setEndorsementDocument = async (file) => {
+  if (!file) return
+  const verification = await verifyEndorsementDocument(file)
+  const next = nextEndorsementDocumentSelection(uploadedFiles.endorsed, verification, file)
+  uploadedFiles.endorsed = next.file
+  endorsedDocumentError.value = next.error
+}
+
+/** Removes the chosen document (a replacement for the stored one is not uploaded). */
+const removeEndorsementDocument = () => {
+  uploadedFiles.endorsed = null
+  endorsedDocumentError.value = ''
+}
+
+const viewEndorsementDocument = () => {
+  if (endorsementDocumentPath.value) previewUploadedFile(endorsementDocumentPath.value)
+}
+
+const downloadEndorsementDocument = () => {
+  if (endorsementDocumentPath.value) downloadUploadedFile(endorsementDocumentPath.value)
 }
 
 // ===== SUBMITTED BY - SIGNATURE =====
@@ -554,8 +689,56 @@ const setSignature = (signature) => {
   emit('update:signature', selectionPayload(selectedSignature.value))
 }
 
-/** Loads the proponent's own saved signature(s) and selects the first-created one. */
-const loadSavedSignatures = async () => {
+/**
+ * True when this proposal already has a signature stored on the server. As with the
+ * endorsement document, the path is the normal case but the stored file name counts
+ * too (older records), so a reopened draft never reports a false missing signature.
+ */
+const hasSavedSubmittedSignature = computed(() => Boolean(
+  String(props.savedSubmittedSignatureFilePath || '').trim()
+  || String(props.savedSubmittedSignatureFileName || '').trim()
+))
+
+const savedSubmittedSignatureName = computed(
+  () => props.savedSubmittedSignatureFileName || 'signature',
+)
+
+const submittedSignaturePath = computed(
+  () => props.savedSubmittedSignatureFilePath || props.savedSubmittedSignatureFileName,
+)
+
+/**
+ * Restores the certification typed into an earlier save of this draft. A field the
+ * proponent has already filled in this session wins, so navigating between steps never
+ * overwrites what is on screen; only a blank field is hydrated.
+ */
+const applySavedCertification = () => {
+  const saved = props.savedCertification
+  if (!saved) return
+  const fill = (key, value) => {
+    if (isBlank(certification[key]) && !isBlank(value)) certification[key] = value
+  }
+  fill('submitted_name', saved.submittedByName)
+  fill('submitted_designation', saved.submittedByDesignation)
+  // The parent hands back `submittedByDate` (the same key the save payload uses). Reading
+  // a different key here left the date blank every time a draft was reopened.
+  fill('submitted_date', saved.submittedByDate || saved.submittedDate)
+  // An approved Dean endorsement owns the "Endorsed By" section, so a stored value can
+  // never replace what the issued official letter says.
+  if (!endorsedFromRecord.value) {
+    fill('endorsed_name', saved.endorsedByName)
+    fill('endorsed_designation', saved.endorsedByDesignation)
+    fill('endorsed_date', saved.endorsedByDate)
+  }
+}
+
+/**
+ * Loads the proponent's own saved signature(s). The first-created one is selected by
+ * default for a new proposal; a draft that already stores a signature passes
+ * `autoSelect: false`, so the account default is only offered - never silently chosen in
+ * place of the signature the proposal already has.
+ */
+const loadSavedSignatures = async ({ autoSelect = true } = {}) => {
   signatureLoading.value = true
   signatureError.value = ''
   try {
@@ -563,7 +746,7 @@ const loadSavedSignatures = async () => {
     const loaded = await loadAccountSignatures()
     accountSignatures.value = loaded.map(withPreviewUrl)
     const fallback = pickDefaultSignature(accountSignatures.value)
-    if (fallback) setSignature({ ...fallback, source: SIGNATURE_SOURCES.account })
+    if (autoSelect && fallback) setSignature({ ...fallback, source: SIGNATURE_SOURCES.account })
   } catch (error) {
     console.error(
       'Failed to load the saved signature:',
@@ -587,10 +770,18 @@ const restoreSavedSelection = () => {
 
 const initialiseSignature = async () => {
   signaturePickerOpen.value = false
+  // Restore the typed certification of a reopened draft before touching the signature.
+  applySavedCertification()
   if (restoreSavedSelection()) return
   setSignature(null)
-  await loadSavedSignatures()
+  // A stored signature belongs to the proposal: the account default is offered but not
+  // auto-selected, so plain navigation can never replace the file already saved.
+  await loadSavedSignatures({ autoSelect: !hasSavedSubmittedSignature.value })
 }
+
+// The parent may set the saved certification after the step is already mounted (a draft
+// loaded through the Edit action). Blank fields are filled in; typed values are kept.
+watch(() => props.savedCertification, applySavedCertification)
 
 watch(
   () => props.open,
@@ -641,6 +832,7 @@ const resetForm = () => {
   signaturePickerOpen.value = false
   uploadedFiles.submitted = null
   uploadedFiles.endorsed = null
+  endorsedDocumentError.value = ''
   certification.submitted_name = ''
   certification.submitted_designation = ''
   certification.submitted_date = ''
@@ -651,11 +843,23 @@ const resetForm = () => {
   Object.keys(errors).forEach(key => delete errors[key])
 }
 
-defineExpose({ resetForm })
+/**
+ * Everything this step contributes to the proposal: the typed certification, the two
+ * chosen files (to be uploaded) and the in-session signature selection. Both "Submit
+ * Proposal" and "Save Draft" send exactly this shape, so one save path serves them.
+ */
+const getCertificationData = () => ({
+  certification: { ...certification },
+  signatureFiles: {
+    submitted: uploadedFiles.submitted,
+    endorsed: uploadedFiles.endorsed
+  },
+  certificationSignature: selectionPayload(selectedSignature.value)
+})
+
+defineExpose({ resetForm, getCertificationData })
 
 // ===== VALIDATION =====
-const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
-
 const validateStep2 = () => {
   Object.keys(errors).forEach(key => delete errors[key])
 
@@ -663,7 +867,11 @@ const validateStep2 = () => {
   if (isBlank(certification.submitted_name)) errors.submitted_name = 'Full Name (Submitted By) is required.'
   if (isBlank(certification.submitted_designation)) errors.submitted_designation = 'Designation (Submitted By) is required.'
   if (isBlank(certification.submitted_date)) errors.submitted_date = 'Date (Submitted By) is required.'
-  if (!uploadedFiles.submitted) errors.submitted_signature = 'Signature file (Submitted By) is required.'
+  // A signature already stored on this proposal satisfies the field, so reopening a
+  // draft never demands it again.
+  if (!uploadedFiles.submitted && !hasSavedSubmittedSignature.value) {
+    errors.submitted_signature = 'Signature file (Submitted By) is required.'
+  }
 
   // Endorsed By. When the proposal is continued from an approved Dean endorsement the
   // section is filled from that record and locked, so there is nothing for the
@@ -673,7 +881,14 @@ const validateStep2 = () => {
     if (isBlank(certification.endorsed_name)) errors.endorsed_name = 'Full Name (Endorsed By) is required.'
     if (isBlank(certification.endorsed_designation)) errors.endorsed_designation = 'Designation (Endorsed By) is required.'
     if (isBlank(certification.endorsed_date)) errors.endorsed_date = 'Date (Endorsed By) is required.'
-    if (!uploadedFiles.endorsed) errors.endorsed_signature = 'Signature file (Endorsed By) is required.'
+    // The endorsement document is a PDF (validated on choice and again by the backend).
+    // A document already stored on this proposal satisfies the field, so reopening a
+    // draft never asks for it again.
+    if (!uploadedFiles.endorsed && !hasSavedEndorsement.value) {
+      errors.endorsed_document = ENDORSEMENT_DOCUMENT_REQUIRED_ERROR
+    } else if (endorsedDocumentError.value) {
+      errors.endorsed_document = endorsedDocumentError.value
+    }
   }
 
   return Object.keys(errors).length === 0
@@ -684,7 +899,13 @@ const errorList = computed(() => {
 })
 
 const goBack = () => emit('openPrevious', modalId)
-const saveDraft = () => emit('close')
+
+/**
+ * "Save Draft" goes through the workflow's one save path (Review & Submit), so the
+ * certification typed here - and the signature / endorsement PDF chosen here - are
+ * stored with the proposal instead of being lost when the step closes.
+ */
+const saveDraft = () => emit('savedraft', getCertificationData())
 
 const submitForm = async () => {
   showValidation.value = true
@@ -701,17 +922,9 @@ const submitForm = async () => {
     }
     return
   }
-  // Pass certification data along with the submit event
-  emit('submitProposal', {
-    certification: { ...certification },
-    signatureFiles: {
-      submitted: uploadedFiles.submitted,
-      endorsed: uploadedFiles.endorsed
-    },
-    // The signature chosen in this step travels with the proposal, so returning to
-    // this step keeps it (the parent hands it back as `savedSignature`).
-    certificationSignature: selectionPayload(selectedSignature.value)
-  })
+  // The signature chosen in this step travels with the proposal, so returning to this
+  // step keeps it (the parent hands it back as `savedSignature`).
+  emit('submitProposal', getCertificationData())
 }
 
 const viewCriteria = () => emit('openCriteria')
@@ -1121,6 +1334,13 @@ input[type="date"] {
   background: #f8faff;
   color: #4f46e5;
 }
+/* The rule line of an upload field ("Accepted file format: PDF (.pdf)") and the size. */
+.upload-helper {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
 
 .file-info {
   display: flex;

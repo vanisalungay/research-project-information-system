@@ -25,6 +25,14 @@
 
 import sealImage from '@/assets/images/msu-naawan-seal.jpg?inline'
 import { printDocument } from '@/utils/documentExport'
+// Section 21: the structured Risk Management Plan of the proposal (one row per identified
+// risk with its likelihood, impact and mitigation measure); a proposal saved before the
+// table existed has no rows and prints its single text.
+import { riskRowsFrom } from '@/utils/riskManagement'
+// Section 24: "% Time Devoted" is stored as a plain number and printed as a percentage.
+import { formatTimeDevoted } from '@/utils/personnelTime'
+// Section 25: the uploaded Line-Item Budget document (never a rebuilt amount table).
+import { budgetDocumentName } from '@/utils/budgetDocument'
 
 /** Escape a value so proposal text can never inject markup into the document. */
 function esc(value) {
@@ -502,10 +510,28 @@ function section20(p) {
 }
 
 function section21(p) {
+  // The structured plan is a table (one row per identified risk with its likelihood, its
+  // impact and its mitigation measure). A proposal that was saved before the table existed
+  // carries no rows and its single-text plan is printed instead, so no record loses its
+  // content on paper.
+  const rows = riskRowsFrom(p).map((row) => [
+    row.identifiedRisks,
+    row.likelihood,
+    row.impact,
+    row.mitigationMeasure
+  ])
+  const body = rows.length
+    ? dataGrid(['IDENTIFIED RISKS', 'LIKELIHOOD', 'IMPACT', 'MITIGATION MEASURE'], rows, [
+        '34%',
+        '12%',
+        '12%',
+        '42%'
+      ])
+    : `<div class="answers">${val(p.risks)}</div>`
   const inner = `${head('(21) LIST OF RISKS AND ASSUMPTIONS')}
     <div class="sec-head">RISK MANAGEMENT PLAN</div>
     <div class="sec-note">(List possible risks and assumptions in attaining target outputs or objectives.)</div>
-    <div class="answers">${val(p.risks)}</div>`
+    ${body}`
   return fullRow(inner, '15.5mm')
 }
 
@@ -529,7 +555,7 @@ function section23(p) {
 }
 
 function section24(p) {
-  const rows = list(p.personnel).map((r) => [r.position, r.timeDevoted, r.responsibilities])
+  const rows = list(p.personnel).map((r) => [r.position, formatTimeDevoted(r.timeDevoted), r.responsibilities])
   const grid = dataGrid(
     ['POSITION', 'PERCENT TIME DEVOTED TO THE PROJECT', 'RESPONSIBILITIES'],
     rows,
@@ -539,14 +565,15 @@ function section24(p) {
 }
 
 function section25(p) {
-  const rows = list(p.budget).map((b) => [b.agency, b.ps, b.mooe, b.eo, b.total])
-  rows.push(['TOTAL', '', '', '', ''])
-  const grid = dataGrid(
-    ['IMPLEMENTING AGENCY', 'PS', 'MOOE', 'EO', 'TOTAL'],
-    rows,
-    ['40%', '15%', '15%', '15%', '15%']
-  )
-  return fullRow(`${head('(25) LINE-ITEM BUDGET REQUIREMENT')}${grid}`, '4.9mm')
+  // The line-item budget is an uploaded PDF/DOCX document, not a set of amounts the form
+  // can rebuild: name the attached document instead of printing an empty/legacy table.
+  // Amounts are never derived or invented here.
+  const budgetDocument = budgetDocumentName(p)
+  const answer = budgetDocument
+    ? `Attached Budget Document: ${esc(budgetDocument)}`
+    : 'No budget document uploaded.'
+  return fullRow(`${head('(25) LINE-ITEM BUDGET REQUIREMENT')}
+    <div class="answers">${answer}</div>`, '4.9mm')
 }
 
 function section26(p) {
@@ -567,7 +594,8 @@ function section27(p) {
   const attachments = [
     ['Review of Literature', p.reviewFileName],
     ['Technology Roadmap', p.roadmapFileName],
-    ['Target Beneficiaries', p.beneficiariesFileName],
+    // The stored "beneficiaries" name is the Line-Item Budget document (section 25), not a
+    // separate target-beneficiaries attachment; listing it here mislabelled the budget.
     ['GAD Score Document', p.gadFileName],
     ['Special Order', p.soFileName]
   ].filter(([, file]) => file)

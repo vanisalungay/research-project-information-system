@@ -415,6 +415,29 @@ export function gadChecklistPayload(checklist) {
   }
 }
 
+/**
+ * The checklist to send when a proposal is saved.
+ *
+ * <p>Returns `null` - meaning "this client does not edit the checklist, keep whatever the
+ * proposal already has" - only when the proposal never had a stored checklist and the
+ * proponent has not entered a single response or comment yet. That keeps a legacy
+ * proposal's stored GAD score/document from being replaced by an untouched empty
+ * checklist while the form was never opened.</p>
+ *
+ * <p>Once a checklist has been saved, or once anything was entered, the current state is
+ * sent instead - including an explicitly emptied one - so clearing the last answer is an
+ * intentional clear, not "never started".</p>
+ */
+export function gadChecklistPayloadForSave(checklist, hasSavedChecklist = false) {
+  const state = gadChecklistFromSaved(checklist)
+  const hasResponse = Object.keys(state.responses).length > 0
+  const hasComment = Object.values(state.comments).some(
+    (value) => String(value || '').trim() !== ''
+  )
+  if (!hasSavedChecklist && !hasResponse && !hasComment) return null
+  return gadChecklistPayload(state)
+}
+
 /** Validation for submission: every one of the 17 assessment items must have a response. */
 export function gadChecklistValidation(checklist) {
   const summary = gadChecklistSummary(checklist)

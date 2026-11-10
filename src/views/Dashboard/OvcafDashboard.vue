@@ -62,7 +62,7 @@
           <thead>
             <tr>
               <th>Proposal Title</th>
-              <th>Proponent Name</th>
+              <th>Project Leader</th>
               <th>Status</th>
               <th class="text-right">Action</th>
             </tr>
@@ -101,7 +101,7 @@
           <thead>
             <tr>
               <th>Proposal Title</th>
-              <th>Proponent Name</th>
+              <th>Project Leader</th>
               <th>Status</th>
               <th class="text-right">Action</th>
             </tr>
@@ -201,16 +201,28 @@ const stats = ref({
 })
 const isLoading = ref(true)
 
+/**
+ * A proposal is OVCAF's only after the Office of the Chancellor recorded its final
+ * approval and the issued Special Order. The status alone is not evidence (a record
+ * can carry an APPROVED-looking status without any OC decision); the SO number and
+ * the time it was recorded are written together by the OC final-approval
+ * transaction, and the backend applies the same rule to the /api/ovcaf endpoints.
+ */
+const hasOcApproval = (proposal) =>
+  typeof proposal?.soNumber === 'string' &&
+  proposal.soNumber.trim() !== '' &&
+  proposal.soUploadedAt != null
+
 const loadDashboard = async () => {
   try {
     isLoading.value = true
     const response = await api.get('/api/proposals')
-    const data = response.data || []
+    const data = (response.data || []).filter(hasOcApproval)
 
-    // Proposals awaiting OVCAF review (includes REC-approved awaiting OC budget determination)
-    stats.value.forReview = data.filter(p => p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED').length
+    // Proposals awaiting OVCAF budget evaluation (OC has approved and forwarded them).
+    stats.value.forReview = data.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
 
-    // Proposals endorsed to OC by OVCAF
+    // Proposals OVCAF has returned to OC / are awaiting the Chancellor's next step.
     stats.value.endorsedToOc = data.filter(p => p.status === 'FOR_OC_APPROVAL').length
 
     // Completed (approved, released)
@@ -218,9 +230,11 @@ const loadDashboard = async () => {
       p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED'
     ).length
 
-    // List proposals for OVCAF review (all proposals that have passed REC)
+    // Only proposals with a completed OC approval + SO that still await OVCAF's
+    // budget decision can be reviewed. Earlier-stage records (REC_APPROVED,
+    // FOR_OC_APPROVAL) are not yet OVCAF's to act on.
     forReview.value = data
-      .filter(p => p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'REC_APPROVED' || p.status === 'FOR_OC_APPROVAL' || p.status === 'OVC_APPROVED')
+      .filter(p => p.status === 'FOR_OVCAF_APPROVAL')
       .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Project',
@@ -228,9 +242,9 @@ const loadDashboard = async () => {
         status: p.status
       }))
 
-    // List completed/funding proposals
+    // Approved/funding proposals
     completed.value = data
-      .filter(p => p.status === 'FOR_OC_APPROVAL' || p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
+      .filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
       .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Project',

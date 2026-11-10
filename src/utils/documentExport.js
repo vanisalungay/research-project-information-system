@@ -6,6 +6,14 @@
  */
 
 import { SDG_OPTIONS, sdgToSet } from '@/utils/sdg'
+// Section 21: the structured Risk Management Plan (one row per identified risk with its
+// likelihood, impact and mitigation measure). A proposal saved before the table existed
+// has no rows and keeps showing its single text.
+import { riskRowsFrom } from '@/utils/riskManagement'
+// Section 24: "% Time Devoted" is stored as a plain number and printed as a percentage.
+import { formatTimeDevoted } from '@/utils/personnelTime'
+// Section 25: the uploaded Line-Item Budget document (never a rebuilt amount table).
+import { budgetDocumentName } from '@/utils/budgetDocument'
 
 /** Escape a value so it can be safely embedded in generated HTML. */
 export function escapeHtml(value) {
@@ -495,10 +503,22 @@ export function buildProposalDocument(p = {}) {
     s.barangay
   ])
   const logFrameRows = asList(p.logFrames).map((r) => [r.outcome, r.output])
-  const personnelRows = asList(p.personnel).map((r) => [r.position, r.timeDevoted, r.responsibilities])
-  const budgetRows = asList(p.budget).map((b) => [b.agency, b.ps, b.mooe, b.eo, b.total])
+  const personnelRows = asList(p.personnel).map((r) => [r.position, formatTimeDevoted(r.timeDevoted), r.responsibilities])
+  // The line-item budget is an uploaded PDF/DOCX document, so the document names the
+  // attachment instead of rebuilding a table from legacy budget rows (which are empty for
+  // every proposal created since the upload design). Amounts are never invented.
+  const budgetFileName = budgetDocumentName(p)
   const otherProjectsRows = asList(p.otherProjects).map((o) => [o.title, o.agency, o.involvement])
   const limitationRows = asList(p.limitations).map((l) => [l.limitation, l.remarks])
+  // Section 21: the Risk Management Plan as a table (identified risk, likelihood, impact,
+  // mitigation measure). Empty for a proposal that predates the table, which then prints
+  // its single-text plan instead.
+  const riskRows = riskRowsFrom(p).map((row) => [
+    row.identifiedRisks,
+    row.likelihood,
+    row.impact,
+    row.mitigationMeasure
+  ])
 
   const sections = [
     section({
@@ -603,8 +623,9 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '17',
       title: 'Target Beneficiaries',
-      body: `${textBlock('Target Beneficiaries', p.beneficiaries)}
-        ${p.beneficiariesFileName ? fileField('Target Beneficiaries (file)', p.beneficiariesFileName) : ''}`
+      // The stored beneficiaries_* file is the Line-Item Budget document (section 25),
+      // not a target-beneficiaries attachment, so it is not repeated here.
+      body: textBlock('Target Beneficiaries', p.beneficiaries)
     }),
     section({
       number: '18',
@@ -627,7 +648,9 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '21',
       title: 'Risk Management Plan',
-      body: textBlock('Risks & Assumptions', p.risks)
+      body: riskRows.length
+        ? tableBlock(['Identified Risks', 'Likelihood', 'Impact', 'Mitigation Measure'], riskRows)
+        : textBlock('Risk Management Plan', p.risks)
     }),
     section({
       number: '22',
@@ -648,9 +671,9 @@ export function buildProposalDocument(p = {}) {
     section({
       number: '25',
       title: 'Line-Item Budget Requirement',
-      body: budgetRows.length
-        ? tableBlock(['Agency', 'PS', 'MOOE', 'EO', 'Total'], budgetRows)
-        : textBlock('Line-Item Budget', '')
+      body: budgetFileName
+        ? fileField('Attached Budget Document', budgetFileName)
+        : textBlock('Line-Item Budget', 'No budget document uploaded.')
     }),
     section({
       number: '26',

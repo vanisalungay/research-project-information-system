@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ovcaf")
@@ -53,14 +54,19 @@ public class OvcafController {
      * Submit validation decision for a proposal
      */
     @PostMapping("/proposals/{id}/validate")
-    public ResponseEntity<OvcafValidation> submitValidation(
+    public ResponseEntity<?> submitValidation(
             @PathVariable Long id,
             @RequestBody OvcafValidationRequest request) {
         try {
             OvcafValidation validation = ovcafService.submitValidation(id, request);
             return new ResponseEntity<>(validation, HttpStatus.CREATED);
+        } catch (IllegalStateException e) {
+            // A domain rule (for example: implementation approval without an issued
+            // Special Order) is reported with the exact reason, never a generic 400.
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -68,12 +74,15 @@ public class OvcafController {
      * Endorse budget - forward to OC for final approval
      */
     @PutMapping("/proposals/{id}/endorse")
-    public ResponseEntity<Proposal> endorseBudget(
+    public ResponseEntity<?> endorseBudget(
             @PathVariable Long id,
             @RequestParam(required = false) Long endorsedById) {
         try {
             Proposal proposal = ovcafService.endorseBudget(id, endorsedById);
             return ResponseEntity.ok(proposal);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
@@ -83,12 +92,15 @@ public class OvcafController {
      * Authorize budget release
      */
     @PutMapping("/proposals/{id}/authorize")
-    public ResponseEntity<Proposal> authorizeBudget(
+    public ResponseEntity<?> authorizeBudget(
             @PathVariable Long id,
             @RequestParam(required = false) Long authorizedById) {
         try {
             Proposal proposal = ovcafService.authorizeBudget(id, authorizedById);
             return ResponseEntity.ok(proposal);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
@@ -98,12 +110,15 @@ public class OvcafController {
      * Release project funds
      */
     @PutMapping("/proposals/{id}/release")
-    public ResponseEntity<Proposal> releaseFunds(
+    public ResponseEntity<?> releaseFunds(
             @PathVariable Long id,
             @RequestParam(required = false) Long releasedById) {
         try {
             Proposal proposal = ovcafService.releaseFunds(id, releasedById);
             return ResponseEntity.ok(proposal);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }

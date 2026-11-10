@@ -29,15 +29,40 @@
                                 <span class="proposal-id font-mono">{{ proposal.documentId || '—' }}</span>
                                 <h3 class="proposal-title-text">{{ proposal.title }}</h3>
                                 <div class="meta-chips">
-                                    <div><span class="chip-label">Proponent</span><span class="chip-value">{{
-                                        proposal.proponent }}</span></div>
-                                    <div><span class="chip-label">Proposed Budget</span><span
-                                            class="chip-value font-mono primary-text font-semibold">{{
-                                                formatCurrency(proposal.budget) }}</span></div>
-                                    <div><span class="chip-label">Funding Source</span><span class="chip-value">{{
-                                        proposal.fundingSource }}</span></div>
+                                    <div><span class="chip-label">Project Leader</span><span class="chip-value">{{
+                                        projectLeader }}</span></div>
                                     <div><span class="chip-label">College</span><span class="chip-value">{{
                                         proposal.college }}</span></div>
+                                </div>
+
+                                <div class="budget-document">
+                                    <span class="chip-label">In-line Item Budget</span>
+                                    <div v-if="budgetFileName" class="budget-document-row">
+                                        <span class="budget-document-name">{{ budgetFileName }}</span>
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                            @click="viewBudgetDocument">View</button>
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                            @click="saveBudgetDocument">Download</button>
+                                    </div>
+                                    <!-- A stored reference that yielded no printable name is a
+                                         retrieval problem, not a missing document. -->
+                                    <p v-else-if="hasBudgetReference" class="document-error">
+                                        The Line-Item Budget document is attached, but its reference could not be
+                                        resolved.
+                                    </p>
+                                    <!-- The saved record could not be read, so an empty state would be
+                                         an unverified claim rather than a fact. -->
+                                    <p v-else-if="fullProposalError" class="document-error">
+                                        The Line-Item Budget document could not be retrieved.
+                                    </p>
+                                    <p v-else class="budget-document-empty">No Line-Item Budget uploaded</p>
+                                    <p v-if="documentError" class="document-error">{{ documentError }}</p>
+                                </div>
+
+                                <div class="summary-actions">
+                                    <router-link :to="`/ovcaf/proposals/${proposal.id}`" class="btn btn-primary btn-sm">
+                                        View Proposal Details
+                                    </router-link>
                                 </div>
                             </div>
 
@@ -123,11 +148,21 @@
                                     <!-- Error Banner -->
                                     <div v-if="formError" class="error-banner">⚠ {{ formError }}</div>
 
+                                    <!-- A proposal cannot be approved for implementation until
+                                         the Office of the Chancellor has recorded its Special
+                                         Order. The backend refuses the approval as well. -->
+                                    <div v-if="approvalBlocked" class="error-banner">
+                                        ⚠ No Special Order (SO) has been issued for this proposal.
+                                        The Office of the Chancellor must record the SO (Final
+                                        Approval) before it can be approved for implementation.
+                                    </div>
+
                                     <!-- Actions -->
                                     <div class="form-actions">
                                         <button type="button" @click="resetForm" class="btn btn-secondary"
                                             :disabled="submitLoading">Reset</button>
-                                        <button type="submit" class="btn btn-primary" :disabled="submitLoading">
+                                        <button type="submit" class="btn btn-primary"
+                                            :disabled="submitLoading || approvalBlocked">
                                             {{ submitLoading ? 'Processing...' : 'Submit Evaluation' }}
                                         </button>
                                     </div>
@@ -158,13 +193,20 @@
                 </Teleport>
             </main>
         </div>
+
+        <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
+        <LineItemBudgetPreviewModal v-if="showBudgetPreview" :file-path="budgetDocumentPath(budgetSource)"
+            :file-name="budgetFileName" @close="showBudgetPreview = false" />
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '@/utils/api';
+import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
+import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
+import { downloadUploadedFile } from '@/utils/fileDownload';
 
 const route = useRoute();
 const router = useRouter();
@@ -174,6 +216,12 @@ const loading = ref(true);
 const submitLoading = ref(false);
 const error = ref(null);
 const proposal = ref(null);
+// The complete saved proposal record (GET /api/proposals/{id}) - the exact record the
+// proposal viewer renders. Loaded only after the OVCAF detail route has authorized this
+// proposal, and preferred for the Project Leader and Line-Item Budget so the evaluation
+// card can never disagree with the viewer about the same proposal.
+const fullProposal = ref(null);
+const fullProposalError = ref(false);
 const decision = ref('Approved & Endorsed');
 const remarks = ref('');
 const formError = ref('');
@@ -197,6 +245,60 @@ const checklistLabels = {
     complianceVerified: 'Compliance with standard government/university funding guidelines verified'
 };
 
+// ── Project Leader and Line-Item Budget ───────────
+// Both are read from the saved proposal record the actual viewer uses when it is
+// available; the OVCAF response is only the fallback while that record loads. The
+// Project Leader is the value typed into the proposal form, never the login account.
+const budgetSource = computed(() => fullProposal.value || proposal.value);
+const projectLeader = computed(() => {
+    const fromForm = fullProposal.value
+        ? String(fullProposal.value.projectLeader || '').trim()
+        : '';
+    return fromForm || proposal.value?.projectLeader || 'Unknown';
+});
+// Named from the proposal record (name, or the stored path when the name was lost), so
+// an attached document is never reported as missing.
+const budgetFileName = computed(() => budgetDocumentName(budgetSource.value));
+const hasBudgetReference = computed(() => Boolean(budgetDocumentPath(budgetSource.value)));
+const documentError = ref('');
+
+// An implementation approval is only valid once OC has issued the Special Order.
+// The backend enforces the same rule; showing it here explains why approval is
+// unavailable instead of letting the reviewer submit and receive an error.
+const hasIssuedSo = computed(() => {
+    const value = fullProposal.value ? fullProposal.value.soNumber : proposal.value?.soNumber;
+    return typeof value === 'string' && value.trim() !== '';
+});
+const approvalBlocked = computed(() => decision.value === 'Approved & Endorsed' && !hasIssuedSo.value);
+
+// View opens an in-page modal with the actual uploaded document; the user stays on
+// this evaluation page (no navigation, no new tab) and nothing is uploaded again.
+const showBudgetPreview = ref(false);
+
+const viewBudgetDocument = () => {
+    if (!budgetDocumentPath(budgetSource.value)) {
+        documentError.value = 'The Line-Item Budget document could not be retrieved.';
+        return;
+    }
+    documentError.value = '';
+    showBudgetPreview.value = true;
+};
+
+const saveBudgetDocument = async () => {
+    const path = budgetDocumentPath(budgetSource.value);
+    if (!path) {
+        documentError.value = 'The Line-Item Budget document could not be retrieved.';
+        return;
+    }
+    documentError.value = '';
+    try {
+        await downloadUploadedFile(path, budgetFileName.value);
+    } catch (err) {
+        console.error('Error downloading Line-Item Budget:', err);
+        documentError.value = 'The Line-Item Budget document could not be downloaded. Please try again.';
+    }
+};
+
 // ── Computed ──────────────────────────────────────
 const isAllChecked = computed(() => Object.values(checklist).every(v => v === true));
 const confirmBtnClass = computed(() => {
@@ -210,11 +312,32 @@ const modalMessage = computed(() => {
     return `You are about to permanently reject "${proposal.value?.title}". This action cannot be undone.`;
 });
 
+/**
+ * Load the complete saved proposal record used by the proposal viewer. The OVCAF detail
+ * route above has already authorized this proposal, so this never exposes a draft. A
+ * failure here keeps the OVCAF response (and its retrieval messages) as the fallback.
+ */
+const loadFullProposal = async (id) => {
+    try {
+        const res = await api.get(`/api/proposals/${id}`);
+        fullProposal.value = res.data || null;
+        fullProposalError.value = !fullProposal.value;
+    } catch (err) {
+        console.error('Error fetching the complete proposal:', err);
+        fullProposal.value = null;
+        fullProposalError.value = true;
+    }
+};
+
 // ── Fetch proposal from API ───────────────────────
 const fetchProposal = async () => {
     try {
         loading.value = true;
         error.value = null;
+        fullProposal.value = null;
+        fullProposalError.value = false;
+        documentError.value = '';
+        showBudgetPreview.value = false;
         const id = route.params.id;
         const response = await api.get(`/api/ovcaf/proposals/${id}`);
         const p = response.data;
@@ -223,13 +346,24 @@ const fetchProposal = async () => {
                 id: p.id,
                 documentId: p.documentId || '',
                 title: p.projectTitle || 'Untitled Project',
-                proponent: p.proponentName || 'Unknown',
+                // The form's Project Leader must win; `proponentName` is only the
+                // server-side fallback for records that never carried the form field.
+                projectLeader: p.projectLeader || p.proponentName || '',
                 college: p.college || 'Unknown',
-                budget: p.totalBudget || 0,
-                fundingSource: p.fundingSource || 'Not specified',
+                // Section 25 is an uploaded document; it is the budget source OVCAF reviews.
+                beneficiariesFileName: p.beneficiariesFileName || '',
+                beneficiariesFilePath: p.beneficiariesFilePath || '',
+                // The SO must already exist before the proposal can be approved for
+                // implementation. `fullProposal` below is the fallback for records the
+                // OVCAF response did not expose.
+                soNumber: p.soNumber || '',
                 status: p.status,
                 rawStatus: p.status
             };
+            // Prefer the exact record the proposal viewer renders. This is also the
+            // record that still carries the attachment when an older OVCAF response
+            // did not expose it.
+            await loadFullProposal(id);
             // Pre-fill checklist if validation exists
             if (p.budgetComplete !== undefined) checklist.budgetComplete = p.budgetComplete;
             if (p.budgetComputationCorrect !== undefined) checklist.budgetComputationCorrect = p.budgetComputationCorrect;
@@ -251,17 +385,15 @@ const fetchProposal = async () => {
 // ── Lifecycle ─────────────────────────────────────
 onMounted(async () => {
     await fetchProposal();
-    document.addEventListener('click', handleOutsideClick);
 });
-onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
-
-const handleOutsideClick = (e) => {
-    if (dropdownRef.value && !dropdownRef.value.contains(e.target)) dropdownOpen.value = false;
-};
 
 // ── Actions ───────────────────────────────────────
 const handleSubmit = () => {
     formError.value = '';
+    if (approvalBlocked.value) {
+        formError.value = 'No Special Order (SO) has been issued for this proposal. The Office of the Chancellor must record the SO before implementation approval.';
+        return;
+    }
     if (decision.value === 'Approved & Endorsed' && !isAllChecked.value) {
         formError.value = 'All compliance checklist items must be verified before approving.';
         return;
@@ -301,7 +433,12 @@ const submitDecision = async () => {
         router.push('/ovcaf/inbox');
     } catch (err) {
         console.error('Error submitting validation:', err);
-        formError.value = 'Failed to submit validation. Please try again.';
+        // Surface the backend's domain message (for example the missing-SO rule)
+        // instead of hiding it behind a generic retry prompt.
+        const body = err.response?.data;
+        formError.value =
+            (body && typeof body === 'object' ? body.error : body) ||
+            'Failed to submit validation. Please try again.';
     } finally {
         submitLoading.value = false;
     }
@@ -313,8 +450,6 @@ const resetForm = () => {
     formError.value = '';
     Object.keys(checklist).forEach(k => { checklist[k] = false; });
 };
-
-const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 </script>
 
 <style scoped>
@@ -403,6 +538,58 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 .primary-text {
     color: #8b0000;
     font-weight: 700;
+}
+
+/* ---------------- In-line Item Budget ---------------- */
+
+.budget-document {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.budget-document-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.budget-document-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #d5dce6;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: .92rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.budget-document-empty {
+    color: #94a3b8;
+    font-size: .92rem;
+    font-style: italic;
+}
+
+.document-error {
+    margin-top: 10px;
+    color: #dc2626;
+    font-size: .85rem;
+}
+
+.summary-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: .85rem;
 }
 
 /* ---------------- Checklist ---------------- */

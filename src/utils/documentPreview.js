@@ -15,6 +15,11 @@
 export const PREVIEW_PDF = 'pdf'
 /** Preview kind: the document is an image and is shown in an <img>. */
 export const PREVIEW_IMAGE = 'image'
+/**
+ * Preview kind: a Word document (DOCX) is converted to readable HTML and shown in
+ * the document preview. The original file is never modified.
+ */
+export const PREVIEW_DOCX = 'docx'
 /** Preview kind: no in-browser preview; the Download action stays available. */
 export const PREVIEW_UNSUPPORTED = 'unsupported'
 
@@ -62,9 +67,31 @@ export function previewKindOf(fileName) {
   return PREVIEW_UNSUPPORTED
 }
 
+/**
+ * Preview kind for an uploaded Line-Item Budget. The field accepts PDF and DOCX;
+ * a DOCX is converted to readable HTML by the preview modal, while every other
+ * accepted or legacy format keeps the generic decision (PDF, image, unsupported).
+ * The generic {@link previewKindOf} deliberately keeps DOCX unsupported so the
+ * other report modals keep their existing fallback.
+ */
+export function previewKindForBudget(fileName) {
+  return fileExtension(fileName) === 'docx' ? PREVIEW_DOCX : previewKindOf(fileName)
+}
+
 /** Media type for previewing the file, or '' when it cannot be previewed. */
 export function previewMimeType(fileName) {
   return MIME_BY_EXTENSION[fileExtension(fileName)] || ''
+}
+
+/**
+ * Re-tags a fetched blob with the media type its file name implies, so a document
+ * served as application/octet-stream can be rendered by the browser (the PDF viewer,
+ * an <img>, ...). A file whose extension gives no known type is returned unchanged,
+ * so a caller can still hand it to the download path.
+ */
+export function retypeForPreview(blob, fileName) {
+  const type = previewMimeType(fileName)
+  return type ? new Blob([blob], { type }) : blob
 }
 
 /**

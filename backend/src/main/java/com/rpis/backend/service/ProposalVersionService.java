@@ -350,6 +350,9 @@ public class ProposalVersionService {
         m.put("sustainability", p.getSustainability());
         m.put("gadScore", p.getGadScore());
         m.put("risks", p.getRisks());
+        // Section 21: the structured Risk Management Plan (identified risks, likelihood,
+        // impact and mitigation measure of every entry) as it stood in this version.
+        m.put("riskManagement", p.getRiskManagement());
         m.put("limitationsText", p.getLimitationsText());
         m.put("referencesText", p.getReferencesText());
         m.put("otherProjectsNumber", p.getOtherProjectsNumber());
@@ -363,6 +366,21 @@ public class ProposalVersionService {
         m.put("referencesText", p.getReferencesText());
         m.put("referencesJson", p.getReferencesJson());
         m.put("gadFileName", p.getGadFileName());
+        // Section 19: the interactive checklist as it stood in this version, so a reviewer
+        // reading an older revision sees the same responses, comments and derived total.
+        m.put("gadChecklist", p.getGadChecklist());
+        m.put("endorsementFileName", p.getEndorsementFileName());
+        m.put("endorsementFilePath", p.getEndorsementFilePath());
+        m.put("submittedByFileName", p.getSubmittedByFileName());
+        m.put("submittedByFilePath", p.getSubmittedByFilePath());
+
+        // Certification & Endorsement metadata ("Submitted By" / "Endorsed By").
+        m.put("submittedByName", p.getSubmittedByName());
+        m.put("submittedByDesignation", p.getSubmittedByDesignation());
+        m.put("submittedByDate", p.getSubmittedByDate());
+        m.put("endorsedByName", p.getEndorsedByName());
+        m.put("endorsedByDesignation", p.getEndorsedByDesignation());
+        m.put("endorsedByDate", p.getEndorsedByDate());
 
         // Child collections (their `proposal` back-reference is @JsonIgnore).
         m.put("sites", p.getSites());

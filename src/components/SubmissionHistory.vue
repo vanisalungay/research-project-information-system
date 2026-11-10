@@ -94,7 +94,7 @@
                     </thead>
                     <tbody>
                       <tr v-for="(row, ri) in sectionRows(section)" :key="ri">
-                        <td v-for="col in section.columns" :key="col.key">{{ formatCell(row[col.key]) }}</td>
+                        <td v-for="col in section.columns" :key="col.key">{{ cellText(row, col) }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -112,6 +112,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import api from '@/utils/api'
+// Section 24: "% Time Devoted" is stored as a plain number and always read as a
+// percentage, so a version recorded with a legacy "50%" and one with "50" both show "50%".
+import { formatTimeDevoted } from '@/utils/personnelTime'
 
 const props = defineProps({
   proposalId: { type: [Number, String], required: true }
@@ -156,7 +159,7 @@ const displayFields = [
   { key: 'beneficiaries', label: 'Target Beneficiaries' },
   { key: 'sustainability', label: 'Sustainability Plan' },
   { key: 'gadScore', label: 'GAD Score' },
-  { key: 'risks', label: 'Risks & Assumptions' },
+  { key: 'risks', label: 'Risk Management Plan (single-text plan)' },
   { key: 'referencesText', label: 'Literature Cited / References' },
   { key: 'otherProjectsNumber', label: 'Number of Other Projects' }
 ]
@@ -164,7 +167,7 @@ const displayFields = [
 const fileFields = [
   { key: 'reviewFileName', label: 'Review of Literature' },
   { key: 'roadmapFileName', label: 'Technology Roadmap' },
-  { key: 'beneficiariesFileName', label: 'Beneficiaries' },
+  { key: 'beneficiariesFileName', label: 'Line-Item Budget (document)' },
   { key: 'gadFileName', label: 'GAD Score' }
 ]
 
@@ -194,7 +197,7 @@ const collectionSections = [
     title: 'Personnel Requirements',
     columns: [
       { key: 'position', label: 'Position' },
-      { key: 'timeDevoted', label: 'Time Devoted' },
+      { key: 'timeDevoted', label: 'Time Devoted', format: formatTimeDevoted },
       { key: 'responsibilities', label: 'Responsibilities' }
     ]
   },
@@ -233,6 +236,18 @@ const collectionSections = [
     columns: [
       { key: 'limitation', label: 'Limitation' },
       { key: 'remarks', label: 'Remarks' }
+    ]
+  },
+  {
+    // Section 21 as it stood in that version: one row per identified risk, with its
+    // likelihood, its impact and its mitigation measure.
+    key: 'riskManagement',
+    title: 'Risk Management Plan',
+    columns: [
+      { key: 'identifiedRisks', label: 'Identified Risks' },
+      { key: 'likelihood', label: 'Likelihood' },
+      { key: 'impact', label: 'Impact' },
+      { key: 'mitigationMeasure', label: 'Mitigation Measure' }
     ]
   }
 ]
@@ -291,6 +306,18 @@ function formatCell(value) {
   if (value === null || value === undefined || value === '') return '—'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   return value
+}
+
+/**
+ * One repeated-entry cell. A column may declare `format` (the "% Time Devoted" column
+ * does), which turns the stored value into what should be read - a value stored as "50"
+ * or, in an older version, as "50%" both read as "50%".
+ */
+function cellText(row, column) {
+  if (typeof column.format === 'function') {
+    return formatCell(column.format(row[column.key]))
+  }
+  return formatCell(row[column.key])
 }
 
 async function fetchVersions() {

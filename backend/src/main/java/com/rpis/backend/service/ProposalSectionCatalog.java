@@ -45,12 +45,13 @@ public final class ProposalSectionCatalog {
         SECTIONS.put("25", "Line-Item Budget Requirement");
         SECTIONS.put("26", "Other Ongoing Projects");
         SECTIONS.put("27", "Other Supporting Documents");
+        SECTIONS.put("28", "Certification & Endorsement");
     }
 
     private ProposalSectionCatalog() {
     }
 
-    /** All valid section keys, e.g. {@code "01"} ... {@code "27"}. */
+    /** All valid section keys, e.g. {@code "01"} ... {@code "28"}. */
     public static Set<String> keys() {
         return SECTIONS.keySet();
     }

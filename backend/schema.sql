@@ -114,11 +114,36 @@ CREATE TABLE proposals (
     beneficiaries TEXT,
     beneficiaries_file_name VARCHAR(255),
     beneficiaries_file_path VARCHAR(500),   -- stored Line-Item Budget file, relative to "uploads"
+    -- Endorsement document uploaded in the Certification & Endorsement step ("Endorsed
+    -- By"): the display name and the stored PDF, relative to "uploads". NULL for every
+    -- proposal submitted before the document was uploadable, which keeps old records
+    -- working unchanged.
+    endorsement_file_name VARCHAR(255),
+    endorsement_file_path VARCHAR(500),
+    -- Certification & Endorsement step ("Submitted By" / "Endorsed By"): the typed
+    -- name/designation/date of both signatories and the Proponent's own uploaded
+    -- signature (display name + stored path, relative to "uploads"). NULL for every
+    -- proposal saved before the step persisted its data, which keeps old records
+    -- working unchanged.
+    submitted_by_name VARCHAR(255),
+    submitted_by_designation VARCHAR(255),
+    submitted_by_date VARCHAR(50),
+    submitted_by_file_name VARCHAR(255),
+    submitted_by_file_path VARCHAR(500),
+    endorsed_by_name VARCHAR(255),
+    endorsed_by_designation VARCHAR(255),
+    endorsed_by_date VARCHAR(50),
     sustainability TEXT,
     gad_score DECIMAL(5,2),
     gad_file_name VARCHAR(255),
     gad_checklist_json TEXT,                -- GAD Checklist 2 (section 19): responses, comments + derived score (JSON)
     risks TEXT,
+    -- Section 21 (Risk Management Plan): the structured table the Create Proposal and
+    -- Revision forms use - a JSON array of
+    -- {identifiedRisks, likelihood, impact, mitigationMeasure}, one object per entry.
+    -- NULL for a proposal saved before the table existed; `risks` above stays the
+    -- readable rendering of these entries (and the hand-written text of an older record).
+    risk_management_json TEXT,
     references_text TEXT,
     references_json TEXT,                   -- structured entries behind the literature cited (JSON)
     other_projects_number VARCHAR(50),

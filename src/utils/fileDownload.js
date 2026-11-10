@@ -6,7 +6,7 @@
  */
 
 import api from '@/utils/api'
-import { previewMimeType } from '@/utils/documentPreview'
+import { retypeForPreview } from '@/utils/documentPreview'
 
 /** Normalize a stored path/name into a clean relative path. */
 function normalizePath(path) {
@@ -20,23 +20,49 @@ function normalizePath(path) {
  * Trigger a browser download of a single uploaded file. The file route requires
  * authentication, so the request is sent through the shared axios client (which
  * attaches the bearer token) and the response is saved as a blob.
+ *
+ * @param {string} path stored path used by the authorized file route
+ * @param {string} [fileName] original/display file name for the saved file; the
+ *   stored name (which carries a generated uniqueness prefix) is used when absent
  */
-export async function downloadUploadedFile(path) {
+export async function downloadUploadedFile(path, fileName) {
   if (!path) return
   const clean = normalizePath(path)
   const res = await api.get('/api/files', {
     params: { path: clean },
     responseType: 'blob',
   })
+  const suggested = String(fileName || '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .pop()
   const url = window.URL.createObjectURL(res.data)
   const a = document.createElement('a')
   a.href = url
-  a.download = clean.split('/').pop() || 'file'
+  a.download = suggested || clean.split('/').pop() || 'file'
   a.rel = 'noopener'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
+}
+
+/**
+ * Fetch an uploaded file through the existing authenticated file route. The caller
+ * decides how to display the bytes (object URL for a PDF/image, an in-memory DOCX
+ * conversion); nothing is written to the server.
+ *
+ * @param {string} path stored path, e.g. "budget-files/<uuid>_line-item-budget.docx"
+ * @returns {Promise<Blob|null>}
+ */
+export async function fetchUploadedFileBlob(path) {
+  if (!path) return null
+  const clean = normalizePath(path)
+  const res = await api.get('/api/files', {
+    params: { path: clean },
+    responseType: 'blob',
+  })
+  return res.data || null
 }
 
 /** Open an uploaded file (e.g. a PDF) in a new tab for preview. */
@@ -47,7 +73,11 @@ export async function previewUploadedFile(path) {
     params: { path: clean },
     responseType: 'blob',
   })
-  const url = window.URL.createObjectURL(res.data)
+  // The file route serves every document as application/octet-stream, which the
+  // browser downloads instead of rendering. The stored path carries the extension,
+  // so the blob is re-typed before the object URL is created and a PDF opens in the
+  // browser's viewer (a legacy image opens in an image tab).
+  const url = window.URL.createObjectURL(retypeForPreview(res.data, clean))
   window.open(url, '_blank')
   setTimeout(() => window.URL.revokeObjectURL(url), 60000)
 }
@@ -115,9 +145,7 @@ export async function fetchReportDocumentPreviewUrl(reportId, docType, fileName)
   const res = await api.get(`/api/quarterly-reports/${reportId}/documents/${docType}`, {
     responseType: 'blob',
   })
-  const type = previewMimeType(fileName)
-  const blob = type ? new Blob([res.data], { type }) : res.data
-  return window.URL.createObjectURL(blob)
+  return window.URL.createObjectURL(retypeForPreview(res.data, fileName))
 }
 
 /** Release an object URL created by the preview helpers. */

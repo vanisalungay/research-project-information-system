@@ -18,11 +18,21 @@ import {
   fileTypeLabel,
   previewKindOf,
   previewMimeType,
+  retypeForPreview,
 } from './documentPreview.js'
 
 test('a PDF is previewed by the browser PDF viewer', () => {
   assert.equal(previewKindOf('Terminal Report.pdf'), PREVIEW_PDF)
   assert.equal(previewMimeType('Terminal Report.pdf'), 'application/pdf')
+})
+
+test('a fetched octet-stream blob is re-typed for in-browser preview', () => {
+  const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])
+  const octet = new Blob([bytes], { type: 'application/octet-stream' })
+
+  assert.equal(retypeForPreview(octet, 'endorsement.pdf').type, 'application/pdf')
+  assert.equal(retypeForPreview(octet, 'scan.PNG').type, 'image/png')
+  assert.equal(retypeForPreview(octet, 'report.docx'), octet, 'no preview type: unchanged')
 })
 
 test('the extension check ignores case, spaces and dotted file names', () => {

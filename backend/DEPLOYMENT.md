@@ -177,7 +177,8 @@ for f in \
   migration-03-db-audit-status-history.sql \
   migration-norm-01-relational-integrity.sql \
   migration-norm-02-relational-observability.sql \
-  migration-norm-03-fk-consolidation.sql
+  migration-norm-03-fk-consolidation.sql \
+  migration-add-proposal-certification.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"
@@ -206,6 +207,19 @@ Create Proposal form's section 25 field was renamed to "Line-Item Budget" while 
 database column kept the older name. The mismatch is a naming inconsistency, not a bug:
 the script and the entity agree on `beneficiaries_file_path`. Renaming the file would
 break anyone's saved list of scripts, so it is left as it is.
+
+### Note on `migration-add-proposal-certification.sql`
+
+The Certification & Endorsement step ("Submitted By" / "Endorsed By") now saves the typed
+name, designation and date of both signatories, plus the Proponent's own uploaded
+signature, with the proposal. The migration only adds eight nullable columns to
+`proposals` (`submitted_by_name`, `_designation`, `_date`, `_file_name`, `_file_path`,
+`endorsed_by_name`, `endorsed_by_designation`, `endorsed_by_date`); it drops and rewrites
+nothing. Existing proposals keep `NULL`, which is exactly "saved before this data was
+persisted", so they reopen and review unchanged. The signature file itself is stored under
+`uploads/submitted-by-signatures/` and served by the authorized `GET /api/files` route; the
+display name and stored path are written only by
+`POST /api/proposals/{id}/submitted-by-signature`, never accepted from the JSON DTO.
 
 ### Note on `migration-rename-dean-role.sql`
 

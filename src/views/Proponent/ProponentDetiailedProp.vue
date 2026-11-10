@@ -23,16 +23,6 @@
         </div>
       </div>
       <div class="header-actions">
-        <!-- Quarterly reporting is only available to approved, SO-issued
-             projects (the same rule the backend enforces). -->
-        <button
-          v-if="canCreateQuarterlyReport"
-          class="btn-primary"
-          :disabled="openingReport"
-          @click="createQuarterlyReport"
-        >
-          {{ openingReport ? 'Opening…' : 'Create Quarterly Report' }}
-        </button>
         <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft" @click="editDraft">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -41,6 +31,17 @@
           Edit Draft
         </button>
         <button class="btn-secondary" @click="printProposal">DOWNLOAD</button>
+        <!-- Beside Download, and only for projects approved for implementation
+             whose Special Order has been issued (the same rule the backend
+             enforces). -->
+        <button
+          v-if="canCreateQuarterlyReport(proposal)"
+          class="btn-primary"
+          :disabled="openingReportId === proposal.id"
+          @click="openQuarterlyReport(proposal)"
+        >
+          {{ openingReportId === proposal.id ? 'Opening…' : 'Create Quarterly Report' }}
+        </button>
       </div>
     </header>
 
@@ -306,6 +307,10 @@
               <h2>Review of Literature</h2>
             </div>
             <div class="card-body">
+              <p class="text-content">{{ proposal.review || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'11'" :field-key="'review'" field-label="Review of Related Literature" :remarks="remarksForField('review')" readonly />
+              <!-- The legacy document is only shown when one was actually uploaded: the
+                   literature is a text section now, so a missing document is not an error. -->
               <div v-if="proposal.reviewFileName" class="file-attachment">
                 <div class="file-icon">📄</div>
                 <div class="file-info">
@@ -315,7 +320,6 @@
                 </div>
                 <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </div>
-              <p v-else class="empty-text">No file uploaded.</p>
             </div>
           </section>
 
@@ -476,14 +480,38 @@
             </div>
           </section>
 
-          <!-- 21. Risks & Assumptions -->
+          <!-- 21. Risk Management Plan -->
           <section class="content-card">
             <div class="card-header">
               <span class="card-number">21</span>
               <h2>Risk Management Plan</h2>
             </div>
             <div class="card-body">
-              <p class="text-content">{{ proposal.risks || 'Not provided' }}</p>
+              <!-- The structured plan (every saved entry, in order). A proposal that predates
+                   the table carries no rows and its single-text plan is shown instead. -->
+              <div v-if="proposal.riskManagement && proposal.riskManagement.length" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Identified Risks</th>
+                      <th>Likelihood</th>
+                      <th>Impact</th>
+                      <th>Mitigation Measure</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.riskManagement" :key="index">
+                      <td>{{ index + 1 }}</td>
+                      <td>{{ row.identifiedRisks || '-' }}</td>
+                      <td>{{ row.likelihood || '-' }}</td>
+                      <td>{{ row.impact || '-' }}</td>
+                      <td>{{ row.mitigationMeasure || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="text-content">{{ proposal.risks || 'Not provided' }}</p>
               <FieldRemarkControl :proposal-id="proposal.id" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
             </div>
           </section>
@@ -495,7 +523,7 @@
               <h2>Logical Framework</h2>
             </div>
             <div class="card-body">
-              <div v-if="proposal.logFrame && proposal.logFrame.length > 0" class="table-wrapper">
+              <div v-if="proposal.logFrames && proposal.logFrames.length > 0" class="table-wrapper">
                 <table class="data-table">
                   <thead>
                     <tr>
@@ -545,7 +573,7 @@
                   <tbody>
                     <tr v-for="(row, index) in proposal.personnel" :key="index">
                       <td>{{ row.position || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].position`" field-label="Position" :remarks="remarksForField(`personnel[${index}].position`)" readonly /></td>
-                      <td>{{ row.time || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly /></td>
+                      <td>{{ formatTimeDevoted(row.timeDevoted) || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly /></td>
                       <td>{{ row.responsibilities || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].responsibilities`" field-label="Responsibilities" :remarks="remarksForField(`personnel[${index}].responsibilities`)" readonly /></td>
                     </tr>
                   </tbody>
@@ -562,14 +590,14 @@
               <h2>Line-Item Budget Requirement</h2>
             </div>
             <div class="card-body">
-              <div v-if="proposal.budgetFileName" class="file-attachment">
+              <div v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="file-attachment">
                 <div class="file-icon">📄</div>
                 <div class="file-info">
-                  <p class="file-name">{{ proposal.beneficiariesFileName }}</p>
+                  <p class="file-name">{{ budgetDocumentName(proposal) }}</p>
                   <FieldRemarkControl :proposal-id="proposal.id" :section-key="'25'" :field-key="'beneficiariesFileName'" field-label="Line-Item Budget (document)" :remarks="remarksForField('beneficiariesFileName')" readonly />
                   <p class="file-type">Budget Document</p>
                 </div>
-                <button class="btn-download" @click="downloadFile(proposal.budgetFileName)">DOWNLOAD</button>
+                <button class="btn-download" @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
               </div>
               <p v-else class="empty-text">No budget file uploaded.</p>
             </div>
@@ -616,6 +644,56 @@
             </div>
             <div class="card-body">
               <p class="text-content">Please refer to the attached documents for additional necessary documents.</p>
+            </div>
+          </section>
+
+          <!-- 28. Certification & Endorsement -->
+          <section
+            v-if="hasCertificationData"
+            class="content-card"
+          >
+            <div class="card-header">
+              <span class="card-number">28</span>
+              <h2>Certification &amp; Endorsement</h2>
+            </div>
+            <div class="card-body">
+              <!-- Submitted By: entered by the proponent in the Certification step. -->
+              <div v-if="hasSubmittedByData" class="certification-block">
+                <h3 class="subsection-title">Submitted By</h3>
+                <p class="text-content">
+                  <strong>{{ proposal.submittedByName || 'Not provided' }}</strong>
+                  <span v-if="proposal.submittedByDesignation"> — {{ proposal.submittedByDesignation }}</span>
+                </p>
+                <p v-if="proposal.submittedByDate" class="text-content">Date: {{ proposal.submittedByDate }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'submittedByName'" field-label="Submitted By (name)" :remarks="remarksForField('submittedByName')" readonly />
+                <div v-if="proposal.submittedByFileName || proposal.submittedByFilePath" class="file-attachment">
+                  <div class="file-icon">📄</div>
+                  <div class="file-info">
+                    <p class="file-name">{{ proposal.submittedByFileName || 'Signature' }}</p>
+                    <p class="file-type">Signature</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.submittedByFilePath || proposal.submittedByFileName)">DOWNLOAD</button>
+                </div>
+              </div>
+
+              <!-- Endorsed By: the office that endorsed the proposal (PDF only). -->
+              <div v-if="hasEndorsedByData" class="certification-block">
+                <h3 class="subsection-title">Endorsed By</h3>
+                <p class="text-content">
+                  <strong>{{ proposal.endorsedByName || 'Not provided' }}</strong>
+                  <span v-if="proposal.endorsedByDesignation"> — {{ proposal.endorsedByDesignation }}</span>
+                </p>
+                <p v-if="proposal.endorsedByDate" class="text-content">Date: {{ proposal.endorsedByDate }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'endorsedByName'" field-label="Endorsed By (name)" :remarks="remarksForField('endorsedByName')" readonly />
+                <div v-if="proposal.endorsementFileName || proposal.endorsementFilePath" class="file-attachment">
+                  <div class="file-icon">📄</div>
+                  <div class="file-info">
+                    <p class="file-name">{{ proposal.endorsementFileName || 'Endorsement Document' }}</p>
+                    <p class="file-type">PDF Document</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.endorsementFilePath || proposal.endorsementFileName)">DOWNLOAD</button>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -691,9 +769,9 @@
                 <span>📄 GAD Score</span>
                 <button @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </div>
-              <div v-if="proposal.beneficiariesFileName" class="doc-item">
-                <span>📄 Beneficiaries</span>
-                <button @click="downloadFile(proposal.beneficiariesFileName)">DOWNLOAD</button>
+              <div v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="doc-item">
+                <span>📄 Line-Item Budget</span>
+                <button @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
               </div>
             </div>
           </div>
@@ -719,6 +797,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { budgetDocumentName } from '@/utils/budgetDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import ProponentCallForProposal from './ProponentCallForProposal.vue'
@@ -728,8 +807,11 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import { useDialog } from '@/composables/useDialog'
 import { isDuplicable } from '@/utils/proposalStatus'
-import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
+import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+// Section 24: "% Time Devoted" is stored as a plain number and always displayed as a
+// percentage ("50" -> "50%"), including the value of an older record saved as "50%".
+import { formatTimeDevoted } from '@/utils/personnelTime'
 
 const route = useRoute()
 const router = useRouter()
@@ -818,6 +900,31 @@ const createProposalCopy = async (call) => {
   }
 }
 
+/**
+ * Section 28 only exists once the proponent actually entered certification data. Older
+ * proposals (and drafts still at an earlier step) have none, and showing an empty card
+ * with "Not provided" everywhere would imply a requirement that never existed for them.
+ */
+const hasSubmittedByData = computed(() => Boolean(
+  proposal.value.submittedByName
+  || proposal.value.submittedByDesignation
+  || proposal.value.submittedByDate
+  || proposal.value.submittedByFileName
+  || proposal.value.submittedByFilePath
+))
+
+const hasEndorsedByData = computed(() => Boolean(
+  proposal.value.endorsedByName
+  || proposal.value.endorsedByDesignation
+  || proposal.value.endorsedByDate
+  || proposal.value.endorsementFileName
+  || proposal.value.endorsementFilePath
+))
+
+const hasCertificationData = computed(
+  () => hasSubmittedByData.value || hasEndorsedByData.value
+)
+
 const hasPriorityAgendas = computed(() => {
   if (!proposal.value.priorityAgendas) return false
   return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
@@ -864,8 +971,19 @@ const formatDate = (dateString) => {
   })
 }
 
-const downloadFile = (fileName) => {
-  downloadUploadedFile(fileName)
+const downloadFile = async (fileName) => {
+  // A stored reference that the file route cannot serve (the bytes were moved or lost)
+  // must be reported, never silently ignored: the document is listed as attached, so a
+  // failed download is a retrieval problem the proponent needs to know about.
+  try {
+    await downloadUploadedFile(fileName)
+  } catch (err) {
+    const status = err?.response?.status
+    const detail = status === 404
+      ? 'The stored file could not be found on the server.'
+      : err?.message || 'The file could not be downloaded.'
+    await showAlert(detail, { type: 'error', title: 'File Not Retrieved' })
+  }
 }
 
 const printProposal = () => {
@@ -876,48 +994,10 @@ const editDraft = () => {
   router.push({ path: '/proposals', query: { edit: proposal.value.id } })
 }
 
-// Quarterly reporting is only offered to projects that satisfy the same rule the
-// backend enforces: approved for implementation with an issued Special Order.
-const canCreateQuarterlyReport = computed(() => isQuarterlyReportEligible(proposal.value))
-const openingReport = ref(false)
-
-// Opens the existing quarterly progress report workflow for this project. The
-// next required stage is resolved through the existing endpoint the Quarterly
-// Reports page also uses, so an unfinished draft is continued instead of starting
-// a second one, and a project whose reporting is already complete says so instead
-// of opening an empty form. Nothing is created here - the report record is only
-// written when the proponent saves or submits the form itself.
-const createQuarterlyReport = async () => {
-  const proposalId = proposal.value.id
-  if (!proposalId || !canCreateQuarterlyReport.value || openingReport.value) return
-
-  openingReport.value = true
-  try {
-    const res = await api.get(`/api/quarterly-reports/next-stage/${proposalId}`)
-    if (res.data?.allStagesComplete) {
-      await showAlert('All required reports for this project have already been submitted.', {
-        type: 'info',
-        title: 'Quarterly Reporting'
-      })
-      return
-    }
-    const draftId = res.data?.draftReportId
-    router.push(
-      draftId
-        ? `/quarterly-reports/${proposalId}/edit/${draftId}`
-        : `/quarterly-reports/${proposalId}/new`
-    )
-  } catch (err) {
-    console.error(err)
-    const body = err.response?.data
-    const message =
-      (body && typeof body === 'object' ? body.error : body) ||
-      'Quarterly reporting is not available for this project.'
-    await showAlert(String(message), { type: 'error', title: 'Quarterly Report' })
-  } finally {
-    openingReport.value = false
-  }
-}
+// Quarterly reporting is opened through the same composable Proposal Monitoring
+// uses, so both entry points share one eligibility rule and one route builder.
+const { openingReportId, canCreateQuarterlyReport, openQuarterlyReport } =
+  useQuarterlyReportLauncher()
 
 const formatReviewerPosition = (position) => {
   if (!position) return 'N/A'
@@ -1330,6 +1410,34 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* CERTIFICATION & ENDORSEMENT (section 28) */
+.certification-block {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.certification-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.certification-block .subsection-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.certification-block .text-content + .text-content {
+  margin-top: 4px;
+}
+
+.certification-block .file-attachment {
+  margin-top: 12px;
 }
 
 .objectives div {

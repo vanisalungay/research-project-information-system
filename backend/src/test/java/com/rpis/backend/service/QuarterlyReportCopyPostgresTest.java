@@ -76,6 +76,11 @@ class QuarterlyReportCopyPostgresTest {
         p.setProponent(savedProponent);
         p.setStatus("APPROVED");
         p.setSoNumber("SO-2026-001");
+        // The OC final-approval record: the SO number together with the timestamp at
+        // which the Chancellor's Office recorded it. Without both, the proposal has not
+        // completed the approval chain and quarterly reports are not available.
+        p.setSoUploadedAt(LocalDateTime.of(2026, 1, 15, 9, 30));
+        p.setNeedsBudget(Boolean.FALSE);
         proposal = proposalRepository.saveAndFlush(p);
     }
 
@@ -234,6 +239,8 @@ class QuarterlyReportCopyPostgresTest {
         other.setProponent(proposal.getProponent());
         other.setStatus("APPROVED");
         other.setSoNumber("SO-2026-002");
+        other.setSoUploadedAt(LocalDateTime.of(2026, 2, 3, 11, 0));
+        other.setNeedsBudget(Boolean.FALSE);
         Proposal otherProposal = proposalRepository.saveAndFlush(other);
 
         QuarterlyProgressReport foreign = new QuarterlyProgressReport();

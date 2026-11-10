@@ -32,6 +32,14 @@ public interface OvcafValidationRepository extends JpaRepository<OvcafValidation
     @Query("SELECT COUNT(ov) FROM OvcafValidation ov WHERE ov.decision = :decision")
     long countByDecision(@Param("decision") String decision);
 
+    /**
+     * True when OVCAF recorded the given decision as an endorsement of the budget for
+     * this proposal. Used by the quarterly-reporting eligibility rule to require the
+     * actual OVCAF record - not merely an APPROVED-looking status - whenever the
+     * Chancellor routed the proposal through budget evaluation.
+     */
+    boolean existsByProposalIdAndDecisionAndBudgetEndorsedTrue(Long proposalId, String decision);
+
     @Query("SELECT COUNT(ov) FROM OvcafValidation ov WHERE ov.budgetEndorsed = true")
     long countEndorsed();
 

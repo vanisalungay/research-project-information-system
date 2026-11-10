@@ -83,6 +83,28 @@ class CurrentUserTest {
     }
 
     @Test
+    void ovcafMayOpenEveryProposalForwardedToItsStage() {
+        authenticate(3L, "OVCAF");
+        for (String status : CurrentUser.OVCAF_VISIBLE_STATUSES) {
+            Proposal proposal = proposalOwnedBy(99L);
+            proposal.setStatus(status);
+            currentUser.requireAccessTo(proposal);
+        }
+    }
+
+    @Test
+    void ovcafCannotOpenADraftOrAnEarlierReviewStage() {
+        authenticate(3L, "OVCAF");
+        for (String status : List.of("DRAFT", "SUBMITTED", "UNDER_REVIEW", "RPS_REVIEW", "REC_APPROVED")) {
+            Proposal proposal = proposalOwnedBy(99L);
+            proposal.setStatus(status);
+            ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                    () -> currentUser.requireAccessTo(proposal), status + " must stay hidden from OVCAF");
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+        }
+    }
+
+    @Test
     void requireSelfRejectsAnotherUserId() {
         authenticate(7L, "PROPONENT");
         currentUser.requireSelf(7L);

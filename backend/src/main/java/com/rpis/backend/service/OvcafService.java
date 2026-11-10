@@ -10,6 +10,7 @@ import com.rpis.backend.model.User;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class OvcafService {
+
+    /**
+     * Proposals OVCAF may open. A draft (or a proposal still in an earlier review stage)
+     * must not be reachable through the OVCAF detail route, even by guessing its id.
+     * The allow-list lives on {@link CurrentUser} so the proposal routes agree.
+     */
+    private static final Set<String> OVCAF_DETAIL_STATUSES = CurrentUser.OVCAF_VISIBLE_STATUSES;
 
     private final ProposalRepository proposalRepository;
     private final OvcafValidationRepository validationRepository;
@@ -40,6 +48,11 @@ public class OvcafService {
                 "RELEASED");
         List<Proposal> proposals = proposalRepository.findByStatusIn(ovcafStatuses);
         return proposals.stream()
+                // A proposal only becomes OVCAF's concern after the Office of the
+                // Chancellor has recorded its final approval and Special Order. A record
+                // that merely carries an OVCAF-adjacent status (for example one advanced
+                // by hand while its OC approval failed) must not appear as received.
+                .filter(OvcafService::hasCompletedOcApproval)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -50,6 +63,7 @@ public class OvcafService {
     public List<OvcafProposalResponse> getPendingValidationProposals() {
         List<Proposal> proposals = proposalRepository.findByStatus("FOR_OVCAF_APPROVAL");
         return proposals.stream()
+                .filter(OvcafService::hasCompletedOcApproval)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -60,6 +74,13 @@ public class OvcafService {
     public OvcafProposalResponse getProposalDetails(Long proposalId) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+        // Same visibility rule as the listing: a draft or a proposal that has not reached
+        // OVCAF is reported as not found, so its content is never exposed through this route.
+        if (proposal.getStatus() == null
+                || !OVCAF_DETAIL_STATUSES.contains(proposal.getStatus().toUpperCase(Locale.ROOT))
+                || !hasCompletedOcApproval(proposal)) {
+            throw new IllegalArgumentException("Proposal not found: " + proposalId);
+        }
         return mapToResponse(proposal);
     }
 
@@ -70,6 +91,22 @@ public class OvcafService {
     public OvcafValidation submitValidation(Long proposalId, OvcafValidationRequest request) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+
+        // OVCAF's decision is a separate institutional act from the Chancellor's. It is
+        // only valid for a proposal whose OC final approval and SO have been recorded,
+        // and only while the proposal is actually awaiting budget evaluation - so a
+        // repeated or stale request can never overwrite an earlier OVCAF record or
+        // advance a proposal that has already moved on.
+        requireCompletedOcApproval(proposal);
+        requireAwaitingBudgetEvaluation(proposal);
+
+        String decision = request.getDecision();
+        if (!"APPROVED_ENDORSED".equals(decision)
+                && !"RETURNED_FOR_REVISION".equals(decision)
+                && !"REJECTED".equals(decision)) {
+            throw new IllegalArgumentException(
+                    "Unknown OVCAF decision. Use APPROVED_ENDORSED, RETURNED_FOR_REVISION or REJECTED.");
+        }
 
         User validator = null;
         if (request.getValidatedById() != null) {
@@ -101,7 +138,12 @@ public class OvcafService {
         switch (request.getDecision()) {
             case "APPROVED_ENDORSED":
                 // Budget endorsed, proposal is now approved for implementation
-                // (no longer loops back to OC - OVCAF approval is final for budget matters)
+                // (no longer loops back to OC - OVCAF approval is final for budget matters).
+                // An implementation approval is only valid for a project whose Special
+                // Order has actually been issued by the Office of the Chancellor; without
+                // the SO the proposal would look approved but could never create the
+                // quarterly reports an implementation-approved project must file.
+                requireIssuedSpecialOrder(proposal);
                 validation.setBudgetEndorsed(true);
                 validation.setBudgetEndorsedAt(LocalDateTime.now());
                 proposal.setStatus("APPROVED");
@@ -133,6 +175,11 @@ public class OvcafService {
     public Proposal endorseBudget(Long proposalId, Long endorsedById) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+
+        // Same rules as submitValidation: OVCAF may only act on a proposal whose OC
+        // approval and SO are recorded, and only while it awaits budget evaluation.
+        requireCompletedOcApproval(proposal);
+        requireAwaitingBudgetEvaluation(proposal);
 
         // Get or create validation record
         OvcafValidation validation = validationRepository
@@ -179,6 +226,7 @@ public class OvcafService {
     public Proposal authorizeBudget(Long proposalId, Long authorizedById) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+        requireCompletedOcApproval(proposal);
 
         OvcafValidation validation = validationRepository
                 .findTopByProposalIdOrderByCreatedAtDesc(proposalId)
@@ -209,6 +257,7 @@ public class OvcafService {
     public Proposal releaseFunds(Long proposalId, Long releasedById) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+        requireCompletedOcApproval(proposal);
 
         OvcafValidation validation = validationRepository
                 .findTopByProposalIdOrderByCreatedAtDesc(proposalId)
@@ -257,7 +306,11 @@ public class OvcafService {
                 "RELEASED",
                 "RETURNED",
                 "REJECTED");
-        List<Proposal> proposals = proposalRepository.findByStatusIn(ovcafStatuses);
+        // Only proposals with a completed OC approval + SO are OVCAF's to report on;
+        // a record advanced without them is not counted as received from OC.
+        List<Proposal> proposals = proposalRepository.findByStatusIn(ovcafStatuses).stream()
+                .filter(OvcafService::hasCompletedOcApproval)
+                .toList();
 
         // Calculate totals
         BigDecimal totalBudget = BigDecimal.ZERO;
@@ -321,6 +374,74 @@ public class OvcafService {
 
     // ========== Helper Methods ==========
 
+    /**
+     * True when the Office of the Chancellor has recorded its final approval and the
+     * Special Order it issued on the proposal itself: an SO number and the time it
+     * was recorded. Both are written in the same transaction as the OC approval, so
+     * either one missing means the OC step did not complete. The workflow status is
+     * deliberately not used as evidence - a proposal can carry an OVCAF-visible
+     * status and still have no OC record (the historic inconsistent records).
+     */
+    static boolean hasCompletedOcApproval(Proposal proposal) {
+        return proposal != null
+                && trimToNull(proposal.getSoNumber()) != null
+                && proposal.getSoUploadedAt() != null;
+    }
+
+    /**
+     * OVCAF may only evaluate a proposal that is still awaiting its budget decision.
+     * This is what makes a retry or a double submission harmless: it cannot create a
+     * second validation record or advance an already-decided proposal.
+     */
+    private void requireAwaitingBudgetEvaluation(Proposal proposal) {
+        String status = proposal.getStatus() == null
+                ? ""
+                : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"FOR_OVCAF_APPROVAL".equals(status)) {
+            throw new IllegalStateException(
+                    "This proposal is not awaiting OVCAF budget evaluation "
+                            + "(current status: " + (status.isEmpty() ? "none" : status) + ").");
+        }
+    }
+
+    /**
+     * Refuses any OVCAF action on a proposal whose OC final approval and SO issuance
+     * are not complete. OVCAF approval is never a substitute for the Chancellor's.
+     */
+    private void requireCompletedOcApproval(Proposal proposal) {
+        if (!hasCompletedOcApproval(proposal)) {
+            throw new IllegalStateException(
+                    "This proposal has no completed Office of the Chancellor final approval and "
+                            + "Special Order (SO). It cannot be evaluated by OVCAF until the SO number "
+                            + "and issuance are recorded by the Chancellor's Office.");
+        }
+    }
+
+    /**
+     * An implementation approval is only valid once the Office of the Chancellor has
+     * issued the Special Order. Rejecting the approval here keeps every
+     * "APPROVED for implementation" record consistent with the quarterly-reporting
+     * rule (approved for implementation AND issued SO); the caller is told exactly
+     * what is missing instead of the proposal being silently marked approved.
+     */
+    private void requireIssuedSpecialOrder(Proposal proposal) {
+        String soNumber = proposal != null ? trimToNull(proposal.getSoNumber()) : null;
+        if (soNumber == null) {
+            throw new IllegalStateException(
+                    "This proposal has no issued Special Order (SO). The Office of the Chancellor "
+                            + "must record the SO number (Final Approval) before the proposal can be "
+                            + "approved for implementation.");
+        }
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private OvcafProposalResponse mapToResponse(Proposal proposal) {
         OvcafProposalResponse response = new OvcafProposalResponse();
         response.setId(proposal.getId());
@@ -337,16 +458,34 @@ public class OvcafService {
         response.setCreatedAt(proposal.getCreatedAt());
         response.setUpdatedAt(proposal.getUpdatedAt());
 
-        // Proponent info
+        // Proponent info. The card and the details view must name the person typed into the
+        // proposal form ("Proponent Name"), not the generic account that owns the record.
+        // The form value is persisted as `projectLeader`; the account name is only a fallback
+        // for records that predate the form field.
         if (proposal.getProponent() != null) {
-            response.setProponentName(proposal.getProponent().getName());
             response.setProponentId(proposal.getProponent().getId());
         }
+        String formProponent = trimToNull(proposal.getProjectLeader());
+        if (formProponent != null) {
+            response.setProponentName(formProponent);
+        } else if (proposal.getProponent() != null) {
+            response.setProponentName(proposal.getProponent().getName());
+        }
 
-        // Budget breakdown
+        // Budget breakdown (legacy amount rows; not the section 25 source any more)
         List<ProposalBudget> budgets = proposal.getBudget();
         response.setBudgetBreakdown(budgets != null ? budgets : new ArrayList<>());
         response.setTotalBudget(calculateTotalBudget(proposal));
+
+        // Section 25: the attached Line-Item Budget document, served by /api/files.
+        response.setBeneficiariesFileName(proposal.getBeneficiariesFileName());
+        response.setBeneficiariesFilePath(proposal.getBeneficiariesFilePath());
+
+        // The Special Order already issued by OC, when there is one. Approval for
+        // implementation is only valid after this exists.
+        response.setSoNumber(proposal.getSoNumber());
+        response.setSoFileName(proposal.getSoFileName());
+        response.setSoUploadedAt(proposal.getSoUploadedAt());
 
         // Get latest validation if exists
         validationRepository.findTopByProposalIdOrderByCreatedAtDesc(proposal.getId())

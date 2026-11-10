@@ -80,30 +80,21 @@
           <h4>EXECUTIVE SUMMARY</h4>
           <p>{{ proposal.executiveSummary || 'No executive summary provided.' }}</p>
 
-          <h4>BUDGET</h4>
-          <table class="impl-table" v-if="proposal.budget && proposal.budget.length > 0">
-            <thead>
-              <tr>
-                <th>Agency</th>
-                <th>PS</th>
-                <th>MOOE</th>
-                <th>EO</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, idx) in proposal.budget" :key="idx">
-                <td>{{ item.agency || 'N/A' }}</td>
-                <td>{{ item.ps || '0' }}</td>
-                <td>{{ item.mooe || '0' }}</td>
-                <td>{{ item.eo || '0' }}</td>
-                <td>{{ item.total || '0' }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p v-else>No budget data available.</p>
+          <h4>LINE-ITEM BUDGET</h4>
+          <div v-if="budgetFileName" class="budget-doc-row">
+            <span class="budget-doc-name">📄 {{ budgetFileName }}</span>
+            <button class="download-btn" @click="viewBudgetDocument">VIEW</button>
+            <button class="download-btn" @click="saveBudgetDocument">DOWNLOAD</button>
+          </div>
+          <!-- A stored reference that yielded no printable name is a retrieval problem,
+               not a missing document. -->
+          <p v-else-if="hasBudgetReference" class="error-text">
+            The Line-Item Budget document is attached, but its reference could not be resolved.
+          </p>
+          <p v-else class="budget-doc-empty">No Line-Item Budget uploaded.</p>
+          <p v-if="budgetDocError" class="error-text">{{ budgetDocError }}</p>
 
-          <button class="download-btn" @click="downloadProject">DOWNLOAD</button>
+          <button class="download-btn" @click="downloadProject">DOWNLOAD COMPLETE PROPOSAL</button>
         </div>
       </div>
     </template>
@@ -141,6 +132,10 @@
     <div class="overlay" v-if="showSuccess">
       <div class="success-box">{{ successMessage }}</div>
     </div>
+
+    <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
+    <LineItemBudgetPreviewModal v-if="showBudgetPreview" :file-path="budgetDocumentPath(proposal)"
+      :file-name="budgetFileName" @close="showBudgetPreview = false" />
   </div>
 </template>
 
@@ -150,7 +145,10 @@ import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument'
+import { downloadUploadedFile } from '@/utils/fileDownload'
 
 const route = useRoute()
 
@@ -159,6 +157,39 @@ const loading = ref(true)
 const error = ref(null)
 const actionLoading = ref(false)
 const approvalType = ref('budget')
+
+// Section 25 is an uploaded document, not a recomputable amount table. This page
+// already renders the same saved record (GET /api/proposals/{id}) as the proposal
+// viewer, so the Project Leader and the budget document cannot disagree with it.
+const budgetFileName = computed(() => budgetDocumentName(proposal.value))
+const hasBudgetReference = computed(() => Boolean(budgetDocumentPath(proposal.value)))
+const budgetDocError = ref('')
+// View opens the preview modal over this page; the evaluation state stays as it is.
+const showBudgetPreview = ref(false)
+
+const viewBudgetDocument = () => {
+  if (!budgetDocumentPath(proposal.value)) {
+    budgetDocError.value = 'The Line-Item Budget document could not be retrieved.'
+    return
+  }
+  budgetDocError.value = ''
+  showBudgetPreview.value = true
+}
+
+const saveBudgetDocument = async () => {
+  const path = budgetDocumentPath(proposal.value)
+  if (!path) {
+    budgetDocError.value = 'The Line-Item Budget document could not be retrieved.'
+    return
+  }
+  budgetDocError.value = ''
+  try {
+    await downloadUploadedFile(path, budgetFileName.value)
+  } catch (err) {
+    console.error(err)
+    budgetDocError.value = 'The Line-Item Budget document could not be downloaded. Please try again.'
+  }
+}
 
 // Field-level remarks of the active revision round.
 const remarksResponse = ref(null)
@@ -216,6 +247,7 @@ const canProcessBudget = computed(() => {
 const loadProposal = async () => {
   loading.value = true
   error.value = null
+  showBudgetPreview.value = false
   try {
     const proposalId = route.params.id
     if (!proposalId) {
@@ -400,6 +432,26 @@ const downloadProject = () => {
   border-radius: 10px;
   cursor: pointer;
   margin-top: 20px;
+}
+.budget-doc-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.budget-doc-name {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.budget-doc-row .download-btn {
+  margin: 0;
+  display: inline-block;
+  padding: 8px 16px;
+  font-weight: bold;
+}
+.budget-doc-empty {
+  color: #6b7280;
+  font-style: italic;
 }
 .overlay {
   position: fixed;

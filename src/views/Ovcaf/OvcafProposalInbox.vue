@@ -22,7 +22,7 @@
                                     <path d="m21 21-4.3-4.3" />
                                 </svg>
                                 <input type="text" v-model="filters.search" @input="filters.page = 1"
-                                    placeholder="Search by ID, title, or proponent..."
+                                    placeholder="Search by ID, title, or project leader..."
                                     class="form-control search-input" />
                                 <button v-if="filters.search" @click="filters.search = ''; filters.page = 1"
                                     class="clear-btn" type="button">&times;</button>
@@ -71,8 +71,8 @@
                                         sortIndicator('id') }}</span></th>
                                     <th class="sortable" @click="toggleSort('title')">Research Title <span
                                             class="sort-ind">{{ sortIndicator('title') }}</span></th>
-                                    <th class="sortable" @click="toggleSort('proponent')">Proponent <span
-                                            class="sort-ind">{{ sortIndicator('proponent') }}</span></th>
+                                    <th class="sortable" @click="toggleSort('projectLeader')">Project Leader <span
+                                            class="sort-ind">{{ sortIndicator('projectLeader') }}</span></th>
                                     <th class="sortable" @click="toggleSort('budget')">Budget <span class="sort-ind">{{
                                         sortIndicator('budget') }}</span></th>
                                     <th class="sortable" @click="toggleSort('dateReceived')">Date Received <span
@@ -87,7 +87,7 @@
                                     <td>
                                         <div class="title-cell" :title="p.title">{{ p.title }}</div>
                                     </td>
-                                    <td>{{ p.proponent }}</td>
+                                    <td>{{ p.projectLeader }}</td>
                                     <td><span class="college-abbr" :title="p.college">{{ getCollegeAbbr(p.college)
                                             }}</span></td>
                                     <td class="font-mono font-semibold">{{ formatCurrency(p.budget) }}</td>
@@ -96,7 +96,7 @@
                                     <td>
                                         <div class="actions-cell">
                                             <router-link :to="`/ovcaf/proposals/${p.id}`"
-                                                class="btn btn-secondary btn-sm">View</router-link>
+                                                class="btn btn-secondary btn-sm">View Details</router-link>
                                             <router-link v-if="isPending(p)" :to="`/ovcaf/validate/${p.id}`"
                                                 class="btn btn-primary btn-sm">Validate</router-link>
                                         </div>
@@ -163,7 +163,9 @@ const fetchProposals = async () => {
             id: p.id,
             documentId: p.documentId || '',
             title: p.projectTitle || 'Untitled Project',
-            proponent: p.proponentName || 'Unknown',
+            // The form's Project Leader must win; `proponentName` is only the
+            // server-side fallback for records that never carried the form field.
+            projectLeader: p.projectLeader || p.proponentName || 'Unknown',
             college: p.college || 'Unknown',
             budget: p.totalBudget || 0,
             dateReceived: p.createdAt,
@@ -209,7 +211,7 @@ const filteredProposals = computed(() => {
         result = result.filter(p =>
             (p.title || '').toLowerCase().includes(q) ||
             String(p.id).toLowerCase().includes(q) ||
-            (p.proponent || '').toLowerCase().includes(q)
+            (p.projectLeader || '').toLowerCase().includes(q)
         );
     }
     if (filters.status !== 'All') result = result.filter(p => p.status === filters.status);

@@ -21,6 +21,13 @@
  * coverage test asserts this registry stays in sync with the entity.
  */
 
+import { budgetDocumentName } from '@/utils/budgetDocument'
+
+// Section 24: a repeated table cell may declare a `format` function, which the shared
+// reviewer renderer applies to the stored value - "% Time Devoted" is stored as a plain
+// number and shown as a percentage.
+import { formatTimeDevoted } from './personnelTime.js'
+
 /** Layout hints used by the reviewer renderer (ProposalFieldSection.vue). */
 export const FIELD_LAYOUTS = {
   GRID: 'grid',
@@ -148,7 +155,10 @@ export const PROPOSAL_FIELD_SECTIONS = [
     layout: FIELD_LAYOUTS.STACK,
     fields: [
       { key: 'review', label: 'Review of Literature', form: 'review_of_literature', kind: 'long' },
-      { key: 'reviewFileName', label: 'Review of Literature (document)', form: 'review_of_literature_file', kind: 'file' },
+      // Section 11 is text, not an upload. A document attached to a proposal saved
+      // before it became text is shown when it exists; a missing one is never reported
+      // as "No file uploaded.".
+      { key: 'reviewFileName', label: 'Review of Literature (legacy document)', form: 'review_of_literature_file', kind: 'optionalFile' },
     ],
   },
   {
@@ -204,8 +214,13 @@ export const PROPOSAL_FIELD_SECTIONS = [
     label: 'Gender and Development (GAD) Score',
     layout: FIELD_LAYOUTS.STACK,
     fields: [
+      // The interactive GAD Checklist 2: every response, comment, criterion subtotal,
+      // total and interpretation, rendered read-only by the shared checklist component.
+      { key: 'gadChecklist', label: 'GAD Checklist 2', form: null, kind: 'gadChecklist' },
       { key: 'gadScore', label: 'GAD Score', form: null },
-      { key: 'gadFileName', label: 'GAD Score (document)', form: 'gad_score_file', kind: 'file' },
+      // A GAD document attached to a proposal saved before the checklist existed is
+      // shown when it exists; a missing one is never reported as "No file uploaded.".
+      { key: 'gadFileName', label: 'GAD Score (legacy document)', form: 'gad_score_file', kind: 'optionalFile' },
     ],
   },
   {
@@ -228,7 +243,30 @@ export const PROPOSAL_FIELD_SECTIONS = [
     key: '21',
     label: 'Risk Management Plan',
     layout: FIELD_LAYOUTS.STACK,
-    fields: [{ key: 'risks', label: 'Risk Management Plan', form: 'risks_assumptions', kind: 'long' }],
+    // The single-text plan of a proposal that was saved before the table existed. It is
+    // shown only while the proposal carries no structured entries, so a reviewer sees the
+    // old plan (never lost) or the table (never both, never a duplicate).
+    fields: [
+      {
+        key: 'risks',
+        label: 'Risk Management Plan (single-text plan)',
+        form: 'risks_assumptions',
+        kind: 'long',
+        when: (proposal) => collectionRows(proposal, 'riskManagement').length === 0,
+      },
+    ],
+    collection: {
+      prop: 'riskManagement',
+      form: 'risk_management',
+      entryLabel: 'Risk',
+      primary: 'identifiedRisks',
+      columns: [
+        { key: 'identifiedRisks', label: 'Identified Risks', form: 'identified_risks' },
+        { key: 'likelihood', label: 'Likelihood', form: 'likelihood' },
+        { key: 'impact', label: 'Impact', form: 'impact' },
+        { key: 'mitigationMeasure', label: 'Mitigation Measure', form: 'mitigation_measure' },
+      ],
+    },
   },
   {
     key: '22',
@@ -262,7 +300,7 @@ export const PROPOSAL_FIELD_SECTIONS = [
       primary: 'position',
       columns: [
         { key: 'position', label: 'Position', form: 'position' },
-        { key: 'timeDevoted', label: '% Time Devoted', form: 'effort' },
+        { key: 'timeDevoted', label: '% Time Devoted', form: 'effort', format: formatTimeDevoted },
         { key: 'responsibilities', label: 'Responsibilities', form: 'responsibilities' },
       ],
     },
@@ -312,6 +350,24 @@ export const PROPOSAL_FIELD_SECTIONS = [
     label: 'Other Supporting Documents',
     layout: FIELD_LAYOUTS.NOTE,
     fields: [],
+  },
+  {
+    // The Certification & Endorsement step of the Create Proposal workflow. Its typed
+    // values and uploaded documents are stored with the proposal, so a reviewer sees
+    // exactly the certification the Proponent submitted.
+    key: '28',
+    label: 'Certification & Endorsement',
+    layout: FIELD_LAYOUTS.STACK,
+    fields: [
+      { key: 'submittedByName', label: 'Submitted By: Full Name', form: 'certification.submitted_name' },
+      { key: 'submittedByDesignation', label: 'Submitted By: Designation', form: 'certification.submitted_designation' },
+      { key: 'submittedByDate', label: 'Submitted By: Date', form: 'certification.submitted_date' },
+      { key: 'submittedByFileName', label: 'Submitted By: Signature', form: 'signatureFiles.submitted', kind: 'optionalFile' },
+      { key: 'endorsedByName', label: 'Endorsed By: Full Name', form: 'certification.endorsed_name' },
+      { key: 'endorsedByDesignation', label: 'Endorsed By: Designation', form: 'certification.endorsed_designation' },
+      { key: 'endorsedByDate', label: 'Endorsed By: Date', form: 'certification.endorsed_date' },
+      { key: 'endorsementFileName', label: 'Endorsed By: Endorsement Document', form: 'signatureFiles.endorsed', kind: 'optionalFile' },
+    ],
   },
 ]
 
@@ -500,6 +556,12 @@ function parseSnapshot(value) {
 export function fieldValue(proposal, field) {
   if (!proposal || !field) return ''
   const key = String(field.key)
+  // Section 25 stores the budget as an uploaded document. A draft saved by an older
+  // build can keep the stored path but lose the display name; the document is still
+  // attached, so show the name derived from the path rather than "No file uploaded."
+  if (key === 'beneficiariesFileName') {
+    return budgetDocumentName(proposal)
+  }
   const agendaMatch = key.match(/^priorityAgenda\.(.+)\.value$/)
   if (agendaMatch) {
     const agendaKey = agendaMatch[1]

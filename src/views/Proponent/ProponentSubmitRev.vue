@@ -597,17 +597,23 @@
               </div>
             </section>
 
-            <!-- 21. Risks -->
+            <!-- 21. Risk Management Plan (structured table) -->
             <section class="form-section">
               <div class="section-header">
                 <span class="section-number">21</span>
                 <h3>Risk Management Plan</h3>
               </div>
               <SectionRemarksNotice :section-key="'21'" :remarks="remarksFor('21')" />
-              <div class="section-card">
-                <textarea v-model="proposal.risks_assumptions"
-                  placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
-                  <FieldRemarkControl :proposal-id="proposalId" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
+              <div class="section-card" :class="{ 'has-error-card': riskValidationShown && riskError }">
+                <RiskManagementTable v-model="proposal.risk_management" :show-validation="riskValidationShown" />
+                <!-- A proposal saved before the table existed keeps its single-text plan:
+                     it is shown here and preserved unless structured entries are added. -->
+                <p v-if="legacyRiskPlan" class="risk-legacy-note">
+                  <strong>Saved earlier as a single-text plan.</strong> It is kept on the proposal:
+                  <span class="risk-legacy-text">{{ legacyRiskPlan }}</span>
+                </p>
+                <span class="field-error" v-if="riskValidationShown && riskError">{{ riskError }}</span>
+                <FieldRemarkControl :proposal-id="proposalId" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
               </div>
             </section>
 
@@ -682,8 +688,18 @@
                       <tr v-for="(row, index) in proposal.personnel_requirements" :key="index">
                         <td><input v-model="row.position" placeholder="e.g. Research Assistant" /></td>
                   <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].position`" field-label="Position" :remarks="remarksForField(`personnel[${index}].position`)" readonly />
-                        <td><input v-model="row.effort" placeholder="e.g. 50%" /></td>
+                        <!-- % Time Devoted: a number only; the % symbol is shown beside the field. -->
+                        <td class="percent-cell">
+                          <div class="percent-field">
+                            <input v-model="row.effort" type="number" min="0" max="100" step="0.01"
+                              inputmode="decimal" :placeholder="TIME_DEVOTED_PLACEHOLDER"
+                              :aria-label="`% Time Devoted of personnel entry ${index + 1}`"
+                              @input="onTimeDevotedInput(row, $event)" />
+                            <span class="percent-symbol" aria-hidden="true">%</span>
+                          </div>
+                          <span class="field-error" v-if="timeDevotedErrorFor(index)">{{ timeDevotedErrorFor(index) }}</span>
                   <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly />
+                        </td>
                         <td><input v-model="row.responsibilities" placeholder="e.g. Data collection" /></td>
                   <FieldRemarkControl :proposal-id="proposalId" :section-key="'24'" :field-key="`personnel[${index}].responsibilities`" field-label="Responsibilities" :remarks="remarksForField(`personnel[${index}].responsibilities`)" readonly />
                         <td><button class="btn-icon btn-remove"
@@ -692,6 +708,8 @@
                     </tbody>
                   </table>
                 </div>
+                <p class="field-hint">{{ TIME_DEVOTED_HINT }}</p>
+                <p class="field-hint field-hint-error" v-if="timeDevotedNotice">{{ timeDevotedNotice }}</p>
                 <button class="btn-add" @click="addTableRow('personnel_requirements')">+ Add Row</button>
               </div>
             </section>
@@ -903,12 +921,36 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SectionRemarksNotice from '@/components/SectionRemarksNotice.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
+import RiskManagementTable from '@/components/RiskManagementTable.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { PROPOSAL_SECTIONS, activeRemarksBySection, previousRounds, sectionLabel } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+// Section 21: the structured Risk Management Plan (one row per identified risk with its
+// likelihood, impact and mitigation measure) and the rule that keeps an incomplete row out
+// of a resubmission. A proposal saved before the table existed keeps its single-text plan.
+import {
+  blankRiskEntry,
+  ensureRiskRows,
+  isEmptyRiskEntry,
+  isBlankText,
+  riskEntriesFromSaved,
+  riskEntriesPayload,
+  validateRiskPlan
+} from '@/utils/riskManagement'
+// Section 24: the "% Time Devoted" column accepts a number only (the % symbol is shown
+// beside the field) and is normalized to a value between 0 and 100.
+import {
+  TIME_DEVOTED_CLAMPED_NOTICE,
+  TIME_DEVOTED_HINT,
+  TIME_DEVOTED_PLACEHOLDER,
+  parseTimeDevoted,
+  sanitizeTimeDevotedInput,
+  timeDevotedPayload,
+  validateTimeDevotedRows
+} from '@/utils/personnelTime'
 // Section 05: the framework heading and the agenda list are administrator-managed
 // master data read from the backend (see the Priority Agendas admin page).
 import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
@@ -1033,6 +1075,14 @@ const proposal = ref({
   target_beneficiaries: '',
   sustainability_plan: '',
   limitations: '',
+  // Section 21: the structured Risk Management Plan (one row per identified risk). A
+  // proposal that predates the table keeps its single text in `risks_assumptions`.
+  risk_management: [] as {
+    identifiedRisks: string
+    likelihood: string
+    impact: string
+    mitigationMeasure: string
+  }[],
   risks_assumptions: '',
   literature_cited: '',
   other_projects_number: '',
@@ -1060,6 +1110,61 @@ const proposal = ref({
   // Section 05: populated from the Priority Agenda master data (see resetAgendaState).
   priority_agendas: {}
 })
+
+/* ===== SECTION 21: RISK MANAGEMENT PLAN =====
+   The plan is a table now (see RiskManagementTable.vue): one row per identified risk with
+   its likelihood, its impact and its mitigation measure. The rows live in the same
+   proposal ref as every other section. The single-text plan below is kept for a proposal
+   that was saved before the table existed. */
+const riskValidationShown = ref(false)
+const riskError = ref('')
+
+/** The single-text plan of a proposal that predates the table, shown until rows exist. */
+const legacyRiskPlan = computed(() => {
+  const rows = proposal.value.risk_management || []
+  if (rows.some((row) => !isEmptyRiskEntry(row))) return ''
+  return isBlankText(proposal.value.risks_assumptions) ? '' : proposal.value.risks_assumptions
+})
+
+/* ===== SECTION 24: "% TIME DEVOTED" =====
+   The proponent types a number only; the % symbol is shown beside the field. Every
+   keystroke is sanitized (letters, a typed "%" and a minus sign are dropped) and a value
+   above 100 is capped at 100 with a note saying why. */
+const timeDevotedNotice = ref('')
+
+const onTimeDevotedInput = (row, event) => {
+  const { value, clamped } = sanitizeTimeDevotedInput(event.target.value)
+  row.effort = value
+  if (event.target.value !== value) event.target.value = value
+  timeDevotedNotice.value = clamped ? TIME_DEVOTED_CLAMPED_NOTICE : ''
+}
+
+/** Row-level messages of the % Time Devoted column (index -> message). */
+const timeDevotedErrors = computed(() => validateTimeDevotedRows(proposal.value.personnel_requirements).rowErrors)
+
+const timeDevotedErrorFor = (index) => timeDevotedErrors.value[index] || ''
+
+/* The repeated rows of the revision form (Logical Framework, Personnel, Other Projects)
+   were addressed by the template but the two helpers themselves were never defined, so
+   "+ Add Row" and the remove button did nothing. They are defined here, next to the rows
+   they operate on. */
+const ROW_TEMPLATES = {
+  logical_framework: () => ({ outcome_indicator: '', output_indicator: '' }),
+  personnel_requirements: () => ({ position: '', effort: '', responsibilities: '' }),
+  other_projects: () => ({ project_title: '', funding_agency: '', involvement: '' })
+}
+
+const addTableRow = (key) => {
+  const rows = proposal.value[key]
+  if (!Array.isArray(rows)) return
+  rows.push(ROW_TEMPLATES[key]())
+}
+
+const removeTableRow = (key, index) => {
+  const rows = proposal.value[key]
+  if (!Array.isArray(rows)) return
+  rows.splice(index, 1)
+}
 
 const addSite = () => {
   proposal.value.sites.push({
@@ -1187,6 +1292,7 @@ const fetchProposal = async () => {
       target_beneficiaries: data.beneficiaries || '',
       sustainability_plan: data.sustainability || '',
       limitations: data.limitationsText || '',
+      risk_management: ensureRiskRows(riskEntriesFromSaved(data.riskManagement)),
       risks_assumptions: data.risks || '',
       literature_cited: data.referencesText || '',
       other_projects_number: data.otherProjectsNumber || '',
@@ -1231,7 +1337,8 @@ const fetchProposal = async () => {
           ? data.personnel.map(p => ({
             position: p.position || '',
             // The API returns the entity field name (timeDevoted), not "time".
-            effort: p.timeDevoted || '',
+            // A legacy "50%" is read back as the number 50.
+            effort: parseTimeDevoted(p.timeDevoted),
             responsibilities: p.responsibilities || ''
           }))
           : [],
@@ -1272,6 +1379,30 @@ const submitRevision = async () => {
 
   if (executiveWordCount.value > 200) {
     error.value = 'Executive Summary must not exceed 200 words.'
+    return
+  }
+
+  // Section 21: the same rule the Create Proposal form applies - every risk entry the
+  // proponent started must be complete. A plan that is only the single text of a proposal
+  // saved before the table existed stays valid, so an older record is never blocked.
+  const riskPlan = validateRiskPlan(proposal.value.risk_management, {
+    legacyText: proposal.value.risks_assumptions
+  })
+  if (!riskPlan.valid) {
+    riskValidationShown.value = true
+    riskError.value = riskPlan.message
+    error.value = `Risk Management Plan: ${riskPlan.message}`
+    return
+  }
+  riskValidationShown.value = false
+  riskError.value = ''
+
+  // Section 24: "% Time Devoted" is a percentage - it must be a number between 0 and
+  // 100. The field only accepts a number, so this catches a legacy value (e.g. prose
+  // saved before the field was numeric) before the proposal is resubmitted.
+  const personnelTime = validateTimeDevotedRows(proposal.value.personnel_requirements)
+  if (!personnelTime.valid) {
+    error.value = personnelTime.message
     return
   }
 
@@ -1327,6 +1458,10 @@ const submitRevision = async () => {
     beneficiaries: data.target_beneficiaries || '',
     sustainability: data.sustainability_plan || '',
     risks: data.risks_assumptions || '',
+    // Section 21: the structured Risk Management Plan of this resubmission. The legacy text
+    // above is kept (the backend derives it from these entries when they exist, and leaves
+    // a hand-written plan alone when they do not).
+    riskManagement: riskEntriesPayload(data.risk_management),
     otherProjectsNumber: data.other_projects_number || '',
     status: 'SUBMITTED',
     sites: (data.sites || []).map(s => ({
@@ -1346,7 +1481,7 @@ const submitRevision = async () => {
     })),
     personnel: (data.personnel_requirements || []).map(p => ({
       position: p.position || '',
-      time: p.effort || '',
+      time: timeDevotedPayload(p.effort),
       responsibilities: p.responsibilities || ''
     })),
     otherProjects: (data.other_projects || []).map(op => ({
@@ -2547,4 +2682,47 @@ onMounted(() => {
     align-items: stretch;
   }
 }
+/* ===== SECTION 21: RISK MANAGEMENT PLAN =====
+   A proposal saved before the table existed keeps its single-text plan: it is shown,
+   never lost, and is replaced only when the proponent adds structured entries. */
+.risk-legacy-note {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: #f8faff;
+  border-left: 4px solid #94a3b8;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.risk-legacy-text {
+  display: block;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  color: #1e293b;
+}
+
+/* ===== SECTION 24: "% TIME DEVOTED" =====
+   A number field with the % symbol shown beside it: the symbol is never typed, and the
+   value stays a plain number between 0 and 100. */
+.percent-cell {
+  min-width: 130px;
+}
+
+.percent-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.percent-field input {
+  text-align: right;
+}
+
+.percent-symbol {
+  font-weight: 700;
+  color: #475569;
+}
+
 </style>

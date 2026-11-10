@@ -1,5 +1,6 @@
 package com.rpis.backend.service;
 
+import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -117,6 +118,29 @@ class ProposalBudgetFileServiceTest {
 
     private MockMultipartFile upload(String fileName, String contentType, byte[] bytes) {
         return new MockMultipartFile("file", fileName, contentType, bytes);
+    }
+
+    /**
+     * A draft save that does not mention the budget document (the proponent reopened the
+     * draft and saved again without choosing a new file) must preserve the stored
+     * reference. The null-preserving DTO rule is what keeps the file downloadable.
+     */
+    @Test
+    void savingTheDraftWithoutMentioningTheBudgetKeepsTheStoredDocument() {
+        proposal.setStatus("DRAFT");
+        proposal.setBeneficiariesFileName("Line-Item Budget.pdf");
+        proposal.setBeneficiariesFilePath("budget-files/stored_line-item-budget.pdf");
+        when(proposalRepository.findByIdForUpdate(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+
+        ProposalRequest request = new ProposalRequest();
+        request.setStatus("DRAFT");
+        request.setDuration("12");
+        request.setBeneficiariesFileName(null);
+
+        Proposal saved = service.saveProposal(request, PROPOSAL_ID);
+
+        assertEquals("Line-Item Budget.pdf", saved.getBeneficiariesFileName());
+        assertEquals("budget-files/stored_line-item-budget.pdf", saved.getBeneficiariesFilePath());
     }
 
     @Test

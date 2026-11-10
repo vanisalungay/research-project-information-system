@@ -153,6 +153,10 @@ public class FileController {
                 || matches(proposal.getRoadmapFileName(), wanted)
                 || matches(proposal.getBeneficiariesFilePath(), wanted)
                 || matches(proposal.getBeneficiariesFileName(), wanted)
+                || matches(proposal.getEndorsementFilePath(), wanted)
+                || matches(proposal.getEndorsementFileName(), wanted)
+                || matches(proposal.getSubmittedByFilePath(), wanted)
+                || matches(proposal.getSubmittedByFileName(), wanted)
                 || matches(proposal.getGadFileName(), wanted)
                 || matches(proposal.getSoFilePath(), wanted)
                 || matches(proposal.getSoFileName(), wanted);

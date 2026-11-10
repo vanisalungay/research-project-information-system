@@ -109,19 +109,38 @@
             <div class="section-card">
               <div class="files-summary">
                 
-                <div class="file-row" :class="{ attached: proposalData.technology_roadmap_file }">
+                <div class="file-row" :class="{ attached: technologyMapAttached }">
                   <span class="file-name">Technology Roadmap</span>
-                  <span class="file-status">{{ proposalData.technology_roadmap_file ? '✓ Attached' : '— Not attached'
-                    }}</span>
+                  <span class="file-status">{{ technologyMapAttached ? '✓ Attached' : '— Not attached' }}</span>
                 </div>
-                <div class="file-row" :class="{ attached: proposalData.gad_score_file }">
-                  <span class="file-name">GAD Score</span>
-                  <span class="file-status">{{ proposalData.gad_score_file ? '✓ Attached' : '— Not attached' }}</span>
+                <!-- Section 19 is the interactive checklist, not a file. -->
+                <div class="file-row" :class="{ attached: gadChecklistSummary(proposalData.gad_checklist).completed }">
+                  <span class="file-name">GAD Checklist 2</span>
+                  <span class="file-status">{{ gadChecklistStatus }}</span>
                 </div>
-                <div class="file-row" :class="{ attached: proposalData.line_item_budget_file }">
+                <div class="file-row" :class="{ attached: budgetAttached }">
                   <span class="file-name">Line-Item Budget</span>
-                  <span class="file-status">{{ proposalData.line_item_budget_file ? '✓ Attached' : '— Not attached'
-                    }}</span>
+                  <span class="file-status">{{ budgetAttached ? '✓ Attached' : '— Not attached' }}</span>
+                </div>
+                <div class="file-row" :class="{ attached: submittedSignatureAttached }">
+                  <span class="file-name">Submitted By Signature</span>
+                  <span class="file-status">{{ submittedSignatureAttached ? '✓ Attached' : '— Not attached' }}</span>
+                  <span v-if="submittedSignaturePath" class="file-actions">
+                    <button type="button" class="btn-view-file"
+                      @click="previewUploadedFile(submittedSignaturePath)">View</button>
+                    <button type="button" class="btn-view-file"
+                      @click="downloadUploadedFile(submittedSignaturePath)">Download</button>
+                  </span>
+                </div>
+                <div class="file-row" :class="{ attached: endorsementDocumentAttached }">
+                  <span class="file-name">Endorsement Document</span>
+                  <span class="file-status">{{ endorsementDocumentAttached ? '✓ Attached' : '— Not attached' }}</span>
+                  <span v-if="endorsementDocumentPath" class="file-actions">
+                    <button type="button" class="btn-view-file"
+                      @click="previewUploadedFile(endorsementDocumentPath)">View</button>
+                    <button type="button" class="btn-view-file"
+                      @click="downloadUploadedFile(endorsementDocumentPath)">Download</button>
+                  </span>
                 </div>
               </div>
             </div>
@@ -218,9 +237,36 @@ import {
   uploadTechnologyMap,
 } from '@/utils/technologyMap'
 import { budgetFileKey, budgetFileUploadError, uploadBudgetFile } from '@/utils/budgetFile'
+// Section 19: the checklist is sent with the proposal; a never-started checklist leaves
+// the stored one untouched, while an explicitly emptied one clears it.
+import {
+  gadChecklistPayloadForSave,
+  gadChecklistSummary,
+  gadChecklistValidation,
+} from '@/utils/gadChecklist'
+// "Submitted By" signature: uploaded to the proposal after it exists, exactly like the
+// endorsement document, so the file stays associated with this proposal.
+import {
+  submittedSignatureKey,
+  submittedSignatureUploadError,
+  uploadSubmittedSignature,
+} from '@/utils/submittedSignature'
+// Section 21: the structured Risk Management Plan is validated with the same rule the form
+// uses, so the review page and the form can never disagree about what is missing.
+import { riskEntriesPayload, validateRiskPlan } from '@/utils/riskManagement'
+// The endorsement document ("Endorsed By") is uploaded right after the proposal is saved.
+import {
+  endorsementDocumentKey,
+  endorsementDocumentUploadError,
+  uploadEndorsementDocument,
+} from '@/utils/endorsementDocument'
+// Section 24: "% Time Devoted" must be a number between 0 and 100.
+import { timeDevotedPayload, validateTimeDevotedRows } from '@/utils/personnelTime'
 // Section 23: the references shown on the review come from the same entry list the
 // form uses (plain text + the structured entries of the reference builder).
 import { entryHtml, parseReferenceEntries } from '@/utils/apaReferences'
+// Saved attachments are downloaded / previewed through the authorized file route.
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 // The endorsement workflow: the proposal is linked to the endorsement it was started
 // from, so the two records are associated by a foreign key and never by title.
 import { linkEndorsementToProposal } from '@/utils/endorsement.js'
@@ -271,20 +317,26 @@ const technologyMapFile = computed(() => {
 
 const uploadTechnologyMapIfNeeded = async (proposalId) => {
   const file = technologyMapFile.value
-  if (!proposalId || !file) return
+  if (!proposalId || !file) return { ok: true, message: '' }
   const key = technologyMapKey(file)
-  if (key === uploadedTechnologyMapKey.value) return
+  if (key === uploadedTechnologyMapKey.value) return { ok: true, message: '' }
 
   try {
-    await uploadTechnologyMap(proposalId, file)
+    const saved = await uploadTechnologyMap(proposalId, file)
     uploadedTechnologyMapKey.value = key
+    // Keep the authoritative name / path from the server, so the review payload and the
+    // reopened draft describe the image that is actually attached.
+    if (saved) {
+      props.proposalData.roadmap_file_name = saved.roadmapFileName || props.proposalData.roadmap_file_name || ''
+      props.proposalData.roadmap_file_path = saved.roadmapFilePath || props.proposalData.roadmap_file_path || ''
+    }
+    return { ok: true, message: '' }
   } catch (err) {
-    // The proposal itself was submitted; only the image could not be attached, so the
-    // failure is reported without hiding the submission result.
-    await showAlert(technologyMapUploadError(err), {
-      type: 'error',
-      title: 'Technology Map Not Uploaded'
-    })
+    // The proposal itself may already be saved; only the image could not be attached, so
+    // the failure is reported without hiding the saved proposal.
+    const message = technologyMapUploadError(err)
+    await showAlert(message, { type: 'error', title: 'Technology Map Not Uploaded' })
+    return { ok: false, message }
   }
 }
 
@@ -309,22 +361,142 @@ const literatureEntries = computed(() =>
   parseReferenceEntries(props.proposalData?.literature_json, props.proposalData?.literature_cited),
 )
 
+/* ===== UPLOADED DOCUMENTS SUMMARY =====
+   Every row reflects the real state of the proposal: a file chosen in this session, a
+   file already stored on a reopened draft, or - for section 19 - the checklist itself
+   (which is data, not an upload). */
+const technologyMapAttached = computed(() =>
+  Boolean(
+    props.proposalData?.technology_roadmap_file?.name ||
+      props.proposalData?.roadmap_file_path ||
+      props.proposalData?.roadmap_file_name,
+  ),
+)
+const budgetAttached = computed(() =>
+  Boolean(
+    props.proposalData?.line_item_budget_file ||
+      props.proposalData?.budget_file_path ||
+      props.proposalData?.budget_file_name,
+  ),
+)
+const submittedSignaturePath = computed(
+  () => props.proposalData?.submittedByFilePath || props.proposalData?.submittedByFileName || '',
+)
+const submittedSignatureAttached = computed(() =>
+  Boolean(submittedSignaturePath.value || props.proposalData?.signatureFiles?.submitted),
+)
+const endorsementDocumentPath = computed(
+  () => props.proposalData?.endorsementFilePath || props.proposalData?.endorsementFileName || '',
+)
+const endorsementDocumentAttached = computed(() =>
+  Boolean(
+    endorsementDocumentPath.value ||
+      props.proposalData?.signatureFiles?.endorsed ||
+      props.endorsementRequestId,
+  ),
+)
+/** "Complete (12.50/20.00)" or "N of 17 answered" - never a missing-file message. */
+const gadChecklistStatus = computed(() => {
+  const summary = gadChecklistSummary(props.proposalData?.gad_checklist)
+  return summary.completed
+    ? `✓ Complete — ${summary.formattedTotal} / ${summary.maxScore}`
+    : `${summary.answeredCount} of ${summary.itemCount} answered — not yet complete`
+})
+
 const uploadBudgetFileIfNeeded = async (proposalId) => {
   const file = budgetFileToUpload.value
-  if (!proposalId || !file) return
+  if (!proposalId || !file) return { ok: true, message: '' }
   const key = budgetFileKey(file)
-  if (key === uploadedBudgetFileKey.value) return
+  if (key === uploadedBudgetFileKey.value) return { ok: true, message: '' }
 
   try {
-    await uploadBudgetFile(proposalId, file)
+    const saved = await uploadBudgetFile(proposalId, file)
     uploadedBudgetFileKey.value = key
+    if (saved) {
+      props.proposalData.budget_file_name = saved.beneficiariesFileName || props.proposalData.budget_file_name || ''
+      props.proposalData.budget_file_path = saved.beneficiariesFilePath || props.proposalData.budget_file_path || ''
+    }
+    return { ok: true, message: '' }
   } catch (err) {
-    // The proposal itself was submitted; only the file could not be attached, so the
-    // failure is reported without hiding the submission result.
-    await showAlert(budgetFileUploadError(err), {
-      type: 'error',
-      title: 'Budget File Not Uploaded'
-    })
+    // The proposal itself may already be saved; only the file could not be attached, so
+    // the failure is reported without hiding the saved proposal.
+    const message = budgetFileUploadError(err)
+    await showAlert(message, { type: 'error', title: 'Budget File Not Uploaded' })
+    return { ok: false, message }
+  }
+}
+
+/* ===== ENDORSING DOCUMENT (Certification & Endorsement step, "Endorsed By") =====
+   The endorsement PDF chosen in step 3 travels with the draft and is uploaded right
+   after the proposal is saved, exactly like the Technology Map and the Line-Item Budget,
+   so the document is attached to this exact proposal and stays retrievable (the
+   authorized file route serves it to the Proponent and the reviewers). */
+const uploadedEndorsementDocumentKey = ref('')
+
+/** The chosen document, if any (a saved file name is not a file). */
+const endorsementDocumentToUpload = computed(() => {
+  const file = props.proposalData?.signatureFiles?.endorsed
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+const uploadEndorsementDocumentIfNeeded = async (proposalId) => {
+  const file = endorsementDocumentToUpload.value
+  if (!proposalId || !file) return { ok: true, message: '' }
+  const key = endorsementDocumentKey(file)
+  if (key === uploadedEndorsementDocumentKey.value) return { ok: true, message: '' }
+
+  try {
+    const saved = await uploadEndorsementDocument(proposalId, file)
+    uploadedEndorsementDocumentKey.value = key
+    if (saved) {
+      props.proposalData.endorsementFileName =
+        saved.endorsementFileName || props.proposalData.endorsementFileName || ''
+      props.proposalData.endorsementFilePath =
+        saved.endorsementFilePath || props.proposalData.endorsementFilePath || ''
+    }
+    return { ok: true, message: '' }
+  } catch (err) {
+    // The proposal itself may already be saved; only the document could not be attached,
+    // so the failure is reported (with the backend's own reason) without hiding the result.
+    const message = endorsementDocumentUploadError(err)
+    await showAlert(message, { type: 'error', title: 'Endorsement Document Not Uploaded' })
+    return { ok: false, message }
+  }
+}
+
+/* ===== SUBMITTED BY SIGNATURE (Certification & Endorsement step) =====
+   The signature chosen in step 3 travels with the draft and is uploaded right after the
+   proposal exists, exactly like the endorsement document. The name / path it stores on
+   the proposal are what a reopened draft shows and what the authorized file route
+   serves to the Proponent and the reviewers. */
+const uploadedSubmittedSignatureKey = ref('')
+
+/** The chosen signature, if any (a saved file name is not a file). */
+const submittedSignatureToUpload = computed(() => {
+  const file = props.proposalData?.signatureFiles?.submitted
+  return file && typeof file.slice === 'function' && typeof file.size === 'number' ? file : null
+})
+
+const uploadSubmittedSignatureIfNeeded = async (proposalId) => {
+  const file = submittedSignatureToUpload.value
+  if (!proposalId || !file) return { ok: true, message: '' }
+  const key = submittedSignatureKey(file)
+  if (key === uploadedSubmittedSignatureKey.value) return { ok: true, message: '' }
+
+  try {
+    const saved = await uploadSubmittedSignature(proposalId, file)
+    uploadedSubmittedSignatureKey.value = key
+    if (saved) {
+      props.proposalData.submittedByFileName =
+        saved.submittedByFileName || props.proposalData.submittedByFileName || ''
+      props.proposalData.submittedByFilePath =
+        saved.submittedByFilePath || props.proposalData.submittedByFilePath || ''
+    }
+    return { ok: true, message: '' }
+  } catch (err) {
+    const message = submittedSignatureUploadError(err)
+    await showAlert(message, { type: 'error', title: 'Signature Not Uploaded' })
+    return { ok: false, message }
   }
 }
 
@@ -336,9 +508,41 @@ const resetForm = () => {
   error.value = null
   uploadedTechnologyMapKey.value = ''
   uploadedBudgetFileKey.value = ''
+  // Without this, a reopened workflow could believe the previous session's endorsement
+  // PDF was already uploaded and skip a real one.
+  uploadedEndorsementDocumentKey.value = ''
+  uploadedSubmittedSignatureKey.value = ''
 }
 
-defineExpose({ resetForm })
+/**
+ * The workflow's silent "Save as Draft" (called by the parent when any step saves). It
+ * runs the same save path as the Review & Submit button and returns a result instead of
+ * showing the success alert itself:
+ * `{ saved, proposalId, uploadError }`. `saved` is false only when the proposal itself
+ * could not be written - an attachment that failed to upload still leaves the draft
+ * saved, with its reason in `uploadError`.
+ */
+async function saveDraft() {
+  try {
+    return await saveOrUpdateProposal('DRAFT')
+  } catch (err) {
+    const body = err?.response?.data
+    const message =
+      (body && typeof body === 'object' && body.error) ||
+      (typeof body === 'string' && body.trim() !== '' ? body : '') ||
+      err?.message ||
+      'Failed to save draft.'
+    error.value = String(message)
+    return {
+      saved: false,
+      proposalId: props.proposalData?.proposal_id || null,
+      uploadError: '',
+      message: String(message)
+    }
+  }
+}
+
+defineExpose({ resetForm, saveDraft })
 
 const close = () => emit('update:modelValue', false)
 
@@ -394,6 +598,18 @@ watch(
   },
   { immediate: true },
 )
+
+/**
+ * The certification value to use: what the proponent typed in this session, else what a
+ * reopened draft already stored. Both must be blank for the field to count as missing,
+ * so a draft's stored certification is never reported as absent on final submission.
+ */
+const certificationValue = (typed, stored) => {
+  const current = typeof typed === 'string' ? typed.trim() : ''
+  if (current) return current
+  const saved = typeof stored === 'string' ? stored.trim() : ''
+  return saved
+}
 
 const validationErrors = computed(() => {
   const errs = []
@@ -473,9 +689,16 @@ const validationErrors = computed(() => {
   if (isBlank(d.social_ethical_impact)) errs.push('Social / Ethical Impact is missing.')
   if (isBlank(d.target_beneficiaries)) errs.push('Target Beneficiaries is missing.')
   if (isBlank(d.sustainability_plan)) errs.push('Sustainability Plan is missing.')
-  if (!d.gad_score_file) errs.push('GAD Score file is missing.')
+  // Section 19 is the interactive GAD Checklist 2, not a file upload: every one of its
+  // 17 assessment items needs a response. A legacy GAD document is no longer demanded.
+  const gadCheck = gadChecklistValidation(d.gad_checklist)
+  if (!gadCheck.valid) errs.push(gadCheck.message)
   if (isBlank(d.limitations)) errs.push('Limitations is missing.')
-  if (isBlank(d.risks_assumptions)) errs.push('Risk Management Plan is missing.')
+  // Section 21: the structured Risk Management Plan. Every entry the proponent started must
+  // be complete and at least one entry must exist; a proposal whose plan is only the old
+  // single text (no structured entry started) stays valid, exactly like in the form.
+  const riskPlan = validateRiskPlan(d.risk_management, { legacyText: d.risks_assumptions })
+  if (!riskPlan.valid) errs.push(`Risk Management Plan: ${riskPlan.message}`)
 
   // Logical Framework
   if (!d.logical_framework || !d.logical_framework.length) {
@@ -492,8 +715,52 @@ const validationErrors = computed(() => {
   } else if (d.personnel_requirements.some(r => isBlank(r.position) || isBlank(r.effort) || isBlank(r.responsibilities))) {
     errs.push('Personnel Requirements has incomplete rows.')
   }
+  // "% Time Devoted" is a percentage: a value that is not a number between 0 and 100
+  // (e.g. prose saved before the field was numeric) is reported with its row number.
+  const personnelTime = validateTimeDevotedRows(d.personnel_requirements)
+  if (!personnelTime.valid) errs.push(personnelTime.message)
 
-  if (!d.line_item_budget_file) errs.push('Line-Item Budget file is missing.')
+  // A file chosen in this session or a file already attached to the proposal (restored
+  // when a draft is reopened) both satisfy the requirement.
+  if (!d.line_item_budget_file && !d.budget_file_path && !d.budget_file_name) {
+    errs.push('Line-Item Budget file is missing.')
+  }
+
+  // Certification & Endorsement (step 3). These are final-submission requirements only:
+  // saving a draft never runs this check, so an incomplete certification does not block
+  // a draft. A signature / endorsement PDF already stored on the proposal satisfies the
+  // document requirement, so reopening a draft never demands it again.
+  const cert = d.certification || {}
+  const signatureFiles = d.signatureFiles || {}
+  if (isBlank(certificationValue(cert.submitted_name, d.submittedByName))) {
+    errs.push('Submitted By: Full Name is missing.')
+  }
+  if (isBlank(certificationValue(cert.submitted_designation, d.submittedByDesignation))) {
+    errs.push('Submitted By: Designation is missing.')
+  }
+  if (isBlank(certificationValue(cert.submitted_date, d.submittedByDate))) {
+    errs.push('Submitted By: Date is missing.')
+  }
+  if (!signatureFiles.submitted && !d.submittedByFilePath && !d.submittedByFileName) {
+    errs.push('Submitted By: Signature file is missing.')
+  }
+  if (isBlank(certificationValue(cert.endorsed_name, d.endorsedByName))) {
+    errs.push('Endorsed By: Full Name is missing.')
+  }
+  if (isBlank(certificationValue(cert.endorsed_designation, d.endorsedByDesignation))) {
+    errs.push('Endorsed By: Designation is missing.')
+  }
+  if (isBlank(certificationValue(cert.endorsed_date, d.endorsedByDate))) {
+    errs.push('Endorsed By: Date is missing.')
+  }
+  if (
+    !signatureFiles.endorsed &&
+    !d.endorsementFilePath &&
+    !d.endorsementFileName &&
+    !props.endorsementRequestId
+  ) {
+    errs.push('Endorsed By: Endorsement Document is missing.')
+  }
 
   return errs
 })
@@ -507,7 +774,9 @@ const saveAsDraftLocal = async () => {
     emit('savedraft')
     await showAlert('Proposal saved as draft successfully!', { type: 'success', title: 'Draft Saved' })
   } catch (err) {
-    error.value = 'Failed to save draft. Please try again.'
+    const body = err.response?.data
+    const backendMessage = body && typeof body === 'object' ? body.error : body
+    error.value = backendMessage || err.message || 'Failed to save draft. Please try again.'
   } finally {
     submitting.value = false
   }
@@ -534,21 +803,34 @@ const submitProposal = async () => {
     submitted.value = true
     submitMessage.value = 'Proposal submitted!'
   } catch (err) {
-    error.value = err.response?.data || 'Failed to submit proposal. Please try again.'
+    // An upload failure is thrown with a readable message before the SUBMITTED status is
+    // written; it must reach the proponent instead of a generic "failed" text.
+    const body = err.response?.data
+    const backendMessage = body && typeof body === 'object' ? body.error : body
+    error.value = backendMessage || err.message || 'Failed to submit proposal. Please try again.'
   } finally {
     submitting.value = false
   }
 }
 
-const saveOrUpdateProposal = async (status) => {
-  const data = props.proposalData
-  const proponentId = userStore.user?.id
-
-  if (!proponentId) {
-    throw new Error('User not logged in')
-  }
-
-  const payload = {
+/**
+ * Builds the proposal payload from the shared workflow data.
+ *
+ * It is called twice by the save path: once with status DRAFT to create a draft that the
+ * attachments can be uploaded to, and once with the requested status after the uploads, so
+ * the version snapshot recorded on submission sees the stored file paths. Building it
+ * rather than keeping one object is why the upload responses' authoritative file names
+ * reach the final payload.
+ *
+ * A blank text field that belongs to a file or the certification is sent as `null`, which
+ * the backend treats as "preserve the stored value": an empty form control never deletes a
+ * file or a certification that is already saved.
+ */
+const buildProposalPayload = (data, proponentId, status) => {
+  const agencyIds = normalizeSelectedIds(data.cooperating_agency_ids)
+  const agencyText = joinAgencyNames(data.cooperating_agency_names)
+  const certification = data.certification || {}
+  return {
     proponentId,
     // Step 1 of the workflow: the Call for Proposal this proposal responds to. The
     // backend attaches the proposal to that exact call and re-validates that the call
@@ -578,8 +860,13 @@ const saveOrUpdateProposal = async (status) => {
     // Section 02: the checklist selection travels as directory ids, and the legacy
     // text column is derived from the selected names (the backend derives it from
     // the ids again, so the text and the relation can never drift apart).
-    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
-    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
+    //
+    // The ids are `null` when nothing is selected: on a reopened draft the checklist
+    // loads its stored selection asynchronously, so an empty snapshot must mean "this
+    // client has not loaded the selection", never "clear it". A genuine selection is
+    // always non-empty, and final submission still requires one.
+    cooperatingAgencies: agencyIds.length ? agencyText || null : data.cooperating_agencies || null,
+    cooperatingAgencyIds: agencyIds.length ? agencyIds : null,
     researchType: data.research_type || '',
     innovationGoals: data.innovation_goals || '',
     sectorRelevance: data.sector_relevance || '',
@@ -591,6 +878,13 @@ const saveOrUpdateProposal = async (status) => {
     objectivesSpecific: data.specific_objectives || '',
     methodology: data.methodology || '',
     review: data.review_of_literature || '',
+    // Section 11 is text. The name of a legacy document is only preserved, never
+    // required; `null` leaves whatever the proposal already stores.
+    reviewFileName: data.review_file_name || null,
+    // Section 13: the name of the chosen technology map (or the stored one). The bytes
+    // are uploaded after the proposal exists (see uploadTechnologyMapIfNeeded), and that
+    // upload stores the authoritative name / path.
+    roadmapFileName: data.roadmap_file_name || data.technology_roadmap_file?.name || null,
     limitationsText: data.limitations || '',
     outputs: serializeSixPs(data.expected_outputs),
     outcomes: data.potential_outcomes || '',
@@ -600,13 +894,35 @@ const saveOrUpdateProposal = async (status) => {
     // Section 25: the file name of the filled-out Line-Item Budget. The bytes are
     // uploaded right after the proposal exists (see uploadBudgetFileIfNeeded), and
     // that upload stores the authoritative name / path on the proposal itself.
-    beneficiariesFileName: data.budget_file_name || data.line_item_budget_file?.name || '',
+    beneficiariesFileName: data.budget_file_name || data.line_item_budget_file?.name || null,
     sustainability: data.sustainability_plan || '',
     risks: data.risks_assumptions || '',
+    // Section 21: the structured Risk Management Plan (identified risks, likelihood,
+    // impact and mitigation measure per entry) built in step 1.
+    riskManagement: riskEntriesPayload(data.risk_management),
     otherProjectsNumber: data.other_projects_number || '',
     referencesText: data.literature_cited || '',
     // Section 23: the structured entries behind the list (italics + editing).
     referencesJson: data.literature_json || '',
+    // Section 19: the interactive checklist. `null` means the proposal never had one
+    // and nothing was entered, so a legacy score/document is preserved; once started or
+    // once saved, the current state (even an emptied one) is sent.
+    gadChecklist: gadChecklistPayloadForSave(data.gad_checklist, data.gad_checklist_saved),
+    // The name of a legacy GAD document is preserved, never required.
+    gadFileName: data.gad_file_name || null,
+    // Certification & Endorsement (step 3). The value typed in this session wins, and a
+    // reopened draft's stored value is sent back unchanged when the step has not been
+    // touched (the Certification step stays mounted, so its state is always available).
+    // Only a genuinely blank pair is sent as `null`, which the backend treats as
+    // "preserve the stored value"; an empty form control never erases the certification.
+    submittedByName: certificationValue(certification.submitted_name, data.submittedByName) || null,
+    submittedByDesignation:
+      certificationValue(certification.submitted_designation, data.submittedByDesignation) || null,
+    submittedByDate: certificationValue(certification.submitted_date, data.submittedByDate) || null,
+    endorsedByName: certificationValue(certification.endorsed_name, data.endorsedByName) || null,
+    endorsedByDesignation:
+      certificationValue(certification.endorsed_designation, data.endorsedByDesignation) || null,
+    endorsedByDate: certificationValue(certification.endorsed_date, data.endorsedByDate) || null,
     status,
     sites: (data.sites || []).map(s => ({
       country: s.country || '',
@@ -628,7 +944,7 @@ const saveOrUpdateProposal = async (status) => {
     })),
     personnel: (data.personnel_requirements || []).map(p => ({
       position: p.position || '',
-      time: p.effort || '',
+      time: timeDevotedPayload(p.effort),
       responsibilities: p.responsibilities || ''
     })),
     otherProjects: (data.other_projects || []).map(op => ({
@@ -637,19 +953,51 @@ const saveOrUpdateProposal = async (status) => {
       involvement: op.involvement || ''
     }))
   }
+}
 
-  // If we have a proposal_id, update; otherwise create
-  let proposalId = data.proposal_id || null
-  if (proposalId) {
-    await api.put(`/api/proposals/${proposalId}`, payload)
-  } else {
-    const created = await api.post('/api/proposals', payload)
-    proposalId = created.data?.id ?? null
+/**
+ * The single save path of the workflow.
+ *
+ * 1. A proposal that has no id yet is created as a DRAFT first - the id is kept on the
+ *    shared data, so saving again updates that draft instead of creating a duplicate.
+ * 2. Every chosen attachment is uploaded to that proposal (technology map, budget,
+ *    endorsement PDF, submitted signature) and the endorsement is linked.
+ * 3. The requested status is written last, so a version snapshot recorded on submission
+ *    sees the stored file paths.
+ *
+ * On a DRAFT save an upload failure still leaves the saved draft, with the reason
+ * returned; on a SUBMITTED save it aborts before the status is written, so the proposal
+ * stays an editable draft with its files already attached.
+ */
+const saveOrUpdateProposal = async (status) => {
+  const data = props.proposalData
+  const proponentId = userStore.user?.id
+
+  if (!proponentId) {
+    throw new Error('User not logged in')
   }
 
-  // The technology map (section 13) is uploaded right after the proposal has been
-  // saved, so the image is attached to this exact proposal.
-  await uploadTechnologyMapIfNeeded(proposalId)
+  let proposalId = data.proposal_id || null
+  if (!proposalId) {
+    const created = await api.post(
+      '/api/proposals',
+      buildProposalPayload(data, proponentId, 'DRAFT'),
+    )
+    proposalId = created.data?.id ?? null
+    if (proposalId) {
+      // Remember the draft that was just created: every later save updates it, and the
+      // attachments below are stored on this exact record.
+      data.proposal_id = proposalId
+    }
+  }
+  if (!proposalId) {
+    throw new Error('The proposal could not be created.')
+  }
+
+  // The attachments are uploaded right after the proposal exists, so each one is stored
+  // on this exact proposal and the name / path it stores is authoritative.
+  const uploadResults = []
+  uploadResults.push(await uploadTechnologyMapIfNeeded(proposalId))
 
   // The proposal was started from an approved endorsement: link the two records. The
   // backend validates the ownership, the approval and that one endorsement backs at
@@ -657,8 +1005,27 @@ const saveOrUpdateProposal = async (status) => {
   // reported without blocking the submission.
   await linkEndorsementIfNeeded(proposalId)
 
-  // The filled-out Line-Item Budget (section 25) is attached to the same proposal.
-  await uploadBudgetFileIfNeeded(proposalId)
+  uploadResults.push(await uploadBudgetFileIfNeeded(proposalId))
+  uploadResults.push(await uploadEndorsementDocumentIfNeeded(proposalId))
+  uploadResults.push(await uploadSubmittedSignatureIfNeeded(proposalId))
+
+  const failures = uploadResults.filter((result) => !result.ok)
+  if (failures.length && status === 'SUBMITTED') {
+    // Never claim a file was stored: the submission is stopped before the SUBMITTED
+    // status is written, and the saved proposal remains an editable draft.
+    throw new Error(failures[0].message)
+  }
+
+  const payload = buildProposalPayload(data, proponentId, status)
+  await api.put(`/api/proposals/${proposalId}`, payload)
+  // From now on an emptied checklist is an explicit clear, not "never started".
+  if (payload.gadChecklist) data.gad_checklist_saved = true
+
+  return {
+    saved: true,
+    proposalId,
+    uploadError: failures.length ? failures[0].message : ''
+  }
 }
 
 /**

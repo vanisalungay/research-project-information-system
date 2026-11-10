@@ -157,13 +157,23 @@
                 <span>📄 GAD Score</span>
                 <button class="download-btn" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </li>
-              <li v-if="proposal.budgetFileName" class="file-item">
-                <span>📄 Budget Document</span>
+              <li v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="file-item">
+                <span>📄 Line-Item Budget</span>
                 <button class="download-btn"
-                  @click="downloadFile(proposal.budgetFilePath || proposal.budgetFileName)">DOWNLOAD</button>
+                  @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
+              </li>
+              <li v-if="proposal.submittedByFileName || proposal.submittedByFilePath" class="file-item">
+                <span>📄 Submitted By Signature</span>
+                <button class="download-btn"
+                  @click="downloadFile(proposal.submittedByFilePath || proposal.submittedByFileName)">DOWNLOAD</button>
+              </li>
+              <li v-if="proposal.endorsementFileName || proposal.endorsementFilePath" class="file-item">
+                <span>📄 Endorsement Document</span>
+                <button class="download-btn"
+                  @click="downloadFile(proposal.endorsementFilePath || proposal.endorsementFileName)">DOWNLOAD</button>
               </li>
               <li
-                v-if="!proposal.reviewFileName && !proposal.roadmapFileName && !proposal.gadFileName && !proposal.budgetFileName"
+                v-if="!proposal.reviewFileName && !proposal.roadmapFileName && !proposal.gadFileName && !(proposal.beneficiariesFileName || proposal.beneficiariesFilePath) && !(proposal.submittedByFileName || proposal.submittedByFilePath) && !(proposal.endorsementFileName || proposal.endorsementFilePath)"
                 class="empty-files">
                 No attachments uploaded.
               </li>

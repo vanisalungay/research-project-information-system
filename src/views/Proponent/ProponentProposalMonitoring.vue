@@ -154,8 +154,13 @@
           <button class="btn-view" @click="viewDetails(proposal.id)">
             View Details
           </button>
-          <button v-if="isEligibleForReports(proposal)" class="btn-upload" @click="openQuarterlyReports(proposal.id)">
-            Quarterly Report
+          <button
+            v-if="isEligibleForReports(proposal)"
+            class="btn-upload"
+            :disabled="openingReportId === proposal.id"
+            @click="openQuarterlyReport(proposal)"
+          >
+            {{ openingReportId === proposal.id ? 'Opening…' : 'Create Quarterly Report' }}
           </button>
           <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise" @click="submitRevision(proposal.id)">
             Submit Revision
@@ -264,6 +269,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
+import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
+import { IMPLEMENTATION_STATUSES } from '@/utils/quarterlyReport'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -288,9 +295,9 @@ const APPROVED_STAGE = { key: 'APPROVED', label: 'Approved' }
 // Statuses that are already past the 100% approval milestone.
 const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']
 
-// Statuses that indicate a project is approved for implementation and currently
-// pending or in progress for implementation.
-const IMPLEMENTATION_STATUSES = ['APPROVED', 'RELEASED']
+// The "approved for implementation" statuses come from the shared quarterly-report
+// rule, so the dashboard count and the Create Quarterly Report action can never
+// disagree about which projects are in implementation.
 
 // Terminal/negative statuses that should show special state
 const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
@@ -504,16 +511,14 @@ const viewDetails = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })
 }
 
-const isEligibleForReports = (proposal) => {
-  if (!proposal) return false
-  const hasSo = proposal.soNumber && proposal.soNumber.trim() !== ''
-  const approved = proposal.status === 'APPROVED' || proposal.status === 'RELEASED'
-  return hasSo && approved
-}
+// The same launcher the proposal details page uses, so eligibility and the
+// target report form cannot diverge between the two entry points.
+const { openingReportId, canCreateQuarterlyReport, openQuarterlyReport } =
+  useQuarterlyReportLauncher()
 
-const openQuarterlyReports = (id) => {
-  router.push(`/quarterly-reports/${id}`)
-}
+// One shared rule with the proposal details page and the quarterly-report pages:
+// approved for implementation AND an issued SO.
+const isEligibleForReports = canCreateQuarterlyReport
 
 const submitRevision = (id) => {
   router.push(`/submit-revision/${id}`)
@@ -1143,9 +1148,14 @@ onMounted(fetchProposals)
   border: 1px solid #86efac;
 }
 
-.btn-upload:hover {
+.btn-upload:hover:not(:disabled) {
   background: #22c55e;
   color: white;
+}
+
+.btn-upload:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .btn-revise {

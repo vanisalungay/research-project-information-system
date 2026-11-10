@@ -199,6 +199,9 @@ for %%F in (
     migration-add-quarterly-report-documents.sql
     migration-add-references-json.sql
     migration-add-revision-request-fields.sql
+    migration-add-risk-management-json.sql
+    migration-add-proposal-endorsement-document.sql
+    migration-add-proposal-certification.sql
     migration-add-technology-map-path.sql
     migration-add-terminal-report-content.sql
     migration-add-user-signature.sql

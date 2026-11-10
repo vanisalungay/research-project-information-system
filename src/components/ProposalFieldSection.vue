@@ -4,7 +4,7 @@
 
     <!-- Grid layout (Project Profile) -->
     <div v-if="section.layout === 'grid'" class="grid-2">
-      <div v-for="field in section.fields" :key="field.key" :class="{ 'full-width': field.full }">
+      <div v-for="field in fieldsOf(section)" :key="field.key" :class="{ 'full-width': field.full }">
         <span class="pf-label">{{ field.label }}</span>
         <p class="pf-value">{{ displayValue(field) || 'N/A' }}</p>
         <FieldRemarkControl
@@ -18,7 +18,7 @@
 
     <!-- Stack layout (most narrative sections) -->
     <template v-else-if="section.layout === 'stack'">
-      <div v-for="field in section.fields" :key="field.key" class="pf-field">
+      <div v-for="field in fieldsOf(section)" :key="field.key" class="pf-field">
         <h4 class="pf-subhead">{{ field.label }}</h4>
         <div v-if="field.kind === 'file'" class="pf-file">
           <template v-if="displayValue(field)">
@@ -28,6 +28,22 @@
             </button>
           </template>
           <span v-else class="pf-empty">No file uploaded.</span>
+        </div>
+        <!-- Section 19: the interactive GAD Checklist 2, rendered read-only. It is data,
+             not a file, so there is no "No file uploaded." state for it. -->
+        <div v-else-if="field.kind === 'gadChecklist'" class="pf-checklist">
+          <GadChecklist :model-value="gadValue" readonly />
+        </div>
+        <!-- A document that may be attached to an older proposal for a section that is
+             now text/structured data. It is shown (with DOWNLOAD) only when it exists;
+             a missing optional document is never reported as an error. -->
+        <div v-else-if="field.kind === 'optionalFile'" class="pf-file">
+          <template v-if="displayValue(field)">
+            <span>📄 {{ displayValue(field) }}</span>
+            <button type="button" class="btn-download-sm" @click="$emit('download', downloadTarget(field))">
+              DOWNLOAD
+            </button>
+          </template>
         </div>
         <p v-else class="pf-value pf-long">{{ displayValue(field) || 'Not provided' }}</p>
         <FieldRemarkControl
@@ -53,7 +69,7 @@
           <tr v-for="(row, i) in collectionState.rows" :key="row.id ?? i">
             <td class="pf-index-col">{{ i + 1 }}</td>
             <td v-for="column in section.collection.columns" :key="column.key">
-              <span class="pf-cell-value">{{ row[column.key] || '-' }}</span>
+              <span class="pf-cell-value">{{ cellText(row, column) }}</span>
               <FieldRemarkControl
                 v-bind="cellControlProps(section.collection, row, i, column.key)"
                 :remarks="collectionState.cells[i][column.key] || []"
@@ -97,7 +113,7 @@
     <template v-else-if="section.layout === 'sdg'">
       <SdgChecklist :value="proposal.sdg" />
       <FieldRemarkControl
-        v-for="field in section.fields"
+        v-for="field in fieldsOf(section)"
         :key="field.key"
         v-bind="controlProps(field.key, field.label)"
         :remarks="remarksFor(field.key)"
@@ -126,7 +142,7 @@
           <tr v-for="(row, i) in collectionState.rows" :key="row.id ?? i">
             <td class="pf-index-col">{{ i + 1 }}</td>
             <td v-for="column in section.collection.columns" :key="column.key">
-              <span class="pf-cell-value">{{ row[column.key] || '-' }}</span>
+              <span class="pf-cell-value">{{ cellText(row, column) }}</span>
               <FieldRemarkControl
                 v-bind="cellControlProps(section.collection, row, i, column.key)"
                 :remarks="collectionState.cells[i][column.key] || []"
@@ -173,7 +189,9 @@
 <script setup>
 import { computed, ref } from 'vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
+import GadChecklist from '@/components/GadChecklist.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
+import { gadChecklistFromSaved } from '@/utils/gadChecklist'
 import {
   agendaFieldsFor,
   buildEntrySnapshot,
@@ -209,6 +227,24 @@ const index = computed(() => ({ ...props.remarkIndex, ...overrides.value }))
 /** Section 05: the registry's default agendas plus the proposal's own agenda rows. */
 const agendaFields = computed(() => agendaFieldsFor(props.proposal, props.section))
 
+/**
+ * Section 19: the stored checklist in the shape the shared component reads. A proposal
+ * saved before the checklist existed has no value, which renders as an unanswered
+ * checklist rather than an error.
+ */
+const gadValue = computed(() => gadChecklistFromSaved(props.proposal?.gadChecklist))
+
+/**
+ * The registry's fields for a section, minus the ones that do not apply to this proposal.
+ * A field may declare `when(proposal)`; section 21 uses it to show the single-text Risk
+ * Management Plan only while the proposal carries no structured risk entries, so a
+ * reviewer never sees the old plan and the new table side by side.
+ */
+const fieldsOf = (section) =>
+  (section.fields || []).filter(
+    (field) => typeof field.when !== 'function' || field.when(props.proposal)
+  )
+
 const remarksFor = (fieldKey) => {
   const items = index.value[fieldKey] || []
   return items.filter((item) => !removedIds.value.includes(item.id))
@@ -231,6 +267,21 @@ const displayValue = (field) => {
   const value = fieldValue(props.proposal, field)
   if (field.kind === 'list' && Array.isArray(value)) return value.join(', ')
   return value
+}
+
+/**
+ * One repeated-table cell as text. A column may declare `format` (the registry's
+ * "% Time Devoted" column does), which turns the stored value into what the reviewer
+ * should read - so an older record that stored "50%" and a new one that stores "50" are
+ * both shown as "50%". Without a formatter the stored value is shown as it is.
+ */
+const cellText = (row, column) => {
+  const value = row ? row[column.key] : null
+  if (typeof column.format === 'function') {
+    const formatted = column.format(value)
+    return formatted === null || formatted === undefined || formatted === '' ? '-' : formatted
+  }
+  return value || '-'
 }
 
 /**

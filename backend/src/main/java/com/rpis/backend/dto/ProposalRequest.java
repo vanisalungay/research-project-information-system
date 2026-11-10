@@ -60,6 +60,30 @@ public class ProposalRequest {
     private String impactSocial;
     private String beneficiaries;
     private String beneficiariesFileName;
+    /**
+     * The endorsement document the proponent uploads in the Certification &amp;
+     * Endorsement step ("Endorsed By"). The bytes never travel in this DTO: they are
+     * uploaded to the proposal's own endpoint
+     * (POST /api/proposals/{id}/endorsement-document), which validates the PDF, stores it
+     * and sets both the display name and the stored path. This field is accepted so an
+     * API client that manages the document itself can keep the display name in step;
+     * a null value (what the form sends) leaves the stored name untouched.
+     */
+    private String endorsementFileName;
+    /*
+     * "Submitted By" / "Endorsed By" of the Certification & Endorsement step. Only the
+     * values the proponent types travel here: the uploaded signature and the endorsement
+     * PDF have their own endpoints, which set the display name and stored path themselves,
+     * so a client can never point a proposal at an arbitrary stored file. A null value
+     * means "this client does not edit the section" and leaves the stored value untouched
+     * (the create flow sends null when nothing was removed).
+     */
+    private String submittedByName;
+    private String submittedByDesignation;
+    private String submittedByDate;
+    private String endorsedByName;
+    private String endorsedByDesignation;
+    private String endorsedByDate;
     private String sustainability;
     private BigDecimal gadScore;
     private String gadFileName;
@@ -71,6 +95,14 @@ public class ProposalRequest {
     private List<LimitationDTO> limitationsTable;
     private String limitationsText;
     private String risks;
+    // Section 21 (Risk Management Plan): the structured table the Create Proposal and
+    // Revision forms now use - one entry per identified risk with its likelihood, impact
+    // and mitigation measure. A null value means "this client does not edit the section"
+    // (a legacy client, or the RPS forward flows) and leaves the stored rows untouched;
+    // only the entries actually sent are replaced. The legacy `risks` text above is kept
+    // (and derived from these entries when they exist) so every screen and export that
+    // predates the table keeps working.
+    private List<RiskManagementDTO> riskManagement;
     private List<LogFrameDTO> logFrame;
     // Section 23 (Literature Cited): the plain-text rendering of every reference and,
     // when the form used the reference builder, the structured entries (type + values)
@@ -112,6 +144,19 @@ public class ProposalRequest {
     public static class LimitationDTO {
         private String limitation;
         private String remarks;
+    }
+
+    /**
+     * One row of the structured Risk Management Plan (section 21). {@code likelihood} and
+     * {@code impact} carry one of High / Medium / Low; blank text fields and out-of-range
+     * levels are rejected by {@code ProposalService#validateRiskManagement}, never stored.
+     */
+    @Data
+    public static class RiskManagementDTO {
+        private String identifiedRisks;
+        private String likelihood;
+        private String impact;
+        private String mitigationMeasure;
     }
 
     @Data

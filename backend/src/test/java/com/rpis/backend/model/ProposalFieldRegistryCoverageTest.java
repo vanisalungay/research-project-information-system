@@ -40,14 +40,13 @@ class ProposalFieldRegistryCoverageTest {
             // uploaded-file storage metadata: the reviewable document is the file name
             // above (the path only addresses the stored bytes)
             "roadmapFilePath", "beneficiariesFilePath",
+            // uploaded-file storage metadata: the reviewable document is the file name
+            // in section 28 (the path only addresses the stored bytes)
+            "endorsementFilePath", "submittedByFilePath",
             // structured literature-cited entries: the reviewable value is the plain
             // text in `referencesText`, this column only keeps the builder's entries so
             // the proponent can edit a reference again (and its italics survive)
             "referencesJson",
-            // the interactive GAD Checklist 2 (section 19): it is rendered by its own
-            // component (GadChecklist.vue) with a response, a score and a comment per item,
-            // not as a field-level remark control
-            "gadChecklist",
             // return-for-revision routing metadata
             "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",
@@ -59,7 +58,12 @@ class ProposalFieldRegistryCoverageTest {
             // timestamps
             "createdAt", "updatedAt",
             // repeated collections: covered through their columns below
-            "sites", "logFrames", "personnel", "budget", "otherProjects", "priorityAgendas", "limitations");
+            "sites", "logFrames", "personnel", "budget", "otherProjects", "priorityAgendas", "limitations",
+            // Section 21 (Risk Management Plan): the structured table is a repeated
+            // collection of its own - it is declared in the registry as
+            // `prop: 'riskManagement'` with the four columns (identifiedRisks, likelihood,
+            // impact, mitigationMeasure), each of which carries its own remark control
+            "riskManagement");
 
     /** Child-entity fields that are structural rather than reviewable. */
     private static final Set<String> CHILD_STRUCTURAL = Set.of("id", "proposal");
@@ -146,11 +150,27 @@ class ProposalFieldRegistryCoverageTest {
     }
 
     @Test
-    void registryCoversAllTwentySevenNumberedSections() throws Exception {
+    void registryCoversAllTwentyEightNumberedSections() throws Exception {
         String source = registry();
-        for (int i = 1; i <= 27; i++) {
+        for (int i = 1; i <= 28; i++) {
             String key = String.format("%02d", i);
             assertTrue(source.contains("key: '" + key + "'"), "section not covered: " + key);
+        }
+    }
+
+    @Test
+    void theGadChecklistAndCertificationFieldsAreReviewable() throws Exception {
+        String source = registry();
+        // Section 19 is the interactive checklist now, not only a legacy document.
+        assertTrue(source.contains("key: 'gadChecklist'"),
+                "GAD Checklist 2 must be reviewable");
+        // Section 28 carries the certification & endorsement metadata and documents.
+        for (String key : List.of(
+                "submittedByName", "submittedByDesignation", "submittedByDate",
+                "submittedByFileName", "endorsedByName", "endorsedByDesignation",
+                "endorsedByDate", "endorsementFileName")) {
+            assertTrue(source.contains("key: '" + key + "'"),
+                    "certification field not covered: " + key);
         }
     }
 

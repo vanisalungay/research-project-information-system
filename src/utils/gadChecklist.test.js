@@ -18,6 +18,7 @@ import {
   formatGadScore,
   gadChecklistFromSaved,
   gadChecklistPayload,
+  gadChecklistPayloadForSave,
   gadChecklistSummary,
   gadChecklistValidation,
   gadInterpretation,
@@ -133,6 +134,41 @@ test('the payload keeps the responses and the non-empty comments', () => {
   assert.equal(full.completed, true)
   assert.equal(full.totalScore, 20)
   assert.equal(full.interpretation, 'Proposed project is gender-responsive')
+})
+
+test('a checklist that was never touched is not sent, so a legacy score survives', () => {
+  // A draft that has never started Section 19 sends no checklist at all: the backend
+  // then keeps the stored legacy GAD score/document untouched.
+  assert.equal(gadChecklistPayloadForSave(emptyGadChecklist(), false), null)
+  assert.equal(gadChecklistPayloadForSave(null), null)
+  assert.equal(
+    gadChecklistPayloadForSave({ responses: {}, comments: { '1.1': '   ' } }, false),
+    null,
+    'an empty comment does not count as starting the checklist'
+  )
+})
+
+test('any response or comment starts the checklist and is sent on save', () => {
+  const answer = gadChecklistPayloadForSave(
+    { responses: { '1.1': 'PARTLY' }, comments: {} },
+    false
+  )
+  assert.deepEqual(answer.responses, { '1.1': 'PARTLY' })
+
+  const note = gadChecklistPayloadForSave(
+    { responses: {}, comments: { '1.1': 'Women were consulted.' } },
+    false
+  )
+  assert.deepEqual(note.comments, { '1.1': 'Women were consulted.' })
+})
+
+test('a checklist that was saved before is sent even when every answer is cleared', () => {
+  // Once stored, emptying the form is an explicit clear (the score must become 0), not
+  // "this client does not edit Section 19".
+  const cleared = gadChecklistPayloadForSave(emptyGadChecklist(), true)
+  assert.notEqual(cleared, null)
+  assert.deepEqual(cleared.responses, {})
+  assert.equal(cleared.completed, false)
 })
 
 test('a saved value with an unknown response or item never loses the rest', () => {

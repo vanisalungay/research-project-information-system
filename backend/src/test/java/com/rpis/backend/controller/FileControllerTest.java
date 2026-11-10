@@ -138,6 +138,69 @@ class FileControllerTest {
         assertEquals(HttpStatus.OK, controller.download(storedPath).getStatusCode());
     }
 
+    // ------------------------------------- the endorsement document (step 3 upload)
+
+    /**
+     * The endorsement document uploaded in the Certification &amp; Endorsement step is a
+     * proposal file like any other: the Proponent who owns the proposal reads it, every
+     * reviewing role reads it, and any other Proponent is refused.
+     */
+    @Test
+    void theEndorsementDocumentOfAProposalIsServedToItsOwnerAndTheReviewers() {
+        User owner = new User();
+        owner.setId(7L);
+        Proposal proposal = new Proposal();
+        proposal.setId(1L);
+        proposal.setProponent(owner);
+        proposal.setEndorsementFileName("Dean Endorsement Letter.pdf");
+        proposal.setEndorsementFilePath(storedPath);
+
+        authenticate(7L, "PROPONENT");
+        when(proposalRepository.findByProponentId(7L)).thenReturn(List.of(proposal));
+        assertEquals(HttpStatus.OK, controller.download(storedPath).getStatusCode());
+
+        authenticate(2L, "RPS_STAFF");
+        assertEquals(HttpStatus.OK, controller.download(storedPath).getStatusCode());
+
+        // Another Proponent owns a different proposal: refused.
+        authenticate(8L, "PROPONENT");
+        when(proposalRepository.findByProponentId(8L))
+                .thenReturn(List.of(proposalWithAttachment(8L, SUBDIRECTORY + "/someone-elses.pdf")));
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.download(storedPath));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    /**
+     * The "Submitted By" signature uploaded in the Certification &amp; Endorsement step is
+     * a proposal file like the endorsement document: its owner and the reviewing roles
+     * read it, and any other Proponent is refused.
+     */
+    @Test
+    void theSubmittedBySignatureOfAProposalIsServedToItsOwnerAndTheReviewers() {
+        User owner = new User();
+        owner.setId(7L);
+        Proposal proposal = new Proposal();
+        proposal.setId(1L);
+        proposal.setProponent(owner);
+        proposal.setSubmittedByFileName("Maria signature.png");
+        proposal.setSubmittedByFilePath(storedPath);
+
+        authenticate(7L, "PROPONENT");
+        when(proposalRepository.findByProponentId(7L)).thenReturn(List.of(proposal));
+        assertEquals(HttpStatus.OK, controller.download(storedPath).getStatusCode());
+
+        authenticate(2L, "RPS_STAFF");
+        assertEquals(HttpStatus.OK, controller.download(storedPath).getStatusCode());
+
+        authenticate(8L, "PROPONENT");
+        when(proposalRepository.findByProponentId(8L))
+                .thenReturn(List.of(proposalWithAttachment(8L, SUBDIRECTORY + "/someone-elses.pdf")));
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.download(storedPath));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
     @Test
     void everyReviewingRoleCanDownloadAnyAttachment() {
         for (String role : List.of("RPS_ADMIN", "OVCRIGE", "OVCAF", "REC", "OC")) {

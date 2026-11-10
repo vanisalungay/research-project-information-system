@@ -22,12 +22,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/proposals")
@@ -133,11 +134,61 @@ public class ProposalController {
         return ResponseEntity.ok(saved);
     }
 
+    /**
+     * Endorsement document (Certification &amp; Endorsement step, "Endorsed By") upload.
+     * <p>
+     * The Dean's signed endorsement is stored by the service and recorded on the
+     * proposal, so the proposal returned here is the one the form keeps working with and
+     * the document stays associated with that exact proposal. The same checks the form
+     * performs in the browser (PDF only, at most 10 MB) are repeated server-side, plus
+     * opening the document, so a renamed image or a corrupted PDF is answered with the
+     * same 400 the form shows.
+     */
+    @PostMapping(value = "/{id}/endorsement-document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Proposal> uploadEndorsementDocument(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        Proposal saved = proposalService.attachEndorsementDocument(id, file);
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * "Submitted By" signature upload of the Certification &amp; Endorsement step.
+     * <p>
+     * The proponent's signature (PNG, JPEG or PDF) is stored by the service and recorded
+     * on the proposal, so the proposal returned here is the one the form keeps working
+     * with and the signature stays associated with that exact proposal. The same checks
+     * the form performs in the browser (image/PDF, at most 10 MB) are repeated
+     * server-side, plus opening the image or PDF bytes, so a renamed or corrupted file is
+     * answered with the same 400 the form shows.
+     */
+    @PostMapping(value = "/{id}/submitted-by-signature", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Proposal> uploadSubmittedBySignature(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        Proposal saved = proposalService.attachSubmittedBySignature(id, file);
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * The only statuses a reviewer may set through this generic route. Every other
+     * transition is owned by its workflow endpoint (OC approval + SO, OVCAF budget
+     * validation, revisions), so the generic route cannot be used to bypass them -
+     * in particular it can no longer move a proposal straight to APPROVED or
+     * FOR_OVCAF_APPROVAL without the OC approval/SO record.
+     */
+    private static final Set<String> SELF_SERVICE_STATUSES = Set.of("REC_APPROVED", "READY_FOR_RELEASE");
+
     @PutMapping("/{id}/status")
     public ResponseEntity<Proposal> updateProposalStatus(
             @PathVariable Long id,
             @RequestParam String status) {
-        Proposal updated = proposalService.updateProposalStatus(id, status);
+        String normalised = status == null ? "" : status.trim().toUpperCase(Locale.ROOT);
+        if (!SELF_SERVICE_STATUSES.contains(normalised)) {
+            throw new IllegalArgumentException(
+                    "This status can only be set through its dedicated workflow action.");
+        }
+        Proposal updated = proposalService.updateProposalStatus(id, normalised);
         return ResponseEntity.ok(updated);
     }
 
@@ -155,30 +206,21 @@ public class ProposalController {
         return ResponseEntity.ok(updated);
     }
 
-    @PutMapping("/{id}/forward-to-ovcaf")
-    public ResponseEntity<Proposal> forwardToOvcaf(@PathVariable Long id) {
-        Proposal updated = proposalService.updateProposalStatus(id, "FOR_OVCAF_APPROVAL");
-        return ResponseEntity.ok(updated);
-    }
-
     @PutMapping("/{id}/forward-to-oc")
     public ResponseEntity<Proposal> forwardToOc(@PathVariable Long id) {
         Proposal updated = proposalService.updateProposalStatus(id, "FOR_OC_APPROVAL");
         return ResponseEntity.ok(updated);
     }
 
-    @PutMapping("/{id}/final-approve")
-    public ResponseEntity<Proposal> finalApprove(@PathVariable Long id) {
-        Proposal updated = proposalService.updateProposalStatus(id, "APPROVED");
-        return ResponseEntity.ok(updated);
-    }
-
-    /** The folder Special Order documents are stored in, inside the storage root. */
-    private static final String SPECIAL_ORDERS_FOLDER = "special-orders";
-
     /**
-     * Approve proposal with Special Order (SO) document upload.
-     * OC grants final approval, issues SO, and determines budget routing.
+     * Stage 1 of the OC -&gt; OVCAF workflow: the Chancellor's Office records the
+     * issued Special Order (SO) and routes the proposal to budget evaluation (or to
+     * implementation when no budget is required).
+     *
+     * <p>The whole decision - validation, SO persistence, status transition and
+     * notification - happens in one service transaction. A failure leaves the
+     * proposal at its previous stage and records nothing; the response says why so
+     * the form can show the real reason instead of a generic failure.
      */
     @PutMapping("/{id}/approve-with-so")
     public ResponseEntity<?> approveWithSpecialOrder(
@@ -187,53 +229,28 @@ public class ProposalController {
             @RequestParam(value = "soFile", required = false) MultipartFile soFile,
             @RequestParam("needsBudget") Boolean needsBudget,
             @RequestParam(value = "chancellorNotes", required = false) String chancellorNotes) {
-
         try {
-            Proposal proposal = proposalService.getProposalById(id);
-
-            // Save SO file if provided
-            if (soFile != null && !soFile.isEmpty()) {
-                // The storage layer generates the name and returns the path relative to
-                // its configured root, so the file is found again from any instance.
-                String stored = uploadStorage.store(soFile.getBytes(), SPECIAL_ORDERS_FOLDER,
-                        soFile.getOriginalFilename());
-
-                proposal.setSoFileName(soFile.getOriginalFilename());
-                proposal.setSoFilePath(stored);
-            }
-
-            // Set SO number and metadata
-            proposal.setSoNumber(soNumber);
-            proposal.setSoUploadedAt(LocalDateTime.now());
-            proposal.setNeedsBudget(needsBudget);
-
-            // Save chancellor notes if provided
-            if (chancellorNotes != null && !chancellorNotes.isBlank()) {
-                proposal.setRemarks(chancellorNotes);
-            }
-
-            // Route based on budget requirement
-            if (needsBudget) {
-                proposal.setStatus("FOR_OVCAF_APPROVAL");
-            } else {
-                proposal.setStatus("APPROVED");
-            }
-
-            Proposal saved = proposalService.saveProposalDirect(proposal);
+            Proposal saved = proposalService.approveWithSpecialOrder(
+                    id, soNumber, soFile, needsBudget, chancellorNotes);
 
             Map<String, Object> response = new HashMap<>();
             response.put("proposal", saved);
-            response.put("message", needsBudget
+            response.put("message", Boolean.TRUE.equals(saved.getNeedsBudget())
                     ? "Proposal approved with SO. Forwarded to Finance Office / OVCAF for budget endorsement."
                     : "Proposal approved with SO for immediate implementation.");
             return ResponseEntity.ok(response);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to upload SO file: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Approval failed: " + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid approval request."));
+        } catch (IllegalStateException e) {
+            // The proposal is no longer awaiting the Chancellor's final approval (already
+            // approved, or advanced by a concurrent request). Nothing was changed.
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage()
+                            : "This proposal is not awaiting final approval."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getReason() != null ? e.getReason() : "Approval failed."));
         }
     }
 

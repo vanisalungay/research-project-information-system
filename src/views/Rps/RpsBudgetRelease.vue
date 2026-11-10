@@ -304,8 +304,29 @@
 
         <div class="section-block">
           <h3>(21) Risk Management Plan</h3>
-          <div class="document-box">
-            {{proposal.risk_management_plan}}
+          <!-- The structured plan (one row per identified risk with its likelihood, its
+               impact and its mitigation measure). A proposal that predates the table has no
+               rows and shows its single-text plan instead. -->
+          <table v-if="proposal.riskManagement && proposal.riskManagement.length" class="proposal-table">
+            <thead>
+              <tr>
+                <th>Identified Risks</th>
+                <th>Likelihood</th>
+                <th>Impact</th>
+                <th>Mitigation Measure</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in proposal.riskManagement" :key="index">
+                <td>{{ row.identifiedRisks || '-' }}</td>
+                <td>{{ row.likelihood || '-' }}</td>
+                <td>{{ row.impact || '-' }}</td>
+                <td>{{ row.mitigationMeasure || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="document-box">
+            {{ proposal.risks }}
           </div>
         </div>
 

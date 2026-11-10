@@ -36,6 +36,20 @@ public class CurrentUser {
             UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE, UserRoles.OVCAF,
             UserRoles.REC, UserRoles.OC);
 
+    /**
+     * The only proposal statuses OVCAF may read. A draft - or a proposal still in an
+     * earlier review stage - has not been forwarded for financial analysis, so it must
+     * not be reachable by guessing its id.
+     */
+    public static final Set<String> OVCAF_VISIBLE_STATUSES = Set.of(
+            "FOR_OVCAF_APPROVAL",
+            "APPROVED",
+            "FOR_OC_APPROVAL",
+            "READY_FOR_RELEASE",
+            "RELEASED",
+            "RETURNED",
+            "REJECTED");
+
     /** Returns the authenticated user's id, or {@code null} when unauthenticated. */
     public Long getUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -97,6 +111,18 @@ public class CurrentUser {
      * required by the review/approval workflow.
      */
     public void requireAccessTo(Proposal proposal) {
+        // OVCAF only reviews proposals that reached its stage; an early-stage record is
+        // treated as not accessible even when its id is guessed.
+        if (UserRoles.OVCAF.equalsIgnoreCase(getRole())) {
+            String status = proposal != null && proposal.getStatus() != null
+                    ? proposal.getStatus().toUpperCase(java.util.Locale.ROOT)
+                    : null;
+            if (status == null || !OVCAF_VISIBLE_STATUSES.contains(status)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "This proposal is not available for OVCAF review.");
+            }
+            return;
+        }
         if (!isProponent()) {
             return;
         }

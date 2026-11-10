@@ -7,6 +7,7 @@ import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.TerminalReportData;
 import com.rpis.backend.model.TerminalReportSection;
 import com.rpis.backend.model.WorkplanData;
+import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import com.rpis.backend.storage.UploadStorage;
@@ -29,7 +30,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuarterlyProgressReportService {
 
-    private static final List<String> IMPLEMENTATION_STATUSES = List.of("APPROVED", "RELEASED");
+    /**
+     * The proposal statuses that mean "approved for implementation". IMPLEMENTATION is
+     * the implementation-phase status the rest of the application already treats as
+     * approved (see {@code proposalStatus.js} / {@code proposalSummary.js}); it is kept
+     * here so a project carrying it is not silently denied reporting.
+     */
+    public static final List<String> IMPLEMENTATION_STATUSES =
+            List.of("APPROVED", "RELEASED", "IMPLEMENTATION");
 
     /** Reporting stage 1-3: Quarterly Progress Report + Project Workplan. */
     public static final String TYPE_QUARTERLY = "QUARTERLY_PROGRESS";
@@ -53,6 +61,7 @@ public class QuarterlyProgressReportService {
     private final QuarterlyProgressReportRepository reportRepository;
     private final ProposalRepository proposalRepository;
     private final UploadStorage uploadStorage;
+    private final OvcafValidationRepository ovcafValidationRepository;
 
     public List<QuarterlyProgressReport> getReportsByProposal(Long proposalId) {
         return reportRepository.findByProposalIdOrderByCreatedAtDesc(proposalId);
@@ -64,7 +73,13 @@ public class QuarterlyProgressReportService {
     }
 
     public List<Proposal> getEligibleProjects() {
-        return proposalRepository.findEligibleForQuarterlyReport(IMPLEMENTATION_STATUSES);
+        // The repository query only narrows by status and SO number; the authoritative
+        // rule (including the recorded OC approval and the OVCAF decision where budget
+        // evaluation was required) is applied here so the list cannot disagree with
+        // the per-proposal check.
+        return proposalRepository.findEligibleForQuarterlyReport(IMPLEMENTATION_STATUSES).stream()
+                .filter(this::isEligible)
+                .toList();
     }
 
     /**
@@ -360,19 +375,52 @@ public class QuarterlyProgressReportService {
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
         if (!isEligible(proposal)) {
             throw new IllegalStateException(
-                    "This project is not approved for implementation or has no issued Special Order (SO). "
-                            + "Quarterly progress reports are only available for approved, SO-issued projects.");
+                    "This project has not completed the full approval chain: it must be approved "
+                            + "for implementation with a recorded Office of the Chancellor Special "
+                            + "Order (SO) and, where budget evaluation was required, a completed "
+                            + "OVCAF budget approval. Quarterly progress reports are only available "
+                            + "to such projects.");
         }
         return proposal;
     }
 
+    /**
+     * The authoritative quarterly-reporting eligibility rule. Every part of the
+     * approval chain must be evidenced by a persisted record:
+     * <ol>
+     *   <li>the project status is approved for implementation;</li>
+     *   <li>the Office of the Chancellor recorded the issued SO - both the SO number
+     *       and the time it was recorded, which are written together by the OC
+     *       final-approval transaction (a value typed straight into the column is not
+     *       an OC approval record);</li>
+     *   <li>when the OC routed the proposal for budget evaluation
+     *       ({@code needsBudget = true}), OVCAF recorded an approved, endorsed
+     *       decision. The status "APPROVED" alone is never treated as that record.</li>
+     * </ol>
+     * A null status/flag is handled conservatively: null {@code needsBudget} means the
+     * historic records that never used the routing flag, which are not retroactively
+     * required to carry an OVCAF record.
+     */
     public boolean isEligible(Proposal proposal) {
         if (proposal == null) {
             return false;
         }
+        // Normalise both sides: a status stored in a different case (or with
+        // surrounding whitespace) still identifies the same workflow stage, and an
+        // SO number of only spaces is not an issued SO.
         boolean hasSo = proposal.getSoNumber() != null && !proposal.getSoNumber().isBlank();
-        boolean approved = proposal.getStatus() != null && IMPLEMENTATION_STATUSES.contains(proposal.getStatus());
-        return hasSo && approved;
+        boolean soRecorded = hasSo && proposal.getSoUploadedAt() != null;
+        String status = proposal.getStatus() == null ? "" : proposal.getStatus().trim().toUpperCase();
+        boolean approved = IMPLEMENTATION_STATUSES.contains(status);
+        if (!approved || !soRecorded) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(proposal.getNeedsBudget())) {
+            return proposal.getId() != null
+                    && ovcafValidationRepository.existsByProposalIdAndDecisionAndBudgetEndorsedTrue(
+                            proposal.getId(), "APPROVED_ENDORSED");
+        }
+        return true;
     }
 
 

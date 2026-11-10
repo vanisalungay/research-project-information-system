@@ -38,7 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -234,7 +234,17 @@ class ProposalControllerAddressContactTest {
                   "addressMunicipality": "Naawan",
                   "addressBarangay": "Balintad",
                   "contactType": "EMAIL_ADDRESS",
-                  "contactValue": "juan.delaacruz@msunaawan.edu.ph"
+                  "contactValue": "juan.delaacruz@msunaawan.edu.ph",
+                  "gadChecklist": {
+                    "responses": {
+                      "1.1": "YES", "1.2": "YES", "2.0": "YES", "3.1": "YES",
+                      "3.2": "YES", "4.0": "YES", "5.0": "YES", "6.1": "YES",
+                      "6.2": "YES", "6.3": "YES", "7.0": "YES", "8.0": "YES",
+                      "9.1": "YES", "9.2": "YES", "10.1": "YES", "10.2": "YES",
+                      "10.3": "YES"
+                    },
+                    "comments": {}
+                  }
                 }
                 """;
 

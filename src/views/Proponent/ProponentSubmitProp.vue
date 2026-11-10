@@ -669,6 +669,24 @@
                   </button>
                 </span>
               </div>
+              <!-- The image already attached to a reopened draft. Choosing a new image
+                   replaces it; leaving the picker untouched keeps it. -->
+              <div v-else-if="proposal.roadmap_file_path || proposal.roadmap_file_name" class="file-info">
+                <span class="file-name">🖼 {{ proposal.roadmap_file_name || 'Technology map' }}</span>
+                <span class="file-actions">
+                  <button type="button" class="btn-replace-file"
+                    @click="previewUploadedFile(proposal.roadmap_file_path || proposal.roadmap_file_name)">
+                    View
+                  </button>
+                  <button type="button" class="btn-replace-file"
+                    @click="downloadUploadedFile(proposal.roadmap_file_path || proposal.roadmap_file_name)">
+                    Download
+                  </button>
+                  <button type="button" class="btn-replace-file" @click="chooseTechnologyMap">
+                    Replace Image
+                  </button>
+                </span>
+              </div>
 
               <figure v-if="technologyMapPreviewUrl" class="technology-map-preview">
                 <img :src="technologyMapPreviewUrl"
@@ -813,19 +831,22 @@
           </div>
         </section>
 
-        <!-- 21. Risks -->
+        <!-- 21. Risk Management Plan (structured table) -->
         <section class="form-section" ref="section_risks">
           <div class="section-header">
             <span class="section-number">21</span>
             <h3>Risk Management Plan</h3>
           </div>
-          <div class="section-card">
-            <div class="form-group" :class="{ 'has-error': showValidation && errors.risks_assumptions }">
-              <textarea v-model="proposal.risks_assumptions"
-                placeholder="List risks, assumptions, and mitigation strategies..." rows="4"></textarea>
-              <span class="field-error" v-if="showValidation && errors.risks_assumptions">{{ errors.risks_assumptions
-                }}</span>
-            </div>
+          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.risk_management }">
+            <RiskManagementTable v-model="proposal.risk_management" :show-validation="showValidation" />
+            <!-- A proposal saved before the table existed keeps its single-text plan. It is
+                 shown here (and preserved when the proposal is saved) until structured risk
+                 entries are added, which then become the plan. -->
+            <p v-if="legacyRiskPlan" class="risk-legacy-note">
+              <strong>Saved earlier as a single-text plan.</strong> It is kept on the proposal:
+              <span class="risk-legacy-text">{{ legacyRiskPlan }}</span>
+            </p>
+            <span class="field-error" v-if="showValidation && errors.risk_management">{{ errors.risk_management }}</span>
           </div>
         </section>
 
@@ -924,7 +945,20 @@
                 <tbody>
                   <tr v-for="(row, index) in proposal.personnel_requirements" :key="index">
                     <td><input v-model="row.position" placeholder="e.g. Research Assistant" /></td>
-                    <td><input v-model="row.effort" placeholder="e.g. 50%" /></td>
+                    <!-- % Time Devoted: a number only. The % symbol is shown beside the
+                         field (never typed), the value is kept between 0 and 100, and a
+                         legacy "50%" is read back as 50. -->
+                    <td class="percent-cell">
+                      <div class="percent-field">
+                        <input v-model="row.effort" type="number" min="0" max="100" step="0.01"
+                          inputmode="decimal" :placeholder="TIME_DEVOTED_PLACEHOLDER"
+                          :aria-label="`% Time Devoted of personnel entry ${index + 1}`"
+                          @input="onTimeDevotedInput(row, $event)" />
+                        <span class="percent-symbol" aria-hidden="true">%</span>
+                      </div>
+                      <span class="field-error" v-if="showValidation && timeDevotedErrorFor(index)">{{
+                        timeDevotedErrorFor(index) }}</span>
+                    </td>
                     <td><input v-model="row.responsibilities" placeholder="e.g. Data collection" /></td>
                     <td><button class="btn-icon btn-remove"
                         @click="removeTableRow('personnel_requirements', index)">✕</button></td>
@@ -932,8 +966,10 @@
                 </tbody>
               </table>
             </div>
-            <span class="field-error" v-if="showValidation && errors.personnel_requirements">{{
-              errors.personnel_requirements }}</span>
+            <p class="field-hint">{{ TIME_DEVOTED_HINT }}</p>
+            <p class="field-hint field-hint-error" v-if="timeDevotedNotice">{{ timeDevotedNotice }}</p>
+            <span class="field-error" v-if="showValidation && errors.personnel_requirements">
+              {{ errors.personnel_requirements }}</span>
             <button class="btn-add" @click="addTableRow('personnel_requirements')">+ Add Row</button>
           </div>
         </section>
@@ -1001,6 +1037,26 @@
                   </button>
                   <button type="button" class="btn-remove-file" @click="removeBudgetFile">
                     Remove File
+                  </button>
+                </span>
+              </div>
+              <!-- The budget already attached to a reopened draft. It stays attached
+                   until the proponent explicitly replaces it with a new selection. -->
+              <div v-else-if="proposal.budget_file_path || proposal.budget_file_name" class="file-info">
+                <span class="file-name">📄 {{
+                  proposal.budget_file_name
+                    || budgetDocumentNameFromPath(proposal.budget_file_path)
+                    || 'Line-Item Budget'
+                }}</span>
+                <span class="file-actions">
+                  <button type="button" class="btn-replace-file" @click="openStoredBudgetFile">
+                    View
+                  </button>
+                  <button type="button" class="btn-replace-file" @click="saveStoredBudgetFile">
+                    Download
+                  </button>
+                  <button type="button" class="btn-replace-file" @click="chooseBudgetFile">
+                    Replace File
                   </button>
                 </span>
               </div>
@@ -1138,16 +1194,19 @@
 <script setup>
 import { reactive, ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/utils/api'
-import { useUserDataStore } from '@/stores/userData'
+// Saved attachments are downloaded / previewed through the authorized file route.
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
 import GadChecklist from '@/components/GadChecklist.vue'
 import LineItemBudgetTemplateModal from '@/components/LineItemBudgetTemplateModal.vue'
 import LiteratureReferenceModal from '@/components/LiteratureReferenceModal.vue'
 import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
+import RiskManagementTable from '@/components/RiskManagementTable.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { budgetDocumentNameFromPath } from '@/utils/budgetDocument'
 import {
   buildStandaloneHtml,
   printDocument,
@@ -1160,6 +1219,28 @@ import {
   sdgChecklistHtml
 } from '@/utils/documentExport'
 import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
+// Section 24: the "% Time Devoted" column accepts a number only (the % symbol is shown
+// beside the field) and is normalized to a value between 0 and 100.
+import {
+  TIME_DEVOTED_CLAMPED_NOTICE,
+  TIME_DEVOTED_HINT,
+  TIME_DEVOTED_PLACEHOLDER,
+  formatTimeDevoted,
+  parseTimeDevoted,
+  sanitizeTimeDevotedInput,
+  timeDevotedPayload,
+  validateTimeDevotedRows
+} from '@/utils/personnelTime'
+import {
+  RISK_COLUMNS,
+  blankRiskEntry,
+  ensureRiskRows,
+  isBlankText,
+  isEmptyRiskEntry,
+  riskEntriesFromSaved,
+  riskEntriesPayload,
+  validateRiskPlan
+} from '@/utils/riskManagement'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
 import {
   GAD_ITEMS,
@@ -1217,9 +1298,6 @@ import {
   clearedTechnologyMapSelection,
   formatFileSize,
   nextTechnologyMapSelection,
-  technologyMapKey,
-  technologyMapUploadError,
-  uploadTechnologyMap,
   verifyTechnologyMapFile,
 } from '@/utils/technologyMap'
 import {
@@ -1233,12 +1311,9 @@ import {
   BUDGET_FILE_LABEL,
   BUDGET_FILE_SIZE_LABEL,
   BUDGET_FILE_SIZE_VALUE,
-  budgetFileKey,
   budgetFileSizeLabel,
-  budgetFileUploadError,
   clearedBudgetFileSelection,
   nextBudgetFileSelection,
-  uploadBudgetFile,
   verifyBudgetFile,
 } from '@/utils/budgetFile'
 // Step 1 of the workflow: the selected Call for Proposal is shown on this step.
@@ -1247,7 +1322,6 @@ import { callDeadlineLabel } from '@/utils/callForProposal'
 // master data read from the backend (see the Priority Agendas admin page).
 import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
 import {
-  agendaPayload,
   mergeAgendaState,
 } from '@/utils/priorityAgendas'
 // Section 23: APA 7th edition reference builder.
@@ -1273,7 +1347,7 @@ const props = defineProps({
    */
   selectedCall: { type: Object, default: null }
 })
-const emit = defineEmits(['update:modelValue', 'save', 'next'])
+const emit = defineEmits(['update:modelValue', 'savedraft', 'next'])
 
 const modalBodyRef = ref(null)
 const errorBannerRef = ref(null)
@@ -1316,6 +1390,7 @@ const sectionRefs = {
   gad_score_file: 'section_gad_score',
   gad_checklist: 'section_gad_score',
   limitations: 'section_limitations',
+  risk_management: 'section_risks',
   risks_assumptions: 'section_risks',
   logical_framework: 'section_logical_framework',
   literature_cited: 'section_literature_cited',
@@ -1476,8 +1551,17 @@ const getInitialProposal = () => ({
   target_beneficiaries: '',
   sustainability_plan: '',
   limitations: '',
+  // Section 21: the structured Risk Management Plan (one row per identified risk with its
+  // likelihood, impact and mitigation measure). A new proposal starts with one empty row.
+  // `risks_assumptions` keeps the single-text plan of a proposal saved before the table
+  // existed; it is preserved and re-sent unless structured entries are added.
+  risk_management: [blankRiskEntry()],
   risks_assumptions: '',
   review_of_literature: '',
+  // Section 11: the display name of a document attached to a proposal saved before
+  // "Review of Literature" became a text field. It is restored and preserved, never
+  // required again.
+  review_file_name: '',
   technology_roadmap_file: null,
   // Name / stored path of the technology map already attached to the proposal (set by
   // the upload, so the printout and a later save keep describing the same image).
@@ -1488,6 +1572,10 @@ const getInitialProposal = () => ({
   // never clears it) and the interactive GAD Checklist 2 (responses + comments).
   gad_file_name: '',
   gad_checklist: emptyGadChecklist(),
+  // True once the checklist came from (or was saved to) the proposal. A reopened draft
+  // can therefore tell "never started" from "every answer was explicitly cleared", so
+  // clearing the last answer clears the score instead of silently keeping the old one.
+  gad_checklist_saved: false,
   line_item_budget_file: null,
   // Name / stored path of the Line-Item Budget already attached to the proposal (set
   // by the upload, so a later save keeps describing the same file).
@@ -1757,7 +1845,6 @@ const resetForm = () => {
   programTitleChoice.value = ''
   programTitleBeforeCreation.value = null
   budgetFileError.value = ''
-  uploadedBudgetFileKey.value = ''
   // The guided form starts again on its first page.
   currentSubstep.value = 1
   // Section 23: the reference list is part of the form state that is reset.
@@ -1800,18 +1887,25 @@ const loadProposal = (data) => {
   proposal.methodology = data.methodology || ''
   proposal.expected_outputs = parseSixPs(data.outputs)
   proposal.review_of_literature = data.review || ''
+  // The legacy Review of Literature document is restored (not demanded): the section
+  // itself is the text above.
+  proposal.review_file_name = data.reviewFileName || ''
   proposal.limitations = data.limitationsText || ''
   proposal.potential_outcomes = data.outcomes || ''
   proposal.economic_impact = data.impactEconomic || ''
   proposal.social_ethical_impact = data.impactSocial || ''
   proposal.target_beneficiaries = data.beneficiaries || ''
   proposal.sustainability_plan = data.sustainability || ''
+  // Section 21: the structured risk entries of the plan (empty for a proposal saved
+  // before the table existed), plus the single-text plan such a proposal keeps.
+  proposal.risk_management = ensureRiskRows(riskEntriesFromSaved(data.riskManagement))
   proposal.risks_assumptions = data.risks || ''
   proposal.other_projects_number = data.otherProjectsNumber || ''
   // Section 19: the interactive GAD Checklist 2. A legacy proposal keeps the stored name of
   // its uploaded GAD document; an existing checklist is restored exactly as it was saved.
   proposal.gad_file_name = data.gadFileName || ''
   proposal.gad_checklist = gadChecklistFromSaved(data.gadChecklist)
+  proposal.gad_checklist_saved = Boolean(data.gadChecklist)
   // Section 23: the references are restored from the stored plain text and, when the
   // proposal was built with the reference builder, from the structured entries too
   // (which is what keeps the italics and "Edit" working).
@@ -1823,6 +1917,10 @@ const loadProposal = (data) => {
   // until the proponent uploads a replacement.
   proposal.budget_file_name = data.beneficiariesFileName || ''
   proposal.budget_file_path = data.beneficiariesFilePath || ''
+  // Section 13: the Technology Map already attached to this proposal, restored so the
+  // reopened draft shows it (View / Download) instead of claiming no image was chosen.
+  proposal.roadmap_file_name = data.roadmapFileName || ''
+  proposal.roadmap_file_path = data.roadmapFilePath || ''
 
   // Map sites
   if (data.sites && data.sites.length > 0) {
@@ -1854,7 +1952,7 @@ const loadProposal = (data) => {
     proposal.personnel_requirements = data.personnel.map(p => ({
       position: p.position || '',
       // The API returns the entity field name (timeDevoted), not "time".
-      effort: p.timeDevoted || '',
+      effort: parseTimeDevoted(p.timeDevoted),
       responsibilities: p.responsibilities || ''
     }))
   }
@@ -1872,7 +1970,34 @@ const loadProposal = (data) => {
   Object.keys(errors).forEach(key => delete errors[key])
 }
 
-defineExpose({ resetForm, loadProposal })
+defineExpose({
+  resetForm,
+  loadProposal,
+  /**
+   * The current details (including files still pending upload) for the workflow owner.
+   * Saving from another step merges this snapshot, so a jump to Review & Submit can
+   * never save an empty logical framework / personnel / sites in place of what was typed.
+   */
+  getFormData: () => ({ ...proposal })
+})
+
+/**
+ * The single-text plan of a proposal that predates the table, shown for reference
+ * while no structured entry has been started. As soon as the proponent fills the
+ * table in, the structured entries are the plan and the note disappears.
+ */
+const legacyRiskPlan = computed(() => {
+  const rows = Array.isArray(proposal.risk_management) ? proposal.risk_management : []
+  if (rows.some((row) => !isEmptyRiskEntry(row))) return ''
+  return isBlankText(proposal.risks_assumptions) ? '' : proposal.risks_assumptions
+})
+
+/** Section 21: the printable rows of the structured plan. */
+const riskManagementRows = computed(() =>
+  riskEntriesPayload(proposal.risk_management).map((row) =>
+    RISK_COLUMNS.map((column) => row[column.key])
+  )
+)
 
 const sixPsList = [
   { key: 'publications', label: 'Publications', placeholder: 'Describe the expected publication/output...' },
@@ -1929,6 +2054,25 @@ const addTableRow = (key) => {
 
 const removeTableRow = (key, index) => proposal[key].splice(index, 1)
 
+/* ===== SECTION 24: "% TIME DEVOTED" =====
+   The proponent types a number only; the % symbol is shown beside the field. Every
+   keystroke is sanitized, so letters, a typed "%" and a minus sign are dropped and a
+   value above 100 is capped at 100 (with a note saying why). */
+const timeDevotedNotice = ref('')
+
+const onTimeDevotedInput = (row, event) => {
+  const { value, clamped } = sanitizeTimeDevotedInput(event.target.value)
+  row.effort = value
+  // The DOM value is corrected too, so what the field shows is what is stored.
+  if (event.target.value !== value) event.target.value = value
+  timeDevotedNotice.value = clamped ? TIME_DEVOTED_CLAMPED_NOTICE : ''
+}
+
+/** Row-level messages of the % Time Devoted column (index -> message). */
+const timeDevotedErrors = computed(() => validateTimeDevotedRows(proposal.personnel_requirements).rowErrors)
+
+const timeDevotedErrorFor = (index) => timeDevotedErrors.value[index] || ''
+
 // "Number of other projects" is a count. A type="number" input already refuses
 // letters, but browsers still accept "e", "+", "-" and "." in one, so anything
 // that is not a digit is dropped here: the form state - and therefore the
@@ -1961,7 +2105,6 @@ const handleFileUpload = (type, event) => {
 const techFile = ref(null)
 const technologyMapError = ref('')
 const technologyMapPreviewUrl = ref('')
-const uploadedTechnologyMapKey = ref('')
 
 /** The image chosen on this form (a saved file name is not a file). */
 const technologyMapFile = computed(() => {
@@ -2003,43 +2146,14 @@ const onTechnologyMapChange = async (event) => {
   if (next.file !== file) return
 
   proposal.technology_roadmap_file = file
-  uploadedTechnologyMapKey.value = ''
   showTechnologyMapPreview(file)
 }
 
 const removeTechnologyMap = () => {
   const next = clearedTechnologyMapSelection()
   proposal.technology_roadmap_file = next.file
-  uploadedTechnologyMapKey.value = ''
   technologyMapError.value = next.error
   releaseTechnologyMapPreview()
-}
-
-/**
- * Uploads the chosen image to the proposal it belongs to - once. The proposal has
- * just been created or updated, so its id is known here.
- */
-const uploadTechnologyMapIfNeeded = async (proposalId) => {
-  const file = technologyMapFile.value
-  if (!proposalId || !file) return
-  const key = technologyMapKey(file)
-  if (key === uploadedTechnologyMapKey.value) return
-
-  try {
-    const saved = await uploadTechnologyMap(proposalId, file)
-    uploadedTechnologyMapKey.value = key
-    // Keep the saved name / path, so the printout and a later save still describe the
-    // image that is attached to the proposal.
-    proposal.roadmap_file_name = saved?.roadmapFileName || ''
-    proposal.roadmap_file_path = saved?.roadmapFilePath || ''
-  } catch (err) {
-    // The proposal itself was saved; only the image could not be attached, so the
-    // failure is reported without hiding the successful save.
-    await showAlert(technologyMapUploadError(err), {
-      type: 'error',
-      title: 'Technology Map Not Uploaded'
-    })
-  }
 }
 
 onBeforeUnmount(releaseTechnologyMapPreview)
@@ -2052,7 +2166,6 @@ onBeforeUnmount(releaseTechnologyMapPreview)
 // saved, so it is attached to the correct record.
 const budgetFileInput = ref(null)
 const budgetFileError = ref('')
-const uploadedBudgetFileKey = ref('')
 
 /** The chosen file, if any (a saved file name is not a file). */
 const budgetFileToUpload = computed(() => {
@@ -2079,41 +2192,40 @@ const onBudgetFileChange = async (event) => {
   const next = nextBudgetFileSelection(proposal.line_item_budget_file, result, file)
   proposal.line_item_budget_file = next.file
   budgetFileError.value = next.error
-  uploadedBudgetFileKey.value = ''
 }
 
 const removeBudgetFile = () => {
   const next = clearedBudgetFileSelection()
   proposal.line_item_budget_file = next.file
   budgetFileError.value = next.error
-  uploadedBudgetFileKey.value = ''
   if (budgetFileInput.value) budgetFileInput.value.value = ''
 }
 
-/**
- * Uploads the chosen file to the proposal it belongs to - once. The proposal has
- * just been created or updated, so its id is known here.
- */
-const uploadBudgetFileIfNeeded = async (proposalId) => {
-  const file = budgetFileToUpload.value
-  if (!proposalId || !file) return
-  const key = budgetFileKey(file)
-  if (key === uploadedBudgetFileKey.value) return
+/** The stored budget reference (a path; a legacy record may carry only a name). */
+const storedBudgetPath = () => proposal.budget_file_path || proposal.budget_file_name
 
+/** Report a failed retrieval instead of leaving a listed document silently unusable. */
+const reportBudgetRetrievalError = async (err) => {
+  const status = err?.response?.status
+  const detail = status === 404
+    ? 'The stored Line-Item Budget file could not be found on the server.'
+    : err?.message || 'The Line-Item Budget file could not be retrieved.'
+  await showAlert(detail, { type: 'error', title: 'Budget File Not Retrieved' })
+}
+
+const openStoredBudgetFile = async () => {
   try {
-    const saved = await uploadBudgetFile(proposalId, file)
-    uploadedBudgetFileKey.value = key
-    // Keep the stored name / path, so the printout and a later save still describe
-    // the file that is attached to the proposal.
-    proposal.budget_file_name = saved?.beneficiariesFileName || ''
-    proposal.budget_file_path = saved?.beneficiariesFilePath || ''
+    await previewUploadedFile(storedBudgetPath())
   } catch (err) {
-    // The proposal itself was saved; only the file could not be attached, so the
-    // failure is reported without hiding the successful save.
-    await showAlert(budgetFileUploadError(err), {
-      type: 'error',
-      title: 'Budget File Not Uploaded'
-    })
+    await reportBudgetRetrievalError(err)
+  }
+}
+
+const saveStoredBudgetFile = async () => {
+  try {
+    await downloadUploadedFile(storedBudgetPath())
+  } catch (err) {
+    await reportBudgetRetrievalError(err)
   }
 }
 
@@ -2179,6 +2291,10 @@ const toOfficialProposal = () => {
     sustainability: d.sustainability_plan,
     limitationsText: d.limitations,
     risks: d.risks_assumptions,
+    // Section 21: the structured Risk Management Plan of the official form. The legacy
+    // text above is still sent (the backend derives it from these entries when they
+    // exist, and keeps it as it is when they do not).
+    riskManagement: riskEntriesPayload(d.risk_management),
     referencesText: d.literature_cited || '',
     // Section 23: the structured entries behind the list (italics + editing). Sent
     // together with the plain text; the backend stores both.
@@ -2189,7 +2305,7 @@ const toOfficialProposal = () => {
     })),
     personnel: (d.personnel_requirements || []).map((r) => ({
       position: r.position,
-      timeDevoted: r.effort,
+      timeDevoted: timeDevotedPayload(r.effort),
       responsibilities: r.responsibilities
     })),
     otherProjectsNumber: d.other_projects_number,
@@ -2204,8 +2320,15 @@ const toOfficialProposal = () => {
     gadFileName: fileName(d.gad_score_file) || d.gad_file_name || '',
     gadChecklist: gadChecklistPayload(d.gad_checklist),
     // Section 25: the Line-Item Budget document. The stored name (set by the upload)
-    // wins, so a re-save never overwrites it with a local file name.
+    // wins, so a re-save never overwrites it with a local file name. `budgetFileName` is
+    // the field the official form renders; `beneficiariesFileName` is kept because the
+    // backend stores the budget document in the beneficiaries_* columns.
+    budgetFileName: d.budget_file_name || fileName(d.line_item_budget_file),
     beneficiariesFileName: d.budget_file_name || fileName(d.line_item_budget_file),
+    // The stored path lets the generator name a draft whose display name was lost by an
+    // old save (the file is still attached), instead of printing the empty state.
+    budgetFilePath: d.budget_file_path || '',
+    beneficiariesFilePath: d.budget_file_path || '',
     supportingDocuments: [
       fileName(d.line_item_budget_file),
       ...(d.supporting_documents || []).map(fileName)
@@ -2368,7 +2491,7 @@ const proposalSectionsB = () => {
   })
 
   const logFrameRows = (p.logical_framework || []).map((r) => [r.outcome_indicator, r.output_indicator])
-  const personnelRows = (p.personnel_requirements || []).map((r) => [r.position, r.effort, r.responsibilities])
+  const personnelRows = (p.personnel_requirements || []).map((r) => [r.position, formatTimeDevoted(r.effort), r.responsibilities])
   const otherProjectsRows = (p.other_projects || []).map((r) => [
     r.project_title,
     r.funding_agency,
@@ -2422,7 +2545,9 @@ const proposalSectionsB = () => {
     section({
       number: '21',
       title: 'Risk Management Plan',
-      body: textBlock('Risks & Assumptions', p.risks_assumptions)
+      body: riskManagementRows.value.length
+        ? tableBlock(RISK_COLUMNS.map((column) => column.label), riskManagementRows.value)
+        : textBlock('Risks & Assumptions', p.risks_assumptions)
     }),
     section({
       number: '22',
@@ -2443,7 +2568,9 @@ const proposalSectionsB = () => {
     section({
       number: '25',
       title: 'Line-Item Budget Requirement',
-      body: fileField('Line-Item Budget File', p.line_item_budget_file)
+      // The stored name (set by the upload) describes a reopened draft; the local file
+      // only exists while it is still selected in this session.
+      body: fileField('Line-Item Budget File', p.budget_file_name || p.line_item_budget_file)
     }),
     section({
       number: '26',
@@ -2571,7 +2698,13 @@ const validateStep1 = () => {
 
   // 20-21
   if (isBlank(proposal.limitations)) errors.limitations = 'Limitations is required.'
-  if (isBlank(proposal.risks_assumptions)) errors.risks_assumptions = 'Risk Management Plan is required.'
+  // 21 - Risk Management Plan. The section was already required before the table existed,
+  // so a submission still needs it: every entry the proponent started must be complete and
+  // at least one entry must exist. A proposal whose plan is only the old single text (no
+  // structured entry started) stays valid, so an older record is never blocked by this
+  // change, and the message names the row that is incomplete.
+  const riskPlan = validateRiskPlan(proposal.risk_management, { legacyText: proposal.risks_assumptions })
+  if (!riskPlan.valid) errors.risk_management = riskPlan.message
 
   // 22 - Logical Framework
   if (!proposal.logical_framework.length) {
@@ -2586,7 +2719,8 @@ const validateStep1 = () => {
   // 23 - Literature Cited
   if (isBlank(proposal.literature_cited)) errors.literature_cited = 'Literature Cited is required.'
 
-  // 24 - Personnel
+  // 24 - Personnel. Every field must be filled, and "% Time Devoted" must be a number
+  // between 0 and 100 (the field only accepts a number; the message names the row).
   if (!proposal.personnel_requirements.length) {
     errors.personnel_requirements = 'At least one personnel entry is required.'
   } else {
@@ -2594,10 +2728,24 @@ const validateStep1 = () => {
       isBlank(row.position) || isBlank(row.effort) || isBlank(row.responsibilities)
     )
     if (hasIncompletePersonnel) errors.personnel_requirements = 'All personnel fields must be filled.'
+
+    // A "% Time Devoted" that is not a number between 0 and 100 (the field only accepts
+    // a number, so this is a value saved before the field was numeric) is reported on the
+    // same section message, with the row number, and the cell itself shows it too.
+    const personnelTime = validateTimeDevotedRows(proposal.personnel_requirements)
+    if (!personnelTime.valid) {
+      errors.personnel_requirements = isBlank(errors.personnel_requirements)
+        ? personnelTime.message
+        : `${errors.personnel_requirements} ${personnelTime.message}`
+    }
   }
 
-  // 25 - Budget
-  if (!proposal.line_item_budget_file) errors.line_item_budget_file = 'Line-Item Budget file is required.'
+  // 25 - Budget. A file chosen in this session or a file already attached to the
+  // proposal (restored when a draft is reopened) both satisfy the requirement - an
+  // empty picker must never mean the stored budget is gone.
+  if (!proposal.line_item_budget_file && !proposal.budget_file_path && !proposal.budget_file_name) {
+    errors.line_item_budget_file = 'Line-Item Budget file is required.'
+  }
 
 
 
@@ -2651,37 +2799,15 @@ const pageErrorsOf = (number) => errorsOfSubstep(errorList.value, sectionRefs, n
 
 const visibleErrorList = computed(() => pageErrorsOf(currentSubstep.value))
 
-const saveAsDraft = async () => {
-  try {
-    const userStore = useUserDataStore()
-    const proponentId = userStore.user?.id
-    if (!proponentId) {
-      await showAlert('You must be logged in to save drafts.', { type: 'warning', title: 'Login Required' })
-      return
-    }
-    const payload = mapFormToDTO({ ...proposal }, proponentId, 'DRAFT')
-    let res
-    if (proposal.proposal_id) {
-      // Update existing draft
-      res = await api.put(`/api/proposals/${proposal.proposal_id}`, payload)
-    } else {
-      // Create new draft
-      res = await api.post('/api/proposals', payload)
-      // Keep the id of the draft that was just created: the technology map is attached
-      // to it, and saving again updates the draft instead of creating a second one.
-      proposal.proposal_id = res.data?.id ?? proposal.proposal_id
-    }
-    // The image is uploaded after the proposal exists, so it is attached to this draft.
-    await uploadTechnologyMapIfNeeded(proposal.proposal_id)
-    // The filled-out Line-Item Budget is attached to the same draft.
-    await uploadBudgetFileIfNeeded(proposal.proposal_id)
-    await showAlert('Draft saved successfully!', { type: 'success', title: 'Draft Saved' })
-    emit('save', res.data)
-    emit('update:modelValue', false)
-  } catch (err) {
-    console.error(err)
-    await showAlert('Failed to save draft. Please try again.', { type: 'error', title: 'Save Failed' })
-  }
+/**
+ * The details step no longer saves on its own: it hands its current values to the
+ * workflow owner, which drives the one save path in Review & Submit. That save path
+ * knows every attachment (technology map, budget, signature, endorsement PDF) and the
+ * certification data, so a draft saved from any step stores all of it - instead of this
+ * step sending a partial payload that used to blank fields it did not include.
+ */
+const saveAsDraft = () => {
+  emit('savedraft', { ...proposal })
 }
 
 const goNext = async () => {
@@ -2762,89 +2888,6 @@ const goToNextSubstepOrContinue = async () => {
 // Section 25: the same official template the modal previews can still be saved
 // to disk (it used to point at a file that was not shipped with the app).
 const downloadBudgetFormat = () => window.open(LINE_ITEM_BUDGET_TEMPLATE_URL)
-
-const mapFormToDTO = (data, proponentId, status) => {
-  return {
-    proponentId,
-    // Step 1 of the workflow: the Call for Proposal the proponent selected. The
-    // backend attaches the proposal to that exact call, and refuses it when the call
-    // is no longer open for submissions.
-    proposalAnnouncementId: data.proposal_announcement_id || null,
-    programTitle: data.program_title || '',
-    projectTitle: data.project_title || '',
-    projectLeader: data.project_leader || '',
-    projectLeaderSex: data.project_leader_sex || '',
-    duration: data.duration || '',
-    startDate: data.start_date || '',
-    endDate: data.end_date || '',
-    college: data.department || '',
-    // The combined "Address / Contact" column is kept up to date from the two
-    // new sections, so every existing screen and export still shows both.
-    address: formatAddressContact(data.address_details, data.contact_details),
-    // The Address section is Philippine-only: the country is never asked for, so it
-    // is filled in here (a stored country - a legacy record - is kept as it is).
-    addressCountry: data.address_details?.country || PHILIPPINES.name,
-    addressRegion: data.address_details?.region || '',
-    addressProvince: data.address_details?.province || '',
-    addressDistrict: data.address_details?.district || '',
-    addressMunicipality: data.address_details?.municipality || '',
-    addressBarangay: data.address_details?.barangay || '',
-    contactType: data.contact_details?.type || '',
-    contactValue: (data.contact_details?.value || '').trim(),
-    // Section 02: the selection travels as directory ids, and the legacy text column
-    // is derived from the selected names (the backend derives it from the ids again,
-    // so the text and the relation can never drift apart).
-    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
-    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
-    researchType: data.research_type || '',
-    innovationGoals: data.innovation_goals || '',
-    sectorRelevance: data.sector_relevance || '',
-    sdg: data.sustainable_development_goals || [],
-    executiveSummary: data.executive_summary || '',
-    rationale: data.rationale || '',
-    framework: data.theoretical_framework || '',
-    objectivesGeneral: data.general_objective || '',
-    objectivesSpecific: data.specific_objectives || '',
-    methodology: data.methodology || '',
-    outputs: serializeSixPs(data.expected_outputs),
-    review: data.review_of_literature || '',
-    limitationsText: data.limitations || '',
-    outcomes: data.potential_outcomes || '',
-    impactEconomic: data.economic_impact || '',
-    impactSocial: data.social_ethical_impact || '',
-    beneficiaries: data.target_beneficiaries || '',
-    sustainability: data.sustainability_plan || '',
-    risks: data.risks_assumptions || '',
-    otherProjectsNumber: data.other_projects_number || '',
-    status,
-    sites: (data.sites || []).map(s => ({
-      country: s.country || '',
-      region: s.region || '',
-      province: s.province || '',
-      district: s.district || '',
-      municipality: s.municipality || '',
-      barangay: s.barangay || ''
-    })),
-    // Section 05: every rendered agenda is sent (selected or not), so unchecking one
-    // stores an explicit "not selected" instead of leaving a stale row behind. The
-    // backend validates each key against the active master data.
-    priorityAgenda: agendaPayload(data.priority_agendas),
-    logFrame: (data.logical_framework || []).map(lf => ({
-      outcome: lf.outcome_indicator || '',
-      output: lf.output_indicator || ''
-    })),
-    personnel: (data.personnel_requirements || []).map(p => ({
-      position: p.position || '',
-      time: p.effort || '',
-      responsibilities: p.responsibilities || ''
-    })),
-    otherProjects: (data.other_projects || []).map(op => ({
-      title: op.project_title || '',
-      agency: op.funding_agency || '',
-      involvement: op.involvement || ''
-    }))
-  }
-}
 
 // Load the reusable program titles once, then refresh them whenever the form is
 // (re)opened so a title created in the meantime is available in the dropdown.
@@ -3204,6 +3247,28 @@ watch(() => props.modelValue, (isOpen) => {
 .form-section {
   margin-bottom: 28px;
 }
+
+/* ===== SECTION 21: RISK MANAGEMENT PLAN ===== */
+/* A proposal saved before the table existed keeps its single-text plan: it is shown,
+   never lost, and is replaced only when the proponent adds structured entries. */
+.risk-legacy-note {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: #f8faff;
+  border-left: 4px solid #94a3b8;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.risk-legacy-text {
+  display: block;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  color: #1e293b;
+}
+
 
 /* ===== SECTION 23: LITERATURE CITED ===== */
 /* The instruction sits above the list, clearly apart from the Add Reference button. */
@@ -3759,6 +3824,28 @@ select {
 .form-table input:focus {
   border-color: #4f46e5;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.08);
+}
+
+/* ===== SECTION 24: "% TIME DEVOTED" =====
+   A number field with the % symbol shown beside it: the symbol is never typed, and the
+   value stays a plain number between 0 and 100. */
+.percent-cell {
+  min-width: 130px;
+}
+
+.percent-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.percent-field input {
+  text-align: right;
+}
+
+.percent-symbol {
+  font-weight: 700;
+  color: #475569;
 }
 
 /* ===== BUTTONS ===== */
