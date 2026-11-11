@@ -60,18 +60,18 @@
           <select v-model="statusFilter" class="form-select">
             <option value="">All Statuses</option>
             <option value="DRAFT">Draft</option>
-            <option value="SUBMITTED">Submitted</option>
-            <option value="ENDORSED">RPS Endorsed</option>
-            <option value="UNDER_REVIEW">Under REC Review</option>
+            <option value="FOR REVIEW">For Review</option>
+            <option value="ENDORSED">Endorsed</option>
+            <option value="UNDER_REVIEW">Under Review</option>
             <option value="REC_APPROVED">REC Approved</option>
-            <option value="FOR_OVCAF_APPROVAL">OVCAF Review</option>
-            <option value="FOR_OC_APPROVAL">Chancellor Review</option>
+            <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
+            <option value="FOR_OC_APPROVAL">For OC Approval</option>
             <option value="APPROVED">Approved</option>
-            <option value="RELEASED">Funds Released</option>
+            <option value="RELEASED">Released</option>
             <option value="COMPLETED">Completed</option>
-            <option value="RPS_RETURNED">Returned by RPS</option>
-            <option value="REC_REVISION">Returned by REC</option>
-            <option value="RETURNED">Returned by OVCAF</option>
+            <option value="RPS_RETURNED">RPS Returned</option>
+            <option value="REC_REVISION">REC Revision</option>
+            <option value="RETURNED">Returned</option>
             <option value="REJECTED">Rejected</option>
           </select>
         </div>
@@ -90,7 +90,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="fetchProposals">Retry</button>
+      <button class="btn-secondary" @click="fetchProposals">Retry</button>
     </div>
 
     <!-- Proposals List -->
@@ -103,7 +103,7 @@
             <span class="proposal-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</span>
           </div>
           <div class="header-right">
-            <span :class="['status-badge', getStatusClass(proposal.status)]">
+            <span :class="['status-badge', statusTone(proposal.status)]">
               {{ formatStatus(proposal.status) }}
             </span>
           </div>
@@ -156,13 +156,13 @@
           </button>
           <button
             v-if="isEligibleForReports(proposal)"
-            class="btn-upload"
+            class="btn-upload btn-primary"
             :disabled="openingReportId === proposal.id"
             @click="openQuarterlyReport(proposal)"
           >
             {{ openingReportId === proposal.id ? 'Opening…' : 'Create Quarterly Report' }}
           </button>
-          <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise" @click="submitRevision(proposal.id)">
+          <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise btn-primary" @click="submitRevision(proposal.id)">
             Submit Revision
           </button>
         </div>
@@ -270,6 +270,13 @@ import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
 import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
+import { statusTone } from '@/utils/statusTone.js'
+import {
+  canonicalProposalStatus,
+  isForReviewStatus,
+  proposalStatusLabel,
+  proposalStatusMatches,
+} from '@/utils/proposalStatus.js'
 import { IMPLEMENTATION_STATUSES } from '@/utils/quarterlyReport'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -282,7 +289,7 @@ const router = useRouter()
 // require budget; proposals without budget skip it and reach 100% at APPROVED.
 const BASE_STAGES = [
   { key: 'DRAFT', label: 'Draft' },
-  { key: 'SUBMITTED', label: 'Submitted' },
+  { key: 'FOR REVIEW', label: 'For Review' },
   { key: 'ENDORSED', label: 'RPS Endorsed' },
   { key: 'UNDER_REVIEW', label: 'REC Review' },
   { key: 'REC_APPROVED', label: 'REC Approved' },
@@ -338,7 +345,8 @@ const totalProposals = computed(() => proposals.value.length)
 
 const inProgressCount = computed(() =>
   proposals.value.filter(p =>
-    ['SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL'].includes(p.status)
+    isForReviewStatus(p.status) ||
+    ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL'].includes(p.status)
   ).length
 )
 
@@ -362,7 +370,7 @@ const filteredProposals = computed(() => {
   }
 
   if (statusFilter.value) {
-    result = result.filter(p => p.status === statusFilter.value)
+    result = result.filter(p => proposalStatusMatches(p.status, statusFilter.value))
   }
 
   return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -397,11 +405,11 @@ const fetchProposals = async () => {
 }
 
 const getStageIndex = (proposal, status) => {
-  return getStagesFor(proposal).findIndex(s => s.key === status)
+  return getStagesFor(proposal).findIndex(s => s.key === canonicalProposalStatus(status))
 }
 
 const isStageComplete = (proposal, stageKey, index) => {
-  const status = proposal.status
+  const status = canonicalProposalStatus(proposal.status)
 
   // Terminal/rejected statuses: only show DRAFT as complete
   if (terminalStatuses.includes(status)) {
@@ -418,11 +426,11 @@ const isStageComplete = (proposal, stageKey, index) => {
 }
 
 const isStageCurrent = (status, stageKey) => {
-  return status === stageKey
+  return canonicalProposalStatus(status) === stageKey
 }
 
 const getStageClass = (proposal, stageKey, index) => {
-  const status = proposal.status
+  const status = canonicalProposalStatus(proposal.status)
 
   // Terminal/rejected statuses show as "returned" on the first step
   if (terminalStatuses.includes(status)) {
@@ -436,7 +444,7 @@ const getStageClass = (proposal, stageKey, index) => {
 }
 
 const getProgressPercentage = (proposal) => {
-  const status = proposal.status
+  const status = canonicalProposalStatus(proposal.status)
 
   // Terminal/rejected statuses show 0% progress (they are not progressing)
   if (terminalStatuses.includes(status)) return 0
@@ -453,7 +461,7 @@ const getProgressPercentage = (proposal) => {
 // Width of the green connector line as a percentage of the track. The line
 // reaches the current stage's dot, so the timeline fills edge-to-edge at 100%.
 const getTimelineFill = (proposal) => {
-  const status = proposal.status
+  const status = canonicalProposalStatus(proposal.status)
 
   if (terminalStatuses.includes(status)) return 0
   if (POST_APPROVAL_STATUSES.includes(status)) return 100
@@ -467,31 +475,7 @@ const getTimelineFill = (proposal) => {
   return Math.round((index / totalSegments) * 100)
 }
 
-const getStatusClass = (status) => {
-  const classMap = {
-    'DRAFT': 'status-draft',
-    'SUBMITTED': 'status-submitted',
-    'ENDORSED': 'status-endorsed',
-    'UNDER_REVIEW': 'status-review',
-    'REC_APPROVED': 'status-rec-approved',
-    'FOR_OVCAF_APPROVAL': 'status-ovcaf',
-    'FOR_OC_APPROVAL': 'status-chancellor',
-    'APPROVED': 'status-approved',
-    'RELEASED': 'status-released',
-    'COMPLETED': 'status-completed',
-    'RPS_RETURNED': 'status-returned',
-    'REC_REVISION': 'status-returned',
-    'RETURNED': 'status-returned',
-    'REJECTED': 'status-rejected',
-    'REC_REJECTED': 'status-rejected'
-  }
-  return classMap[status] || 'status-default'
-}
-
-const formatStatus = (status) => {
-  if (!status) return 'Unknown'
-  return status.replace(/_/g, ' ')
-}
+const formatStatus = (status) => proposalStatusLabel(status) || 'Unknown'
 
 const formatDate = (dateStr) => {
   if (!dateStr) return 'N/A'
@@ -869,73 +853,9 @@ onMounted(fetchProposals)
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
 }
 
-.status-draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.status-submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-endorsed {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-review {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-rec-approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-ovcaf {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.status-chancellor {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-released {
-  background: #86efac;
-  color: #14532d;
-}
-
-.status-returned {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-rejected {
-  background: #fecaca;
-  color: #7f1d1d;
-}
-
-.status-completed {
-  background: #86efac;
-  color: #14532d;
-}
-
-.status-default {
-  background: #f1f5f9;
-  color: #64748b;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 .card-body {
   padding: 20px;
@@ -1120,6 +1040,7 @@ onMounted(fetchProposals)
   background: #f8fafc;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-view,
 .btn-upload,
 .btn-revise {
@@ -1128,29 +1049,6 @@ onMounted(fetchProposals)
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  border: none;
-}
-
-.btn-view {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-}
-
-.btn-view:hover {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-upload {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
-}
-
-.btn-upload:hover:not(:disabled) {
-  background: #22c55e;
-  color: white;
 }
 
 .btn-upload:disabled {
@@ -1158,30 +1056,13 @@ onMounted(fetchProposals)
   cursor: not-allowed;
 }
 
-.btn-revise {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fcd34d;
-}
-
-.btn-revise:hover {
-  background: #f59e0b;
-  color: white;
-}
-
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-primary {
-  background: #4f46e5;
-  color: white;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  border: none;
   cursor: pointer;
-}
-
-.btn-primary:hover {
-  background: #4338ca;
 }
 
 .btn-primary:disabled {
@@ -1189,19 +1070,13 @@ onMounted(fetchProposals)
   cursor: not-allowed;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-secondary {
-  background: #e2e8f0;
-  color: #334155;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  border: 1px solid #cbd5e1;
   cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background: #cbd5e1;
 }
 
 /* Empty State */

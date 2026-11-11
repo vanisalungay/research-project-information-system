@@ -24,7 +24,7 @@
             </ul>
           </div>
 
-          <button class="endorse-btn" @click="openConfirmation">
+          <button class="endorse-btn btn-primary" @click="openConfirmation">
             Endorse to REC
           </button>
         </div>
@@ -42,11 +42,11 @@
         </p>
 
         <div class="modal-actions">
-          <button class="cancel-btn" @click="showConfirmModal = false">
+          <button class="cancel-btn btn-cancel" @click="showConfirmModal = false">
             Cancel
           </button>
 
-          <button class="confirm-btn" @click="confirmEndorsement">
+          <button class="confirm-btn btn-primary" @click="confirmEndorsement">
             Confirm
           </button>
         </div>
@@ -136,12 +136,11 @@ function confirmEndorsement() {
   margin-bottom: 8px;
 }
 
+/* Layout only; the primary colour comes from assets/actions.css. */
 .endorse-btn {
   margin-top: 25px;
   width: 100%;
   padding: 12px;
-  border: none;
-  background: #ffd803;
   font-weight: bold;
   border-radius: 10px;
   cursor: pointer;
@@ -180,18 +179,14 @@ function confirmEndorsement() {
   margin-top: 20px;
 }
 
+/* Layout only; .btn-cancel / .btn-primary supply the colours. */
 .cancel-btn {
-  background: #ddd;
-  color: #1f2937;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .confirm-btn {
-  background: #ffd803;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: bold;

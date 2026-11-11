@@ -7,9 +7,9 @@
         <span class="badge" v-if="unreadCount > 0">{{ unreadCount }} unread</span>
       </div>
       <div class="header-actions">
-        <button 
-          class="btn-mark-all" 
-          @click="markAllAsRead" 
+        <button
+          class="btn-mark-all btn-primary"
+          @click="markAllAsRead"
           :disabled="unreadCount === 0 || loading"
         >
           Mark All as Read
@@ -50,7 +50,7 @@
     <!-- ERROR STATE -->
     <div v-else-if="error" class="error-state">
       <p class="error-text">{{ error }}</p>
-      <button class="btn-retry" @click="fetchNotifications">Retry</button>
+      <button class="btn-retry btn-secondary" @click="fetchNotifications">Retry</button>
     </div>
 
     <!-- NOTIFICATIONS LIST -->
@@ -106,7 +106,7 @@
               <span
                 v-if="callStatus(notification)"
                 class="call-status"
-                :class="`call-status--${callStatus(notification).tone}`"
+                :class="statusTone(notification.proposalAnnouncementStatus)"
               >
                 <span class="call-status-dot" aria-hidden="true"></span
                 >{{ callStatus(notification).label }}
@@ -123,7 +123,7 @@
               </span>
               <button 
                 v-if="!notification.isRead" 
-                class="btn-mark-read"
+                class="btn-mark-read btn-view"
                 @click.stop="markAsRead(notification.id)"
               >
                 Mark as Read
@@ -179,6 +179,7 @@ import { useDialog } from '@/composables/useDialog'
 import { notificationDestination } from '@/utils/notificationTarget'
 import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
 import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
+import { statusTone } from '@/utils/statusTone.js'
 import { groupNotifications, notificationKind } from '@/utils/notificationGroups'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
@@ -445,10 +446,8 @@ onMounted(() => {
   gap: 10px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-mark-all {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
@@ -458,7 +457,6 @@ onMounted(() => {
 }
 
 .btn-mark-all:hover:not(:disabled) {
-  background: #4338ca;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
@@ -534,10 +532,8 @@ onMounted(() => {
   font-size: 14px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-retry {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
@@ -716,30 +712,6 @@ onMounted(() => {
   background: currentColor;
 }
 
-/* Open - green */
-.call-status--open {
-  background: #d9fbe7;
-  color: #16834b;
-}
-
-/* Closed - red */
-.call-status--closed {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* Scheduled - blue */
-.call-status--scheduled {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-/* Draft - neutral */
-.call-status--draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
 .call-name {
   font-size: 13px;
   font-weight: 600;
@@ -771,21 +743,14 @@ onMounted(() => {
 .type-funding { background: #ecfdf5; color: #065f46; }
 .type-default { background: #f1f5f9; color: #475569; }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-mark-read {
-  background: none;
-  border: 1px solid #4f46e5;
-  color: #4f46e5;
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-mark-read:hover {
-  background: #4f46e5;
-  color: #fff;
 }
 
 /* ARROW */

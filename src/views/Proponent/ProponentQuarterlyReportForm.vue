@@ -1,7 +1,7 @@
 <template>
   <div class="qpr-form-page" :class="{ 'qpr-form-page--terminal': isTerminalStage }">
     <div class="page-header">
-      <button class="back-btn" @click="$router.back()">← Back</button>
+      <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
       <div class="page-header-text">
         <h1>{{ pageTitle }}</h1>
         <p class="subtitle" :class="{ 'subtitle--terminal': isTerminalStage }">
@@ -164,7 +164,7 @@
         </div>
 
         <div class="terminal-actions">
-          <button class="terminal-cancel" @click="$router.back()">Cancel</button>
+          <button class="terminal-cancel btn-secondary" @click="$router.back()">Cancel</button>
           <button
             v-if="terminalSectionIndex > 0"
             class="btn-secondary"
@@ -179,7 +179,7 @@
           >
             Next Section
           </button>
-          <button class="btn-draft" :disabled="saving" @click="saveTerminalDraft">
+          <button class="btn-draft btn-secondary" :disabled="saving" @click="saveTerminalDraft">
             {{ saving ? 'Saving...' : 'Save as Draft' }}
           </button>
           <button class="btn-secondary" :disabled="saving" @click="openTerminalReview">
@@ -187,7 +187,7 @@
           </button>
           <!-- Submission always goes through the confirmation step: this opens the report
                document, where the submission is confirmed after the proponent reviews it. -->
-          <button class="terminal-submit" :disabled="saving" @click="openTerminalReview">
+          <button class="terminal-submit btn-primary" :disabled="saving" @click="openTerminalReview">
             <svg class="terminal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Submit Terminal Report
           </button>
@@ -297,7 +297,7 @@
         <div class="wizard-actions-right">
           <button v-if="currentStep < TOTAL_STEPS" class="btn-submit" @click="nextPage">Next Page</button>
           <template v-else>
-            <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
+            <button class="btn-draft btn-secondary" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
               Save Draft
             </button>
             <button class="btn-submit" :disabled="saving" @click="openReview">Review Report</button>
@@ -365,7 +365,7 @@
           <div class="review-footer-right">
             <template v-if="isTerminalStage">
               <button class="btn-secondary" @click="printTerminalReview">DOWNLOAD</button>
-              <button class="btn-draft" :disabled="saving" @click="saveTerminalDraft">
+              <button class="btn-draft btn-secondary" :disabled="saving" @click="saveTerminalDraft">
                 {{ saving ? 'Saving...' : 'Save as Draft' }}
               </button>
               <button
@@ -377,7 +377,7 @@
               </button>
             </template>
             <template v-else>
-              <button class="btn-draft" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
+              <button class="btn-draft btn-secondary" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
                 Save Draft
               </button>
               <button class="btn-submit" :disabled="saving" @click="saveQuarterly('SUBMITTED', qprPayload())">
@@ -1127,10 +1127,8 @@ onMounted(async () => {
   text-transform: uppercase;
   color: #1c2145;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .back-btn {
-  background: #fff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -1383,12 +1381,12 @@ onMounted(async () => {
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
-  background: #eef2ff;
-  color: #3730a3;
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
 .terminal-file-status--uploaded {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--status-approved-bg);
+  color: var(--status-approved-text);
 }
 .terminal-file-remove {
   flex-shrink: 0;
@@ -1426,12 +1424,10 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 10px;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .terminal-cancel {
   padding: 10px 18px;
-  border: none;
   border-radius: 8px;
-  background: #eef2ff;
-  color: #1c2145;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1441,10 +1437,7 @@ onMounted(async () => {
   align-items: center;
   gap: 7px;
   padding: 10px 18px;
-  border: none;
   border-radius: 8px;
-  background: #ffd400;
-  color: #1c2145;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1456,21 +1449,16 @@ onMounted(async () => {
 .existing-file {
   margin: 10px 0 0;
   font-size: 15px;
-  color: #166534;
+  color: var(--status-approved-text);
 }
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-secondary {
-  background: #e2e8f0;
-  color: #1c2145;
-  border: none;
   padding: 12px 22px;
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
 }
 .btn-submit {
-  background: #ffd400;
-  color: #1c2145;
-  border: none;
   padding: 12px 22px;
   border-radius: 8px;
   font-weight: 700;
@@ -1950,10 +1938,8 @@ onMounted(async () => {
   background: #f1f5f9;
   cursor: pointer;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-draft {
-  background: #fff;
-  color: #1c2145;
-  border: 2px solid #1c2145;
   padding: 12px 22px;
   border-radius: 8px;
   font-weight: 700;

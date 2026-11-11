@@ -277,6 +277,8 @@
   white-space: nowrap;
 }
 
+/* The badge's tone colours are global: assets/status.css paints every `.is-*` tone from the
+   shared status tokens, so the endorsement screens cannot drift from the rest of RPIS. */
 .end-badge {
   display: inline-flex;
   align-items: center;
@@ -287,21 +289,6 @@
   white-space: nowrap;
 }
 
-.end-badge.is-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.end-badge.is-approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.end-badge.is-rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
 .end-actions {
   display: flex;
   justify-content: flex-end;
@@ -310,52 +297,10 @@
   margin-top: 8px;
 }
 
-.end-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  text-decoration: none;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-}
-
-.end-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.end-btn.is-primary {
-  background: #2452ff;
-  border-color: #2452ff;
-  color: #ffffff;
-}
-
-.end-btn.is-approve {
-  background: #047857;
-  border-color: #047857;
-  color: #ffffff;
-}
-
-.end-btn.is-danger {
-  background: #b91c1c;
-  border-color: #b91c1c;
-  color: #ffffff;
-}
-
-.end-btn.is-link {
-  border-color: transparent;
-  background: transparent;
-  color: #2452ff;
-  padding: 6px 8px;
-}
+/* The button geometry and every action colour are global: assets/actions.css owns
+   `.end-btn` (and its `.is-primary` / `.is-approve` / `.is-danger` / `.is-return` /
+   `.is-view` / `.is-edit` / `.is-cancel` / `.is-link` modifiers), so one action has one
+   colour on every page. */
 
 .end-table {
   width: 100%;
@@ -709,8 +654,8 @@
 }
 
 .end-page--dean .end-btn.is-link:hover {
-  background: #eef1ff;
-  color: #1d40cc;
+  background: var(--btn-link-hover-bg);
+  color: var(--btn-link-text);
 }
 
 /* --- Small screens ---

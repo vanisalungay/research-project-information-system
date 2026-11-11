@@ -42,6 +42,101 @@
   --color-danger: #ef4444;
   --color-info: #3b82f6;
 
+  /* ===== Status tones =====
+     One semantic palette for every workflow status, in every role and module.
+     A badge consumes --status-<tone>-bg / -text / -border; see assets/status.css.
+     Green: SUBMITTED / APPROVED / COMPLETED. Amber: returned & revision.
+     Red: rejected. Light blue: pending / under review. Grey: draft / neutral. */
+  --status-approved-bg: #dcfce7;
+  --status-approved-text: #166534;
+  --status-approved-border: #a7f3d0;
+  --status-returned-bg: #fef3c7;
+  --status-returned-text: #92400e;
+  --status-returned-border: #fde68a;
+  --status-rejected-bg: #fee2e2;
+  --status-rejected-text: #991b1b;
+  --status-rejected-border: #fecaca;
+  --status-pending-bg: #dbeafe;
+  --status-pending-text: #1e40af;
+  --status-pending-border: #bfdbfe;
+  --status-neutral-bg: #e5e7eb;
+  --status-neutral-text: #374151;
+  --status-neutral-border: #d1d5db;
+  --status-draft-bg: var(--status-neutral-bg);
+  --status-draft-text: var(--status-neutral-text);
+  --status-draft-border: var(--status-neutral-border);
+
+  /* Solid accents for progress fills and statistic card edges. */
+  --status-approved-solid: #047857;
+  --status-returned-solid: #b45309;
+  --status-rejected-solid: #b91c1c;
+  --status-pending-solid: #1e40af;
+  --status-neutral-solid: #64748b;
+
+  /* Compatibility aliases: these names are referenced by a few reports pages but were
+     never declared, so the status colours there resolved to nothing. */
+  --color-approved: var(--status-approved-solid);
+  --color-approved-bg: var(--status-approved-bg);
+  --color-approved-text: var(--status-approved-text);
+  --color-returned: var(--status-returned-solid);
+  --color-returned-bg: var(--status-returned-bg);
+  --color-returned-text: var(--status-returned-text);
+  --color-rejected: var(--status-rejected-solid);
+  --color-rejected-bg: var(--status-rejected-bg);
+  --color-rejected-text: var(--status-rejected-text);
+  --color-pending: var(--status-pending-solid);
+  --color-pending-bg: var(--status-pending-bg);
+  --color-pending-text: var(--status-pending-text);
+  --color-info-bg: var(--status-pending-bg);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-soft);
+  --text-muted: var(--color-text-muted);
+
+  /* ===== Action button tones =====
+     Semantic action colors: the same action looks the same everywhere.
+     A button consumes --btn-<meaning>-bg / -hover-bg / -text / -border;
+     see assets/actions.css. */
+  --btn-primary-bg: #2452ff;
+  --btn-primary-hover-bg: #1d40cc;
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #2452ff;
+  --btn-approve-bg: #047857;
+  --btn-approve-hover-bg: #065f46;
+  --btn-approve-text: #ffffff;
+  --btn-approve-border: #047857;
+  --btn-reject-bg: #b91c1c;
+  --btn-reject-hover-bg: #991b1b;
+  --btn-reject-text: #ffffff;
+  --btn-reject-border: #b91c1c;
+  --btn-return-bg: #b45309;
+  --btn-return-hover-bg: #92400e;
+  --btn-return-text: #ffffff;
+  --btn-return-border: #b45309;
+  --btn-view-bg: #e9efff;
+  --btn-view-hover-bg: #dbe4ff;
+  --btn-view-text: #1d40cc;
+  --btn-view-border: #c7d2fe;
+  --btn-edit-bg: #eef2ff;
+  --btn-edit-hover-bg: #dbe4ff;
+  --btn-edit-text: #3730a3;
+  --btn-edit-border: #c7d2fe;
+  --btn-download-bg: #ffffff;
+  --btn-download-hover-bg: #f1f5f9;
+  --btn-download-text: #1e40af;
+  --btn-download-border: #cbd5e1;
+  --btn-neutral-bg: #ffffff;
+  --btn-neutral-hover-bg: #f1f5f9;
+  --btn-neutral-text: #475569;
+  --btn-neutral-border: #cbd5e1;
+  --btn-link-text: #2452ff;
+  --btn-link-hover-bg: #eef1ff;
+  --btn-focus-outline: #2452ff;
+  --btn-focus-ring: rgba(36, 82, 255, 0.35);
+  --btn-disabled-bg: #e5e7eb;
+  --btn-disabled-text: #94a3b8;
+  --btn-disabled-border: #d1d5db;
+  --btn-disabled-opacity: 0.55;
+
   /* Brand palette */
   --color-brand-navy: #262342;
   --color-brand-yellow: #ffd803;
@@ -142,6 +237,62 @@ body {
     --color-text-soft: #94a3b8;
     --color-heading: #f8fafc;
     --color-primary: #3b82f6;
+
+    /* Status tones on a dark surface: the hue is kept, the surface is darkened so the
+       badge never turns into a white block. */
+    --status-approved-bg: #123a2c;
+    --status-approved-text: #6ee7b7;
+    --status-approved-border: #1c4034;
+    --status-returned-bg: #4a3a17;
+    --status-returned-text: #fcd34d;
+    --status-returned-border: #6b551f;
+    --status-rejected-bg: #4a2222;
+    --status-rejected-text: #fca5a5;
+    --status-rejected-border: #6b2a2a;
+    --status-pending-bg: #1f2f55;
+    --status-pending-text: #93b4ff;
+    --status-pending-border: #2b3f6e;
+    --status-neutral-bg: #22304d;
+    --status-neutral-text: #cbd5e1;
+    --status-neutral-border: #334155;
+
+    /* Action buttons: solid actions brighten slightly; surface actions go dark. */
+    --btn-primary-bg: #315bff;
+    --btn-primary-border: #315bff;
+    --btn-primary-hover-bg: #4b6bff;
+    --btn-approve-bg: #059669;
+    --btn-approve-border: #059669;
+    --btn-approve-hover-bg: #10b981;
+    --btn-reject-bg: #dc2626;
+    --btn-reject-border: #dc2626;
+    --btn-reject-hover-bg: #ef4444;
+    --btn-return-bg: #f59e0b;
+    --btn-return-border: #f59e0b;
+    --btn-return-hover-bg: #fbbf24;
+    --btn-return-text: #1f2937;
+    --btn-view-bg: #22304d;
+    --btn-view-hover-bg: #2b3b5e;
+    --btn-view-text: #93b4ff;
+    --btn-view-border: #334155;
+    --btn-edit-bg: #22304d;
+    --btn-edit-hover-bg: #2b3b5e;
+    --btn-edit-text: #93b4ff;
+    --btn-edit-border: #334155;
+    --btn-download-bg: #1e293b;
+    --btn-download-hover-bg: #273449;
+    --btn-download-text: #93b4ff;
+    --btn-download-border: #334155;
+    --btn-neutral-bg: #1e293b;
+    --btn-neutral-hover-bg: #273449;
+    --btn-neutral-text: #e2e8f0;
+    --btn-neutral-border: #334155;
+    --btn-link-text: #8ab4ff;
+    --btn-link-hover-bg: #22304d;
+    --btn-focus-outline: #8ab4ff;
+    --btn-focus-ring: rgba(138, 180, 255, 0.35);
+    --btn-disabled-bg: #334155;
+    --btn-disabled-text: #64748b;
+    --btn-disabled-border: #334155;
   }
 
   body {

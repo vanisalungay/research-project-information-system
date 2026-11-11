@@ -46,9 +46,9 @@
 
             <span
               class="badge"
-              :class="proposal.proposal_status_class"
+              :class="statusTone(proposal.proposal_status)"
             >
-              {{ proposal.proposal_status }}
+              {{ proposalStatusLabel(proposal.proposal_status) }}
             </span>
           </div>
 
@@ -71,10 +71,10 @@
             </div>
 
             <div
-              class="review-status"
-              :class="review.status_class"
+              class="review-status status-badge"
+              :class="statusTone(review.review_status)"
             >
-              {{ review.review_status }}
+              {{ statusLabel(review.review_status) }}
             </div>
           </div>
 
@@ -121,6 +121,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const loading = ref(false)
 
@@ -247,19 +250,10 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.badge.under-review {
-  background: #374151;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
-.badge.approved {
-  background: #22c55e;
-  color: #064e3b;
-}
-
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-view {
-  background: #1f2937;
-  color: #fff;
-  border: 1px solid #374151;
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -267,9 +261,6 @@ onMounted(() => {
 
 .btn-download {
   margin-top: 12px;
-  background: #111827;
-  color: #fff;
-  border: none;
   padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -291,21 +282,12 @@ onMounted(() => {
   margin: 2px 0 0;
 }
 
+/* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .review-status {
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
   font-weight: 600;
-}
-
-.review-status.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.review-status.recommended {
-  background: #bbf7d0;
-  color: #14532d;
 }
 
 .feedback-box {

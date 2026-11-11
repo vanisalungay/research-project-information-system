@@ -256,6 +256,8 @@ class ProposalConcurrencyPostgresTest {
         Proposal reloaded = proposalRepository.findById(proposalId).orElseThrow();
         assertEquals(1, reloaded.getRevisionNumber(),
                 "the revision number must advance exactly once despite concurrent submissions");
+        assertEquals("FOR REVIEW", reloaded.getStatus(),
+                "a resubmission is stored as the FOR REVIEW workflow status");
 
         List<ProposalVersion> versions = versionRepository.findByProposalIdOrderByVersionNumberAsc(proposalId);
         Set<Integer> distinctVersionNumbers = versions.stream()

@@ -16,21 +16,21 @@
             <span v-if="proposal.revisionNumber !== undefined" class="revision-badge">
               REV{{ String(proposal.revisionNumber).padStart(2, '0') }}
             </span>
-            <span class="status-badge" :class="(proposal.status || '').toLowerCase()">
-              {{ proposal.status || 'DRAFT' }}
+            <span class="status-badge" :class="statusTone(proposal.status)">
+              {{ proposalStatusLabel(proposal.status) || 'Draft' }}
             </span>
           </div>
         </div>
       </div>
       <div class="header-actions">
-        <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft" @click="editDraft">
+        <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft btn-edit" @click="editDraft">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
           Edit Draft
         </button>
-        <button class="btn-secondary" @click="printProposal">DOWNLOAD</button>
+        <button class="btn-download" @click="printProposal">DOWNLOAD</button>
         <!-- Beside Download, and only for projects approved for implementation
              whose Special Order has been issued (the same rule the backend
              enforces). -->
@@ -54,7 +54,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="$router.go(-1)">Go Back</button>
+      <button class="btn-secondary" @click="$router.go(-1)">Go Back</button>
     </div>
 
     <!-- Content -->
@@ -72,7 +72,7 @@
             and edit it first.
           </p>
         </div>
-        <button class="btn-duplicate" :disabled="duplicating || showCallPicker" @click="startProposalCopy">
+        <button class="btn-duplicate btn-primary" :disabled="duplicating || showCallPicker" @click="startProposalCopy">
           {{ duplicating ? 'Copying...' : 'Make a Copy' }}
         </button>
       </section>
@@ -703,9 +703,9 @@
           <!-- Status Card -->
           <div class="sidebar-card status-card">
             <h3>Proposal Status</h3>
-            <div class="status-indicator" :class="(proposal.status || '').toLowerCase()">
+            <div class="status-indicator status-badge" :class="statusTone(proposal.status)">
               <span class="status-dot"></span>
-              <span class="status-text">{{ proposal.status || 'DRAFT' }}</span>
+              <span class="status-text">{{ proposalStatusLabel(proposal.status) || 'Draft' }}</span>
             </div>
             <div class="status-meta">
               <p><strong>Created:</strong> {{ formatDate(proposal.createdAt) }}</p>
@@ -759,19 +759,19 @@
             <div class="document-list">
               <div v-if="proposal.reviewFileName" class="doc-item">
                 <span>📄 Review of Literature</span>
-                <button @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
+                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.roadmapFileName" class="doc-item">
                 <span>📄 Technology Roadmap</span>
-                <button @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.gadFileName" class="doc-item">
                 <span>📄 GAD Score</span>
-                <button @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </div>
               <div v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="doc-item">
                 <span>📄 Line-Item Budget</span>
-                <button @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
+                <button class="btn-download" @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
               </div>
             </div>
           </div>
@@ -806,9 +806,10 @@ import GadChecklist from '@/components/GadChecklist.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import { useDialog } from '@/composables/useDialog'
-import { isDuplicable } from '@/utils/proposalStatus'
+import { isDuplicable, proposalStatusLabel } from '@/utils/proposalStatus'
 import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { statusTone } from '@/utils/statusTone.js'
 // Section 24: "% Time Devoted" is stored as a plain number and always displayed as a
 // percentage ("50" -> "50%"), including the value of an older record saved as "50%".
 import { formatTimeDevoted } from '@/utils/personnelTime'
@@ -1100,42 +1101,12 @@ const formatReviewerPosition = (position) => {
   color: #3730a3;
 }
 
+/* Geometry only; the `.is-*` tone colours come from assets/status.css. */
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.status-badge.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-badge.under_review {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.status-badge.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-badge.revision {
-  background: #e0e7ff;
-  color: #3730a3;
 }
 
 .header-actions {
@@ -1145,36 +1116,24 @@ const formatReviewerPosition = (position) => {
   flex-shrink: 0;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-secondary {
-  background: #fff;
-  border: 1px solid #e2e8f0;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.btn-secondary:hover {
-  background: #f1f5f9;
-}
-
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-duplicate {
-  background: #4b3f72;
-  border: 1px solid #4b3f72;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-duplicate:hover:not(:disabled) {
-  background: #3c3160;
 }
 
 .btn-duplicate:disabled {
@@ -1215,33 +1174,25 @@ const formatReviewerPosition = (position) => {
   flex-shrink: 0;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-edit-draft {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #facc15;
-  border: none;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.btn-edit-draft:hover {
-  background: #eab308;
-}
-
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-primary {
-  background: #4f46e5;
-  border: none;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
 }
 
@@ -1574,20 +1525,14 @@ const formatReviewerPosition = (position) => {
   margin: 0;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-download {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover {
-  background: #4338ca;
 }
 
 /* SIDEBAR */
@@ -1634,38 +1579,9 @@ const formatReviewerPosition = (position) => {
 .status-text {
   font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
 }
 
-.status-indicator.draft {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.status-indicator.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-indicator.under_review {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.status-indicator.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-indicator.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-indicator.revision {
-  background: #e0e7ff;
-  color: #3730a3;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 .status-meta {
   display: flex;

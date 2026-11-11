@@ -200,7 +200,7 @@
             </p>
           </div>
 
-          <button class="close-btn" @click="showTermsModal = false">
+          <button class="close-btn btn-primary" @click="showTermsModal = false">
             I Understand
           </button>
         </div>
@@ -687,19 +687,11 @@ const handleRegister = async () => {
   margin-top: 24px;
   width: 100%;
   padding: 12px;
-  background: #2452ff;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9375rem;
   transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  background: #1d40cc;
-  box-shadow: 0 4px 14px rgba(36, 82, 255, 0.3);
 }
 
 /* ========== MODAL TRANSITION ========== */

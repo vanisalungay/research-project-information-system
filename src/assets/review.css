@@ -93,7 +93,9 @@
   overflow-wrap: anywhere;
 }
 
-/* ===== Status pill ===== */
+/* ===== Status pill =====
+   Geometry only: the colours come from the shared status system (assets/status.css), so an
+   in-progress status reads as light blue here just as it does on every dashboard. */
 .rv-status,
 .rv-status-line {
   display: inline-flex;
@@ -101,12 +103,10 @@
   gap: 8px;
   padding: 5px 14px;
   border-radius: 999px;
-  background: #ece9fb;
-  color: #3b2f7a;
   font-size: var(--fs-xs, 0.75rem);
   font-weight: 700;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
+  /* No text-transform: the shared label supplies the casing ("For Review"). */
 }
 
 .rv-status-line {
@@ -130,29 +130,8 @@
   height: 11px;
 }
 
-.rv-status.is-approved,
-.rv-status-line.is-approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.rv-status.is-rejected,
-.rv-status-line.is-rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.rv-status.is-returned,
-.rv-status-line.is-returned {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.rv-status.is-draft,
-.rv-status-line.is-draft {
-  background: #e5e7eb;
-  color: #374151;
-}
+/* The `.is-approved` / `.is-returned` / `.is-rejected` / `.is-draft` tones are painted by the
+   global status system (assets/status.css) from the shared tokens. */
 
 /* Pushed to the far end of the header row; it wraps under the title on a narrow screen
    instead of squeezing it. */

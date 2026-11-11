@@ -414,42 +414,13 @@ const formatReviewerPosition = (position) => {
   font-family: monospace;
 }
 
+/* STATUS BADGES
+   Geometry only; the `.is-*` colours come from assets/status.css. */
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.status-badge.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-badge.under_review {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.status-badge.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-badge.revision {
-  background: #e0e7ff;
-  color: #3730a3;
 }
 
 .header-actions {
@@ -457,33 +428,24 @@ const formatReviewerPosition = (position) => {
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-secondary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.btn-secondary:hover {
-  background: #f1f5f9;
-}
-
 .btn-primary {
-  background: #4f46e5;
-  border: none;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
 }
 
@@ -822,20 +784,14 @@ const formatReviewerPosition = (position) => {
   margin: 0;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-download {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover {
-  background: #4338ca;
 }
 
 /* SIDEBAR */
@@ -862,57 +818,6 @@ const formatReviewerPosition = (position) => {
 }
 
 /* STATUS CARD */
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status-text {
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-indicator.draft {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.status-indicator.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-indicator.under_review {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.status-indicator.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-indicator.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-indicator.revision {
-  background: #e0e7ff;
-  color: #3730a3;
-}
 
 .status-meta {
   display: flex;
@@ -1033,30 +938,13 @@ const formatReviewerPosition = (position) => {
   transition: all 0.15s;
 }
 
-.btn-action.btn-primary {
-  background: #4f46e5;
-  color: #fff;
-}
-
 .btn-action.btn-primary:hover {
-  background: #4338ca;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .btn-action.btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.btn-action.btn-secondary {
-  background: #fff;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.btn-action.btn-secondary:hover {
-  background: #f1f5f9;
 }
 
 /* EMPTY TEXT */

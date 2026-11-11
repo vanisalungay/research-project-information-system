@@ -46,8 +46,8 @@
 
       <!-- Controls -->
       <div class="controls">
-        <button @click="markAsRead(notification)">✓</button>
-        <button @click="dismiss(notification)">✕</button>
+        <button class="btn-view" @click="markAsRead(notification)">✓</button>
+        <button class="btn-cancel" @click="dismiss(notification)">✕</button>
       </div>
     </div>
 
@@ -219,24 +219,15 @@ export default {
   margin-top: 8px;
 }
 
-.action-btn {
-  background: #4f46e5;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
 .controls {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .controls button {
-  border: none;
-  background: none;
+  padding: 4px 8px;
   cursor: pointer;
 }
 

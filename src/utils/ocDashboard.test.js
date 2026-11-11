@@ -84,7 +84,7 @@ test('the tables keep their columns, cells and actions', () => {
   for (const header of ['Proposal Title', 'Proponent', 'Date Endorsed', 'Date', 'Status', 'Action']) {
     assert.ok(DASHBOARD.includes(`>${header}</th>`), `the "${header}" column must be kept`)
   }
-  for (const binding of ['{{ p.title }}', '{{ p.adviser }}', '{{ p.date }}', '{{ p.status }}']) {
+  for (const binding of ['{{ p.title }}', '{{ p.adviser }}', '{{ p.date }}', '{{ proposalStatusLabel(p.status) }}']) {
     assert.ok(DASHBOARD.includes(binding), `the cell ${binding} must be kept`)
   }
   assert.match(DASHBOARD, /statusTone\(p\.status\)/, 'the status pill tone must be used')

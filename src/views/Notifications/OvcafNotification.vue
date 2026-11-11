@@ -12,7 +12,7 @@
         <p class="notif-desc">{{ notif.description }}</p>
 
         <div class="notif-actions">
-          <button class="btn-yellow" @click="$router.push('ovcaf-validate')">VIEW NOTIFICATION</button>
+          <button class="btn-yellow btn-view" @click="$router.push('ovcaf-validate')">VIEW NOTIFICATION</button>
         </div>
       </div>
     </div>
@@ -101,9 +101,8 @@ const goToProposal = (id) => {
   justify-content: flex-start;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-yellow {
-  background: #ffd400;
-  border: none;
   padding: 10px 18px;
   border-radius: 10px;
   font-weight: bold;

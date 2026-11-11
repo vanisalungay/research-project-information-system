@@ -666,9 +666,9 @@ const resetForm = () => {
 
 .all-checked-banner {
     margin-top: 20px;
-    background: #dcfce7;
-    border: 1px solid #22c55e33;
-    color: #15803d;
+    background: var(--status-approved-bg);
+    border: 1px solid var(--status-approved-border);
+    color: var(--status-approved-text);
     padding: 14px 18px;
     border-radius: 12px;
     font-weight: 600;
@@ -729,42 +729,42 @@ const resetForm = () => {
 }
 
 .radio-option.selected.approve {
-    background: #dcfce7;
-    border: 2px solid #22c55e;
+    background: var(--status-approved-bg);
+    border: 2px solid var(--status-approved-solid);
 }
 
 .radio-option.selected.approve .radio-indicator {
-    border-color: #22c55e;
+    border-color: var(--status-approved-solid);
 }
 
 .radio-option.selected.approve .radio-indicator::after {
-    background: #22c55e;
+    background: var(--status-approved-solid);
 }
 
 .radio-option.selected.return {
-    background: #fff7ed;
-    border: 2px solid #f59e0b;
+    background: var(--status-returned-bg);
+    border: 2px solid var(--status-returned-solid);
 }
 
 .radio-option.selected.return .radio-indicator {
-    border-color: #f59e0b;
+    border-color: var(--status-returned-solid);
 }
 
 .radio-option.selected.return .radio-indicator::after {
-    background: #f59e0b;
+    background: var(--status-returned-solid);
 }
 
 .radio-option.selected.reject {
-    background: #fee2e2;
-    border: 2px solid #ef4444;
+    background: var(--status-rejected-bg);
+    border: 2px solid var(--status-rejected-solid);
 }
 
 .radio-option.selected.reject .radio-indicator {
-    border-color: #ef4444;
+    border-color: var(--status-rejected-solid);
 }
 
 .radio-option.selected.reject .radio-indicator::after {
-    background: #ef4444;
+    background: var(--status-rejected-solid);
 }
 
 .option-title {
@@ -775,15 +775,15 @@ const resetForm = () => {
 }
 
 .approve-title {
-    color: #15803d;
+    color: var(--status-approved-text);
 }
 
 .return-title {
-    color: #d97706;
+    color: var(--status-returned-text);
 }
 
 .reject-title {
-    color: #dc2626;
+    color: var(--status-rejected-text);
 }
 
 .option-desc {
@@ -840,26 +840,13 @@ const resetForm = () => {
     transition: .25s;
 }
 
+/* Layout only; the colours come from assets/actions.css. */
 .btn-secondary {
-    background: #fff;
-    border: 1px solid #d5dce6;
-    color: #475569;
     padding: 12px 22px;
 }
 
-.btn-secondary:hover {
-    background: #f8fafc;
-}
-
 .btn-primary {
-    background: #8b0000;
-    color: #fff;
-    border: none;
     padding: 12px 24px;
-}
-
-.btn-primary:hover {
-    background: #6d0000;
 }
 
 /* ---------------- Modal ---------------- */

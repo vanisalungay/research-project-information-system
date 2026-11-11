@@ -18,7 +18,7 @@
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
       <button class="btn-primary" @click="loadProposal">Retry</button>
-      <button class="back-btn" @click="goBack">Go Back</button>
+      <button class="back-btn btn-secondary" @click="goBack">Go Back</button>
     </div>
 
     <!-- MISSING ID / NOT FOUND: said out loud instead of an empty page -->
@@ -283,24 +283,17 @@ const goBack = () => {
   margin-bottom: 24px;
 }
 
+/* Layout only; .back-btn is a neutral cancel-style button (assets/actions.css). */
 .back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
 }
 
 .header-info {
@@ -349,19 +342,13 @@ const goBack = () => {
   font-size: 14px;
 }
 
+/* Layout only; the primary colour comes from assets/actions.css. */
 .btn-primary {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.btn-primary:hover {
-  background: #4338ca;
 }
 
 /* CONTENT SECTIONS */

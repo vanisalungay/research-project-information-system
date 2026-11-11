@@ -7,6 +7,7 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.ProposalStatus;
 import com.lowagie.text.pdf.PdfReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -319,10 +320,14 @@ public class ProposalService {
      * supplied by the frontend is ignored for non-privileged callers.
      */
     public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status, List<String> statusIn) {
-        String normalizedStatus = status != null ? status.toUpperCase() : null;
-        List<String> normalizedStatuses = statusIn != null
-                ? statusIn.stream().filter(s -> s != null && !s.isBlank()).map(String::toUpperCase).toList()
-                : List.of();
+        String normalizedStatus = ProposalStatus.normalize(status);
+        List<String> normalizedStatuses = ProposalStatus.withForReviewAliases(statusIn);
+        // A filter for either submission spelling must return both the current and the
+        // legacy rows, so it is served by a statusIn query instead of an exact match.
+        if (normalizedStatus != null && ProposalStatus.isForReview(normalizedStatus)) {
+            normalizedStatuses = ProposalStatus.withForReviewAliases(List.of(normalizedStatus));
+            normalizedStatus = null;
+        }
 
         if (!currentUser.isPrivileged()) {
             // Own-records-only. requireUserId() fails with 401 when unauthenticated,
@@ -405,8 +410,7 @@ public class ProposalService {
         // final submissions are only accepted while a proposal announcement is active.
         // Revision resubmissions belong to the review lifecycle of an already
         // submitted proposal and remain allowed outside an active announcement.
-        boolean isSubmission = request.getStatus() != null
-                && "SUBMITTED".equalsIgnoreCase(request.getStatus());
+        boolean isSubmission = ProposalStatus.isSubmissionRequest(request.getStatus());
 
         // The "Address *" / "Contact *" sections are validated again here, so a
         // request cannot bypass the form's own checks. Drafts are exempt: they are
@@ -600,12 +604,13 @@ public class ProposalService {
         // Server-side GAD requirement of a final submission: a proposal that neither sends
         // nor already stores a completed checklist must carry a legacy GAD document. Old
         // proposals (legacy document) and revision resubmissions stay accepted. A proposal
-        // that is already SUBMITTED is not a new submission either - that is the state a
-        // losing thread sees when two revision resubmissions race (the winner has already
-        // written the status), and re-validating it there would replace the integrity
-        // violation the workflow relies on with an unrelated content error.
+        // that is already FOR REVIEW (or the legacy SUBMITTED spelling of the same state)
+        // is not a new submission either - that is the state a losing thread sees when two
+        // revision resubmissions race (the winner has already written the status), and
+        // re-validating it there would replace the integrity violation the workflow relies
+        // on with an unrelated content error.
         if (isSubmission && !isRevisionResubmission && incomingChecklist == null
-                && !"SUBMITTED".equalsIgnoreCase(proposal.getStatus())) {
+                && !ProposalStatus.isForReview(proposal.getStatus())) {
             boolean storedChecklistComplete = proposal.getGadChecklist() != null
                     && Boolean.TRUE.equals(proposal.getGadChecklist().getCompleted());
             if (!storedChecklistComplete && isBlank(proposal.getGadFileName())) {
@@ -638,11 +643,14 @@ public class ProposalService {
         proposal.setLimitationsText(request.getLimitationsText());
         proposal.setOtherProjectsNumber(request.getOtherProjectsNumber());
 
-        // Status
+        // Status. Both submission spellings ("SUBMITTED" from the current client and the
+        // stored "FOR REVIEW") are persisted as FOR REVIEW; every other status is
+        // uppercased exactly as before.
         if (request.getStatus() != null) {
-            proposal.setStatus(request.getStatus().toUpperCase());
+            String storedStatus = ProposalStatus.toStoredStatus(request.getStatus());
+            proposal.setStatus(storedStatus != null ? storedStatus : proposal.getStatus());
         } else if (proposal.getStatus() == null) {
-            proposal.setStatus("DRAFT");
+            proposal.setStatus(ProposalStatus.DRAFT);
         }
 
         // Dates parsing
@@ -2455,8 +2463,10 @@ public class ProposalService {
             String role = user.getRole();
 
             switch (status) {
-                // Newly submitted proposal -> notify RPS staff/admins to check
-                case "SUBMITTED":
+                // Newly submitted proposal -> notify RPS staff/admins to check.
+                // Both spellings mean the same submission (legacy rows keep SUBMITTED).
+                case ProposalStatus.FOR_REVIEW:
+                case ProposalStatus.LEGACY_SUBMITTED:
                     if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
                         notificationService.createNotification(
                                 user.getId(),
@@ -2671,7 +2681,8 @@ public class ProposalService {
      */
     private List<User> recipientsFor(Proposal proposal, String status) {
         switch (status) {
-            case "SUBMITTED", "RETURNED_TO_RPS", "RELEASED", "RETURNED":
+            case ProposalStatus.FOR_REVIEW, ProposalStatus.LEGACY_SUBMITTED,
+                    "RETURNED_TO_RPS", "RELEASED", "RETURNED":
                 return userRepository.findByRoleIn(List.of("RPS_ADMIN", "RPS_STAFF"));
             case "ENDORSED", "REC_APPROVED":
                 return userRepository.findByRoleIn(List.of("OVCRIGE"));

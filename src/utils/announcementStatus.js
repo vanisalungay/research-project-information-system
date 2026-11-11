@@ -12,6 +12,7 @@
  *   ACTIVE, end date in the past     -> Closed     (window has passed)
  *   CLOSED                           -> Closed
  */
+import { statusLabel } from './statusLabel.js'
 
 /**
  * The label shown for a Call for Proposal status, from either form the app uses: the
@@ -77,5 +78,5 @@ export function announcementStatus(announcement, today = localTodayISO()) {
     if (announcement.endDate && announcement.endDate < today) return 'Closed'
     return 'Open'
   }
-  return announcement.status || ''
+  return statusLabel(announcement.status)
 }

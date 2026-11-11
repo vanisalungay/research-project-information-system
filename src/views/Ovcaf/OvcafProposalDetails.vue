@@ -35,8 +35,7 @@
                             <div class="title-section">
                                 <div class="id-badge-row">
                                     <span class="proposal-id font-mono">{{ proposal.documentId || '—' }}</span>
-                                    <span class="badge" :class="getStatusClass(proposal.status)">{{ proposal.status
-                                        }}</span>
+                                    <span class="badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
                                 </div>
                                 <h2 class="proposal-title">{{ proposal.title }}</h2>
                                 <div class="meta-row">
@@ -166,6 +165,9 @@ import { PROPOSAL_FIELD_SECTIONS } from '@/utils/proposalFields';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
 import { downloadUploadedFile } from '@/utils/fileDownload';
 import { downloadOfficialProposal } from '@/utils/officialProposalForm';
+import { statusTone } from '@/utils/statusTone.js';
+import { proposalStatusLabel } from '@/utils/proposalStatus.js';
+import { normalizeStatusKey } from '@/utils/statusLabel.js';
 
 const route = useRoute();
 
@@ -192,9 +194,7 @@ const showBudgetPreview = ref(false);
 
 // ── Computed ──────────────────────────────────────
 const isPending = computed(() =>
-    proposal.value?.status === 'Pending Validation' ||
-    proposal.value?.status === 'Under Validation' ||
-    proposal.value?.rawStatus === 'FOR_OVCAF_APPROVAL'
+    normalizeStatusKey(proposal.value?.status) === 'FOR_OVCAF_APPROVAL'
 );
 // The header follows the exact saved record the actual proposal viewer renders
 // (GET /api/proposals/{id}); the OVCAF response is only the fallback while it loads.
@@ -243,8 +243,7 @@ const fetchProposal = async () => {
                 beneficiariesFileName: p.beneficiariesFileName || '',
                 beneficiariesFilePath: p.beneficiariesFilePath || '',
                 dateReceived: p.createdAt,
-                status: mapStatus(p.status),
-                rawStatus: p.status,
+                status: p.status,
                 ocRemarks: p.remarks || null,
                 validationChecklist: {
                     budgetComplete: p.budgetComplete || false,
@@ -282,28 +281,6 @@ const loadFullProposal = async (id) => {
         console.error('Error fetching complete proposal:', err);
         fullProposal.value = null;
         sectionsError.value = 'The complete proposal information could not be loaded. Please try again.';
-    }
-};
-
-// Map backend status to frontend display status
-const mapStatus = (status) => {
-    if (!status) return 'Pending Validation';
-    switch (status.toUpperCase()) {
-        case 'FOR_OVCAF_APPROVAL':
-            return 'Pending Validation';
-        case 'APPROVED':
-        case 'FOR_OC_APPROVAL':
-            return 'Approved & Endorsed';
-        case 'READY_FOR_RELEASE':
-            return 'Ready for Release';
-        case 'RELEASED':
-            return 'Released';
-        case 'RETURNED':
-            return 'Returned for Revision';
-        case 'REJECTED':
-            return 'Rejected';
-        default:
-            return status;
     }
 };
 
@@ -415,14 +392,6 @@ const downloadProposal = async () => {
 
 // ── Helpers ───────────────────────────────────────
 const formatDateLong = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
-const getStatusClass = (s) => {
-    if (!s) return '';
-    if (s.includes('Pending') || s.includes('Under')) return 'badge-pending';
-    if (s.includes('Approved') || s.includes('Released')) return 'badge-approved';
-    if (s.includes('Returned')) return 'badge-returned';
-    if (s.includes('Rejected')) return 'badge-rejected';
-    return 'badge-info';
-};
 const getTlClass = (action) => {
     const a = (action || '').toLowerCase();
     if (a.includes('approve') || a.includes('endorse') || a.includes('submit')) return 'tl-success';
@@ -464,27 +433,7 @@ const getTlClass = (action) => {
     border-radius: 8px;
 }
 
-.action-bar .btn-secondary {
-    background: #ffffff;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-}
-
-.action-bar .btn-secondary:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
-    color: #1e293b;
-}
-
-.action-bar .btn-primary {
-    background: #0f766e;
-    border: 1px solid #0f766e;
-    color: white;
-}
-
 .action-bar .btn-primary:hover {
-    background: #115e59;
-    border-color: #115e59;
     transform: translateY(-1px);
 }
 

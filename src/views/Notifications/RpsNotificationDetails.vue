@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="header">
 
-      <button class="back-btn" @click="$router.back()">
+      <button class="back-btn btn-secondary" @click="$router.back()">
         ← Back
       </button>
 
@@ -78,9 +78,9 @@
 
         <span
           class="status"
-          :class="notification.statusClass"
+          :class="statusTone(notification.status)"
         >
-          {{ notification.status }}
+          {{ statusLabel(notification.status) }}
         </span>
 
       </div>
@@ -92,7 +92,7 @@
 
         <button
           v-if="notification.type === 'review'"
-          class="primary-btn"
+          class="primary-btn btn-view"
           @click="viewProposal"
         >
           VIEW NOTIFICATION
@@ -100,7 +100,7 @@
 
         <button
           v-if="notification.type === 'endorse'"
-          class="primary-btn"
+          class="primary-btn btn-primary"
           @click="reviewProposal"
         >
           Review & Endorse
@@ -108,14 +108,14 @@
 
         <button
           v-if="notification.type === 'release'"
-          class="primary-btn"
+          class="primary-btn btn-approve"
           @click="releaseFunds"
         >
           Release Funds
         </button>
 
         <button
-          class="secondary-btn"
+          class="secondary-btn btn-secondary"
           @click="markAsRead"
         >
           Mark as Read
@@ -141,6 +141,8 @@
 
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 export default {
   name: "RpsNotificationDetails",
@@ -158,6 +160,10 @@ export default {
   },
 
     methods: {
+    statusTone,
+
+    statusLabel,
+
     _showAlert(message, options = {}) {
       return new Promise((resolve) => {
         this.dialog.type = options.type || 'info'
@@ -220,18 +226,13 @@ export default {
   font-size:14px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .back-btn{
-  background:#fff;
-  border:1px solid #d1d5db;
   padding:8px 16px;
   border-radius:8px;
   cursor:pointer;
   font-weight:600;
   transition:.2s;
-}
-
-.back-btn:hover{
-  background:#f3f4f6;
 }
 
 .card{
@@ -298,62 +299,29 @@ export default {
   font-weight:700;
 }
 
-.pending{
-  background:#fef3c7;
-  color:#92400e;
-}
-
-.review{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.approved{
-  background:#dcfce7;
-  color:#166534;
-}
-
-.returned{
-  background:#fee2e2;
-  color:#b91c1c;
-}
-
 .actions{
   display:flex;
   gap:12px;
   margin-top:28px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .primary-btn{
-  background:#1e40af;
-  color:#fff;
-  border:none;
   border-radius:8px;
   padding:10px 18px;
   font-size:14px;
   font-weight:600;
   cursor:pointer;
   transition:.2s;
-}
-
-.primary-btn:hover{
-  background:#1d4ed8;
 }
 
 .secondary-btn{
-  background:#fff;
-  color:#374151;
-  border:1px solid #d1d5db;
   border-radius:8px;
   padding:10px 18px;
   font-size:14px;
   font-weight:600;
   cursor:pointer;
   transition:.2s;
-}
-
-.secondary-btn:hover{
-  background:#f3f4f6;
 }
 
 @media (max-width:768px){

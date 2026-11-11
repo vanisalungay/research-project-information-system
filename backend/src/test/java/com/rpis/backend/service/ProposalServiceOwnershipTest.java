@@ -24,10 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -117,14 +118,31 @@ class ProposalServiceOwnershipTest {
         User me = user(7L);
         authenticate(7L, "PROPONENT");
         when(userRepository.findById(7L)).thenReturn(Optional.of(me));
-        when(proposalRepository.findByProponentAndStatusIn(me, List.of("SUBMITTED", "APPROVED")))
+        when(proposalRepository.findByProponentAndStatusIn(me,
+                List.of("SUBMITTED", "FOR REVIEW", "APPROVED")))
                 .thenReturn(List.of(proposal(1L, 7L)));
 
         List<Proposal> result = service.getProposalsForCurrentUser(null, null, List.of("submitted", "APPROVED"));
 
         assertEquals(1, result.size());
-        verify(proposalRepository).findByProponentAndStatusIn(me, List.of("SUBMITTED", "APPROVED"));
+        verify(proposalRepository).findByProponentAndStatusIn(me,
+                List.of("SUBMITTED", "FOR REVIEW", "APPROVED"));
         verify(proposalRepository, never()).findByStatusIn(any());
+    }
+
+    @Test
+    void aForReviewFilterAlsoReturnsLegacySubmittedRows() {
+        User me = user(7L);
+        authenticate(7L, "PROPONENT");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(me));
+        when(proposalRepository.findByProponentAndStatusIn(me, List.of("FOR REVIEW", "SUBMITTED")))
+                .thenReturn(List.of(proposal(1L, 7L)));
+
+        List<Proposal> result = service.getProposalsForCurrentUser(null, "for review", null);
+
+        assertEquals(1, result.size());
+        verify(proposalRepository).findByProponentAndStatusIn(me, List.of("FOR REVIEW", "SUBMITTED"));
+        verify(proposalRepository, never()).findByProponentAndStatus(any(), anyString());
     }
 
     @Test

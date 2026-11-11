@@ -114,7 +114,7 @@ test('the dashboard keeps every route it links to', () => {
   }
 })
 
-test('the proposal table keeps its columns, cells and raw status text', () => {
+test('the proposal table keeps its columns, cells and formatted status text', () => {
   for (const header of ['Title', 'Proponent', 'Date Submitted', 'Status', 'Actions']) {
     assert.ok(
       DASHBOARD.includes(`<th>${header}</th>`) || DASHBOARD.includes(`>${header}</th>`),
@@ -131,11 +131,11 @@ test('the proposal table keeps its columns, cells and raw status text', () => {
     'the submission date cell must be kept',
   )
 
-  // The status shown is the raw record value, not a rewritten label.
+  // The status shown is the shared display label for the raw record value.
   assert.match(
     DASHBOARD,
-    /class="end-badge"[^>]*>\s*\{\{ proposal\.status \}\}/,
-    'the status pill must show the record value unchanged',
+    /class="end-badge"[^>]*>\s*\{\{ proposalStatusLabel\(proposal\.status\) \}\}/,
+    'the status pill must use the shared status label',
   )
 
   // The Review/View actions keep their condition and their handlers.
@@ -175,9 +175,12 @@ test('the status pill tones are chosen from the record status', () => {
   assert.match(DASHBOARD, /statusTone\(proposal\.status\)/, 'the pill must use the status tone')
   assert.match(
     DASHBOARD,
-    /if \(status === 'UNDER_REVIEW'\) return 'is-pending'/,
-    'under review is amber',
+    /import \{ statusTone \} from '@\/utils\/statusTone\.js'/,
+    'the tone must come from the shared status mapping',
   )
-  assert.match(DASHBOARD, /if \(status === 'REC_REJECTED'\) return 'is-rejected'/, 'a rejection is red')
-  assert.match(DASHBOARD, /return 'is-approved'/, 'the remaining statuses are green')
+  assert.doesNotMatch(
+    DASHBOARD,
+    /if \(status === 'UNDER_REVIEW'\) return 'is-pending'/,
+    'the page must not keep its own status -> tone map',
+  )
 })

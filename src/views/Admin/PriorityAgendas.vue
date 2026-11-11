@@ -31,7 +31,7 @@
     <!-- Error -->
     <div v-else-if="error" class="loading-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="loadSets">Retry</button>
+      <button class="retry-btn btn-secondary" @click="loadSets">Retry</button>
     </div>
 
     <!-- Framework list -->
@@ -45,14 +45,14 @@
         <div class="framework-head">
           <div class="framework-title">
             <h3>{{ set.frameworkName }} {{ set.coverageStartYear }}–{{ set.coverageEndYear }}</h3>
-            <span class="status-badge" :class="set.active ? 'status-active' : 'status-inactive'">
+            <span class="status-badge" :class="statusTone(set.active ? 'ACTIVE' : 'INACTIVE')">
               {{ set.active ? 'Active' : 'Inactive' }}
             </span>
           </div>
           <div class="framework-actions">
-            <button v-if="!set.active" class="activate-btn" @click="activateSet(set)">Activate</button>
-            <button class="edit-btn" @click="openEditFramework(set)">Edit</button>
-            <button class="edit-btn" @click="openCreateItem(set)">+ Add Agenda</button>
+            <button v-if="!set.active" class="activate-btn btn-approve" @click="activateSet(set)">Activate</button>
+            <button class="edit-btn btn-edit" @click="openEditFramework(set)">Edit</button>
+            <button class="edit-btn btn-edit" @click="openCreateItem(set)">+ Add Agenda</button>
           </div>
         </div>
 
@@ -75,13 +75,13 @@
               <td class="item-key">{{ item.agendaKey }}</td>
               <td>{{ item.subLabel || '—' }}</td>
               <td>
-                <span class="status-badge" :class="item.active ? 'status-active' : 'status-inactive'">
+                <span class="status-badge" :class="statusTone(item.active ? 'ACTIVE' : 'INACTIVE')">
                   {{ item.active ? 'Active' : 'Inactive' }}
                 </span>
               </td>
               <td class="actions-cell">
-                <button class="edit-btn" @click="openEditItem(set, item)">Edit</button>
-                <button class="edit-btn" @click="toggleItem(set, item)">
+                <button class="edit-btn btn-edit" @click="openEditItem(set, item)">Edit</button>
+                <button class="edit-btn btn-edit" @click="toggleItem(set, item)">
                   {{ item.active ? 'Deactivate' : 'Activate' }}
                 </button>
               </td>
@@ -142,8 +142,8 @@
 
         <footer class="modal-footer">
           <div class="modal-actions">
-            <button class="cancel-btn" @click="closeModals" :disabled="saving">Cancel</button>
-            <button class="confirm-btn" @click="saveFramework" :disabled="saving">
+            <button class="cancel-btn btn-secondary" @click="closeModals" :disabled="saving">Cancel</button>
+            <button class="confirm-btn btn-primary" @click="saveFramework" :disabled="saving">
               {{ saving ? 'Saving...' : (editingFrameworkId ? 'Save Changes' : 'Create Framework') }}
             </button>
           </div>
@@ -221,8 +221,8 @@
 
         <footer class="modal-footer">
           <div class="modal-actions">
-            <button class="cancel-btn" @click="closeModals" :disabled="saving">Cancel</button>
-            <button class="confirm-btn" @click="saveItem" :disabled="saving">
+            <button class="cancel-btn btn-secondary" @click="closeModals" :disabled="saving">Cancel</button>
+            <button class="confirm-btn btn-primary" @click="saveItem" :disabled="saving">
               {{ saving ? 'Saving...' : (editingItemId ? 'Save Changes' : 'Add Agenda') }}
             </button>
           </div>
@@ -243,6 +243,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import AgendaPicker from '@/components/AgendaPicker.vue'
 import { useDialog } from '@/composables/useDialog'
 import { agendaCatalogue, agendaPrefill, frameworkKeys } from '@/utils/agendaPicker'
+import { statusTone } from '@/utils/statusTone.js'
 
 /**
  * Administrator management of the Priority Agenda master data (section 05 of the
@@ -589,9 +590,8 @@ function useTypedAgendaName(name) {
   line-height: 1.5;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .create-btn {
-  background: #facc15;
-  border: none;
   padding: 9px 16px;
   border-radius: 6px;
   font-weight: 600;
@@ -629,9 +629,6 @@ function useTypedAgendaName(name) {
 
 .retry-btn {
   margin-top: 8px;
-  background: #4b3f72;
-  color: #ffffff;
-  border: none;
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -690,16 +687,6 @@ function useTypedAgendaName(name) {
   font-weight: 700;
 }
 
-.status-active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-inactive {
-  background: #e5e7eb;
-  color: #374151;
-}
-
 .items-table {
   width: 100%;
   border-collapse: collapse;
@@ -746,10 +733,8 @@ function useTypedAgendaName(name) {
   white-space: nowrap;
 }
 
+/* Layout only; .btn-approve / .btn-edit / .btn-secondary supply the colours. */
 .activate-btn {
-  background: #16a34a;
-  color: #ffffff;
-  border: none;
   padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -758,9 +743,6 @@ function useTypedAgendaName(name) {
 }
 
 .edit-btn {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
   padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -896,8 +878,6 @@ function useTypedAgendaName(name) {
 }
 
 .cancel-btn {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
   padding: 9px 16px;
   border-radius: 6px;
   cursor: pointer;
@@ -905,9 +885,6 @@ function useTypedAgendaName(name) {
 }
 
 .confirm-btn {
-  background: #4b3f72;
-  color: #ffffff;
-  border: none;
   padding: 9px 16px;
   border-radius: 6px;
   cursor: pointer;

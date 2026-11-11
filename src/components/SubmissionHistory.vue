@@ -36,7 +36,7 @@
             </div>
             <div class="sh-meta">
               <span class="sh-meta-label">Status</span>
-              <span class="sh-meta-value">{{ v.status || '—' }}</span>
+              <span class="sh-meta-value">{{ proposalStatusLabel(v.status) || '—' }}</span>
             </div>
             <div class="sh-meta">
               <span class="sh-meta-label">Submitted By</span>
@@ -115,6 +115,7 @@ import api from '@/utils/api'
 // Section 24: "% Time Devoted" is stored as a plain number and always read as a
 // percentage, so a version recorded with a legacy "50%" and one with "50" both show "50%".
 import { formatTimeDevoted } from '@/utils/personnelTime'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const props = defineProps({
   proposalId: { type: [Number, String], required: true }
@@ -468,13 +469,12 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-current-badge {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--status-approved-bg);
+  color: var(--status-approved-text);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 12px;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
@@ -506,8 +506,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-remarks {
   margin-top: 10px;
-  background: #fffbeb;
-  border-left: 3px solid #f59e0b;
+  background: var(--status-returned-bg);
+  border-left: 3px solid var(--status-returned-solid);
   border-radius: 4px;
   padding: 8px 12px;
 }

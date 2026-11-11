@@ -23,7 +23,7 @@
       <div class="dash-stat dash-stat--amber">
         <div class="dash-stat-head">
           <span class="dash-stat-icon" v-html="icons.clock"></span>
-          <span class="dash-stat-label">PROPOSALS FOR REVIEW</span>
+          <span class="dash-stat-label">Proposals for Review</span>
         </div>
         <div class="dash-stat-value">{{ stats.forReview }}</div>
       </div>
@@ -31,7 +31,7 @@
       <div class="dash-stat dash-stat--blue">
         <div class="dash-stat-head">
           <span class="dash-stat-icon" v-html="icons.send"></span>
-          <span class="dash-stat-label">ENDORSED TO OC</span>
+          <span class="dash-stat-label">Endorsed to OC</span>
         </div>
         <div class="dash-stat-value">{{ stats.endorsedToOc }}</div>
       </div>
@@ -39,7 +39,7 @@
       <div class="dash-stat dash-stat--green">
         <div class="dash-stat-head">
           <span class="dash-stat-icon" v-html="icons.check"></span>
-          <span class="dash-stat-label">APPROVED / RELEASED</span>
+          <span class="dash-stat-label">Approved / Released</span>
         </div>
         <div class="dash-stat-value">{{ stats.completed }}</div>
       </div>
@@ -73,11 +73,11 @@
               <td>{{ proposal.proponent }}</td>
               <td>
                 <span class="end-badge" :class="statusTone(proposal.status)">
-                  {{ proposal.status }}
+                  {{ proposalStatusLabel(proposal.status) }}
                 </span>
               </td>
               <td class="text-right">
-                <button class="end-btn is-primary row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
+                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
                   Review
                 </button>
               </td>
@@ -112,11 +112,11 @@
               <td>{{ proposal.proponent }}</td>
               <td>
                 <span class="end-badge" :class="statusTone(proposal.status)">
-                  {{ proposal.status }}
+                  {{ proposalStatusLabel(proposal.status) }}
                 </span>
               </td>
               <td class="text-right">
-                <button class="end-btn row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
+                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
                   View
                 </button>
               </td>
@@ -135,6 +135,8 @@ import { ref, onMounted } from 'vue'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -164,33 +166,9 @@ const icons = {
 }
 
 /**
- * The pastel tone of a status pill. The status text shown stays exactly what the record
- * carries; only the colour is chosen here, by the workflow stage the status belongs to.
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries.
  */
-const statusTone = (status) => {
-  switch (status) {
-    case 'FOR_OVCAF_APPROVAL':
-    case 'FOR_OC_APPROVAL':
-    case 'READY_FOR_RELEASE':
-      return 'is-info'
-    case 'REC_APPROVED':
-    case 'OVC_APPROVED':
-    case 'APPROVED':
-    case 'RELEASED':
-      return 'is-approved'
-    case 'REJECTED':
-    case 'REC_REJECTED':
-    case 'REVISION':
-    case 'REC_REVISION':
-      return 'is-rejected'
-    case 'SUBMITTED':
-    case 'UNDER_REVIEW':
-    case 'RPS_REVIEW':
-      return 'is-pending'
-    default:
-      return 'is-neutral'
-  }
-}
 
 const forReview = ref([])
 const completed = ref([])
@@ -280,17 +258,7 @@ onMounted(loadDashboard)
 }
 
 /* ===== Status pills =====
-   These tones extend the shared .end-badge (is-pending / is-approved / is-rejected) with
-   the pastel tones this workflow also needs. */
-.end-badge.is-info {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.end-badge.is-neutral {
-  background: #eef1f7;
-  color: #475569;
-}
+   The tone colours are shared (assets/status.css); this page adds no palette of its own. */
 
 /* ===== Tables =====
    The shared .end-table is used as it is; only the header band, the row alignment and the

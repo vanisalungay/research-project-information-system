@@ -314,8 +314,8 @@
                 </div>
                 <div v-else-if="hasSavedEndorsement" class="file-info">
                   <span>📄 {{ savedEndorsementName }}</span>
-                  <button type="button" class="btn-outline" @click="viewEndorsementDocument">View</button>
-                  <button type="button" class="btn-outline" @click="downloadEndorsementDocument">Download</button>
+                  <button type="button" class="btn-outline btn-view" @click="viewEndorsementDocument">View</button>
+                  <button type="button" class="btn-outline btn-download" @click="downloadEndorsementDocument">Download</button>
                 </div>
               </template>
             </div>
@@ -996,24 +996,17 @@ const viewCriteria = () => emit('openCriteria')
   gap: 10px;
 }
 
+/* Layout only; the download colour comes from assets/actions.css. */
 .btn-download {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 8px 14px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover {
-  background: #e2e8f0;
-  color: #1e293b;
 }
 
 .close-btn {
@@ -1501,15 +1494,16 @@ input[type="date"] {
   white-space: nowrap;
 }
 
+/* Destructive secondary action; the tone comes from the shared status tokens. */
 .btn-outline-danger {
-  color: #dc2626;
-  border-color: #fecaca;
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
 }
 
 .btn-outline-danger:hover {
-  color: #dc2626;
-  border-color: #dc2626;
-  background: #fef2f2;
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
+  background: var(--status-rejected-bg);
 }
 
 /* The controls stack on a phone so every button stays a comfortable tap target. */
@@ -1552,65 +1546,45 @@ input[type="date"] {
   gap: 10px;
 }
 
+/* Layout only; the colours come from assets/actions.css. */
 .btn-secondary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
 }
 
 .btn-outline {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  border: 1px solid #d1d5db;
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-outline:hover {
-  border-color: #4f46e5;
-  color: #4f46e5;
-  background: #f8faff;
 }
 
 .btn-primary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #4f46e5;
-  border: none;
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .btn-primary:hover {
-  background: #4338ca;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 /* ===== SCROLLBAR ===== */
@@ -1654,5 +1628,15 @@ input[type="date"] {
 .endorsed-note a {
   color: #1e40af;
   font-weight: 600;
+}
+
+/* The global .btn-outline dark rule sets a neutral tone; this modifier keeps the
+   destructive action readable as red in dark mode too. */
+@media (prefers-color-scheme: dark) {
+  .btn-outline-danger {
+    color: var(--status-rejected-text) !important;
+    border-color: var(--status-rejected-border) !important;
+    background: var(--status-rejected-bg) !important;
+  }
 }
 </style>

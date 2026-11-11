@@ -150,7 +150,7 @@
           </button>
 
           <button
-            class="details-btn"
+            class="details-btn btn-view"
             @click="viewDetails(revision.id)"
           >
             <svg
@@ -490,7 +490,7 @@ onMounted(() => {
   color: #f9fafb;
 }
 
-/* STATUS */
+/* STATUS — revision uses the shared amber "returned" tone. */
 .status-row {
   display: flex;
   align-items: center;
@@ -501,16 +501,15 @@ onMounted(() => {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #dc2626;
+  background: var(--status-returned-solid);
   flex-shrink: 0;
 }
 
 .revision-tag {
-  color: #b91c1c;
+  color: var(--status-returned-text);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* TITLE & ID */
@@ -626,14 +625,12 @@ onMounted(() => {
   padding-top: 1.25rem;
 }
 
+/* Layout only; the action colour is global (assets/actions.css). */
 .submit-btn {
-  background: #ffd803;
-  border: none;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
-  color: #1f1f3d;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -641,13 +638,10 @@ onMounted(() => {
 }
 
 .details-btn {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
   font-weight: 600;
-  color: #1f2937;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;

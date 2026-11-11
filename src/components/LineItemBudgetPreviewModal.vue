@@ -57,7 +57,7 @@
           </div>
           <div v-else-if="previewError" class="lib-preview-state lib-preview-state--error">
             <span>{{ previewError }}</span>
-            <button type="button" class="btn-retry" @click="loadPreview">Try again</button>
+            <button type="button" class="btn-retry btn-secondary" @click="loadPreview">Try again</button>
           </div>
           <p v-else-if="!filePath" class="lib-preview-state">
             No Line-Item Budget document is attached to this proposal.
@@ -89,7 +89,7 @@
 
         <!-- FOOTER: an always visible Close action besides the header icon -->
         <footer class="lib-preview-footer">
-          <button type="button" class="btn-close" @click="emit('close')">Close</button>
+          <button type="button" class="btn-close btn-secondary" @click="emit('close')">Close</button>
         </footer>
       </div>
     </div>
@@ -352,25 +352,18 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-download {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover:not(:disabled) {
-  background: #e2e8f0;
-  color: #1e293b;
 }
 
 .btn-download:disabled {
@@ -564,31 +557,20 @@ onBeforeUnmount(() => {
 
 .btn-close {
   padding: 10px 20px;
-  background: var(--color-primary, #8b0000);
-  border: 1px solid var(--color-primary, #8b0000);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.btn-close:hover {
-  background: #6d0000;
-  border-color: #6d0000;
-}
-
 .btn-retry {
   padding: 8px 16px;
-  background: #e2e8f0;
-  border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: #334155;
   cursor: pointer;
 }
 

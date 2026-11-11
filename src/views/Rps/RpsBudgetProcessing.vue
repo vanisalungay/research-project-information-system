@@ -34,7 +34,7 @@
     <!-- Error -->
     <div v-else-if="error" class="loading-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="fetchProposals">Retry</button>
+      <button class="retry-btn btn-secondary" @click="fetchProposals">Retry</button>
     </div>
 
     <div v-else class="table-container">
@@ -64,13 +64,13 @@
             <td>
               <span
                 class="status"
-                :class="getStatusClass(proposal.status)"
+                :class="statusTone(proposal.status)"
               >
                 {{ formatStatus(proposal.status) }}
               </span>
             </td>
             <td>
-              <button class="view-btn" @click.stop="openProposal(proposal)">View</button>
+              <button class="view-btn btn-view" @click.stop="openProposal(proposal)">View</button>
             </td>
           </tr>
 
@@ -88,6 +88,8 @@
 
 <script>
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: "RpsBudgetProcessing",
@@ -156,24 +158,10 @@ export default {
     },
 
     formatStatus(status) {
-      const statusMap = {
-        'APPROVED': 'Approved',
-        'READY_FOR_RELEASE': 'Ready for Release',
-        'RELEASED': 'Released',
-        'RETURNED': 'Returned',
-      }
-      return statusMap[status] || status
+      return proposalStatusLabel(status)
     },
 
-    getStatusClass(status) {
-      const classMap = {
-        'APPROVED': 'approved',
-        'READY_FOR_RELEASE': 'ready',
-        'RELEASED': 'released',
-        'RETURNED': 'returned',
-      }
-      return classMap[status] || ''
-    },
+    statusTone,
 
     openProposal(proposal) {
       this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
@@ -242,12 +230,10 @@ export default {
   color: #dc2626;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .retry-btn {
   margin-top: 12px;
   padding: 8px 20px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -285,6 +271,7 @@ export default {
   background: #f8fafc;
 }
 
+/* The status tone colours come from the shared status system (assets/status.css). */
 .status {
   padding: 6px 12px;
   border-radius: 20px;
@@ -295,38 +282,11 @@ export default {
   min-width: 140px;
 }
 
-.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.ready {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.released {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.returned {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
 .view-btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
   padding: 8px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-}
-
-.view-btn:hover {
-  background: #1d4ed8;
 }
 
 .empty {

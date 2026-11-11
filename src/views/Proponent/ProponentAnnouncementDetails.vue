@@ -39,7 +39,7 @@
         <div class="banner-main">
           <div class="banner-head">
             <span class="banner-eyebrow">Call for Proposals</span>
-            <span class="status-badge" :class="statusClass">
+            <span class="status-badge" :class="statusTone(displayStatus)">
               <span class="status-dot" aria-hidden="true"></span>{{ displayStatus }}
             </span>
           </div>
@@ -148,7 +148,7 @@
               </li>
             </ol>
 
-            <button type="button" class="ready-btn" @click="goToMyProjects">
+            <button type="button" class="ready-btn btn-primary" @click="goToMyProjects">
               <span>Submit a proposal</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -213,6 +213,7 @@ import api from '@/utils/api'
 import { announcementStatus, localTodayISO } from '@/utils/announcementStatus'
 import { extensionNotice } from '@/utils/announcementUpdates'
 import { ANNOUNCEMENT_REMINDERS, normalizeReminderKeys } from '@/utils/announcementOptions'
+import { statusTone } from '@/utils/statusTone.js'
 import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
 
 const route = useRoute()
@@ -239,16 +240,6 @@ const errorTitle = computed(() => {
 const displayStatus = computed(() =>
   announcement.value ? announcementStatus(announcement.value) : ''
 )
-
-const statusClass = computed(() => {
-  const classes = {
-    Draft: 'status-draft',
-    Scheduled: 'status-scheduled',
-    Open: 'status-active',
-    Closed: 'status-closed',
-  }
-  return classes[displayStatus.value] || ''
-})
 
 /**
  * The deadline extension notice, or null when there is nothing to announce. It is shown
@@ -620,25 +611,7 @@ onMounted(loadAnnouncement)
   background: currentColor;
 }
 
-.status-active {
-  background: #d9fbe7;
-  color: #16834b;
-}
-
-.status-scheduled {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-closed {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-draft {
-  background: #e5e7eb;
-  color: #374151;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 .banner-title {
   margin: 10px 0 8px;
@@ -772,29 +745,17 @@ onMounted(loadAnnouncement)
   margin-top: 14px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .submit-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  background: #ffd400;
-  color: #25245b;
-  border: none;
   border-radius: 7px;
   font-size: var(--font-body);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.submit-btn:hover {
-  background: #f0c800;
-}
-
-.submit-btn:focus-visible {
-  outline: 2px solid #ffd400;
-  outline-offset: 2px;
 }
 
 .submit-btn svg {
@@ -901,6 +862,7 @@ onMounted(loadAnnouncement)
   line-height: 1.4;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .ready-btn {
   display: flex;
   align-items: center;
@@ -908,23 +870,10 @@ onMounted(loadAnnouncement)
   gap: 6px;
   width: 100%;
   height: 32px;
-  background: #ffd400;
-  color: #25245b;
-  border: none;
   border-radius: 7px;
   font-size: var(--font-body);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.ready-btn:hover {
-  background: #f0c800;
-}
-
-.ready-btn:focus-visible {
-  outline: 2px solid #25245b;
-  outline-offset: 2px;
 }
 
 .ready-btn svg {
@@ -1209,40 +1158,16 @@ onMounted(loadAnnouncement)
   }
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-primary,
 .btn-secondary {
   padding: 9px 16px;
-  border: 1px solid transparent;
   border-radius: 8px;
   font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
 }
 
-.btn-primary {
-  background: #25245b;
-  color: #ffffff;
-}
-
-.btn-primary:hover {
-  background: #32305f;
-}
-
-.btn-secondary {
-  background: #ffffff;
-  border-color: #e3e6ef;
-  color: #25245b;
-}
-
-.btn-secondary:hover {
-  border-color: #25245b;
-}
-
-.btn-primary:focus-visible,
-.btn-secondary:focus-visible {
-  outline: 2px solid #25245b;
-  outline-offset: 2px;
-}
 
 /* RESPONSIVE */
 @media (max-width: 900px) {

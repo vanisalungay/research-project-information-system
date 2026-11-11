@@ -33,8 +33,9 @@
                                 <label class="form-label">Status</label>
                                 <select v-model="filters.status" @change="filters.page = 1" class="form-control">
                                     <option value="All">All Statuses</option>
-                                    <option value="Pending Validation">Pending Validation</option>
-                                    <option value="Approved & Endorsed">Approved & Endorsed</option>
+                                    <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
+                                    <option value="FOR_OC_APPROVAL">For OC Approval</option>
+                                    <option value="APPROVED">Approved</option>
                                 </select>
                             </div>
                             <div>
@@ -92,7 +93,7 @@
                                             }}</span></td>
                                     <td class="font-mono font-semibold">{{ formatCurrency(p.budget) }}</td>
                                     <td>{{ formatDate(p.dateReceived) }}</td>
-                                    <td><span class="badge" :class="getStatusClass(p.status)">{{ p.status }}</span></td>
+                                    <td><span class="badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span></td>
                                     <td>
                                         <div class="actions-cell">
                                             <router-link :to="`/ovcaf/proposals/${p.id}`"
@@ -131,6 +132,9 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import api from '@/utils/api';
+import { statusTone } from '@/utils/statusTone.js';
+import { proposalStatusLabel } from '@/utils/proposalStatus.js';
+import { normalizeStatusKey } from '@/utils/statusLabel.js';
 
 // ── Shell State ───────────────────────────────────
 const sidebarOpen = ref(false);
@@ -169,8 +173,7 @@ const fetchProposals = async () => {
             college: p.college || 'Unknown',
             budget: p.totalBudget || 0,
             dateReceived: p.createdAt,
-            status: mapStatus(p.status),
-            rawStatus: p.status
+            status: p.status
         }));
     } catch (err) {
         console.error('Error fetching OVCAF proposals:', err);
@@ -178,28 +181,6 @@ const fetchProposals = async () => {
         proposals.value = [];
     } finally {
         loading.value = false;
-    }
-};
-
-// Map backend status to frontend display status
-const mapStatus = (status) => {
-    if (!status) return 'Pending Validation';
-    switch (status.toUpperCase()) {
-        case 'FOR_OVCAF_APPROVAL':
-            return 'Pending Validation';
-        case 'APPROVED':
-        case 'FOR_OC_APPROVAL':
-            return 'Approved & Endorsed';
-        case 'READY_FOR_RELEASE':
-            return 'Ready for Release';
-        case 'RELEASED':
-            return 'Released';
-        case 'RETURNED':
-            return 'Returned for Revision';
-        case 'REJECTED':
-            return 'Rejected';
-        default:
-            return status;
     }
 };
 
@@ -214,7 +195,7 @@ const filteredProposals = computed(() => {
             (p.projectLeader || '').toLowerCase().includes(q)
         );
     }
-    if (filters.status !== 'All') result = result.filter(p => p.status === filters.status);
+    if (filters.status !== 'All') result = result.filter(p => normalizeStatusKey(p.status) === filters.status);
     if (filters.college !== 'All') result = result.filter(p => p.college === filters.college);
     result.sort((a, b) => {
         let fa = a[filters.sortBy], fb = b[filters.sortBy];
@@ -254,18 +235,11 @@ const toggleSort = (field) => {
 };
 
 // ── Helpers ───────────────────────────────────────
-const isPending = (p) => p.status === 'Pending Validation' || p.status === 'Under Validation' || p.rawStatus === 'FOR_OVCAF_APPROVAL';
+const isPending = (p) => normalizeStatusKey(p.status) === 'FOR_OVCAF_APPROVAL';
 const sortIndicator = (field) => filters.sortBy === field ? (filters.sortOrder === 'asc' ? '▲' : '▼') : '';
 const getCollegeAbbr = (c) => ({ 'College of Engineering and Technology': 'CET', 'College of Science and Mathematics': 'CSM', 'College of Arts and Social Sciences': 'CASS', 'College of Information Technology': 'CIT', 'College of Education': 'COED', 'College of Agriculture': 'COA' }[c] || c);
 const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v || 0);
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-const getStatusClass = (s) => {
-    if (s === 'Pending Validation' || s === 'Under Validation') return 'badge-pending';
-    if (s === 'Approved & Endorsed' || s === 'Released' || s === 'Ready for Release') return 'badge-approved';
-    if (s === 'Returned for Revision') return 'badge-returned';
-    if (s === 'Rejected') return 'badge-rejected';
-    return 'badge-info';
-};
 </script>
 
 <style scoped>
@@ -376,25 +350,7 @@ const getStatusClass = (s) => {
     height: 34px;
 }
 
-.btn-primary {
-    background: #7f1d1d;
-    color: white;
-    border: none;
-}
-
-.btn-primary:hover {
-    background: #991b1b;
-}
-
-.btn-secondary {
-    background: white;
-    border: 1px solid #d1d5db;
-    color: #374151;
-}
-
-.btn-secondary:hover {
-    background: #f3f4f6;
-}
+/* The primary/secondary tones come from assets/actions.css. */
 
 .badge {
     display: inline-block;
@@ -403,17 +359,6 @@ const getStatusClass = (s) => {
     font-size: .75rem;
     font-weight: 700;
 }
-
-.badge-pending {
-    background: #FEF3C7;
-    color: #B45309;
-}
-
-.badge-approved {
-    background: #DCFCE7;
-    color: #166534;
-}
-
 
 .table-container {
     overflow-x: auto;
@@ -440,11 +385,6 @@ const getStatusClass = (s) => {
 
 .custom-table tbody tr:hover {
     background: #FAFAFA;
-}
-
-.badge-info {
-    background: #DBEAFE;
-    color: #1D4ED8;
 }
 
 .clear-btn {

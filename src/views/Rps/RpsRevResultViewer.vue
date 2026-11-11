@@ -9,14 +9,9 @@
             </div>
 
             <span
-                :class="[
-                'result-status',
-                proposal.status === 'Returned'
-                    ? 'returned'
-                    : 'rejected'
-                ]"
+                :class="['result-status', 'status-badge', statusTone(proposal.status)]"
             >
-                {{ proposal.status }}
+                {{ proposalStatusLabel(proposal.status) }}
             </span>
         </div>
     </header>
@@ -213,14 +208,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('technology-roadmap.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('technology-roadmap.pdf')"
               >
                 DOWNLOAD
@@ -288,14 +283,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('gad-score.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('gad-score.pdf')"
               >
                 DOWNLOAD
@@ -416,14 +411,14 @@
 
           <div class="attachment-buttons">
             <button
-              class="view-btn"
+              class="view-btn btn-view"
               @click="viewAttachment('Project-Line-Item-Budget.pdf')"
             >
               👁 View
             </button>
 
             <button
-              class="download-btn"
+              class="download-btn btn-download"
               @click="downloadAttachment('Project-Line-Item-Budget.pdf')"
             >
               DOWNLOAD
@@ -488,14 +483,14 @@
             <div class="attachment-buttons">
 
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment(attachment.filePath)"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment(attachment.filePath)"
               >
                 DOWNLOAD
@@ -700,6 +695,8 @@
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: "RpsProposalDetails",
@@ -744,6 +741,10 @@ export default {
   },
 
   methods: {
+    statusTone,
+
+    proposalStatusLabel,
+
     _showDialog(message, options = {}) {
       return new Promise((resolve) => {
         this.dialog.type = options.type || 'info'
@@ -915,8 +916,6 @@ export default {
 }
 
 .back-btn{
-  background:#3b82f6;
-  color:#fff;
   border:none;
   padding:10px 18px;
   border-radius:8px;
@@ -939,15 +938,7 @@ export default {
   font-weight:600;
 }
 
-.result-status.returned{
-  background:#fef3c7;
-  color:#92400e;
-}
-
-.result-status.rejected{
-  background:#fee2e2;
-  color:#b91c1c;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 .proposal-layout {
   display: grid;
@@ -1268,34 +1259,21 @@ ATTACHMENT CARDS
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .view-btn {
-  background: #2563eb;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: .2s;
-}
-
-.view-btn:hover {
-  background: #1d4ed8;
 }
 
 .download-btn {
-  background: #16a34a;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: .2s;
-}
-
-.download-btn:hover {
-  background: #15803d;
 }
 
 @media (max-width: 768px) {
@@ -1472,34 +1450,6 @@ display:flex;
 flex-direction:column;
 gap:10px;
 margin-top:18px;
-}
-
-.save-btn{
-background:#2563eb;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.save-btn:hover{
-background:#1d4ed8;
-}
-
-.submit-btn{
-background:#16a34a;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.submit-btn:hover{
-background:#15803d;
 }
 
 .recommendation-box {

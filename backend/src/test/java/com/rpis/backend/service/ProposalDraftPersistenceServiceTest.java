@@ -33,7 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -209,8 +211,25 @@ class ProposalDraftPersistenceServiceTest {
 
         Proposal saved = service.saveProposal(request, null);
 
-        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("FOR REVIEW", saved.getStatus());
         assertEquals(Boolean.TRUE, saved.getGadChecklist().getCompleted());
+    }
+
+    @Test
+    void aForReviewRequestIsStoredAsForReviewAndRecordedInHistory() {
+        when(versionService.isSubmissionStatus("FOR REVIEW")).thenReturn(true);
+        ProposalRequest request = request("FOR REVIEW");
+        request.setGadChecklist(checklist(allAnswered("YES"), Map.of()));
+
+        Proposal saved = service.saveProposal(request, null);
+
+        assertEquals("FOR REVIEW", saved.getStatus());
+        verify(versionService).recordSubmission(eq(saved), eq(false), any());
+    }
+
+    @Test
+    void aDraftRequestStaysADraft() {
+        assertEquals("DRAFT", service.saveProposal(request("DRAFT"), null).getStatus());
     }
 
     @Test
@@ -229,7 +248,7 @@ class ProposalDraftPersistenceServiceTest {
 
         Proposal saved = service.saveProposal(request("SUBMITTED"), PROPOSAL_ID);
 
-        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("FOR REVIEW", saved.getStatus());
         assertSame(stored, saved.getGadChecklist());
     }
 
@@ -240,7 +259,7 @@ class ProposalDraftPersistenceServiceTest {
 
         Proposal saved = service.saveProposal(request("SUBMITTED"), PROPOSAL_ID);
 
-        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("FOR REVIEW", saved.getStatus());
         assertEquals("gad-score.pdf", saved.getGadFileName());
     }
 
@@ -252,7 +271,7 @@ class ProposalDraftPersistenceServiceTest {
 
         Proposal saved = service.saveProposal(request("SUBMITTED"), PROPOSAL_ID);
 
-        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("FOR REVIEW", saved.getStatus());
     }
 
     @Test
@@ -455,7 +474,7 @@ class ProposalDraftPersistenceServiceTest {
 
         Proposal saved = service.saveProposal(request, null);
 
-        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("FOR REVIEW", saved.getStatus());
         assertTrue(Boolean.TRUE.equals(saved.getGadChecklist().getCompleted()));
         assertFalse(saved.getSubmittedByName().isBlank());
         assertEquals("Dean Reyes", saved.getEndorsedByName());

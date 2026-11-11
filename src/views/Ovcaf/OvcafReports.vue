@@ -53,7 +53,7 @@
                             <p class="section-sub">Volume share and budget totals per validation decision.</p>
                             <div class="metrics-list">
                                 <div class="metric-block">
-                                    <div class="metric-header"><span class="badge badge-approved">Approved</span><span
+                                    <div class="metric-header"><span class="badge is-approved">Approved</span><span
                                             class="metric-budget font-mono">{{ formatCurrency(statusBudgets.Approved)
                                             }}</span></div>
                                     <div class="progress-bg">
@@ -65,7 +65,7 @@
                                 </div>
 
                                 <div class="metric-block">
-                                    <div class="metric-header"><span class="badge badge-pending">Pending</span><span
+                                    <div class="metric-header"><span class="badge is-pending">Pending</span><span
                                             class="metric-budget font-mono">{{ formatCurrency(statusBudgets.Pending)
                                             }}</span></div>
                                     <div class="progress-bg">
@@ -509,26 +509,6 @@ const formatShort = (v) => {
     border-radius: 999px;
     font-size: .75rem;
     font-weight: 600;
-}
-
-.badge-approved {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-.badge-returned {
-    background: #fef3c7;
-    color: #b45309;
-}
-
-.badge-rejected {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-.badge-pending {
-    background: #dbeafe;
-    color: #1d4ed8;
 }
 
 .progress-bg {

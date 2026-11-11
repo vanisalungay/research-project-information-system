@@ -22,7 +22,7 @@
     <!-- Error -->
     <div v-else-if="error" class="state-box error-text">
       <span>{{ error }}</span>
-      <button class="retry-btn" @click="fetchProposals">Retry</button>
+      <button class="retry-btn btn-secondary" @click="fetchProposals">Retry</button>
     </div>
 
     <!-- Table -->
@@ -48,12 +48,12 @@
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'N/A' }}</td>
               <td>{{ proposal.college || 'N/A' }}</td>
               <td>
-                <span class="status" :class="getStatusClass(proposal.status)">
+                <span class="status" :class="statusTone(proposal.status)">
                   {{ formatStatus(proposal.status) }}
                 </span>
               </td>
               <td>
-                <button class="view-btn" @click="viewProposal(proposal)">View</button>
+                <button class="view-btn btn-view" @click="viewProposal(proposal)">View</button>
               </td>
             </tr>
             <tr v-if="filteredProposals.length === 0">
@@ -74,6 +74,8 @@
 
 <script>
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsEndorsedProPanel',
@@ -118,30 +120,10 @@ export default {
     },
 
     formatStatus(status) {
-      const statusMap = {
-        'ENDORSED': 'Endorsed to OVCRIGE',
-        'UNDER_REVIEW': 'Under REC Evaluation',
-        'REC_APPROVED': 'REC Approved',
-        'FOR_OVCAF_APPROVAL': 'For OVCAF Review',
-        'FOR_OC_APPROVAL': 'For Chancellor Approval',
-        'APPROVED': 'Approved',
-      }
-      return statusMap[status] || status
+      return proposalStatusLabel(status)
     },
 
-    getStatusClass(status) {
-      const classMap = {
-        'ENDORSED': 'endorsed',
-        'UNDER_REVIEW': 'pending',
-        'REC_APPROVED': 'approved',
-        'FOR_OVCAF_APPROVAL': 'pending',
-        'FOR_OC_APPROVAL': 'pending',
-        'APPROVED': 'approved',
-        'REJECTED': 'rejected',
-        'RETURNED': 'returned',
-      }
-      return classMap[status] || 'pending'
-    }
+    statusTone,
   },
   mounted() {
     this.fetchProposals()
@@ -227,11 +209,9 @@ export default {
   color: #dc2626;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .retry-btn {
   padding: 6px 16px;
-  background: #25245b;
-  color: #ffd400;
-  border: none;
   border-radius: 7px;
   font-size: 11px;
   font-weight: 600;
@@ -309,7 +289,8 @@ export default {
   line-height: 1.35;
 }
 
-/* STATUS BADGES */
+/* STATUS BADGES
+   Geometry only; the `.is-*` colours come from assets/status.css. */
 .status {
   display: inline-block;
   padding: 3px 9px;
@@ -319,36 +300,8 @@ export default {
   white-space: nowrap;
 }
 
-.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.endorsed {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.returned {
-  background: #fde68a;
-  color: #b45309;
-}
-
-.rejected {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
 /* ACTION BUTTON */
 .view-btn {
-  background: #ffd400;
-  color: #25245b;
-  border: none;
   height: 29px;
   padding: 0 12px;
   border-radius: 7px;
@@ -359,12 +312,8 @@ export default {
   transition: background 0.15s ease;
 }
 
-.view-btn:hover {
-  background: #f0c800;
-}
-
 .view-btn:focus-visible {
-  outline: 2px solid #25245b;
+  outline: 2px solid var(--btn-focus-outline);
   outline-offset: 2px;
 }
 

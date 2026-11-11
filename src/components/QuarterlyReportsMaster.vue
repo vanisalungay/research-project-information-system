@@ -13,7 +13,7 @@
     <!-- Selected project: report history -->
     <template v-else-if="selectedProject">
       <div class="sub-header">
-        <button class="back-btn" @click="selectedProject = null">← All Projects</button>
+        <button class="back-btn btn-secondary" @click="selectedProject = null">← All Projects</button>
         <div>
           <h2>{{ selectedProject.projectTitle }}</h2>
           <p class="subtitle">SO Number: {{ selectedProject.soNumber || 'N/A' }}</p>
@@ -42,11 +42,8 @@
               <td class="report-name">{{ reportName(r) }}</td>
               <td class="report-date">{{ formatDate(r.submittedAt) || '—' }}</td>
               <td>
-                <span
-                  class="status-badge"
-                  :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'"
-                >
-                  {{ formatStatus(r.status) }}
+                <span class="status-badge" :class="statusTone(r.status)">
+                  {{ statusLabel(r.status) }}
                 </span>
               </td>
               <td class="cell-actions">
@@ -80,7 +77,7 @@
             <td class="title-cell">{{ p.projectTitle || 'Untitled' }}</td>
             <td>{{ p.projectLeader || p.proponent?.name || 'N/A' }}</td>
             <td>{{ p.soNumber || 'N/A' }}</td>
-            <td><span class="status-badge submitted">{{ formatStatus(p.status) }}</span></td>
+            <td><span class="status-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span></td>
             <td><button class="btn-view" @click="openProject(p)">View Reports</button></td>
           </tr>
         </tbody>
@@ -113,7 +110,7 @@
             </p>
           </div>
           <div class="modal-header-actions">
-            <button class="btn-print" @click="printTerminalDocument">DOWNLOAD</button>
+            <button class="btn-print btn-download" @click="printTerminalDocument">DOWNLOAD</button>
             <button class="close-btn" @click="terminalDoc = null" aria-label="Close">✕</button>
           </div>
         </div>
@@ -155,6 +152,9 @@ import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
 import { printTerminalReport } from '@/utils/terminalReportPrint'
 import { hasTerminalReportContent } from '@/utils/terminalReport'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const projects = ref([])
 const loading = ref(true)
@@ -238,10 +238,6 @@ function printTerminalDocument() {
 function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
 }
-function formatStatus(s) {
-  return s ? s.replace(/_/g, ' ') : 'Unknown'
-}
-
 // Reporting stages 1-3 are quarterly progress reports (each paired with a
 // Project Workplan); the fourth stage is the Terminal Report.
 function isTerminal(r) {
@@ -299,9 +295,8 @@ onMounted(fetchProjects)
   margin: 0;
   font-size: 18px;
 }
+/* Layout only; the action colours are global (assets/actions.css). */
 .back-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -368,10 +363,8 @@ onMounted(fetchProjects)
   font-weight: 600;
   color: #0f172a;
 }
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-view {
-  background: #eef2ff;
-  color: #1c2145;
-  border: none;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
@@ -383,14 +376,7 @@ onMounted(fetchProjects)
   font-size: 12px;
   font-weight: 700;
 }
-.status-badge.submitted {
-  background: #dcfce7;
-  color: #166534;
-}
-.status-badge.draft {
-  background: #fef3c7;
-  color: #92400e;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -482,10 +468,8 @@ onMounted(fetchProjects)
   padding: 16px 20px 24px;
   background: #f8fafc;
 }
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-print {
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #1c2145;
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;

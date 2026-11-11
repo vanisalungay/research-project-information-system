@@ -1,7 +1,7 @@
 <template>
   <div class="qpr-page">
     <div class="page-header">
-      <button class="back-btn" @click="$router.back()">← Back</button>
+      <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
       <div>
         <h1>Quarterly Progress Reports</h1>
         <p class="subtitle">{{ project?.projectTitle || 'Project' }}</p>
@@ -62,7 +62,7 @@
             </td>
             <td class="cell-status">
               <div class="report-status">
-                <span class="status-badge" :class="r.status === 'SUBMITTED' ? 'submitted' : 'draft'">{{ r.status }}</span>
+                <span class="status-badge" :class="statusTone(r.status)">{{ statusLabel(r.status) }}</span>
               </div>
             </td>
             <td class="cell-actions">
@@ -177,6 +177,8 @@ import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
 import { downloadReportDocument } from '@/utils/fileDownload'
 import { printTerminalReport } from '@/utils/terminalReportPrint'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 import { hasAnyTerminalContent, hasTerminalReportContent } from '@/utils/terminalReport'
 import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
@@ -489,9 +491,8 @@ onMounted(async () => {
   color: #64748b;
   font-size: 14px;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .back-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -533,30 +534,28 @@ onMounted(async () => {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--status-neutral-border);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
 .stage-chip.done {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
+  background: var(--status-approved-bg);
+  border-color: var(--status-approved-border);
+  color: var(--status-approved-text);
 }
 .stage-chip.draft {
-  background: #fef3c7;
-  border-color: #fde68a;
-  color: #92400e;
+  background: var(--status-draft-bg);
+  border-color: var(--status-neutral-border);
+  color: var(--status-draft-text);
 }
 .stage-chip.current {
-  background: #eef2ff;
-  border-color: #a5b4fc;
-  color: #3730a3;
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-primary {
   margin-left: auto;
-  background: #ffd400;
-  color: #1c2145;
-  border: none;
   padding: 12px 20px;
   border-radius: 8px;
   font-weight: 700;
@@ -690,26 +689,14 @@ onMounted(async () => {
   justify-content: center;
   gap: 10px;
 }
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-view,
 .btn-edit,
 .btn-download {
-  border: none;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-}
-.btn-view {
-  background: #eef2ff;
-  color: #1c2145;
-}
-.btn-edit {
-  background: #ffd400;
-  color: #1c2145;
-}
-.btn-download {
-  background: #dcfce7;
-  color: #166534;
 }
 /* Read-only status label: no pill/background/rounded styling so it cannot be
    mistaken for a clickable button. */
@@ -717,12 +704,9 @@ onMounted(async () => {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
-}
-.status-badge.submitted {
-  color: #166534;
-}
-.status-badge.draft {
-  color: #92400e;
+  /* Read-only label: the tone colour comes from assets/status.css, but the badge
+     keeps no pill background so it cannot be mistaken for a button. */
+  background: transparent;
 }
 .modal-overlay {
   position: fixed;

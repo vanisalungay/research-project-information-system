@@ -85,14 +85,14 @@
 
                 <td>
                   <span class="end-badge" :class="statusTone(proposal.status)">
-                    {{ proposal.status }}
+                    {{ proposalStatusLabel(proposal.status) }}
                   </span>
                 </td>
 
                 <td class="text-right">
                   <button
                     v-if="proposal.status === 'UNDER_REVIEW'"
-                    class="end-btn is-primary row-btn"
+                    class="end-btn is-view row-btn"
                     @click="goToReview(proposal.id)"
                   >
                     REVIEW
@@ -100,7 +100,7 @@
 
                   <button
                     v-else
-                    class="end-btn row-btn"
+                    class="end-btn is-view row-btn"
                     @click="goToMeeting(proposal.id)"
                   >
                     VIEW
@@ -163,6 +163,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRole } from '@/stores/userData'
 import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 // The shared design layer of the role dashboards: the welcome banner, the statistic cards,
 // the section cards, the grid and the pastel accents (dashboard.css) plus the buttons, the
@@ -198,15 +200,10 @@ const icons = {
 }
 
 /**
- * The pastel tone of a status pill. The status text shown stays exactly what the record
- * carries; only the colour is chosen here - amber while under review, green when approved,
- * red when rejected.
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries. UNDER_REVIEW is light blue, a rejection
+ * is red and the remaining statuses are green, as before.
  */
-const statusTone = (status) => {
-  if (status === 'UNDER_REVIEW') return 'is-pending'
-  if (status === 'REC_REJECTED') return 'is-rejected'
-  return 'is-approved'
-}
 
 const router = useRouter()
 

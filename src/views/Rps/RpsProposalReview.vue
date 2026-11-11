@@ -17,7 +17,7 @@
     <!-- Error -->
     <div v-else-if="error" style="text-align:center;padding:60px;">
       <p style="color:#dc2626;">{{ error }}</p>
-      <button @click="goBack" style="margin-top:12px;padding:10px 20px;">Go Back</button>
+      <button class="btn-secondary" @click="goBack" style="margin-top:12px;padding:10px 20px;">Go Back</button>
     </div>
 
     <div v-else class="proposal-layout">
@@ -46,7 +46,7 @@
           <h2>Reviewer Accountability</h2>
           <div class="review-section">
             <h4>Proposal Status</h4>
-            <span class="status-badge" :class="(proposal.status || '').toLowerCase()">{{ proposal.status }}</span>
+            <span class="status-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
           </div>
 
           <div class="review-section">
@@ -101,13 +101,13 @@
           </div>
 
           <div class="review-actions">
-            <button class="approve-btn" @click="endorseProposal" :disabled="actionLoading || !canPerformAction">
+            <button class="approve-btn btn-approve" @click="endorseProposal" :disabled="actionLoading || !canPerformAction">
               {{ actionLoading ? 'Processing...' : '✓ Endorse to OVCRIGE' }}
             </button>
-            <button class="return-btn" @click="returnForRevision" :disabled="actionLoading || !canPerformAction">
+            <button class="return-btn btn-return" @click="returnForRevision" :disabled="actionLoading || !canPerformAction">
               ⟳ Return for Revision
             </button>
-            <button class="reject-btn" @click="rejectProposal" :disabled="actionLoading || !canPerformAction">
+            <button class="reject-btn btn-reject" @click="rejectProposal" :disabled="actionLoading || !canPerformAction">
               ✕ Reject Proposal
             </button>
           </div>
@@ -152,6 +152,8 @@ import {
   buildFieldRemarkIndex,
   sectionKeyForField,
 } from '@/utils/proposalFields'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsProposalReview',
@@ -214,6 +216,9 @@ export default {
     await this.loadFieldRemarks()
   },
   methods: {
+    statusTone,
+    proposalStatusLabel,
+
     _showDialog(message, options = {}) {
       return new Promise((resolve) => {
         this.dialog.type = options.type || 'info'
@@ -451,16 +456,6 @@ export default {
   margin-bottom: 16px;
 }
 
-.back-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-}
-
 .header-title {
   text-align: center;
 }
@@ -623,32 +618,13 @@ export default {
   color: #dc2626;
 }
 
+/* The status tone colours come from the shared status system (assets/status.css). */
 .status-badge {
   display: inline-block;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-}
-
-.status-badge.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-badge.endorsed {
-  background: #d9f5e5;
-  color: #1e7f4f;
-}
-
-.status-badge.revision {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.status-badge.rps_returned {
-  background: #fef3c7;
-  color: #92400e;
 }
 
 textarea {
@@ -703,42 +679,19 @@ textarea {
   margin-top: 12px;
 }
 
+/* The action colours are global (assets/actions.css): approve green, return amber, reject red. */
 .approve-btn,
 .return-btn,
 .reject-btn {
   padding: 12px;
-  border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.approve-btn {
-  background: #10b981;
-  color: white;
-}
-
-.approve-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.return-btn {
-  background: #f59e0b;
-  color: white;
-}
-
-.return-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.reject-btn {
-  background: #dc2626;
-  color: white;
-}
-
+.approve-btn:disabled,
+.return-btn:disabled,
 .reject-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -780,22 +733,9 @@ textarea {
 
 .btn-primary {
   padding: 10px 24px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.download-btn {
-  padding: 10px 18px;
-  background: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
 }
 
 .full-width {
@@ -864,21 +804,6 @@ textarea {
   border-radius: 8px;
   font-size: 13px;
   color: #475569;
-}
-
-.btn-download-sm {
-  padding: 4px 12px;
-  background: #4f46e5;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-download-sm:hover {
-  background: #4338ca;
 }
 
 .section-block p {

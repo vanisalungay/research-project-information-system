@@ -24,7 +24,7 @@
         <div class="actions">
           <button class="btn btn-edit" @click="editProposal">Edit Proposal</button>
 
-          <button class="btn btn-save" @click="viewDetails">VIEW DETAILED PROPOSAL</button>
+          <button class="btn btn-view" @click="viewDetails">VIEW DETAILED PROPOSAL</button>
 
           <button class="btn btn-download" @click="downloadPdf">DOWNLOAD</button>
         </div>
@@ -56,7 +56,7 @@
 
               <span
                 v-if="item.status === 'current'"
-                class="status-pill"
+                class="status-pill is-pending"
               >
                 Current Stage
               </span>
@@ -419,42 +419,14 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn {
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  background: transparent;
   transition: all 0.2s ease;
-}
-
-.btn-edit {
-  color: #1976d2;
-  border: 1px solid #90caf9;
-}
-
-.btn-edit:hover {
-  background: #e3f2fd;
-}
-
-.btn-save {
-  background: #fdd835;
-  border: 1px solid #fbc02d;
-  color: #000;
-}
-
-.btn-save:hover {
-  background: #fbc02d;
-}
-
-.btn-download {
-  color: #555;
-  border: 1px solid #ccc;
-}
-
-.btn-download:hover {
-  background: #f5f5f5;
 }
 
 /* WORKFLOW */
@@ -492,25 +464,25 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
   font-size: 18px;
 }
 
+/* Workflow stage colours follow the shared status tones (assets/status.css). */
 .success {
-  background: #e9fff1;
-  border: 1px solid #9be7b2;
+  background: var(--status-approved-bg);
+  border: 1px solid var(--status-approved-border);
 }
 
 .current {
-  background: #fff4cc;
-  border: 1px solid #ffca28;
+  background: var(--status-pending-bg);
+  border: 1px solid var(--status-pending-border);
 }
 
 .pending {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
+  background: var(--status-neutral-bg);
+  border: 1px solid var(--status-neutral-border);
 }
 
 .status-pill {
   margin-top: 8px;
   display: inline-block;
-  background: #ffca28;
   padding: 4px 10px;
   font-size: 11px;
   border-radius: 12px;
@@ -544,19 +516,13 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
   font-size: 14px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-primary {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.btn-primary:hover {
-  background: #4338ca;
 }
 
 /* ACTIVITY LOG */

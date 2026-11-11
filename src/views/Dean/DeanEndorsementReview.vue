@@ -114,8 +114,8 @@
         </div>
 
         <div v-if="request.hasLetter" class="end-actions">
-          <button class="end-btn" :disabled="busy" @click="previewLetter">View issued letter</button>
-          <button class="end-btn" :disabled="busy" @click="downloadLetter">DOWNLOAD</button>
+          <button class="end-btn is-view" :disabled="busy" @click="previewLetter">View issued letter</button>
+          <button class="end-btn is-download" :disabled="busy" @click="downloadLetter">DOWNLOAD</button>
         </div>
       </div>
 
@@ -231,7 +231,7 @@
           Certifications. The official record is never silently overwritten.
         </p>
         <div class="end-actions">
-          <button class="end-btn" :disabled="busy" @click="confirmReissue">Reissue Letter</button>
+          <button class="end-btn is-secondary" :disabled="busy" @click="confirmReissue">Reissue Letter</button>
         </div>
       </div>
 

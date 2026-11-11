@@ -74,7 +74,7 @@
         <button
           v-if="canCreateCopy"
           type="button"
-          class="btn-copy"
+          class="btn-copy btn-primary"
           :disabled="copying"
           @click="emit('create-copy')"
         >
@@ -89,7 +89,7 @@
         >
           Next Page
         </button>
-        <button v-else class="btn-submit" @click="emit('close')">Close</button>
+        <button v-else class="btn-secondary" @click="emit('close')">Close</button>
       </div>
     </footer>
   </div>
@@ -374,10 +374,8 @@ onMounted(scrollToTop)
   padding: 12px 26px;
   font-size: 15.5px;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-secondary {
-  background: #e2e8f0;
-  color: #1c2145;
-  border: none;
   padding: 12px 22px;
   border-radius: 8px;
   font-weight: 700;
@@ -386,30 +384,16 @@ onMounted(scrollToTop)
 /* "Create a Copy" reuses the existing primary-action shape with the outline
    treatment of a secondary action, so it never competes with the page
    navigation. */
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-copy {
-  background: #fff;
-  color: #1c2145;
-  border: 2px solid #ffd400;
   padding: 10px 22px;
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
 }
-.btn-copy:hover:not(:disabled) {
-  background: #ffd400;
-}
 .btn-copy:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-.btn-submit {
-  background: #ffd400;
-  color: #1c2145;
-  border: none;
-  padding: 12px 22px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 /* ---------- On-screen reading scale for the report document ----------

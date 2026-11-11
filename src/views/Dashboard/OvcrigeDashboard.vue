@@ -111,11 +111,11 @@
                 </td>
                 <td>
                   <span class="end-badge" :class="statusTone(proposal.status)">
-                    {{ proposal.status }}
+                    {{ proposalStatusLabel(proposal.status) }}
                   </span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn is-primary row-btn" @click="goToReview(proposal.id)">
+                  <button class="end-btn is-view row-btn" @click="goToReview(proposal.id)">
                     REVIEW
                   </button>
                 </td>
@@ -174,6 +174,8 @@ import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { UserRole } from '@/stores/userData'
 import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 // The shared design layer of the role dashboards: the welcome banner, the statistic cards,
 // the section cards, the grid and the pastel accents (dashboard.css) plus the buttons, the
@@ -217,32 +219,9 @@ const icons = {
 }
 
 /**
- * The pastel tone of a status pill. The status text shown stays exactly what the record
- * carries; only the colour is chosen here, by the workflow stage the status belongs to.
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries.
  */
-const statusTone = (status) => {
-  switch (status) {
-    case 'SUBMITTED':
-      return 'is-pending'
-    case 'ENDORSED':
-    case 'FOR_OVCAF_APPROVAL':
-    case 'FOR_OC_APPROVAL':
-      return 'is-info'
-    case 'UNDER_REVIEW':
-      return 'is-progress'
-    case 'REC_APPROVED':
-    case 'APPROVED':
-    case 'OVC_APPROVED':
-      return 'is-approved'
-    case 'REVISION':
-    case 'REC_REVISION':
-    case 'REJECTED':
-    case 'REC_REJECTED':
-      return 'is-rejected'
-    default:
-      return 'is-neutral'
-  }
-}
 
 const router = useRouter()
 
@@ -265,7 +244,7 @@ const loadDashboard = async () => {
     // Use proper params serialization for array parameters
     const proposalResponse = await api.get('/api/proposals', {
       params: {
-        statusIn: ['SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+        statusIn: ['FOR REVIEW', 'SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
       },
       paramsSerializer: {
         indexes: null // array format: statusIn=a&statusIn=b&statusIn=c
@@ -390,22 +369,9 @@ const goToReview = id => {
 }
 
 /* ===== Status pills =====
-   These tones extend the shared .end-badge (is-pending / is-approved / is-rejected) with
-   the pastel tones this workflow also needs. */
-.end-badge.is-info {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.end-badge.is-progress {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.end-badge.is-neutral {
-  background: #eef1f7;
-  color: #475569;
-}
+   Geometry and tone colours are shared: assets/status.css paints `.is-approved`,
+   `.is-returned`, `.is-rejected`, `.is-pending`, `.is-info`, `.is-progress` and `.is-neutral`
+   from the same tokens, so this page cannot drift from the rest of RPIS. */
 
 /* ===== Endorsed proposals table =====
    The shared .end-table is used as it is; only the header band, the row alignment and the

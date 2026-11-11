@@ -35,10 +35,10 @@
               <td>{{ dean.email }}</td>
               <td>{{ dean.assignedCollege || '—' }}</td>
               <td>{{ dean.designation || '—' }}</td>
-              <td>{{ dean.status || 'APPROVED' }}</td>
+              <td>{{ statusLabel(dean.status) || 'Approved' }}</td>
               <td class="actions-cell">
-                <button class="link-btn" @click="edit(dean)">Edit</button>
-                <button class="link-btn danger" @click="revoke(dean)">Revoke role</button>
+                <button class="link-btn btn-edit" @click="edit(dean)">Edit</button>
+                <button class="link-btn btn-reject" @click="revoke(dean)">Revoke role</button>
               </td>
             </tr>
             <tr v-if="deans.length === 0">
@@ -85,8 +85,8 @@
           <div class="field-group">
             <label for="deanStatus">Account Status</label>
             <select id="deanStatus" v-model="form.status" :disabled="isLoading">
-              <option value="APPROVED">Active</option>
-              <option value="INACTIVE">Deactivated</option>
+              <option value="APPROVED">Approved</option>
+              <option value="INACTIVE">Inactive</option>
             </select>
           </div>
 
@@ -107,6 +107,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import api from '@/utils/api'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 const props = defineProps({
   /** The Dean account whose role management was opened, from its row in the table. */
@@ -330,17 +331,11 @@ onMounted(load)
   white-space: nowrap;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .link-btn {
-  background: transparent;
-  border: none;
-  color: #2452ff;
   cursor: pointer;
   font-size: 0.8125rem;
   padding: 2px 6px;
-}
-
-.link-btn.danger {
-  color: #b91c1c;
 }
 
 .form-title {
@@ -387,6 +382,7 @@ select {
   gap: 12px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .cancel-btn,
 .create-btn {
   padding: 10px 18px;
@@ -395,18 +391,6 @@ select {
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-}
-
-.cancel-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.create-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: #ffffff;
 }
 
 .create-btn:disabled {

@@ -7,8 +7,8 @@
           {{ proposal.projectTitle || 'Untitled Proposal' }}
         </h2>
 
-        <span class="status">
-          {{ proposal.status || 'N/A' }}
+        <span class="status" :class="statusTone(proposal.status)">
+          {{ proposalStatusLabel(proposal.status) || 'N/A' }}
         </span>
 
         <p class="proposal-id">
@@ -17,11 +17,11 @@
       </div>
 
       <div class="header-actions">
-        <button class="btn yellow" @click="goToDetailed">
+        <button class="btn btn-view" @click="goToDetailed">
           VIEW
         </button>
 
-        <button class="btn outline" @click="downloadAll">
+        <button class="btn btn-download" @click="downloadAll">
           DOWNLOAD
         </button>
       </div>
@@ -205,7 +205,7 @@
             <li v-for="file in attachments" :key="file.name">
               <span>📄 {{ file.name }}</span>
 
-              <button class="download" @click="downloadFile(file)">
+              <button class="download btn-download" @click="downloadFile(file)">
                 DOWNLOAD
               </button>
             </li>
@@ -221,6 +221,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -391,8 +393,8 @@ watch(
   margin: 0;
 }
 
+/* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .status {
-  background: #ffd803;
   padding: 4px 12px;
   border-radius: 20px;
   font-weight: bold;
@@ -462,9 +464,8 @@ watch(
   margin-bottom: 12px;
 }
 
+/* Layout only; the tones come from assets/actions.css. */
 .download {
-  background: #f1f1f1;
-  border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -473,17 +474,7 @@ watch(
 .btn {
   padding: 10px 16px;
   border-radius: 8px;
-  border: none;
   font-weight: bold;
   cursor: pointer;
-}
-
-.btn.yellow {
-  background: #ffd803;
-}
-
-.btn.outline {
-  background: #2563eb;
-  border: 1px solid #ccc;
 }
 </style>

@@ -46,14 +46,14 @@
             <label for="status-filter">Filter by Current Status</label>
             <select id="status-filter" v-model="selectedStatus" class="form-control select-control" @change="currentPage = 1">
               <option value="">All Statuses</option>
-              <option value="SUBMITTED">Submitted</option>
+              <option value="FOR REVIEW">For Review</option>
               <option value="ENDORSED">Endorsed</option>
               <option value="UNDER_REVIEW">Under Review</option>
               <option value="APPROVED">Approved</option>
-              <option value="RPS_RETURNED">Returned by RPS</option>
+              <option value="RPS_RETURNED">RPS Returned</option>
               <option value="REJECTED">Rejected</option>
               <option value="READY_FOR_RELEASE">Ready for Release</option>
-              <option value="RELEASED">Funds Released</option>
+              <option value="RELEASED">Released</option>
             </select>
           </div>
 
@@ -106,7 +106,7 @@
                   <span class="office-tag">{{ getCurrentOffice(prop) }}</span>
                 </td>
                 <td>
-                  <span :class="['status-badge', getBadgeClass(prop.status)]">
+                  <span :class="['status-badge', statusTone(prop.status)]">
                     {{ formatStatus(prop.status) }}
                   </span>
                 </td>
@@ -119,7 +119,7 @@
                   </div>
                 </td>
                 <td class="action-cell">
-                  <button class="btn btn-primary btn-view" @click="viewMonitoring(prop.id)">
+                  <button class="btn btn-view" @click="viewMonitoring(prop.id)">
                     View Details
                   </button>
                 </td>
@@ -165,6 +165,8 @@
 
 <script>
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'ProposalMonitoringList',
@@ -200,7 +202,7 @@ export default {
       }
 
       if (this.selectedStatus) {
-        result = result.filter(p => p.status === this.selectedStatus)
+        result = result.filter(p => proposalStatusMatches(p.status, this.selectedStatus))
       }
 
       result.sort((a, b) => {
@@ -249,6 +251,7 @@ export default {
       const status = proposal.status
       const officeMap = {
         'DRAFT': 'Proponent',
+        'FOR REVIEW': 'RPS',
         'SUBMITTED': 'RPS',
         'PENDING': 'RPS',
         'RPS_RETURNED': 'Proponent',
@@ -274,35 +277,14 @@ export default {
     },
 
     formatStatus(status) {
-      const statusMap = {
-        'DRAFT': 'Draft',
-        'SUBMITTED': 'Submitted',
-        'PENDING': 'Pending',
-        'RPS_RETURNED': 'Returned by RPS',
-        'REVISION': 'Revision',
-        'ENDORSED': 'Endorsed',
-        'OVCRIGE_COORDINATION': 'OVCRIGE Coordination',
-        'UNDER_REVIEW': 'Under REC Review',
-        'REC_APPROVED': 'REC Approved',
-        'REC_REVISION': 'REC Revision',
-        'REC_REJECTED': 'REC Rejected',
-        'FOR_OVCAF_APPROVAL': 'For OVCAF',
-        'FOR_OC_APPROVAL': 'For Chancellor',
-        'APPROVED': 'Approved',
-        'READY_FOR_RELEASE': 'Ready for Release',
-        'RELEASED': 'Funds Released',
-        'IMPLEMENTATION': 'Implementation',
-        'COMPLETED': 'Completed',
-        'REJECTED': 'Rejected',
-        'RETURNED': 'Returned',
-      }
-      return statusMap[status] || status
+      return proposalStatusLabel(status)
     },
 
     getProgressPercentage(proposal) {
       const status = proposal.status
       const progressMap = {
         'DRAFT': 5,
+        'FOR REVIEW': 15,
         'SUBMITTED': 15,
         'PENDING': 15,
         'RPS_RETURNED': 10,
@@ -327,14 +309,8 @@ export default {
       return progressMap[status] || 0
     },
 
-    getBadgeClass(status) {
-      if (['APPROVED', 'COMPLETED', 'RELEASED', 'IMPLEMENTATION'].includes(status)) return 'badge-green'
-      if (['ENDORSED', 'REC_APPROVED', 'READY_FOR_RELEASE'].includes(status)) return 'badge-blue'
-      if (['RPS_RETURNED', 'REVISION', 'REC_REVISION', 'RETURNED'].includes(status)) return 'badge-yellow'
-      if (['REJECTED', 'REC_REJECTED'].includes(status)) return 'badge-red'
-      if (['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL'].includes(status)) return 'badge-blue'
-      return 'badge-gray'
-    },
+    statusTone,
+    proposalStatusMatches,
 
     formatDate(dateString) {
       if (!dateString) return 'N/A'
@@ -468,25 +444,8 @@ export default {
   justify-content: center;
 }
 
-.btn-primary {
-  background-color: #4f46e5;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #4338ca;
-}
-
-.btn-secondary {
-  background-color: #e2e8f0;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-}
-
-.btn-secondary:hover {
-  background-color: #cbd5e1;
-}
-
+/* The action colours are global (assets/actions.css): .btn-primary is RPIS blue,
+   .btn-secondary neutral and .btn-view the blue view action. */
 .btn-clear {
   width: 100%;
 }
@@ -605,20 +564,11 @@ export default {
 }
 
 .btn-view {
-  background-color: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 14px;
   height: unset;
   border-radius: 6px;
-}
-
-.btn-view:hover {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
 }
 
 .empty-state {
@@ -690,36 +640,12 @@ export default {
   color: #334155;
 }
 
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 11.5px;
   font-weight: 600;
   display: inline-block;
-}
-
-.badge-gray {
-  background-color: #f1f5f9;
-  color: #64748b;
-}
-
-.badge-blue {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-green {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.badge-yellow {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.badge-red {
-  background-color: #fee2e2;
-  color: #991b1b;
 }
 </style>

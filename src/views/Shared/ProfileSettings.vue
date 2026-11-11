@@ -108,7 +108,7 @@
         </div>
 
         <div class="action-footer">
-          <button class="save-btn" @click="savePersonal">Save Personal Info</button>
+          <button class="save-btn btn-primary" @click="savePersonal">Save Personal Info</button>
         </div>
       </div>
 
@@ -158,7 +158,7 @@
         </div>
 
         <div class="action-footer">
-          <button class="save-btn" @click="saveSecurity">Update Security Info</button>
+          <button class="save-btn btn-primary" @click="saveSecurity">Update Security Info</button>
         </div>
       </div>
 
@@ -202,7 +202,7 @@
         </div>
 
         <div class="action-footer">
-          <button class="save-btn" @click="saveNotif">Save Notification Settings</button>
+          <button class="save-btn btn-primary" @click="saveNotif">Save Notification Settings</button>
         </div>
       </div>
 
@@ -817,21 +817,14 @@ input:focus {
   justify-content: flex-end;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .save-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: white !important;
   padding: 11px 22px;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.save-btn:hover {
-  background: #1d40cc;
-  border-color: #1d40cc;
 }
 
 /* Fade in effects */

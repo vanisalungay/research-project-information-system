@@ -111,7 +111,7 @@
                 <span class="step-num">Stage {{ getStageNumber(key) }}</span>
                 <h4 class="office-name">{{ stage.name }}</h4>
               </div>
-              <span :class="['status-badge', getBadgeClass(stage.status)]">
+              <span :class="['status-badge', stageTone(stage.status)]">
                 {{ stage.status }}
               </span>
             </div>
@@ -282,25 +282,33 @@ export default {
       return this.getShortOfficeName(key) === current;
     },
 
-    getBadgeClass(status) {
+    /**
+     * The colour tone of a timeline stage.
+     *
+     * Stage statuses are prose milestones ("Waiting", "Funds Released", ...), not the
+     * stored proposal status codes the shared statusTone() helper maps. They keep their
+     * own semantic tone - a released stage stays green and a returned one amber - while
+     * still using the one shared palette from assets/status.css.
+     */
+    stageTone(status) {
       switch (status) {
         case 'Approved':
         case 'Completed':
         case 'Funds Released':
-          return 'badge-green';
+          return 'is-approved';
         case 'Returned for Revision':
         case 'Ready for Release':
-          return 'badge-yellow';
+          return 'is-returned';
         case 'Rejected':
-          return 'badge-red';
+          return 'is-rejected';
         case 'Under Review':
         case 'For Implementation':
         case 'Ongoing':
         case 'Submitted':
-          return 'badge-blue';
+          return 'is-pending';
         case 'Waiting':
         default:
-          return 'badge-gray';
+          return 'is-neutral';
       }
     },
 
@@ -397,25 +405,7 @@ export default {
   justify-content: center;
 }
 
-.btn-primary {
-  background-color: #4f46e5;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #4338ca;
-}
-
-.btn-secondary {
-  background-color: white;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-}
-
-.btn-secondary:hover {
-  background-color: #f1f5f9;
-}
-
+/* The action colours are global (assets/actions.css). */
 .btn-back {
   font-size: 12.5px;
   font-weight: 600;
@@ -646,37 +636,13 @@ export default {
   margin: 2px 0 0 0;
 }
 
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 11.5px;
   font-weight: 600;
   display: inline-block;
-}
-
-.badge-gray {
-  background-color: #f1f5f9;
-  color: #64748b;
-}
-
-.badge-blue {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-green {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.badge-yellow {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.badge-red {
-  background-color: #fee2e2;
-  color: #991b1b;
 }
 
 .card-body {
@@ -734,10 +700,10 @@ export default {
 }
 
 .item-waiting .timeline-badge {
-  background-color: #e2e8f0;
+  background-color: var(--status-neutral-bg);
 }
 .item-waiting .badge-dot {
-  background-color: #94a3b8;
+  background-color: var(--status-neutral-solid);
 }
 .item-waiting .timeline-card {
   opacity: 0.6;
@@ -745,53 +711,53 @@ export default {
 }
 
 .item-active .timeline-badge {
-  background-color: #dbeafe;
-  border-color: #3b82f6;
+  background-color: var(--status-pending-bg);
+  border-color: var(--status-pending-solid);
   animation: pulse-ring 2s infinite;
 }
 .item-active .badge-dot {
-  background-color: #1d4ed8;
+  background-color: var(--status-pending-solid);
 }
 .item-active .timeline-card {
-  border-color: #93c5fd;
+  border-color: var(--status-pending-border);
 }
 
 .item-approved .timeline-badge {
-  background-color: #dcfce7;
-  border-color: #22c55e;
+  background-color: var(--status-approved-bg);
+  border-color: var(--status-approved-solid);
 }
 .item-approved .badge-dot {
-  background-color: #15803d;
+  background-color: var(--status-approved-solid);
 }
 
 .item-returned .timeline-badge {
-  background-color: #fef3c7;
-  border-color: #f59e0b;
+  background-color: var(--status-returned-bg);
+  border-color: var(--status-returned-solid);
 }
 .item-returned .badge-dot {
-  background-color: #b45309;
+  background-color: var(--status-returned-solid);
 }
 .item-returned .timeline-card {
-  border-color: #fcd34d;
+  border-color: var(--status-returned-border);
 }
 .item-returned .card-remarks {
-  border-left-color: #f59e0b;
-  background-color: #fffbeb;
+  border-left-color: var(--status-returned-solid);
+  background-color: var(--status-returned-bg);
 }
 
 .item-rejected .timeline-badge {
-  background-color: #fee2e2;
-  border-color: #ef4444;
+  background-color: var(--status-rejected-bg);
+  border-color: var(--status-rejected-solid);
 }
 .item-rejected .badge-dot {
-  background-color: #b91c1c;
+  background-color: var(--status-rejected-solid);
 }
 .item-rejected .timeline-card {
-  border-color: #fca5a5;
+  border-color: var(--status-rejected-border);
 }
 .item-rejected .card-remarks {
-  border-left-color: #ef4444;
-  background-color: #fef2f2;
+  border-left-color: var(--status-rejected-solid);
+  background-color: var(--status-rejected-bg);
 }
 
 .error-card {

@@ -14,8 +14,8 @@
         </div>
 
         <!-- STATUS -->
-        <span class="status" :class="status">
-          {{ status }}
+        <span class="status" :class="statusTone(status)">
+          {{ statusLabel(status) }}
         </span>
       </div>
 
@@ -59,7 +59,7 @@
           <strong>{{ doc.name }}</strong>
           <p>{{ doc.type }} • {{ doc.size }}</p>
         </div>
-        <button class="download">DOWNLOAD</button>
+        <button class="download btn-download">DOWNLOAD</button>
       </div>
     </section>
 
@@ -74,9 +74,9 @@
       <p class="actions-title">Account Actions</p>
 
       <div class="actions">
-        <button class="btn back" @click="$router.push('/rpsadmin-dash')">← Back</button>
-        <button class="btn reject" @click="openModal('reject')">Reject</button>
-        <button class="btn approve" @click="openModal('approve')">Approve</button>
+        <button class="btn back btn-secondary" @click="$router.push('/rpsadmin-dash')">← Back</button>
+        <button class="btn reject btn-reject" @click="openModal('reject')">Reject</button>
+        <button class="btn approve btn-approve" @click="openModal('approve')">Approve</button>
       </div>
     </section>
 
@@ -95,10 +95,10 @@
         ></textarea>
 
         <div class="modal-actions">
-          <button class="btn cancel" @click="closeModal">Cancel</button>
+          <button class="btn cancel btn-cancel" @click="closeModal">Cancel</button>
           <button
             class="btn"
-            :class="modalType"
+            :class="modalType === 'reject' ? 'btn-reject' : 'btn-approve'"
             :disabled="modalType === 'reject' && !rejectReason"
             @click="confirmAction"
           >
@@ -115,7 +115,7 @@
         <p>{{ successMessage }}</p>
 
         <div class="modal-actions">
-          <button class="btn confirm" @click="closeSuccess">OK</button>
+          <button class="btn confirm btn-primary" @click="closeSuccess">OK</button>
         </div>
       </div>
     </div>
@@ -136,6 +136,8 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -318,26 +320,12 @@ const closeSuccess = () => {
   font-weight: bold;
 }
 
+/* Geometry only; the `.is-*` tone colours come from assets/status.css. */
 .status {
   padding: 6px 14px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 14px;
-}
-
-.status.Pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status.Approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status.Rejected {
-  background: #fee2e2;
-  color: #991b1b;
 }
 
 .info-grid {
@@ -375,6 +363,7 @@ const closeSuccess = () => {
   gap: 16px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn {
   flex: 1;
   padding: 14px;
@@ -382,16 +371,6 @@ const closeSuccess = () => {
   font-weight: bold;
   border: none;
   cursor: pointer;
-}
-
-.reject {
-  background: #e00000;
-  color: white;
-}
-
-.approve {
-  background: #0aa63e;
-  color: white;
 }
 
 .modal-overlay {
@@ -425,10 +404,5 @@ const closeSuccess = () => {
   display: flex;
   gap: 12px;
   margin-top: 20px;
-}
-
-.cancel {
-  background: #ddd;
-  color: #1f2937;
 }
 </style>

@@ -8,7 +8,7 @@
           <p>Review approved budgets and processs fund release</p>
         </div>
       </div>
-            <button class="back-btn" @click="goBack">← Back</button>
+            <button class="back-btn btn-secondary" @click="goBack">← Back</button>
 
     </header>
 
@@ -204,14 +204,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('technology-roadmap.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('technology-roadmap.pdf')"
               >
                 DOWNLOAD
@@ -279,14 +279,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('gad-score.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('gad-score.pdf')"
               >
                 DOWNLOAD
@@ -407,14 +407,14 @@
 
           <div class="attachment-buttons">
             <button
-              class="view-btn"
+              class="view-btn btn-view"
               @click="viewAttachment('Project-Line-Item-Budget.pdf')"
             >
               👁 View
             </button>
 
             <button
-              class="download-btn"
+              class="download-btn btn-download"
               @click="downloadAttachment('Project-Line-Item-Budget.pdf')"
             >
               DOWNLOAD
@@ -479,14 +479,14 @@
             <div class="attachment-buttons">
 
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment(attachment.filePath)"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment(attachment.filePath)"
               >
                 DOWNLOAD
@@ -540,14 +540,14 @@
                 <div class="budget-file-actions">
 
                   <button
-                    class="mini-btn view-btn"
+                    class="mini-btn view-btn btn-view"
                     @click="viewAttachment('Project-Line-Item-Budget.pdf')"
                   >
                     👁
                   </button>
 
                   <button
-                    class="mini-btn download-btn"
+                    class="mini-btn download-btn btn-download"
                     @click="downloadAttachment('Project-Line-Item-Budget.pdf')"
                   >
                     DOWNLOAD
@@ -570,14 +570,10 @@
         <h4>Release Status</h4>
 
         <div
-          class="readonly-value"
-          :class="{
-            'approve-card': status === 'Ready for Release',
-            'return-card': status === 'Returned',
-            'released-card': status === 'Released'
-          }"
+          class="readonly-value status-badge"
+          :class="statusTone(status)"
         >
-          {{ status }}
+          {{ statusLabel(status) }}
         </div>
       </div>
 
@@ -589,14 +585,14 @@
         <div class="review-actions">
 
           <button
-            class="edit-review-btn"
+            class="edit-review-btn btn-return"
             @click="returnBudget"
           >
             Return Budget
           </button>
 
           <button
-            class="done-btn"
+            class="done-btn btn-approve"
             @click="releaseFunds"
           >
             Release Funds
@@ -619,7 +615,7 @@
 
         <div class="review-actions">
           <button
-            class="done-btn"
+            class="done-btn btn-secondary"
             @click="goBack"
           >
             Back
@@ -655,7 +651,7 @@
         <div class="review-actions">
 
           <button
-            class="done-btn"
+            class="done-btn btn-secondary"
             @click="goBack"
           >
             Back
@@ -688,6 +684,8 @@
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 export default {
   name: "RpsBudgetRelease",
@@ -754,6 +752,10 @@ export default {
 
 
   methods: {
+    statusTone,
+
+    statusLabel,
+
     _showDialog(message, options = {}) {
       return new Promise((resolve) => {
         this.dialog.type = options.type || 'info'
@@ -891,8 +893,6 @@ export default {
   margin-bottom: 16px;
 }
 .back-btn{
-  background:#3b82f6;
-  color:#fff;
   border:none;
   padding:10px 18px;
   border-radius:8px;
@@ -1089,10 +1089,8 @@ ATTACHMENT CARDS
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .view-btn {
-  background: #2563eb;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
@@ -1102,18 +1100,11 @@ ATTACHMENT CARDS
 
 
 .download-btn {
-  background: #16a34a;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: .2s;
-}
-
-.download-btn:hover {
-  background: #15803d;
 }
 
 @media (max-width: 768px) {
@@ -1241,23 +1232,8 @@ font-size:14px;
   transition:.2s;
 }
 
-.edit-review-btn{
-  background:#f59e0b;
-  color:#fff;
-}
-
-.edit-review-btn:hover{
-  background:#d97706;
-}
-
-.done-btn{
-  background:#16a34a;
-  color:#fff;
-}
-
-.done-btn:hover{
-  background:#15803d;
-}
+/* The action colours come from assets/actions.css (.btn-return, .btn-approve,
+   .btn-secondary). */
 
 
 
@@ -1320,32 +1296,12 @@ font-size:14px;
 border-radius:8px;
 }
 
-.mini-btn.view-btn{
-background:#2563eb;
-color:#fff;
-}
-
-.mini-btn.download-btn{
-background:#16a34a;
-color:#fff;
-}
-
 .mini-btn:hover{
 opacity:.9;
 }
 
-.released-card{
-background:#dcfce7;
-color:#166534;
-font-weight:700;
-padding:12px;
-border-radius:8px;
-text-align:center;
-border:1px solid #22c55e;
-}
-
 .done-btn:disabled{
-background:#94a3b8;
+opacity:.55;
 cursor:not-allowed;
 }
 
@@ -1361,23 +1317,7 @@ STATUS BADGES
   font-size:14px;
 }
 
-.approve-card{
-  background:#dcfce7;
-  color:#15803d;
-  border:1px solid #86efac;
-}
-
-.return-card{
-  background:#fee2e2;
-  color:#b91c1c;
-  border:1px solid #fca5a5;
-}
-
-.released-card{
-  background:#dbeafe;
-  color:#1d4ed8;
-  border:1px solid #93c5fd;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 /* ===========================
 INFO ROWS

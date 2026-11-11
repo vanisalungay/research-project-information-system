@@ -221,7 +221,6 @@
   display: block;
   font-size: var(--fs-xs, 0.75rem);
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #78809a;
 }
@@ -333,7 +332,6 @@
 .dash-stat-label {
   font-size: var(--fs-xs, 0.75rem);
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #6b7591;
   overflow-wrap: anywhere;
@@ -757,29 +755,8 @@
     color: var(--dash-accent) !important;
   }
 
-  /* The shared badges and buttons of the dashboard, kept readable on a dark surface.
-     Scoped to this page so no other screen changes. */
-  .dash-page .end-badge.is-approved { background: #123a2c !important; color: #6ee7b7 !important; }
-  .dash-page .end-badge.is-pending { background: #4a3a17 !important; color: #fcd34d !important; }
-  .dash-page .end-badge.is-rejected { background: #4a2222 !important; color: #fca5a5 !important; }
-
-  .dash-page .end-btn {
-    background: #22304d !important;
-    border-color: #334155 !important;
-    color: #dbe4ff !important;
-  }
-
-  .dash-page .end-btn.is-primary {
-    background: #315bff !important;
-    border-color: #315bff !important;
-    color: #ffffff !important;
-  }
-
-  .dash-page .end-btn.is-link {
-    background: transparent !important;
-    border-color: transparent !important;
-    color: #8ab4ff !important;
-  }
+  /* Status badges and action buttons are painted by the global dark rules in
+     assets/status.css and assets/actions.css; page-local copies would out-specify them. */
 }
 
 /* Motion is a courtesy, never a requirement. */

@@ -257,5 +257,7 @@ class ProposalControllerAddressContactTest {
         verify(proposalRepository, atLeastOnce()).save(saved.capture());
         assertEquals("EMAIL_ADDRESS", saved.getValue().getContactType());
         assertEquals("juan.delaacruz@msunaawan.edu.ph", saved.getValue().getContactValue());
+        assertEquals("FOR REVIEW", saved.getValue().getStatus(),
+                "a submitted request is stored as the FOR REVIEW workflow status");
     }
 }

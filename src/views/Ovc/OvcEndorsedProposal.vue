@@ -24,11 +24,11 @@
             <td>{{ proposal.programTitle }}</td>
             <td>{{ proposal.projectLeader }}</td>
             <td>
-              <span class="status">{{ proposal.status }}</span>
+              <span class="status status-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
             </td>
             <td>{{ proposal.updatedAt?.substring(0,10) }}</td>
             <td>
-              <button class="view" @click="goToReview(proposal.id)">REVIEW</button>
+              <button class="view btn-view" @click="goToReview(proposal.id)">REVIEW</button>
             </td>
           </tr>
           <tr v-if="filteredProposals.length===0">
@@ -43,6 +43,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 const proposals = ref([])
@@ -110,19 +112,15 @@ td {
   padding: 10px;
   border-bottom: 1px solid #eee;
 }
+/* Geometry only; the status tone comes from assets/status.css. */
 .status {
-  background: #dff3ff;
-  color: #0067b8;
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
 }
 .view {
-  background: #6cb2eb;
-  border: none;
   padding: 6px 14px;
-  color: white;
   border-radius: 20px;
   cursor: pointer;
 }

@@ -80,10 +80,10 @@
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
                 <td>
-                  <span class="end-badge" :class="statusTone(p.status)">{{ p.status }}</span>
+                  <span class="end-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn is-primary row-btn" @click="reviewProposal(p.id)">
+                  <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">
                     Review &amp; Approve
                   </button>
                 </td>
@@ -119,10 +119,10 @@
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
                 <td>
-                  <span class="end-badge" :class="statusTone(p.status)">{{ p.status }}</span>
+                  <span class="end-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn row-btn" @click="reviewProposal(p.id)">View</button>
+                  <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">View</button>
                 </td>
               </tr>
             </tbody>
@@ -143,6 +143,8 @@ import { useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 
@@ -174,33 +176,9 @@ const icons = {
 }
 
 /**
- * The pastel tone of a status pill. The status text shown stays exactly what the record
- * carries; only the colour is chosen here, by the workflow stage the status belongs to.
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries.
  */
-const statusTone = (status) => {
-  switch (status) {
-    case 'FOR_OVCAF_APPROVAL':
-    case 'FOR_OC_APPROVAL':
-    case 'READY_FOR_RELEASE':
-      return 'is-info'
-    case 'REC_APPROVED':
-    case 'OVC_APPROVED':
-    case 'APPROVED':
-    case 'RELEASED':
-      return 'is-approved'
-    case 'REJECTED':
-    case 'REC_REJECTED':
-    case 'REVISION':
-    case 'REC_REVISION':
-      return 'is-rejected'
-    case 'SUBMITTED':
-    case 'UNDER_REVIEW':
-    case 'RPS_REVIEW':
-      return 'is-pending'
-    default:
-      return 'is-neutral'
-  }
-}
 
 const stats = ref({ pending: 0, approved: 0, sentToOvcaf: 0 })
 const forFinalApproval = ref([])
@@ -272,17 +250,7 @@ onMounted(loadDashboard)
 }
 
 /* ===== Status pills =====
-   These tones extend the shared .end-badge (is-pending / is-approved / is-rejected) with
-   the pastel tones this workflow also needs. */
-.end-badge.is-info {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.end-badge.is-neutral {
-  background: #eef1f7;
-  color: #475569;
-}
+   The tone colours are shared (assets/status.css); this page adds no palette of its own. */
 
 /* ===== Tables =====
    The shared .end-table is used as it is; only the header band, the row alignment and the

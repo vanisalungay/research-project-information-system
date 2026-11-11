@@ -41,14 +41,14 @@
         <div class="dialog-buttons">
           <button
             v-if="variant === 'confirm'"
-            class="dialog-btn dialog-btn-cancel"
+            class="dialog-btn btn-cancel"
             @click="handleCancel"
             :disabled="loading"
           >
             {{ cancelText }}
           </button>
           <button
-            class="dialog-btn dialog-btn-action"
+            class="dialog-btn"
             :class="`btn-${type}`"
             @click="handleConfirm"
             :disabled="loading"
@@ -242,66 +242,17 @@ const handleOverlayClick = () => {
   cursor: not-allowed;
 }
 
-.dialog-btn-cancel {
-  background: transparent;
-  border: 1px solid var(--color-border, #e2e8f0);
-  color: var(--color-text, #475569);
-}
-
-.dialog-btn-cancel:hover:not(:disabled) {
-  background: var(--color-background-soft, #f8fafc);
-  color: var(--color-heading, #0f172a);
-}
-
-.dialog-btn-action {
-  border: 1px solid transparent;
-  color: white !important;
-}
-
-.btn-info {
-  background: #2452ff;
-  border-color: #2452ff;
-}
-.btn-info:hover:not(:disabled) {
-  background: #1d40cc;
-  border-color: #1d40cc;
-}
-
-.btn-success {
-  background: #16a34a;
-  border-color: #16a34a;
-}
-.btn-success:hover:not(:disabled) {
-  background: #15803d;
-  border-color: #15803d;
-}
-
-.btn-warning {
-  background: #d97706;
-  border-color: #d97706;
-}
-.btn-warning:hover:not(:disabled) {
-  background: #b45309;
-  border-color: #b45309;
-}
-
-.btn-error,
-.btn-danger {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-.btn-error:hover:not(:disabled),
-.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
+/* The action and cancel colours come from the shared action system (assets/actions.css):
+   .btn-cancel is the neutral Close/Cancel action, and .btn-info / .btn-success /
+   .btn-warning / .btn-error / .btn-danger are the semantic action tones. Only the dialog's
+   own shape (padding, min-width, row) stays here. */
 
 /* Spinner */
 .dialog-spinner {
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: dialogSpin 0.8s linear infinite;
 }

@@ -46,7 +46,7 @@
         <label class="editor-label">{{ fieldLabel }}</label>
         <textarea v-model="text" rows="3" :placeholder="`What needs to be corrected in ${fieldLabel}?`"></textarea>
         <div class="editor-actions">
-          <button type="button" class="btn-save" :disabled="busy || !text.trim()" @click="save">
+          <button type="button" class="btn-save btn-primary" :disabled="busy || !text.trim()" @click="save">
             {{ busy ? 'Saving...' : 'Save Remark' }}
           </button>
           <button type="button" class="btn-cancel" :disabled="busy" @click="cancel">Cancel</button>
@@ -298,10 +298,10 @@ textarea:focus {
   margin-top: 6px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-save,
 .btn-cancel {
   border-radius: 5px;
-  border: none;
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -309,19 +309,9 @@ textarea:focus {
   cursor: pointer;
 }
 
-.btn-save {
-  background: #4f46e5;
-  color: #ffffff;
-}
-
 .btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.btn-cancel {
-  background: #e5e7eb;
-  color: #374151;
 }
 
 .remark-error {

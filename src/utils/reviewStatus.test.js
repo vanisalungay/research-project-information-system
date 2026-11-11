@@ -50,13 +50,21 @@ test('a missing status is a draft', () => {
   assert.equal(reviewStatusTone(''), 'is-draft')
   assert.equal(reviewStatusTone(null), 'is-draft')
   assert.equal(reviewStatusTone(undefined), 'is-draft')
-  assert.equal(reviewStatusLabel(''), 'DRAFT')
+  assert.equal(reviewStatusLabel(''), 'Draft')
 })
 
 test('the label spells the saved status the way the workflow does', () => {
-  assert.equal(reviewStatusLabel('UNDER_REVIEW'), 'UNDER REVIEW')
-  assert.equal(reviewStatusLabel('REC_APPROVED'), 'REC APPROVED')
-  assert.equal(reviewStatusLabel('DRAFT'), 'DRAFT')
+  assert.equal(reviewStatusLabel('UNDER_REVIEW'), 'Under Review')
+  assert.equal(reviewStatusLabel('REC_APPROVED'), 'REC Approved')
+  assert.equal(reviewStatusLabel('DRAFT'), 'Draft')
+})
+
+test('both submission spellings read "For Review"', () => {
+  assert.equal(reviewStatusLabel('FOR REVIEW'), 'For Review')
+  assert.equal(reviewStatusLabel('for review'), 'For Review')
+  assert.equal(reviewStatusLabel('SUBMITTED'), 'For Review')
+  assert.equal(reviewStatusTone('FOR REVIEW'), 'is-approved')
+  assert.equal(reviewStatusTone('SUBMITTED'), 'is-approved')
 })
 
 test('every tone the helper returns is one the design layer styles', () => {

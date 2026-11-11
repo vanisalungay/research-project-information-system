@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="back-link">
-      <router-link to="/oc-dashboard" class="back-btn">
+      <router-link to="/oc-dashboard" class="back-btn btn-secondary">
         <span class="back-arrow">&#8592;</span> Back to Dashboard
       </router-link>
     </div>
@@ -14,7 +14,7 @@
     <!-- Error -->
     <div v-else-if="error" class="card center">
       <p class="error-text">{{ error }}</p>
-      <button class="btn-dark" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to
+      <button class="btn-secondary" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to
         Dashboard</button>
     </div>
 
@@ -25,7 +25,7 @@
         <div class="card proposal-card">
           <div class="proposal-header">
             <h1>{{ proposal.projectTitle || 'Untitled' }}</h1>
-            <span class="status-badge endorsed">{{ proposal.status || 'N/A' }}</span>
+            <span class="status-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) || 'N/A' }}</span>
           </div>
           <div class="proposal-meta">
             <div class="meta-item">
@@ -209,7 +209,7 @@
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" :disabled="soUploading" @click="closeConfirm">Cancel</button>
-          <button class="btn-confirm" :disabled="!soNumber.trim() || soUploading || actionLoading"
+          <button class="btn-confirm btn-approve" :disabled="!soNumber.trim() || soUploading || actionLoading"
             @click="confirmApproval">
             {{ soUploading ? 'Uploading & Approving...' : 'Confirm Approval' }}
           </button>
@@ -226,7 +226,7 @@
           <p>{{ successMessage }}</p>
         </div>
         <div class="modal-actions center">
-          <button class="btn-confirm" @click="handleSuccessClose">OK</button>
+          <button class="btn-confirm btn-primary" @click="handleSuccessClose">OK</button>
         </div>
       </div>
     </div>
@@ -237,6 +237,8 @@
 import api from '@/utils/api'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 // Mirrors the server's Special Order rules (rpis.special-order.max-size-mb in the
 // backend configuration). The server remains authoritative; checking here as well
@@ -278,6 +280,8 @@ export default {
     await this.loadFieldRemarks()
   },
   methods: {
+    statusTone,
+    proposalStatusLabel,
     async loadFieldRemarks() {
       if (!this.proposal.id) return
       try {
@@ -469,26 +473,21 @@ export default {
   margin-bottom: 20px;
 }
 
+/* Layout only; .btn-secondary supplies the neutral colour. */
 .back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 9px 18px;
-  background: white;
-  border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
   text-decoration: none;
   transition: all 0.2s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -552,13 +551,12 @@ export default {
   line-height: 1.3;
 }
 
-.status-badge.endorsed {
+/* Geometry only; the tone comes from assets/status.css. */
+.status-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 5px 12px;
   border-radius: 20px;
-  background: #fef3c7;
-  color: #92400e;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -654,11 +652,11 @@ textarea:focus {
 }
 
 .timeline-item.done .dot {
-  background: #22c55e;
+  background: var(--status-approved-solid);
 }
 
 .timeline-item.current .dot {
-  background: #f59e0b;
+  background: var(--status-pending-solid);
 }
 
 .dot.pulse {
@@ -759,12 +757,10 @@ textarea:focus {
   gap: 12px;
 }
 
+/* Layout only; .btn-approve supplies the green. */
 .btn-approve {
   flex: 1;
   padding: 14px 24px;
-  background: #1e293b;
-  color: white;
-  border: none;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -773,7 +769,6 @@ textarea:focus {
 }
 
 .btn-approve:hover:not(:disabled) {
-  background: #0f172a;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -788,21 +783,14 @@ textarea:focus {
   cursor: not-allowed;
 }
 
+/* Layout only; .btn-return supplies the amber. */
 .btn-return {
   padding: 14px 28px;
-  background: white;
-  color: #dc2626;
-  border: 2px solid #fca5a5;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.btn-return:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #dc2626;
 }
 
 .btn-return:disabled {
@@ -821,17 +809,6 @@ textarea:focus {
 .error-text {
   color: #dc2626;
   font-size: 14px;
-}
-
-.btn-dark {
-  padding: 12px 32px;
-  background: #1e293b;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 /* Modal */
@@ -925,38 +902,25 @@ textarea:focus {
   justify-content: center;
 }
 
+/* Modal buttons: layout only; .btn-cancel / .btn-approve / .btn-primary supply colours. */
 .btn-cancel {
   flex: 1;
   padding: 11px;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #475569;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #f8fafc;
 }
 
 .btn-confirm {
   flex: 1;
   padding: 11px;
   border-radius: 10px;
-  border: none;
-  background: #16a34a;
-  color: white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.btn-confirm:hover {
-  background: #15803d;
 }
 
 .btn-confirm:disabled {

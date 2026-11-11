@@ -69,7 +69,7 @@
                 <span class="status-dot"></span>
                 <span class="status-label">{{ ann.statusLabel }}</span>
               </span>
-              <span class="status-badge">{{ ann.badge }}</span>
+              <span class="status-badge" :class="statusTone(ann.badge)">{{ ann.badge }}</span>
             </div>
 
             <h4 class="announcement-title">{{ ann.title }}</h4>
@@ -132,7 +132,7 @@
                 {{ prop.documentId || prop.proposalCode || '—' }}
               </div>
             </div>
-            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+            <span class="badge" :class="statusTone(prop.status)">{{ statusMeta(prop.status).label }}</span>
           </li>
         </ul>
       </section>
@@ -173,10 +173,10 @@
                 <td class="cell-title">{{ prop.projectTitle || 'Untitled Project' }}</td>
                 <td>{{ prop.projectLeader || 'Unknown' }}</td>
                 <td>
-                  <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+                  <span class="badge" :class="statusTone(prop.status)">{{ statusMeta(prop.status).label }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="row-btn" @click="$router.push(`/proposal/${prop.id}`)">
+                  <button class="row-btn btn-view" @click="$router.push(`/proposal/${prop.id}`)">
                     <span>Review</span>
                     <span class="row-btn-arrow" aria-hidden="true">&rarr;</span>
                   </button>
@@ -226,7 +226,7 @@
                 <span>{{ revDateLabel(prop) }}</span>
               </div>
             </div>
-            <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+            <span class="badge" :class="statusTone(prop.status)">{{ statusMeta(prop.status).label }}</span>
           </li>
         </ul>
       </section>
@@ -280,11 +280,11 @@
               <td class="cell-title">{{ prop.projectTitle || 'Untitled' }}</td>
               <td>{{ prop.projectLeader || prop.proponent?.name || 'N/A' }}</td>
               <td>
-                <span class="badge" :class="statusMeta(prop.status).cls">{{ statusMeta(prop.status).label }}</span>
+                <span class="badge" :class="statusTone(prop.status)">{{ statusMeta(prop.status).label }}</span>
               </td>
               <td class="text-right">
                 <button
-                  class="row-btn"
+                  class="row-btn btn-view"
                   @click="$router.push({ name: 'ProposalDetails', params: { id: prop.id } })"
                 >
                   <span>View</span>
@@ -302,6 +302,8 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
 import { announcementStatus } from '@/utils/announcementStatus'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 // The shared design layer: the same cards, pills, tables and spacing the Proponent and Dean
 // dashboards already use. Importing it changes how this page looks and nothing else - every
@@ -355,7 +357,7 @@ const AWAITING_LIMIT = 3
 const REVISION_STATUSES = ['RETURNED_TO_RPS', 'RPS_RETURNED']
 const ENDORSED_STATUSES = ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
 const BUDGET_STATUSES = ['APPROVED', 'READY_FOR_RELEASE', 'RELEASED', 'RETURNED']
-const PENDING_STATUSES = ['SUBMITTED', 'PENDING']
+const PENDING_STATUSES = ['FOR REVIEW', 'SUBMITTED', 'PENDING']
 
 const byStatus = (set) => proposals.value.filter(p => set.includes(p.status))
 
@@ -380,25 +382,10 @@ const filteredBudget = computed(() => {
   return budgetProposals.value.filter(p => p.status === status)
 })
 
-// Status label + badge mapping reusing the existing status meanings.
-const STATUS_META = {
-  SUBMITTED: { label: 'Pending', cls: 'pending' },
-  PENDING: { label: 'Pending', cls: 'pending' },
-  RETURNED_TO_RPS: { label: 'Returned to RPS', cls: 'returned' },
-  RPS_RETURNED: { label: 'Returned to Proponent', cls: 'returned' },
-  REVISION: { label: 'Revision', cls: 'revision' },
-  REC_REVISION: { label: 'Revision', cls: 'revision' },
-  ENDORSED: { label: 'Endorsed', cls: 'endorsed' },
-  UNDER_REVIEW: { label: 'Under Review', cls: 'pending' },
-  REC_APPROVED: { label: 'REC Approved', cls: 'approved' },
-  FOR_OVCAF_APPROVAL: { label: 'For OVCAF Review', cls: 'pending' },
-  FOR_OC_APPROVAL: { label: 'For Chancellor Approval', cls: 'pending' },
-  APPROVED: { label: 'Approved', cls: 'approved' },
-  READY_FOR_RELEASE: { label: 'Ready for Release', cls: 'ready' },
-  RELEASED: { label: 'Released', cls: 'released' },
-  RETURNED: { label: 'Returned', cls: 'returned' },
-}
-const statusMeta = (status) => STATUS_META[status] || { label: status || 'Unknown', cls: 'pending' }
+// The status label comes from the one shared formatter (utils/statusLabel.js via
+// proposalStatusLabel), and the colour from the shared statusTone() helper, so the same
+// status looks the same here as on every other role's page.
+const statusMeta = (status) => ({ label: proposalStatusLabel(status) || 'Unknown' })
 
 // Existing deadline logic: overdue when the revision deadline has passed.
 function isOverdue(prop) {
@@ -646,7 +633,7 @@ onMounted(() => {
   padding: 4px 6px;
   border-radius: 8px;
   background: transparent;
-  color: #315bff;
+  color: var(--btn-link-text);
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -655,8 +642,8 @@ onMounted(() => {
 }
 
 .section-link:hover {
-  background: #eef1ff;
-  color: #1d40cc;
+  background: var(--btn-link-hover-bg);
+  color: var(--btn-link-text);
 }
 
 .section-link-arrow {
@@ -754,7 +741,6 @@ onMounted(() => {
 .status-label {
   font-size: 0.6875rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #64748b;
 }
@@ -765,49 +751,33 @@ onMounted(() => {
   border-radius: 999px;
   font-size: 0.6875rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #eef0f6;
-  color: #4b5570;
 }
 
+/* The call's state keeps the shared status palette: open is green, upcoming/pending is
+   light blue, expired is neutral. The label is always visible, so colour is a reinforcement. */
 .is-open .status-dot {
-  background: #10b981;
+  background: var(--status-approved-solid);
 }
 
 .is-open .status-label {
-  color: #047857;
-}
-
-.is-open .status-badge {
-  background: #d1fae5;
-  color: #065f46;
+  color: var(--status-approved-text) !important;
 }
 
 .is-upcoming .status-dot {
-  background: #7c3aed;
+  background: var(--status-pending-solid);
 }
 
 .is-upcoming .status-label {
-  color: #6d28d9;
-}
-
-.is-upcoming .status-badge {
-  background: #ede9fe;
-  color: #6d28d9;
+  color: var(--status-pending-text) !important;
 }
 
 .is-expired .status-dot {
-  background: #8b8ba7;
+  background: var(--status-neutral-solid);
 }
 
 .is-expired .status-label {
-  color: #6b7591;
-}
-
-.is-expired .status-badge {
-  background: #eceef6;
-  color: #5b6484;
+  color: var(--status-neutral-text) !important;
 }
 
 .announcement-title {
@@ -975,7 +945,8 @@ onMounted(() => {
 }
 
 /* ===== Status pills =====
-   The label and the tone are the ones the panel already used. */
+   Geometry only: the `.is-approved` / `.is-returned` / `.is-rejected` / `.is-pending`
+   colours come from the global status system (assets/status.css). */
 .badge {
   display: inline-block;
   padding: 4px 11px;
@@ -983,33 +954,6 @@ onMounted(() => {
   font-size: 0.6875rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.badge.pending,
-.badge.ready {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge.revision,
-.badge.returned {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.badge.endorsed {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.badge.approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge.released {
-  background: #ede9fe;
-  color: #6d28d9;
 }
 
 /* ===== Row action ===== */
@@ -1020,8 +964,6 @@ onMounted(() => {
   height: 32px;
   padding: 0 14px;
   border-radius: 8px;
-  background: #315bff;
-  color: #ffffff;
   font-family: inherit;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1029,7 +971,6 @@ onMounted(() => {
 }
 
 .row-btn:hover {
-  background: #1d40cc;
   box-shadow: 0 6px 16px rgba(49, 91, 255, 0.24);
 }
 

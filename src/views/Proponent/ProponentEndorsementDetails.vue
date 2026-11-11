@@ -119,7 +119,7 @@
           </span>
         </p>
         <div class="end-actions">
-          <button class="end-btn" :disabled="busy" @click="previewLetter">View</button>
+          <button class="end-btn is-view" :disabled="busy" @click="previewLetter">View</button>
           <button class="end-btn is-primary" :disabled="busy" @click="downloadLetter">
             DOWNLOAD
           </button>

@@ -89,12 +89,12 @@
 
           <div class="dash-call-actions">
             <router-link
-              class="end-btn is-primary"
+              class="end-btn is-view"
               :to="`/proponent-announcement/${activeCall.id}`"
             >
               View Call Details
             </router-link>
-            <router-link class="end-btn" to="/proposals">Start a Proposal</router-link>
+            <router-link class="end-btn is-primary" to="/proposals">Start a Proposal</router-link>
           </div>
         </template>
       </section>
@@ -277,8 +277,8 @@
           </div>
 
           <div class="dash-call-actions">
-            <router-link class="end-btn" to="/endorsements">My Endorsements</router-link>
-            <router-link class="end-btn" to="/endorsements?tab=certifications">
+            <router-link class="end-btn is-view" to="/endorsements">My Endorsements</router-link>
+            <router-link class="end-btn is-view" to="/endorsements?tab=certifications">
               Issued Certificates
             </router-link>
           </div>
@@ -367,6 +367,7 @@ import {
 } from '@/utils/endorsement.js'
 import { isUnreadNotification, unreadBadgeLabel } from '@/utils/notifications.js'
 import { PROPOSAL_SUMMARY_BUCKETS, proposalSummaryCounts } from '@/utils/proposalSummary.js'
+import { statusTone } from '@/utils/statusTone.js'
 import {
   PENDING_REVISION_STATUSES,
   countPendingRevisions,
@@ -432,14 +433,6 @@ const initials = computed(() => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 })
 
-/** The existing badge tones, chosen from the status the rest of the system shows. */
-const CALL_BADGE_TONES = {
-  Open: 'is-approved',
-  Scheduled: 'is-pending',
-  Closed: 'is-rejected',
-  Draft: 'is-pending',
-}
-
 // ===== Calls for Proposal =====
 const calls = ref([])
 const callsLoading = ref(true)
@@ -463,7 +456,9 @@ const endorsementsError = ref('')
  */
 const activeCall = computed(() => sortCallsForDisplay(calls.value)[0] ?? null)
 const activeCallStatus = computed(() => announcementStatus(activeCall.value))
-const activeCallTone = computed(() => CALL_BADGE_TONES[activeCallStatus.value] || 'is-pending')
+
+/** The call's badge tone, from the one shared status mapping. */
+const activeCallTone = computed(() => statusTone(activeCallStatus.value))
 
 /** Whole days until the featured call closes (0 when it is missing or already past). */
 const callDaysLeft = computed(() => revisionDaysLeft(activeCall.value?.endDate))

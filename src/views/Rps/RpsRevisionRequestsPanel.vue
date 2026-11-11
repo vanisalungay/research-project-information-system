@@ -17,7 +17,7 @@
       <div v-for="p in awaiting" :key="p.id" class="card">
         <div class="card-top">
           <h3>{{ p.projectTitle || 'Untitled' }}</h3>
-          <span class="badge returned">{{ p.status }}</span>
+          <span class="badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
         </div>
         <div class="meta">
           <div><label>Returned by</label><span>{{ p.returnedByOffice || '—' }}</span></div>
@@ -43,7 +43,7 @@
         </div>
 
         <div class="actions">
-          <router-link :to="`/rps-forward-revision/${p.id}`" class="btn primary">Review &amp; Forward</router-link>
+          <router-link :to="`/rps-forward-revision/${p.id}`" class="btn btn-primary">Review &amp; Forward</router-link>
         </div>
       </div>
     </template>
@@ -53,7 +53,7 @@
       <div v-for="p in forwarded" :key="p.id" class="card">
         <div class="card-top">
           <h3>{{ p.projectTitle || 'Untitled' }}</h3>
-          <span class="badge forwarded">{{ p.status }}</span>
+          <span class="badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
         </div>
         <div class="meta">
           <div><label>Returned by</label><span>{{ p.returnedByOffice || '—' }}</span></div>
@@ -79,6 +79,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import { activeRemarksBySection, PROPOSAL_SECTIONS } from '@/utils/proposalSections'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const proposals = ref([])
 const loading = ref(false)
@@ -221,23 +223,13 @@ onMounted(fetchProposals)
   color: #20234f;
 }
 
+/* Geometry only; the `.is-*` tone colours come from assets/status.css. */
 .badge {
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
-  text-transform: uppercase;
   white-space: nowrap;
-}
-
-.badge.returned {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge.forwarded {
-  background: #e0e7ff;
-  color: #3730a3;
 }
 
 .meta {
@@ -343,15 +335,6 @@ onMounted(fetchProposals)
   font-weight: 600;
   font-size: 12px;
   transition: background-color 0.15s ease;
-}
-
-.btn.primary {
-  background: #ffd400;
-  color: #25245b;
-}
-
-.btn.primary:hover {
-  background: #f0c800;
 }
 
 .hint {

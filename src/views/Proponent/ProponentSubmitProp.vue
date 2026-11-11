@@ -99,7 +99,7 @@
               Deadline: {{ selectedCallDeadline }}
             </span>
           </div>
-          <button type="button" class="btn-change-call" @click="$emit('goToStep', 1)">
+          <button type="button" class="btn-change-call btn-edit" @click="$emit('goToStep', 1)">
             Change Call
           </button>
         </div>
@@ -650,7 +650,7 @@
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 <span>{{ technologyMapFile ? 'Replace your technology map' : 'No image selected yet' }}</span>
-                <button type="button" class="btn-choose-image" @click.stop="chooseTechnologyMap">
+                <button type="button" class="btn-choose-image btn-view" @click.stop="chooseTechnologyMap">
                   Choose Image
                 </button>
               </div>
@@ -1003,7 +1003,7 @@
                 </svg>
                 Download Budget Template
               </button>
-              <button class="btn-outline btn-view-template" @click="showBudgetTemplate = true">
+              <button class="btn-outline btn-view" @click="showBudgetTemplate = true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
@@ -2977,24 +2977,17 @@ watch(() => props.modelValue, (isOpen) => {
   gap: 10px;
 }
 
+/* Layout only; the download colour comes from assets/actions.css. */
 .btn-download {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 8px 14px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover {
-  background: #e2e8f0;
-  color: #1e293b;
 }
 
 .close-btn {
@@ -3392,11 +3385,9 @@ watch(() => props.modelValue, (isOpen) => {
   color: #475569;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-change-call {
   flex-shrink: 0;
-  background: #fff;
-  border: 1px solid #c7d2fe;
-  color: #4f46e5;
   border-radius: 8px;
   padding: 7px 14px;
   font-size: 12px;
@@ -3404,11 +3395,6 @@ watch(() => props.modelValue, (isOpen) => {
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-change-call:hover {
-  background: #e0e7ff;
-  border-color: #4f46e5;
 }
 
 .section-header {
@@ -4170,22 +4156,15 @@ select {
   margin-left: auto;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-choose-image {
   margin-top: 4px;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #4f46e5;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-choose-image:hover {
-  background: #e0e7ff;
-  border-color: #4f46e5;
 }
 
 .btn-replace-file {
@@ -4357,40 +4336,17 @@ select {
   font-weight: 700;
 }
 
-/* The template viewer is the primary action of the section: it keeps the
-   .btn-outline shape but carries the design system's indigo accent. */
-.btn-view-template {
-  border-color: #c7d2fe;
-  background: #eef2ff;
-  color: #4f46e5;
-  font-weight: 600;
-}
-
-.btn-view-template:hover {
-  border-color: #4f46e5;
-  background: #e0e7ff;
-  color: #4338ca;
-}
-
+/* Layout only; the neutral/blue tones come from assets/actions.css. */
 .btn-outline {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  border: 1px solid #d1d5db;
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-outline:hover {
-  border-color: #4f46e5;
-  color: #4f46e5;
-  background: #f8faff;
 }
 
 /* ===== FOOTER ===== */
@@ -4439,41 +4395,30 @@ select {
   }
 }
 
+/* Layout only; the colours come from assets/actions.css. */
 .btn-secondary {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
 }
 
 .btn-primary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #4f46e5;
-  border: none;
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .btn-primary:hover {
-  background: #4338ca;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 /* ===== SCROLLBAR ===== */

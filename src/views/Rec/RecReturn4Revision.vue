@@ -36,7 +36,7 @@
 
             <div>
               <label>Status</label>
-              <span class="status">{{ proposal.status || '-' }}</span>
+              <span class="status" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) || '-' }}</span>
             </div>
           </div>
         </section>
@@ -58,7 +58,7 @@
           <p class="quick-title">Quick Templates (click to apply)</p>
 
           <div class="quick-templates">
-            <button v-for="(template, index) in quickTemplates" :key="index" type="button" class="template-btn"
+            <button v-for="(template, index) in quickTemplates" :key="index" type="button" class="template-btn btn-view"
               @click="applyTemplate(template)">
               {{ template }}
             </button>
@@ -129,7 +129,7 @@
             </li>
           </ul>
 
-          <button class="btn primary" @click="goReturnRevision">Return for Revision</button>
+          <button class="btn btn-return" @click="goReturnRevision">Return for Revision</button>
 
           <div class="info-box">
             The proponent will receive a notification with your comments and the revision deadline.
@@ -141,7 +141,7 @@
     <!-- ERROR STATE -->
     <div v-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">Go Back</button>
+      <button class="btn-secondary" @click="goBack">Go Back</button>
     </div>
 
     <!-- CONFIRMATION MODAL -->
@@ -150,8 +150,8 @@
         <h3>Return this proposal for revision?</h3>
 
         <div class="modal-actions">
-          <button class="btn cancel" @click="cancelReturn">Cancel</button>
-          <button class="btn primary" @click="confirmReturn">Confirm</button>
+          <button class="btn btn-cancel" @click="cancelReturn">Cancel</button>
+          <button class="btn btn-return" @click="confirmReturn">Confirm</button>
         </div>
       </div>
     </div>
@@ -175,6 +175,8 @@ import { useUserDataStore } from '@/stores/userData'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
 import { toSectionRemarkPayload } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -386,10 +388,9 @@ const goBack = () => {
   color: #1f2937;
 }
 
+/* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .status {
   display: inline-block;
-  background: #fef3c7;
-  color: #92400e;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -523,10 +524,8 @@ textarea:focus {
   gap: 8px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .template-btn {
-  background: #e6f0ff;
-  color: #2563eb;
-  border: none;
   padding: 6px 12px;
   border-radius: 14px;
   font-size: 12px;
@@ -534,30 +533,14 @@ textarea:focus {
   transition: background 0.2s;
 }
 
-.template-btn:hover {
-  background: #dbeafe;
-}
-
-/* BUTTONS */
+/* BUTTONS — layout only; the tones come from assets/actions.css. */
 .btn {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  border: none;
   font-weight: bold;
   cursor: pointer;
   margin-top: 10px;
-}
-
-.primary {
-  background: #ffd803;
-  color: #1f2937;
-}
-
-.cancel {
-  background: white;
-  border: 1px solid #ccc;
-  color: #1f2937;
 }
 
 /* INFO BOX */
@@ -655,21 +638,6 @@ textarea:focus {
   color: #dc2626;
   font-size: 15px;
   margin-bottom: 16px;
-}
-
-.btn-primary {
-  padding: 10px 24px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
 }
 
 /* HINT TEXT */

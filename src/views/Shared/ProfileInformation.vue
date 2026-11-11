@@ -75,8 +75,8 @@
       </div>
 
       <div class="btn-row">
-        <button class="save-btn" @click="saveChanges">Save Changes</button>
-        <button class="cancel-btn" @click="cancelChanges">Cancel</button>
+        <button class="save-btn btn-primary" @click="saveChanges">Save Changes</button>
+        <button class="cancel-btn btn-secondary" @click="cancelChanges">Cancel</button>
       </div>
     </div>
 
@@ -203,20 +203,16 @@ input {
   margin-top: 35px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .save-btn {
-  background: #f7d900;
   padding: 8px 16px;
   border-radius: 6px;
-  border: none;
   font-weight: 600;
 }
 
 .cancel-btn {
-  background: #f7d900;
-  color: #1f2937;
   padding: 8px 16px;
   border-radius: 6px;
-  border: none;
   font-weight: 600;
 }
 </style>

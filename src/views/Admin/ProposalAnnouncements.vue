@@ -25,7 +25,7 @@
     <!-- Error -->
     <div v-else-if="error" class="loading-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="loadAnnouncements">Retry</button>
+      <button class="retry-btn btn-secondary" @click="loadAnnouncements">Retry</button>
     </div>
 
     <!-- Table -->
@@ -52,11 +52,11 @@
             <span class="window-hint" :class="windowClass(announcement)">{{ windowLabel(announcement) }}</span>
           </td>
           <td class="actions-cell">
-            <button v-if="announcement.status !== 'ACTIVE'" class="activate-btn" @click="activateAnnouncementAction(announcement)">
+            <button v-if="announcement.status !== 'ACTIVE'" class="activate-btn btn-approve" @click="activateAnnouncementAction(announcement)">
               Activate
             </button>
-            <button class="edit-btn" @click="openEditModal(announcement)">Edit</button>
-            <button v-if="canDelete(announcement)" class="delete-btn" @click="deleteAnnouncementAction(announcement)">
+            <button class="edit-btn btn-edit" @click="openEditModal(announcement)">Edit</button>
+            <button v-if="canDelete(announcement)" class="delete-btn btn-reject" @click="deleteAnnouncementAction(announcement)">
               Delete
             </button>
           </td>
@@ -277,8 +277,8 @@
             {{ selectedProgramCount }} of {{ agendaPrograms.length }} programs selected · Status: {{ formStatusLabel }}
           </p>
           <div class="modal-actions">
-            <button class="cancel-btn" @click="closeModal" :disabled="saving">Cancel</button>
-            <button class="confirm-btn create-announcement-button" @click="saveAnnouncement" :disabled="saving">
+            <button class="cancel-btn btn-secondary" @click="closeModal" :disabled="saving">Cancel</button>
+            <button class="confirm-btn btn-primary create-announcement-button" @click="saveAnnouncement" :disabled="saving">
               <svg v-if="!isEditing && !saving" class="btn-icon" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path d="M12 5v14M5 12h14" stroke-linecap="round" />
@@ -315,6 +315,7 @@ import {
   toggleAllSelection,
 } from '@/utils/announcementOptions'
 import { usePriorityAgenda } from '@/composables/usePriorityAgenda'
+import { statusTone } from '@/utils/statusTone.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -449,12 +450,7 @@ function canDelete(announcement) {
 }
 
 function statusClass(announcement) {
-  return {
-    Draft: 'status-draft',
-    Scheduled: 'status-scheduled',
-    Open: 'status-active',
-    Closed: 'status-closed',
-  }[announcementStatus(announcement)] || ''
+  return statusTone(announcementStatus(announcement))
 }
 
 function windowLabel(announcement) {
@@ -659,18 +655,12 @@ async function deleteAnnouncementAction(announcement) {
   font-size: 14px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .create-btn {
   padding: 10px 18px;
-  background: #2452ff;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.create-btn:hover {
-  background: #1b44d6;
 }
 
 .banner {
@@ -705,9 +695,6 @@ async function deleteAnnouncementAction(announcement) {
 .retry-btn {
   margin-top: 12px;
   padding: 8px 20px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -760,26 +747,6 @@ td {
   display: inline-block;
 }
 
-.status-draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.status-active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-scheduled {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-closed {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
 .window-hint {
   font-size: 12px;
   font-weight: 600;
@@ -804,25 +771,15 @@ td {
 
 .activate-btn {
   padding: 6px 14px;
-  background: #16a34a;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   margin-right: 6px;
-}
-
-.activate-btn:hover {
-  background: #15803d;
 }
 
 .edit-btn {
   padding: 6px 14px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
@@ -830,23 +787,12 @@ td {
   margin-right: 6px;
 }
 
-.edit-btn:hover {
-  background: #1d4ed8;
-}
-
 .delete-btn {
   padding: 6px 14px;
-  background: #ef4444;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-}
-
-.delete-btn:hover {
-  background: #dc2626;
 }
 
 /* ===== Create / Edit Announcement modal ===== */
@@ -1275,25 +1221,6 @@ select.form-input option {
   flex: 0 0 auto;
   width: 13px;
   height: 13px;
-}
-
-.cancel-btn {
-  background: #eceaf5;
-  color: #302954;
-}
-
-.cancel-btn:hover {
-  background: #dedbf0;
-}
-
-.confirm-btn {
-  background: #ffcc00;
-  color: #302954;
-  font-weight: 700;
-}
-
-.confirm-btn:hover {
-  background: #f5c400;
 }
 
 .confirm-btn:disabled {

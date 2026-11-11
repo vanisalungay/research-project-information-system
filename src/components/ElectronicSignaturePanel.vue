@@ -12,7 +12,7 @@
     <section class="panel-block">
       <div class="block-head">
         <h3 class="block-title">Saved signature</h3>
-        <span class="state-pill" :class="hasSavedSignature ? 'is-saved' : 'is-empty'">
+        <span class="state-pill" :class="hasSavedSignature ? 'state-pill--saved' : 'state-pill--empty'">
           {{ hasSavedSignature ? 'Signature saved' : 'No signature saved yet' }}
         </span>
       </div>
@@ -36,7 +36,7 @@
     <section class="panel-block">
       <div class="block-head">
         <h3 class="block-title">{{ hasSavedSignature ? 'Replace signature' : 'New signature' }}</h3>
-        <span v-if="draftReady" class="state-pill is-draft">Unsaved — choose Save Signature</span>
+        <span v-if="draftReady" class="state-pill state-pill--draft">Unsaved — choose Save Signature</span>
       </div>
 
       <div class="method-switch">
@@ -128,7 +128,7 @@
       </div>
       <button
         type="button"
-        class="save-btn"
+        class="save-btn btn-primary"
         :disabled="!draftReady || saving"
         @click="saveSignature"
       >
@@ -559,17 +559,17 @@ onBeforeUnmount(() => {
   padding: 4px 10px;
   border-radius: 999px;
 }
-.state-pill.is-saved {
-  background: #dcfce7;
-  color: #166534;
+.state-pill--saved {
+  background: var(--status-approved-bg);
+  color: var(--status-approved-text);
 }
-.state-pill.is-empty {
-  background: #f1f5f9;
-  color: #64748b;
+.state-pill--empty {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
-.state-pill.is-draft {
-  background: #fef3c7;
-  color: #92400e;
+.state-pill--draft {
+  background: var(--status-returned-bg);
+  color: var(--status-returned-text);
 }
 
 /* Preview of the saved signature / of the unsaved draft */
@@ -710,9 +710,6 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 .save-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: #ffffff !important;
   padding: 11px 22px;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -720,18 +717,14 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.save-btn:hover:not(:disabled) {
-  background: #1d40cc;
-  border-color: #1d40cc;
-}
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 .ghost-btn {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #475569;
+  background: var(--btn-neutral-bg);
+  border: 1px solid var(--btn-neutral-border);
+  color: var(--btn-neutral-text);
   padding: 10px 18px;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -740,14 +733,14 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
 }
 .ghost-btn:hover {
-  background: #f1f5f9;
+  background: var(--btn-neutral-hover-bg);
 }
 .ghost-btn--danger {
-  color: #dc2626;
-  border-color: #fecaca;
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
 }
 .ghost-btn--danger:hover {
-  background: #fef2f2;
+  background: var(--status-rejected-bg);
 }
 
 @media (max-width: 768px) {

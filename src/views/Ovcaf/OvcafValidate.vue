@@ -21,19 +21,19 @@
       <!-- ACTION BUTTONS -->
       <div class="action-buttons">
         <!-- Approval Chain: Endorse to OC -->
-        <button v-if="proposal.status === 'FOR_OVCAF_APPROVAL'" class="btn-yellow" @click="endorseToOc" :disabled="actionLoading">
+        <button v-if="proposal.status === 'FOR_OVCAF_APPROVAL'" class="btn-yellow btn-primary" @click="endorseToOc" :disabled="actionLoading">
           {{ actionLoading ? 'Processing...' : 'Endorse to Chancellor (OC) for Final Approval' }}
         </button>
 
         <!-- Budget Processing: Approve & Endorse to RII -->
-        <button v-if="canProcessBudget" class="btn-yellow" @click="approveEndorse" :disabled="actionLoading">
+        <button v-if="canProcessBudget" class="btn-yellow btn-approve" @click="approveEndorse" :disabled="actionLoading">
           {{ actionLoading ? 'Processing...' : 'Approve & Endorse to RII' }}
         </button>
 
-        <button class="btn-yellow" @click="returnProponent" :disabled="actionLoading">
+        <button class="btn-yellow btn-return" @click="returnProponent" :disabled="actionLoading">
           {{ actionLoading ? 'Processing...' : 'Return to Proponent' }}
         </button>
-        <button class="btn-yellow reject" @click="showRejectModal = true" :disabled="actionLoading">
+        <button class="btn-yellow btn-reject" @click="showRejectModal = true" :disabled="actionLoading">
           Reject Request
         </button>
       </div>
@@ -72,7 +72,7 @@
             </div>
             <div>
               <p><strong>College/Department:</strong> {{ proposal.college || 'N/A' }}</p>
-              <p><strong>Status:</strong> <span class="status-badge">{{ proposal.status }}</span></p>
+              <p><strong>Status:</strong> <span class="status-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span></p>
               <p><strong>Date Submitted:</strong> {{ proposal.createdAt?.substring(0,10) || 'N/A' }}</p>
             </div>
           </div>
@@ -83,8 +83,8 @@
           <h4>LINE-ITEM BUDGET</h4>
           <div v-if="budgetFileName" class="budget-doc-row">
             <span class="budget-doc-name">📄 {{ budgetFileName }}</span>
-            <button class="download-btn" @click="viewBudgetDocument">VIEW</button>
-            <button class="download-btn" @click="saveBudgetDocument">DOWNLOAD</button>
+            <button class="download-btn btn-view" @click="viewBudgetDocument">VIEW</button>
+            <button class="download-btn btn-download" @click="saveBudgetDocument">DOWNLOAD</button>
           </div>
           <!-- A stored reference that yielded no printable name is a retrieval problem,
                not a missing document. -->
@@ -94,7 +94,7 @@
           <p v-else class="budget-doc-empty">No Line-Item Budget uploaded.</p>
           <p v-if="budgetDocError" class="error-text">{{ budgetDocError }}</p>
 
-          <button class="download-btn" @click="downloadProject">DOWNLOAD COMPLETE PROPOSAL</button>
+          <button class="download-btn btn-download" @click="downloadProject">DOWNLOAD COMPLETE PROPOSAL</button>
         </div>
       </div>
     </template>
@@ -110,7 +110,7 @@
         <p class="confirm-text">Please provide a reason for rejection:</p>
         <textarea v-model="rejectReason" class="reason-input" placeholder="Enter rejection reason..."></textarea>
         <div class="confirm-actions">
-          <button class="btn-confirm" @click="confirmReject" :disabled="!rejectReason.trim()">CONFIRM</button>
+          <button class="btn-confirm btn-reject" @click="confirmReject" :disabled="!rejectReason.trim()">CONFIRM</button>
           <button class="btn-cancel" @click="showRejectModal = false">CANCEL</button>
         </div>
       </div>
@@ -122,7 +122,7 @@
         <p class="confirm-text" v-if="approvalType === 'oc'">Are you sure you want to endorse this proposal to the Chancellor's Office for final approval?</p>
         <p class="confirm-text" v-else>Are you sure you want to approve this fund request and endorse it to RII for release?</p>
         <div class="confirm-actions">
-          <button class="btn-confirm" @click="confirmApprove">CONFIRM</button>
+          <button class="btn-confirm btn-approve" @click="confirmApprove">CONFIRM</button>
           <button class="btn-cancel" @click="showApproveConfirm = false">CANCEL</button>
         </div>
       </div>
@@ -149,6 +149,8 @@ import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const route = useRoute()
 
@@ -379,9 +381,8 @@ const downloadProject = () => {
   padding: 20px 40px;
   overflow-y: auto;
 }
+/* Layout only; the action colour comes from assets/actions.css. */
 .btn-yellow {
-  background: #ffd400;
-  border: none;
   padding: 15px 25px;
   border-radius: 10px;
   font-weight: bold;
@@ -391,9 +392,6 @@ const downloadProject = () => {
 .btn-yellow:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-.reject {
-  background: #ffd400;
 }
 .proposal-body h4 {
   margin-top: 35px;
@@ -423,11 +421,10 @@ const downloadProject = () => {
   border: 1px solid black;
   padding: 8px;
 }
+/* Layout only; .btn-view / .btn-download supply the colours. */
 .download-btn {
   margin-left: auto;
   display: block;
-  background: #ffd800;
-  border: none;
   padding: 12px 20px;
   border-radius: 10px;
   cursor: pointer;
@@ -483,19 +480,14 @@ const downloadProject = () => {
   justify-content: center;
   gap: 60px;
 }
+/* Layout only; .btn-reject / .btn-approve / .btn-cancel supply the colours. */
 .btn-confirm {
-  background: #ffd700;
-  color: black;
-  border: none;
   padding: 12px 35px;
   border-radius: 15px;
   font-weight: bold;
   cursor: pointer;
 }
 .btn-cancel {
-  background: #ff0000;
-  color: white;
-  border: none;
   padding: 12px 35px;
   border-radius: 15px;
   font-weight: bold;
@@ -519,11 +511,10 @@ const downloadProject = () => {
   color: #000;
 }
 .error-text { color: #dc2626; }
+/* Geometry only; the tone comes from assets/status.css. */
 .status-badge {
-  background: #ffd700;
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
-  color: #000;
 }
 </style>

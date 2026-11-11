@@ -221,8 +221,15 @@ class ProposalFieldRemarkPostgresTest {
         proposalService.saveProposal(request, proposal.getId());
 
         Proposal resubmitted = proposalRepository.findById(proposal.getId()).orElseThrow();
-        assertEquals("SUBMITTED", resubmitted.getStatus());
+        assertEquals("FOR REVIEW", resubmitted.getStatus());
         assertEquals(1, resubmitted.getRevisionNumber());
+
+        // The revision snapshot records the same stored workflow status.
+        String versionStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM proposal_versions WHERE proposal_id = ? "
+                        + "ORDER BY version_number DESC LIMIT 1",
+                String.class, proposal.getId());
+        assertEquals("FOR REVIEW", versionStatus);
 
         // The remark is retained (never deleted) but the round is closed.
         ProposalSectionRemarksResponse afterSubmit =

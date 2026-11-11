@@ -19,7 +19,7 @@
     <div v-if="successMessage" class="success-banner">{{ successMessage }}</div>
     <div v-if="error" class="error-banner">
       <span>{{ error }}</span>
-      <button type="button" class="retry-btn" @click="loadAssignments">Retry</button>
+      <button type="button" class="retry-btn btn-secondary" @click="loadAssignments">Retry</button>
     </div>
 
     <!-- Status filter: active appointments by default, with the history one click away. -->
@@ -74,8 +74,8 @@
             <td>{{ assignment.assignedCollege || '—' }}</td>
             <td>{{ assignment.designation || '—' }}</td>
             <td>
-              <span class="status-badge" :class="statusClass(assignment.status)">
-                {{ assignment.status }}
+              <span class="status-badge" :class="statusTone(assignment.status)">
+                {{ statusLabel(assignment.status) }}
               </span>
             </td>
             <td>{{ formatDate(assignment.dateAssigned) }}</td>
@@ -84,12 +84,12 @@
               <button
                 v-if="assignment.status === 'ACTIVE'"
                 type="button"
-                class="action-btn"
+                class="action-btn btn-edit"
                 @click="openManage(assignment)"
               >
                 Manage Dean Role
               </button>
-              <button type="button" class="action-btn secondary" @click="openDetails(assignment)">
+              <button type="button" class="action-btn btn-view" @click="openDetails(assignment)">
                 View Dean Details
               </button>
             </td>
@@ -123,15 +123,15 @@
           <p><strong>Designation:</strong> {{ selected.designation || '—' }}</p>
           <p>
             <strong>Status:</strong>
-            <span class="status-badge" :class="statusClass(selected.status)">
-              {{ selected.status || 'APPROVED' }}
+            <span class="status-badge" :class="statusTone(selected.status)">
+              {{ statusLabel(selected.status) || 'Approved' }}
             </span>
           </p>
           <p><strong>Role:</strong> Dean</p>
         </div>
 
         <div class="buttons">
-          <button type="button" class="cancel-btn" @click="closeDetails">Close</button>
+          <button type="button" class="cancel-btn btn-secondary" @click="closeDetails">Close</button>
         </div>
       </div>
     </div>
@@ -161,6 +161,8 @@ import { onMounted, ref } from 'vue'
 import api from '@/utils/api'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 const assignments = ref([])
 const loading = ref(true)
@@ -248,9 +250,6 @@ async function onReplaced() {
   await loadAssignments()
 }
 
-const statusClass = (status) =>
-  String(status || '').toUpperCase() === 'REVOKED' ? 'revoked' : 'approved'
-
 function formatDate(value) {
   if (!value) return '—'
   const date = new Date(value)
@@ -296,38 +295,22 @@ onMounted(loadAssignments)
   margin-left: auto;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .create-btn {
   padding: 10px 18px;
-  background: #2452ff;
-  color: #ffffff;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
-}
-
-.create-btn:hover {
-  background: #1b44d6;
 }
 
 .retry-btn,
 .cancel-btn {
   padding: 9px 16px;
-  background: #ffffff;
-  color: #2452ff;
-  border: 1px solid #2452ff;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
-}
-
-
-
-.cancel-btn {
-  color: #374151;
-  border-color: #d1d5db;
 }
 
 .success-banner,
@@ -413,27 +396,11 @@ tbody tr:hover {
 
 .action-btn {
   padding: 6px 14px;
-  background: #ffffff;
-  color: #2452ff;
-  border: 1px solid #2452ff;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   margin-right: 8px;
-}
-
-.action-btn:hover {
-  background: #eff6ff;
-}
-
-.action-btn.secondary {
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-.action-btn.secondary:hover {
-  background: #f9fafb;
 }
 
 .status-badge {
@@ -442,16 +409,6 @@ tbody tr:hover {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-}
-
-.status-badge.approved {
-  background: #e7f7ed;
-  color: #14763d;
-}
-
-.status-badge.inactive {
-  background: #f3f4f6;
-  color: #6b7280;
 }
 
 .modal-overlay {
@@ -524,10 +481,5 @@ tbody tr:hover {
   background: #2452ff;
   border-color: #2452ff;
   color: #ffffff;
-}
-
-.status-badge.revoked {
-  background: #fef3c7;
-  color: #92400e;
 }
 </style>

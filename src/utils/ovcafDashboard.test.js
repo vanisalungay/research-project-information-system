@@ -51,9 +51,9 @@ test('the three statistics are bound to real data, never typed in', () => {
   }
 
   for (const [label, binding] of [
-    ['PROPOSALS FOR REVIEW', '{{ stats.forReview }}'],
-    ['ENDORSED TO OC', '{{ stats.endorsedToOc }}'],
-    ['APPROVED / RELEASED', '{{ stats.completed }}'],
+    ['Proposals for Review', '{{ stats.forReview }}'],
+    ['Endorsed to OC', '{{ stats.endorsedToOc }}'],
+    ['Approved / Released', '{{ stats.completed }}'],
   ]) {
     assert.ok(DASHBOARD.includes(label), `the "${label}" card label must be kept`)
     assert.ok(DASHBOARD.includes(binding), `the "${label}" card must use ${binding}`)
@@ -70,11 +70,11 @@ test('the header wording and the endpoint are unchanged', () => {
 })
 
 test('the status filters behind every count are unchanged', () => {
+  // These are the statuses the page's own counts and lists filter on. The pill colours are
+  // no longer chosen here, so they are not evidence that the filters exist.
   for (const status of [
     'FOR_OVCAF_APPROVAL',
-    'REC_APPROVED',
     'FOR_OC_APPROVAL',
-    'OVC_APPROVED',
     'APPROVED',
     'READY_FOR_RELEASE',
     'RELEASED',
@@ -90,7 +90,7 @@ test('the tables keep their columns, cells and actions', () => {
     assert.ok(DASHBOARD.includes(`>${header}</th>`), `the "${header}" column must be kept`)
   }
   assert.ok(DASHBOARD.includes('p.projectLeader'), 'the column is filled from the form value')
-  for (const binding of ['{{ proposal.title }}', '{{ proposal.proponent }}', '{{ proposal.status }}']) {
+  for (const binding of ['{{ proposal.title }}', '{{ proposal.proponent }}', '{{ proposalStatusLabel(proposal.status) }}']) {
     assert.ok(DASHBOARD.includes(binding), `the cell ${binding} must be kept`)
   }
   assert.match(DASHBOARD, /statusTone\(proposal\.status\)/, 'the status pill tone must be used')

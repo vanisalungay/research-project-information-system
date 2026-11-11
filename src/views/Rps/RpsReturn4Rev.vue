@@ -70,7 +70,7 @@
             <div class="upload-icon">⬆</div>
             <p>Drag and drop files or click to browse</p>
             <small>PDF, DOC, DOCX (Max 10MB)</small>
-            <button>Select Files</button>
+            <button class="btn-outline">Select Files</button>
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@
             All necessary documentation is attached
           </label>
 
-          <button class="primary" :disabled="!canSubmit" @click="showConfirm = true">
+          <button class="primary btn-return" :disabled="!canSubmit" @click="showConfirm = true">
             Return for Revision
           </button>
 
@@ -122,8 +122,8 @@
         </p>
 
         <div class="modal-actions">
-          <button class="secondary" @click="showConfirm = false">Cancel</button>
-          <button class="primary" @click="confirm">Confirm</button>
+          <button class="secondary btn-cancel" @click="showConfirm = false">Cancel</button>
+          <button class="primary btn-return" @click="confirm">Confirm</button>
         </div>
       </div>
     </div>
@@ -198,8 +198,7 @@ export default {
 </script>
 
 <style scoped>
-.page,
-.page * {
+.page {
   color: #1f2937;
 }
 
@@ -334,10 +333,8 @@ textarea {
   font-size: 14px;
 }
 
-/* Buttons */
+/* Buttons — layout only; the action colours are global (assets/actions.css). */
 .primary {
-  background: #dc4c3f;
-  color: white;
   border: none;
   border-radius: 8px;
   width: 100%;

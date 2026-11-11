@@ -34,6 +34,7 @@ test('the statuses the workflow pages and the backend use are mapped', () => {
   // Stage keys of the Proposal Monitoring timeline and statuses the backend services write.
   const pipeline = [
     'DRAFT',
+    'FOR REVIEW',
     'SUBMITTED',
     'ENDORSED',
     'UNDER_REVIEW',
@@ -54,6 +55,7 @@ test('the statuses the workflow pages and the backend use are mapped', () => {
   assert.equal(isEveryStatusBucketed(pipeline), true)
 
   assert.equal(proposalBucketOf('DRAFT'), 'draft')
+  assert.equal(proposalBucketOf('FOR REVIEW'), 'submitted')
   assert.equal(proposalBucketOf('SUBMITTED'), 'submitted')
   assert.equal(proposalBucketOf('ENDORSED'), 'underReview')
   assert.equal(proposalBucketOf('FOR_OVCAF_APPROVAL'), 'underReview')
@@ -61,6 +63,16 @@ test('the statuses the workflow pages and the backend use are mapped', () => {
   assert.equal(proposalBucketOf('COMPLETED'), 'approved')
   assert.equal(proposalBucketOf('RPS_RETURNED'), 'returned')
   assert.equal(proposalBucketOf('REJECTED'), 'returned')
+})
+
+test('both submission spellings count in the For Review bucket', () => {
+  assert.deepEqual(
+    proposalSummaryCounts([{ status: 'FOR REVIEW' }, { status: 'SUBMITTED' }]),
+    { total: 2, draft: 0, submitted: 2, underReview: 0, approved: 0, returned: 0 },
+  )
+
+  const submittedCard = PROPOSAL_SUMMARY_BUCKETS.find((bucket) => bucket.id === 'submitted')
+  assert.equal(submittedCard.label, 'For Review')
 })
 
 test('a status is matched case-insensitively and an unknown one is never guessed', () => {

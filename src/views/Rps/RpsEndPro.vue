@@ -7,7 +7,7 @@
           <h2>Review Summary</h2>
         </div>
 
-        <button class="back-btn" @click="goBack">
+        <button class="back-btn btn-secondary" @click="goBack">
           ← Back
         </button>
       </div>
@@ -33,7 +33,7 @@
         </div>
 
         <div class="section-block">
-          <button class="btn return" @click="$router.push('rps-return4rev')">
+          <button class="btn return btn-return" @click="$router.push('rps-return4rev')">
             ⟳ Return for Revision
           </button>
 
@@ -209,14 +209,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('technology-roadmap.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('technology-roadmap.pdf')"
               >
                 DOWNLOAD
@@ -284,14 +284,14 @@
 
             <div class="attachment-buttons">
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment('gad-score.pdf')"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment('gad-score.pdf')"
               >
                 DOWNLOAD
@@ -412,14 +412,14 @@
 
           <div class="attachment-buttons">
             <button
-              class="view-btn"
+              class="view-btn btn-view"
               @click="viewAttachment('Project-Line-Item-Budget.pdf')"
             >
               👁 View
             </button>
 
             <button
-              class="download-btn"
+              class="download-btn btn-download"
               @click="downloadAttachment('Project-Line-Item-Budget.pdf')"
             >
               DOWNLOAD
@@ -484,14 +484,14 @@
             <div class="attachment-buttons">
 
               <button
-                class="view-btn"
+                class="view-btn btn-view"
                 @click="viewAttachment(attachment.filePath)"
               >
                 👁 View
               </button>
 
               <button
-                class="download-btn"
+                class="download-btn btn-download"
                 @click="downloadAttachment(attachment.filePath)"
               >
                 DOWNLOAD
@@ -659,11 +659,11 @@
           </div>
           <hr class="review-divider">
           <div class="review-actions">
-            <button class="edit-review-btn" @click="editReview">
+            <button class="edit-review-btn btn-edit" @click="editReview">
               Edit Review
             </button>
 
-            <button class="done-btn" @click="backToEndorsed">
+            <button class="done-btn btn-primary" @click="backToEndorsed">
               Done
             </button>
           </div>
@@ -909,8 +909,6 @@ export default {
 }
 
 .back-btn{
-  background:#3b82f6;
-  color:#fff;
   border:none;
   padding:10px 18px;
   border-radius:8px;
@@ -1027,22 +1025,6 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
   font-weight: 400;
   line-height: 1.4;
   flex: 1;
-}
-
-.begin-btn {
-  padding: 11px;
-  border: none;
-  border-radius: 6px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.begin-btn:hover {
-  background: #1d4ed8;
 }
 
 .review-note {
@@ -1165,50 +1147,19 @@ font-size:14px;
 color:#374151;
 }
 
-.save-btn,
-.forward-btn,
-.return-btn{
-padding:11px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-weight:600;
-}
-
-.save-btn{
-background:#2563eb;
-color:white;
-}
-
-.forward-btn{
-background:#16a34a;
-color:white;
-}
-
-.return-btn{
-background:#dc2626;
-color:white;
-}
-
 .header-actions{
 display:flex;
 align-items:center;
 gap:10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .download-btn{
-background:#16a34a;
-color:white;
-border:none;
 padding:10px 18px;
 border-radius:6px;
 cursor:pointer;
 font-weight:600;
 transition:.2s;
-}
-
-.download-btn:hover{
-background:#15803d;
 }
 
 /* ===========================
@@ -1253,24 +1204,6 @@ ATTACHMENTS
   font-size: 13px;
   font-weight: 600;
   transition: .2s;
-}
-
-.attachment-actions button:first-child {
-  background: #2563eb;
-  color: white;
-}
-
-.attachment-actions button:first-child:hover {
-  background: #1d4ed8;
-}
-
-.attachment-actions button:last-child {
-  background: #16a34a;
-  color: white;
-}
-
-.attachment-actions button:last-child:hover {
-  background: #15803d;
 }
 
 /* ===========================
@@ -1328,34 +1261,21 @@ ATTACHMENT CARDS
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .view-btn {
-  background: #2563eb;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: .2s;
-}
-
-.view-btn:hover {
-  background: #1d4ed8;
 }
 
 .download-btn {
-  background: #16a34a;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: .2s;
-}
-
-.download-btn:hover {
-  background: #15803d;
 }
 
 @media (max-width: 768px) {
@@ -1534,34 +1454,6 @@ gap:10px;
 margin-top:18px;
 }
 
-.save-btn{
-background:#2563eb;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.save-btn:hover{
-background:#1d4ed8;
-}
-
-.submit-btn{
-background:#16a34a;
-color:#fff;
-border:none;
-padding:12px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.submit-btn:hover{
-background:#15803d;
-}
-
 .recommendation-box {
   display: flex;
   flex-direction: column;
@@ -1692,15 +1584,11 @@ background:#15803d;
   gap:8px;
   width:100%;
   padding:12px 18px;
-  border:none;
   border-radius:10px;
-  background:#2563eb;
-  color:#fff;
   font-size:14px;
   font-weight:600;
   cursor:pointer;
   transition:.25s ease;
-  box-shadow:0 3px 10px rgba(37,99,235,.25);
 }
 
 .review-actions{
@@ -1721,21 +1609,5 @@ background:#15803d;
   transition:.2s;
 }
 
-.edit-review-btn{
-  background:#f59e0b;
-  color:#fff;
-}
-
-.edit-review-btn:hover{
-  background:#d97706;
-}
-
-.done-btn{
-  background:#16a34a;
-  color:#fff;
-}
-
-.done-btn:hover{
-  background:#15803d;
-}
+/* The action colours come from assets/actions.css (.btn-edit and .btn-primary). */
 </style>

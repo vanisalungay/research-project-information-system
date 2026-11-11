@@ -40,6 +40,16 @@
   .btn-secondary,
   .btn-ghost,
   .btn-outline,
+  .btn-approve,
+  .btn-reject,
+  .btn-return,
+  .btn-cancel,
+  .btn-edit,
+  .btn-submit,
+  .btn-success,
+  .btn-warning,
+  .btn-danger,
+  .btn-error,
   .btn-download,
   .btn-print,
   .download-btn,
@@ -50,7 +60,8 @@
   .btn-delete,
   .btn-new,
   .btn-action,
-  .btn-icon {
+  .btn-icon,
+  .end-btn {
     display: none !important;
   }
 

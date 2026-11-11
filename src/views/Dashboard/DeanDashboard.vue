@@ -109,7 +109,7 @@
                     </span>
                   </td>
                   <td class="text-right">
-                    <router-link class="end-btn is-primary row-btn" :to="`/dean-requests/${request.id}`">
+                    <router-link class="end-btn is-view row-btn" :to="`/dean-requests/${request.id}`">
                       Review
                     </router-link>
                   </td>
@@ -155,7 +155,7 @@
                     </span>
                   </td>
                   <td class="text-right">
-                    <router-link class="end-btn row-btn" :to="`/dean-requests/${request.id}`">
+                    <router-link class="end-btn is-view row-btn" :to="`/dean-requests/${request.id}`">
                       View
                     </router-link>
                   </td>

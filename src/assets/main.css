@@ -1,5 +1,7 @@
 @import './css/base.css';
 @import './css/fonts.css';
+@import './status.css';
+@import './actions.css';
 @import './print.css';
 
 html,
@@ -136,53 +138,23 @@ button {
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-/* Primary button — main actions (Sign In, Submit, Review) */
+/* Primary button — layout only; the colours come from assets/actions.css. */
 button.btn-primary,
 .login-btn,
 .submit-btn,
 .create-btn {
-  background: var(--color-primary);
-  color: #ffffff;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--fs-sm);
   font-weight: 600;
 }
 
-button.btn-primary:hover,
-.login-btn:hover,
-.submit-btn:hover,
-.create-btn:hover {
-  background: var(--color-primary-hover);
-}
-
-/* Secondary button — alternative actions */
+/* Secondary button — layout only; the colours come from assets/actions.css. */
 button.btn-secondary {
-  background: var(--color-background-soft);
-  color: var(--color-text);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--fs-sm);
   font-weight: 600;
-}
-
-button.btn-secondary:hover {
-  background: var(--color-background-mute);
-  border-color: var(--color-border-hover);
-}
-
-/* Ghost button — text-only actions (View All, links) */
-button.btn-ghost {
-  background: transparent;
-  color: var(--color-primary);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-}
-
-button.btn-ghost:hover {
-  text-decoration: underline;
 }
 
 /* Focus ring for accessibility */

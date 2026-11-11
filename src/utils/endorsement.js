@@ -22,6 +22,8 @@ import {
   isCreatingProgramTitle,
 } from './programTitleOptions.js'
 import { formatTimestamp } from './timestamps.js'
+import { statusTone } from './statusTone.js'
+import { statusLabel } from './statusLabel.js'
 
 /** Base path of the endorsement endpoints. */
 export const ENDORSEMENTS_ENDPOINT = '/api/endorsements'
@@ -69,7 +71,7 @@ export function normalizeEndorsementStatus(status) {
 /** Label of a request's state. */
 export function endorsementStatusLabel(status) {
   const normalized = normalizeEndorsementStatus(status)
-  return ENDORSEMENT_STATUS_LABELS[normalized] || normalized || 'Unknown'
+  return ENDORSEMENT_STATUS_LABELS[normalized] || statusLabel(normalized) || 'Unknown'
 }
 
 /** Explanation of a request's state. */
@@ -77,11 +79,13 @@ export function endorsementStatusDescription(status) {
   return ENDORSEMENT_STATUS_DESCRIPTIONS[normalizeEndorsementStatus(status)] || ''
 }
 
-/** Tone class of a state, matching the status pills used across RPIS. */
+/** Tone class of a state, from the one shared mapping (utils/statusTone.js). */
 export function endorsementStatusTone(status) {
   const normalized = normalizeEndorsementStatus(status)
-  if (normalized === ENDORSEMENT_STATUS.APPROVED) return 'is-approved'
-  if (normalized === ENDORSEMENT_STATUS.REJECTED) return 'is-rejected'
+  // The workflow has exactly three states; anything else is still awaiting the Dean, which
+  // is how this helper has always treated it.
+  const tone = statusTone(normalized)
+  if (tone === 'is-approved' || tone === 'is-rejected') return tone
   return 'is-pending'
 }
 

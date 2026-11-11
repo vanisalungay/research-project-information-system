@@ -11,12 +11,23 @@
  * A proposal counts in exactly one bucket (Total counts everything), so the buckets can
  * be added up and compared with the records the backend returned.
  */
+import {
+  FOR_REVIEW,
+  LEGACY_SUBMITTED,
+  normalizeProposalStatus,
+} from './proposalStatus.js'
+
+export { normalizeProposalStatus }
 
 /** Statuses of a proposal that has not been submitted yet. */
 const DRAFT_STATUSES = ['DRAFT']
 
-/** Statuses of a proposal that has been submitted and is waiting for the first review. */
-const SUBMITTED_STATUSES = ['SUBMITTED']
+/**
+ * Statuses of a proposal that has been submitted and is waiting for the first review.
+ * Both spellings are the same state: FOR REVIEW is what new submissions store, and
+ * SUBMITTED is the legacy spelling still present on older rows.
+ */
+const SUBMITTED_STATUSES = [FOR_REVIEW, LEGACY_SUBMITTED]
 
 /**
  * Statuses of a proposal that is inside the review pipeline: endorsed by RPS, being
@@ -69,8 +80,8 @@ const RETURNED_STATUSES = [
 export const PROPOSAL_SUMMARY_BUCKETS = [
   { id: 'total', label: 'Total proposals', accent: 'indigo', icon: 'stack' },
   { id: 'draft', label: 'Draft', accent: 'blue', icon: 'draft' },
-  { id: 'submitted', label: 'Submitted', accent: 'violet', icon: 'sent' },
-  { id: 'underReview', label: 'Under review', accent: 'amber', icon: 'review' },
+  { id: 'submitted', label: 'For Review', accent: 'violet', icon: 'sent' },
+  { id: 'underReview', label: 'Under Review', accent: 'amber', icon: 'review' },
   { id: 'approved', label: 'Approved', accent: 'green', icon: 'approved' },
   { id: 'returned', label: 'Returned / Rejected', accent: 'red', icon: 'returned' },
 ]
@@ -82,13 +93,6 @@ const BUCKET_STATUSES = {
   underReview: UNDER_REVIEW_STATUSES,
   approved: APPROVED_STATUSES,
   returned: RETURNED_STATUSES,
-}
-
-/** The stored status of a proposal, normalized for comparison ('' when unusable). */
-export function normalizeProposalStatus(status) {
-  return String(status ?? '')
-    .trim()
-    .toUpperCase()
 }
 
 /**

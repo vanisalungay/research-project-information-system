@@ -102,12 +102,12 @@
             <td class="nowrap">{{ entry.module }}</td>
             <td class="details-cell">{{ entry.details }}</td>
             <td>
-              <span class="status-badge" :class="statusClass(entry.status)">
+              <span class="status-badge" :class="statusTone(entry.status)">
                 {{ formatStatus(entry.status) }}
               </span>
             </td>
             <td class="actions-cell">
-              <button type="button" class="view-btn" @click="openDetails(entry)">
+              <button type="button" class="view-btn btn-view" @click="openDetails(entry)">
                 View Details
               </button>
             </td>
@@ -158,7 +158,7 @@
 
             <dt>Status</dt>
             <dd>
-              <span class="status-badge" :class="statusClass(selected.status)">
+              <span class="status-badge" :class="statusTone(selected.status)">
                 {{ formatStatus(selected.status) }}
               </span>
             </dd>
@@ -193,6 +193,8 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 const entries = ref([])
 const modules = ref([])
@@ -323,13 +325,7 @@ const formatDateTime = (value) => {
   })
 }
 
-const formatStatus = (status) => {
-  const value = String(status || 'SUCCESS').toUpperCase()
-  return value === 'FAILED' ? 'Failed' : 'Success'
-}
-
-const statusClass = (status) =>
-  String(status || 'SUCCESS').toUpperCase() === 'FAILED' ? 'failed' : 'success'
+const formatStatus = (status) => statusLabel(status) || 'Success'
 
 onMounted(() => {
   loadModules()
@@ -423,8 +419,7 @@ onMounted(() => {
 
 .clear-btn,
 .retry-btn,
-.page-btn,
-.view-btn {
+.page-btn {
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background: #fff;
@@ -434,10 +429,15 @@ onMounted(() => {
   cursor: pointer;
 }
 
+/* The View action colour comes from the shared action system (assets/actions.css). */
+.view-btn {
+  padding: 9px 14px;
+  font-size: 14px;
+}
+
 .clear-btn:hover,
 .retry-btn:hover,
-.page-btn:hover:not(:disabled),
-.view-btn:hover {
+.page-btn:hover:not(:disabled) {
   border-color: #2452ff;
   color: #2452ff;
 }
@@ -507,16 +507,6 @@ tbody tr:hover {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-}
-
-.status-badge.success {
-  background: #e7f7ed;
-  color: #14763d;
-}
-
-.status-badge.failed {
-  background: #fdecec;
-  color: #b42318;
 }
 
 .loading-state,

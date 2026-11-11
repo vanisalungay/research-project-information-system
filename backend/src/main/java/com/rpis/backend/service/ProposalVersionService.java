@@ -7,6 +7,7 @@ import com.rpis.backend.model.ProposalVersion;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalVersionRepository;
+import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +41,8 @@ public class ProposalVersionService {
     }
 
     public boolean isSubmissionStatus(String status) {
-        return "SUBMITTED".equalsIgnoreCase(status);
+        // A submission is stored as FOR REVIEW; legacy rows carry the SUBMITTED spelling.
+        return ProposalStatus.isForReview(status);
     }
 
     @Transactional(readOnly = true)
@@ -113,7 +115,7 @@ public class ProposalVersionService {
         version.setProposal(proposal);
         version.setVersionNumber(versionNumber);
         version.setDocumentId(proposal.getDocumentId());
-        version.setStatus("SUBMITTED");
+        version.setStatus(ProposalStatus.LEGACY_SUBMITTED);
         version.setSubmittedBy(proposal.getProponent());
         version.setSubmittedByName(submitterName(proposal));
         version.setSubmissionDate(proposal.getCreatedAt() != null ? proposal.getCreatedAt() : LocalDateTime.now());

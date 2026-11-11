@@ -9,7 +9,7 @@
     <!-- TITLE + DOWNLOAD BUTTON -->
     <div class="top-row">
       <h2 class="review-title">Proposal Info</h2>
-      <button class="btn-download" @click="goToDetailed">VIEW</button>
+      <button class="btn-view" @click="goToDetailed">VIEW</button>
     </div>
 
     <!-- PROPOSAL INFO -->
@@ -36,7 +36,7 @@
 
       <div>
         <label>Status</label>
-        <p>{{ proposal.status || '-' }}</p>
+        <p>{{ proposalStatusLabel(proposal.status) || '-' }}</p>
       </div>
 
       <div>
@@ -290,7 +290,7 @@
 
     <div class="decision-buttons">
       <button class="btn-approve" @click="openApproveModal">Approve Proposal</button>
-      <button class="btn-revision" @click="goToReturn">Return for Revision</button>
+      <button class="btn-return" @click="goToReturn">Return for Revision</button>
       <button class="btn-reject" @click="goToReject">Reject Proposal</button>
     </div>
 
@@ -302,7 +302,7 @@
 
         <div class="modal-actions">
           <button class="btn-cancel" @click="closeApproveModal">Cancel</button>
-          <button class="btn-confirm" @click="confirmApproval">Confirm</button>
+          <button class="btn-confirm btn-approve" @click="confirmApproval">Confirm</button>
         </div>
       </div>
     </div>
@@ -314,7 +314,7 @@
         <p>The proposal has been approved successfully.</p>
 
         <div class="modal-actions">
-          <button class="btn-confirm" @click="closeSuccessMessage">Okay</button>
+          <button class="btn-primary" @click="closeSuccessMessage">Okay</button>
         </div>
       </div>
     </div>
@@ -330,6 +330,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -496,14 +497,7 @@ const closeSuccessMessage = () => {
   margin: 0;
 }
 
-.btn-download {
-  background: #ffcc00;
-  border: none;
-  padding: 10px 16px;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-}
+/* Step 1 header: the VIEW button keeps layout only; .btn-view supplies the colour. */
 
 /* Info Grid */
 .info-grid {
@@ -604,32 +598,15 @@ const closeSuccessMessage = () => {
 }
 
 /* Approve */
+/* Layout only; the tones come from assets/actions.css. */
 .btn-approve {
-  background: #4caf50;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
 }
 
-/* Return for Revision */
-.btn-revision {
-  background: #ffcc00;
-  color: #333;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Reject */
 .btn-reject {
-  background: #f44336;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 6px;
   font-weight: 600;
@@ -663,21 +640,16 @@ const closeSuccessMessage = () => {
   gap: 10px;
 }
 
+/* Layout only; .btn-cancel / .btn-approve supply the colours. */
 .btn-cancel {
-  background: #ccc;
-  color: #1f2937;
   padding: 8px 16px;
   border-radius: 6px;
-  border: none;
   cursor: pointer;
 }
 
 .btn-confirm {
-  background: #4caf50;
-  color: white;
   padding: 8px 16px;
   border-radius: 6px;
-  border: none;
   cursor: pointer;
 }
 </style>

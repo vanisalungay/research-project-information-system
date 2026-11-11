@@ -454,9 +454,9 @@ const collectionState = computed(() => {
 }
 
 .btn-download-sm {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
+  background: var(--btn-download-bg);
+  border: 1px solid var(--btn-download-border);
+  color: var(--btn-download-text);
   border-radius: 5px;
   font-family: inherit;
   font-size: 11px;
@@ -670,7 +670,7 @@ const collectionState = computed(() => {
 }
 
 .btn-download-sm:hover {
-  background: #e0e7ff;
+  background: var(--btn-download-hover-bg);
 }
 
 .pf-empty {

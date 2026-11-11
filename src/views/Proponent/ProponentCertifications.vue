@@ -11,7 +11,7 @@
     <div v-else-if="error" class="end-card is-error">
       <p>{{ error }}</p>
       <div class="end-actions">
-        <button class="end-btn" @click="load">Retry</button>
+        <button class="end-btn is-secondary" @click="load">Retry</button>
       </div>
     </div>
 
@@ -65,7 +65,7 @@
               <td>{{ formatEndorsementDate(item.endorsementDate) || '—' }}</td>
               <td>{{ item.issuingDeanName || '—' }}</td>
               <td>
-                <span class="end-badge is-approved">{{ item.status }}</span>
+                <span class="end-badge" :class="endorsementStatusTone(item.status)">{{ endorsementStatusLabel(item.status) }}</span>
               </td>
               <td>
                 <template v-if="item.documentAvailable">
@@ -87,6 +87,8 @@ import { onMounted, ref } from 'vue'
 import '@/assets/endorsement.css'
 import {
   documentTypeLabel,
+  endorsementStatusLabel,
+  endorsementStatusTone,
   fetchCertificationDocument,
   fetchCertifications,
   formatEndorsementDate,

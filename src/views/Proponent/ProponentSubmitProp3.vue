@@ -126,9 +126,9 @@
                   <span class="file-name">Submitted By Signature</span>
                   <span class="file-status">{{ submittedSignatureAttached ? '✓ Attached' : '— Not attached' }}</span>
                   <span v-if="submittedSignaturePath" class="file-actions">
-                    <button type="button" class="btn-view-file"
+                    <button type="button" class="btn-view-file btn-view"
                       @click="previewUploadedFile(submittedSignaturePath)">View</button>
-                    <button type="button" class="btn-view-file"
+                    <button type="button" class="btn-view-file btn-download"
                       @click="downloadUploadedFile(submittedSignaturePath)">Download</button>
                   </span>
                 </div>
@@ -136,9 +136,9 @@
                   <span class="file-name">Endorsement Document</span>
                   <span class="file-status">{{ endorsementDocumentAttached ? '✓ Attached' : '— Not attached' }}</span>
                   <span v-if="endorsementDocumentPath" class="file-actions">
-                    <button type="button" class="btn-view-file"
+                    <button type="button" class="btn-view-file btn-view"
                       @click="previewUploadedFile(endorsementDocumentPath)">View</button>
-                    <button type="button" class="btn-view-file"
+                    <button type="button" class="btn-view-file btn-download"
                       @click="downloadUploadedFile(endorsementDocumentPath)">Download</button>
                   </span>
                 </div>
@@ -1330,11 +1330,11 @@ async function linkEndorsementIfNeeded(proposalId) {
 
 .file-status {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--status-neutral-text) !important;
 }
 
 .file-row.attached .file-status {
-  color: #10b981;
+  color: var(--status-approved-text) !important;
   font-weight: 600;
 }
 
@@ -1464,23 +1464,17 @@ async function linkEndorsementIfNeeded(proposalId) {
   gap: 10px;
 }
 
+/* Layout only; the colours come from assets/actions.css. */
 .btn-secondary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
 }
 
 .btn-secondary:disabled {
@@ -1492,21 +1486,12 @@ async function linkEndorsementIfNeeded(proposalId) {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  border: 1px solid #d1d5db;
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-outline:hover {
-  border-color: #4f46e5;
-  color: #4f46e5;
-  background: #f8faff;
 }
 
 .btn-outline:disabled {
@@ -1518,21 +1503,16 @@ async function linkEndorsementIfNeeded(proposalId) {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #4f46e5;
-  border: none;
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .btn-primary:hover {
-  background: #4338ca;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .btn-primary:disabled {

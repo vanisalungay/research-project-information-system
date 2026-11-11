@@ -117,7 +117,7 @@ test('the dashboard keeps every route it links to', () => {
   }
 })
 
-test('the proposal table keeps its columns, cells and raw status text', () => {
+test('the proposal table keeps its columns, cells and status text', () => {
   for (const header of ['Proposal ID', 'Title', 'Proponent', 'Submitted', 'Status', 'Actions']) {
     assert.ok(
       DASHBOARD.includes(`<th>${header}</th>`) || DASHBOARD.includes(`>${header}</th>`),
@@ -143,11 +143,12 @@ test('the proposal table keeps its columns, cells and raw status text', () => {
     'the submission date cell must be kept',
   )
 
-  // The status shown is the raw record value, not a rewritten label.
+  // The status shown goes through the shared proposal label, so a newly submitted
+  // proposal reads "For Review" exactly as it does on the ORPS and Proponent pages.
   assert.match(
     DASHBOARD,
-    /class="end-badge"[^>]*>\s*\{\{ proposal\.status \}\}/,
-    'the status pill must show the record value unchanged',
+    /class="end-badge"[^>]*>\s*\{\{ proposalStatusLabel\(proposal\.status\) \}\}/,
+    'the status pill must use the shared proposal status label',
   )
 
   // The action keeps its handler and the list keeps its limit.
@@ -185,15 +186,15 @@ test('the notifications keep their message, date and order', () => {
 
 test('the status pill tones are chosen from the record status', () => {
   assert.match(DASHBOARD, /statusTone\(proposal\.status\)/, 'the pill must use the status tone')
+  assert.match(
+    DASHBOARD,
+    /import \{ statusTone \} from '@\/utils\/statusTone\.js'/,
+    'the tone must come from the shared status mapping',
+  )
 
-  // Each workflow stage maps to its own pastel tone; the shared tones are reused.
-  assert.match(DASHBOARD, /case 'SUBMITTED':\s*return 'is-pending'/, 'a submission is amber')
-  assert.match(DASHBOARD, /case 'ENDORSED':/, 'an endorsement is handled')
-  assert.match(DASHBOARD, /return 'is-info'/, 'the endorsed stage is blue')
-  assert.match(DASHBOARD, /case 'UNDER_REVIEW':\s*return 'is-progress'/, 'a review is violet')
-  assert.match(DASHBOARD, /case 'REC_APPROVED':/, 'an approval is handled')
-  assert.match(DASHBOARD, /return 'is-approved'/, 'an approval is green')
-  assert.match(DASHBOARD, /return 'is-rejected'/, 'a revision or rejection is red')
+  // The page no longer carries its own switch: the shared mapping covers every stage.
+  assert.doesNotMatch(DASHBOARD, /switch \(status\)/, 'the page must not keep its own status switch')
+  assert.doesNotMatch(DASHBOARD, /return 'is-info'/, 'the retired page-local tones must be gone')
 })
 
 test('the banner keeps its title and office subtitle', () => {

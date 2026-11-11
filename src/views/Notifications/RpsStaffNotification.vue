@@ -10,7 +10,7 @@
         </p>
       </div>
 
-      <button class="mark-all-btn" @click="markAllAsRead" :disabled="unreadCount === 0">
+      <button class="mark-all-btn btn-primary" @click="markAllAsRead" :disabled="unreadCount === 0">
         ✓ Mark All as Read
       </button>
     </div>
@@ -46,7 +46,7 @@
     <!-- Error -->
     <div v-else-if="error" class="empty-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="fetchNotifications">Retry</button>
+      <button class="retry-btn btn-secondary" @click="fetchNotifications">Retry</button>
     </div>
 
     <!-- Notification List -->
@@ -105,14 +105,14 @@
 
           <button
             v-if="!notification.read"
-            class="read-btn"
+            class="read-btn btn-view"
             @click.stop="markAsRead(notification)"
           >
             ✓
           </button>
 
           <button
-            class="delete-btn"
+            class="delete-btn btn-cancel"
             @click.stop="dismiss(notification)"
           >
             ✕
@@ -354,18 +354,12 @@ export default {
   color: #6b7280;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .mark-all-btn {
-  background: #2563eb;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
   transition: .3s;
-}
-
-.mark-all-btn:hover:not(:disabled) {
-  background: #1d4ed8;
 }
 
 .mark-all-btn:disabled {
@@ -532,34 +526,17 @@ export default {
   flex-shrink: 0;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .read-btn,
 .delete-btn {
   width: 32px;
   height: 32px;
-  border: none;
+  padding: 0;
   border-radius: 8px;
   cursor: pointer;
   transition: .3s;
   font-size: 14px;
   font-weight: bold;
-}
-
-.read-btn {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.read-btn:hover {
-  background: #bbf7d0;
-}
-
-.delete-btn {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.delete-btn:hover {
-  background: #fecaca;
 }
 
 /* EMPTY STATE */
@@ -599,12 +576,10 @@ export default {
   color: #dc2626;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .retry-btn {
   margin-top: 12px;
   padding: 8px 20px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
 }

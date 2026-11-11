@@ -27,7 +27,7 @@
               <div><label>Returned by</label><span>{{ proposal.returnedByOffice || '—' }}</span></div>
               <div><label>User</label><span>{{ proposal.returnedByName || '—' }}</span></div>
               <div><label>Date returned</label><span>{{ formatDate(proposal.returnedAt) }}</span></div>
-              <div><label>Status</label><span>{{ proposal.status || '—' }}</span></div>
+              <div><label>Status</label><span>{{ proposalStatusLabel(proposal.status) || '—' }}</span></div>
             </div>
             <div class="remarks">
               <label>Revision remarks</label>
@@ -79,7 +79,7 @@
             <textarea v-model="notes" placeholder="Add any additional instructions for the proponent..."></textarea>
           </div>
 
-          <button class="btn primary" :disabled="submitting || !deadline" @click="forward">
+          <button class="btn btn-primary" :disabled="submitting || !deadline" @click="forward">
             {{ submitting ? 'Forwarding...' : 'Forward to Proponent' }}
           </button>
           <p v-if="success" class="success">{{ success }}</p>
@@ -103,6 +103,7 @@ import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
 import { activeRemarksBySection, PROPOSAL_SECTIONS, toSectionRemarkPayload } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -339,11 +340,7 @@ textarea {
   font-size: 14px;
   cursor: pointer;
 }
-.btn.primary {
-  background: #4f46e5;
-  color: #fff;
-}
-.btn.primary:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

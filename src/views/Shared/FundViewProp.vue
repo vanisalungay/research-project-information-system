@@ -7,13 +7,13 @@
         <div class="page-header">
           <div>
             <h2>Community Development Program 2024</h2>
-            <span class="badge pending">Pending Release</span>
+            <span class="badge is-pending">Pending Release</span>
             <p class="proposal-id">Proposal ID: #6</p>
           </div>
 
           <div class="header-actions">
-            <button class="outline" @click="showModal = true">VIEW DETAILED PROPOSAL</button>
-            <button class="outline" @click="downloadAll">DOWNLOAD</button>
+            <button class="outline btn-view" @click="showModal = true">VIEW DETAILED PROPOSAL</button>
+            <button class="outline btn-download" @click="downloadAll">DOWNLOAD</button>
           </div>
         </div>
 
@@ -110,7 +110,7 @@
             <section class="card highlight">
               <div class="decision-header">
                 <h3>OVCRIGE Decision</h3>
-                <span class="badge endorsed">Endorsed</span>
+                <span class="badge is-approved">Endorsed</span>
               </div>
 
               <p class="decision-date">Decision Date: 2024-12-11</p>
@@ -130,10 +130,10 @@
               <h3>RII Actions</h3>
 
               <div class="actions">
-                <button class="primary" @click="$router.push('rii-endorse')">
+                <button class="primary btn-primary" @click="$router.push('rii-endorse')">
                   Endorse Proposal
                 </button>
-                <button class="secondary" @click="$router.push('fundrelease')">
+                <button class="secondary btn-approve" @click="$router.push('fundrelease')">
                   Release Funds
                 </button>
               </div>
@@ -173,7 +173,7 @@
       <div class="proposal-modal">
         <!-- HEADER -->
         <div class="proposal-header">
-          <button class="download-btn" @click="downloadForm">DOWNLOAD</button>
+          <button class="download-btn btn-download" @click="downloadForm">DOWNLOAD</button>
           <button class="close-btn" @click="showModal = false">✕</button>
         </div>
 
@@ -498,11 +498,6 @@ label {
   font-size: 12px;
 }
 
-.endorsed {
-  background: #c8e6c9;
-  color: #1b5e20;
-}
-
 /* DECISION */
 .score-bar {
   background: #ddd;
@@ -525,9 +520,8 @@ label {
   margin-bottom: 10px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .primary {
-  background: #ffd803;
-  border: none;
   padding: 10px;
   width: 100%;
   border-radius: 8px;
@@ -535,21 +529,9 @@ label {
 }
 
 .secondary {
-  background: #ffd803;
-  color: #1f2937;
-  border: none;
   padding: 10px;
   width: 100%;
   border-radius: 8px;
-  font-weight: bold;
-}
-
-.danger {
-  background: #918d8d;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  width: 100%;
   font-weight: bold;
 }
 
@@ -566,12 +548,10 @@ label {
   border-bottom: 1px solid #eee;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .outline {
-  border: 1px solid #ddd;
-  background: white;
   padding: 8px 12px;
   border-radius: 8px;
-  color: #2c274c;
 }
 
 /* MODAL */
@@ -601,9 +581,8 @@ label {
   align-items: center;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .download-btn {
-  background: #ffd803;
-  border: none;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;

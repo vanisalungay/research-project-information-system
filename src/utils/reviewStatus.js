@@ -10,30 +10,37 @@
  *
  * Verifiable without a browser - see reviewStatus.test.js.
  */
+import { statusTone } from './statusTone.js'
+import { isForReviewStatus } from './proposalStatus.js'
+import { statusLabel } from './statusLabel.js'
 
 /** Tones the design layer knows: approved (green), rejected (red), returned (amber), draft (grey). */
 export const REVIEW_STATUS_TONES = ['is-approved', 'is-rejected', 'is-returned', 'is-draft']
 
 /**
- * The tone class for a saved status. A status that is still being processed (UNDER_REVIEW,
- * REC_EVALUATION, CHANCELLOR_REVIEW, ...) has no tone: it keeps the default lavender badge.
+ * The tone class for a saved status, from the one shared mapping (utils/statusTone.js) so a
+ * status looks the same here as on every dashboard and workflow page.
+ *
+ * A status that is still being processed (UNDER_REVIEW, REC_EVALUATION, CHANCELLOR_REVIEW, ...)
+ * has no tone here: it keeps the review badge's own pending treatment rather than a tone class.
  */
 export function reviewStatusTone(status) {
   const value = String(status ?? '').toUpperCase()
   if (!value) return 'is-draft'
-  if (value.includes('APPROVED') || value.includes('ENDORSED') || value.includes('COMPLETED')) {
-    return 'is-approved'
-  }
-  if (value.includes('REJECT')) return 'is-rejected'
-  if (value.includes('RETURN') || value.includes('REVISION')) return 'is-returned'
-  if (value.includes('DRAFT')) return 'is-draft'
-  return ''
+  const tone = statusTone(value)
+  return tone === 'is-pending' || tone === 'is-neutral' ? '' : tone
 }
 
-/** The badge text: the saved status, spelled the way the workflow spells it. */
+/**
+ * The badge text: the saved status through the one shared formatter
+ * (utils/statusLabel.js), so it is Title Case with no underscores. Both
+ * submission spellings (FOR REVIEW and the legacy SUBMITTED) read "For Review".
+ */
 export function reviewStatusLabel(status) {
   const value = String(status ?? '').trim()
-  return value ? value.replace(/_/g, ' ') : 'DRAFT'
+  if (!value) return 'Draft'
+  if (isForReviewStatus(value)) return 'For Review'
+  return statusLabel(value)
 }
 
 /**

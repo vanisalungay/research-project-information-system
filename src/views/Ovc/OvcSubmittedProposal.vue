@@ -50,10 +50,10 @@
             <td>{{ proposal.projectLeader }}</td>
             <td>{{ proposal.createdAt?.substring(0,10) || '-' }}</td>
             <td>
-              <span class="status pending">{{ proposal.status }}</span>
+              <span class="status status-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
             </td>
             <td>
-              <button class="review-btn" @click="goToReview(proposal.id)">REVIEW</button>
+              <button class="review-btn btn-view" @click="goToReview(proposal.id)">REVIEW</button>
             </td>
           </tr>
           <tr v-if="filteredProposals.length===0">
@@ -69,6 +69,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 const proposals = ref([])
@@ -166,20 +168,11 @@ small {
   font-size: 13px;
   font-weight: 600;
 }
-.pending {
-  background: #FEF3C7;
-  color: #92400E;
-}
+/* Layout only; .btn-view supplies the colour. */
 .review-btn {
   padding: 7px 16px;
-  border: none;
   border-radius: 6px;
-  background: #3B82F6;
-  color: white;
   cursor: pointer;
   transition: .2s;
-}
-.review-btn:hover {
-  background: #2563EB;
 }
 </style>

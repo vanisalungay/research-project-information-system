@@ -9,8 +9,8 @@
       <select v-model="statusFilter" class="status-select">
         <option value="ALL">All Status</option>
         <option value="UNDER_REVIEW">Under Review</option>
-        <option value="REC_APPROVED">Approved</option>
-        <option value="REC_REJECTED">Rejected</option>
+        <option value="REC_APPROVED">REC Approved</option>
+        <option value="REC_REJECTED">REC Rejected</option>
       </select>
     </div>
 
@@ -43,11 +43,11 @@
           <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
           <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
-            <span class="status-pill">{{ proposal.status }}</span>
+            <span class="status-pill" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
           </td>
           <td>
-            <button v-if="proposal.status === 'UNDER_REVIEW'" class="review-btn" @click="goToReview(proposal.id)">REVIEW</button>
-            <button v-else class="view-btn" @click="goToView(proposal.id)">VIEW</button>
+            <button v-if="proposal.status === 'UNDER_REVIEW'" class="review-btn btn-view" @click="goToReview(proposal.id)">REVIEW</button>
+            <button v-else class="view-btn btn-view" @click="goToView(proposal.id)">VIEW</button>
           </td>
         </tr>
       </tbody>
@@ -59,6 +59,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const router = useRouter()
 const proposals = ref([])
@@ -163,15 +165,10 @@ const goToView = (id) => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  background: #ffe9b3;
-  color: #c78a00;
 }
 .review-btn,
 .view-btn {
   padding: 7px 14px;
-  background: #5ab0ff;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
 }

@@ -61,7 +61,7 @@
 
         <!-- FOOTER: an always visible Close action besides the header icon -->
         <footer class="budget-template-footer">
-          <button class="btn-close" @click="emit('close')">Close</button>
+          <button class="btn-close btn-secondary" @click="emit('close')">Close</button>
         </footer>
       </div>
     </div>
@@ -210,25 +210,18 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-download {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-download:hover {
-  background: #e2e8f0;
-  color: #1e293b;
 }
 
 .close-btn {
@@ -319,20 +312,12 @@ onBeforeUnmount(() => {
 
 .btn-close {
   padding: 10px 20px;
-  background: #4f46e5;
-  border: 1px solid #4f46e5;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-close:hover {
-  background: #4338ca;
-  border-color: #4338ca;
 }
 
 /* Small screens: the header actions wrap below the title instead of squeezing it

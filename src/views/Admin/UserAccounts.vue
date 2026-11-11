@@ -31,7 +31,7 @@
     <!-- Error -->
     <div v-else-if="error" class="loading-state">
       <p class="error-text">{{ error }}</p>
-      <button class="retry-btn" @click="loadUsers">Retry</button>
+      <button class="retry-btn btn-secondary" @click="loadUsers">Retry</button>
     </div>
 
     <!-- Table. The wrapper scrolls sideways on a narrow screen instead of letting the
@@ -58,12 +58,12 @@
               </span>
             </td>
             <td>
-              <span class="status-badge" :class="getStatusClass(user.status)">
-                {{ user.status || 'APPROVED' }}
+              <span class="status-badge" :class="statusTone(user.status)">
+                {{ statusLabel(user.status) || 'Approved' }}
               </span>
             </td>
             <td class="actions-cell">
-              <button class="reset-btn" @click="openResetModal(user)">
+              <button class="reset-btn btn-secondary" @click="openResetModal(user)">
                 Reset Password
               </button>
               <!-- A Dean account keeps its Dean role management: the designation and the
@@ -72,7 +72,7 @@
                    Account flow above. -->
               <button
                 v-if="isDean(user)"
-                class="dean-manage-btn"
+                class="dean-manage-btn btn-edit"
                 @click="openDeanModal(user)"
               >
                 Manage Dean Role
@@ -137,9 +137,9 @@
         <p v-if="resetSuccess" class="success-text">{{ resetSuccess }}</p>
 
         <div class="modal-actions">
-          <button class="cancel-btn" @click="closeResetModal">Cancel</button>
+          <button class="cancel-btn btn-secondary" @click="closeResetModal">Cancel</button>
           <button
-            class="confirm-btn"
+            class="confirm-btn btn-primary"
             @click="resetPassword"
             :disabled="resetLoading"
           >
@@ -157,6 +157,8 @@ import api from '@/utils/api'
 import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
+import { statusTone } from '@/utils/statusTone.js'
+import { statusLabel } from '@/utils/statusLabel.js'
 
 const users = ref([])
 const showModal = ref(false)
@@ -213,13 +215,6 @@ const getRoleClass = (role) => {
     'OC': 'role-oc',
   }
   return classMap[role] || ''
-}
-
-const getStatusClass = (status) => {
-  if (status === 'APPROVED') return 'status-approved'
-  if (status === 'PENDING') return 'status-pending'
-  if (status === 'REJECTED') return 'status-rejected'
-  return ''
 }
 
 const loadUsers = async () => {
@@ -355,18 +350,12 @@ onMounted(loadUsers)
   margin-left: auto;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .create-btn {
   padding: 10px 18px;
-  background: #2452ff;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.create-btn:hover {
-  background: #1b44d6;
 }
 
 /* On a narrow screen the title and the action stack, so neither is squeezed. */
@@ -412,9 +401,6 @@ onMounted(loadUsers)
 .retry-btn {
   margin-top: 12px;
   padding: 8px 20px;
-  background: #2563eb;
-  color: white;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -485,44 +471,28 @@ td {
   display: inline-block;
 }
 
-.status-approved { background: #dcfce7; color: #166534; }
-.status-pending { background: #fef3c7; color: #92400e; }
-.status-rejected { background: #fee2e2; color: #991b1b; }
 
 .actions-cell {
   white-space: nowrap;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .reset-btn {
   padding: 6px 14px;
-  background: #f59e0b;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
 }
 
-.reset-btn:hover {
-  background: #d97706;
-}
-
-/* The Dean row action: a quiet secondary button, the same size as Reset Password. */
+/* The Dean row action: the same size as Reset Password. */
 .dean-manage-btn {
   margin-left: 8px;
   padding: 6px 14px;
-  background: #ffffff;
-  color: #2452ff;
-  border: 1px solid #2452ff;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-}
-
-.dean-manage-btn:hover {
-  background: #eff6ff;
 }
 
 /* Modal */
@@ -603,32 +573,19 @@ td {
   margin-top: 16px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .cancel-btn {
   padding: 10px 18px;
-  background: #e2e8f0;
-  color: #334155;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.cancel-btn:hover {
-  background: #cbd5e1;
 }
 
 .confirm-btn {
   padding: 10px 18px;
-  background: #f59e0b;
-  color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.confirm-btn:hover {
-  background: #d97706;
 }
 
 .confirm-btn:disabled {

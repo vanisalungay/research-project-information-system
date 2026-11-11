@@ -115,7 +115,7 @@
           <div class="buttons">
             <button 
               type="button" 
-              class="cancel-btn" 
+              class="cancel-btn btn-secondary"
               @click="$emit('close')"
               :disabled="isLoading"
             >
@@ -148,15 +148,15 @@
           <div class="cred-row">
             <span class="cred-label">Email</span>
             <span class="cred-value">{{ created.email }}</span>
-            <button type="button" class="copy-btn" @click="copy(created.email, 'email')">Copy</button>
+            <button type="button" class="copy-btn btn-view" @click="copy(created.email, 'email')">Copy</button>
           </div>
           <div class="cred-row">
             <span class="cred-label">Temporary Password</span>
             <span class="cred-value cred-password">{{ created.temporaryPassword }}</span>
-            <button type="button" class="copy-btn" @click="copy(created.temporaryPassword, 'password')">Copy</button>
+            <button type="button" class="copy-btn btn-view" @click="copy(created.temporaryPassword, 'password')">Copy</button>
           </div>
 
-          <button type="button" class="copy-both" @click="copyBoth">Copy both credentials</button>
+          <button type="button" class="copy-both btn-primary" @click="copyBoth">Copy both credentials</button>
           <p v-if="copyMessage" class="copy-message">{{ copyMessage }}</p>
         </div>
       </div>
@@ -459,30 +459,16 @@ button {
   font-family: inherit;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .cancel-btn {
-  background: transparent;
-  border: 1px solid var(--color-border, #e2e8f0);
-  color: var(--color-text, #475569);
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: var(--color-background-soft, #f8fafc);
-  color: var(--color-heading, #0f172a);
+  border-radius: 8px;
 }
 
 .create-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: white !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-.create-btn:hover:not(:disabled) {
-  background: #1d40cc;
-  border-color: #1d40cc;
 }
 
 button:disabled {
@@ -581,30 +567,21 @@ button:disabled {
   letter-spacing: 0.02em;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .copy-btn {
   padding: 5px 12px;
-  border: 1px solid #c7d2fe;
   border-radius: 6px;
-  background: #eef2ff;
-  color: #3730a3;
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.copy-btn:hover {
-  background: #e0e7ff;
-}
-
 .copy-both {
   margin-top: 14px;
   width: 100%;
   padding: 10px 16px;
-  border: none;
   border-radius: 8px;
-  background: #315bff;
-  color: #ffffff;
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 700;
@@ -614,7 +591,7 @@ button:disabled {
 .copy-message {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #166534;
+  color: var(--status-approved-text);
 }
 
 </style>

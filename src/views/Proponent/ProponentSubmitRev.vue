@@ -226,7 +226,7 @@
                     </tbody>
                   </table>
                 </div>
-                <button class="btn-add" @click="addSite">+ Add Site</button>
+                <button class="btn-add btn-primary" @click="addSite">+ Add Site</button>
               </div>
             </section>
 
@@ -648,7 +648,7 @@
                     </tbody>
                   </table>
                 </div>
-                <button class="btn-add" @click="addTableRow('logical_framework')">+ Add Row</button>
+                <button class="btn-add btn-primary" @click="addTableRow('logical_framework')">+ Add Row</button>
               </div>
             </section>
 
@@ -710,7 +710,7 @@
                 </div>
                 <p class="field-hint">{{ TIME_DEVOTED_HINT }}</p>
                 <p class="field-hint field-hint-error" v-if="timeDevotedNotice">{{ timeDevotedNotice }}</p>
-                <button class="btn-add" @click="addTableRow('personnel_requirements')">+ Add Row</button>
+                <button class="btn-add btn-primary" @click="addTableRow('personnel_requirements')">+ Add Row</button>
               </div>
             </section>
 
@@ -723,7 +723,7 @@
               <SectionRemarksNotice :section-key="'25'" :remarks="remarksFor('25')" />
               <div class="section-card">
                 <div class="budget-actions">
-                  <button class="btn-outline" @click="downloadBudgetFormat">
+                  <button class="btn-outline btn-download" @click="downloadBudgetFormat">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
@@ -792,7 +792,7 @@
                     </tbody>
                   </table>
                 </div>
-                <button class="btn-add" @click="addTableRow('other_projects')">+ Add Project</button>
+                <button class="btn-add btn-primary" @click="addTableRow('other_projects')">+ Add Project</button>
               </div>
             </section>
 
@@ -831,8 +831,8 @@
 
               <div class="info-item">
                 <span class="info-label">Status</span>
-                <span class="info-value status-badge revision">
-                  REVISION
+                <span class="info-value status-badge is-returned">
+                  Revision
                 </span>
               </div>
             </div>
@@ -896,11 +896,11 @@
               ← Cancel
             </button>
 
-            <button class="btn-action btn-draft" @click="saveDraft">
+            <button class="btn-action btn-draft btn-secondary" @click="saveDraft">
               Save Draft
             </button>
 
-            <button class="btn-action btn-submit" @click="submitRevision" :disabled="loading || isPastDeadline">
+            <button class="btn-action btn-submit btn-primary" @click="submitRevision" :disabled="loading || isPastDeadline">
               {{ loading ? 'Submitting...' : '✓ Submit Revision' }}
             </button>
           </div>
@@ -1877,12 +1877,6 @@ onMounted(() => {
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.revision {
-  background: #e0e7ff;
-  color: #3730a3;
 }
 
 /* INSTRUCTIONS */
@@ -1927,37 +1921,8 @@ onMounted(() => {
   transition: all 0.15s;
 }
 
-.btn-action.btn-cancel {
-  background: #fff;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.btn-action.btn-cancel:hover {
-  background: #f1f5f9;
-}
-
-.btn-action.btn-draft {
-  background: #fff;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.btn-action.btn-draft:hover {
-  background: #f1f5f9;
-}
-
-.btn-action.btn-submit {
-  background: #4f46e5;
-  color: #fff;
-}
-
-.btn-action.btn-submit:hover:not(:disabled) {
-  background: #4338ca;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
+/* The action colours come from assets/actions.css (.btn-cancel, .btn-secondary,
+   .btn-primary). */
 .btn-action.btn-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1978,19 +1943,13 @@ onMounted(() => {
   color: #64748b;
 }
 
+/* Layout only; the action colour is global (assets/actions.css). */
 .btn-primary {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.btn-primary:hover {
-  background: #4338ca;
 }
 
 /* RESPONSIVE */
@@ -2361,11 +2320,9 @@ onMounted(() => {
    BUTTONS
 ========================= */
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-add {
   margin-top: 16px;
-  background: #4f46e5;
-  color: white;
-  border: none;
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
@@ -2373,24 +2330,14 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.btn-add:hover {
-  background: #4338ca;
-}
-
+/* Layout only; .btn-download supplies the colour from assets/actions.css. */
 .btn-outline {
-  background: white;
-  border: 1px solid #cbd5e1;
-  color: #334155;
   border-radius: 8px;
   padding: 10px 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.btn-outline:hover {
-  background: #f8fafc;
 }
 
 .btn-icon {
@@ -2402,18 +2349,18 @@ onMounted(() => {
 }
 
 .btn-remove {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--status-rejected-bg);
+  color: var(--status-rejected-text);
 }
 
 .btn-remove:hover {
-  background: #fecaca;
+  background: var(--status-rejected-border);
 }
 
 .btn-remove-file {
   border: none;
   background: transparent;
-  color: #dc2626;
+  color: var(--status-rejected-text);
   cursor: pointer;
   font-size: 16px;
 }

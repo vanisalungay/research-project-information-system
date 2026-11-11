@@ -3,8 +3,8 @@
     <div class="top-bar">
       <h2>myProjects</h2>
       <div class="top-bar-actions">
-        <button class="btn-revisions" @click="openRevisions">Revisions</button>
-        <button class="btn-new" @click="openNewProposal">
+        <button class="btn-revisions btn-secondary" @click="openRevisions">Revisions</button>
+        <button class="btn-new btn-primary" @click="openNewProposal">
           + Create New Proposal
         </button>
       </div>
@@ -51,7 +51,7 @@
       <select v-model="statusFilter">
         <option value="">All Status</option>
         <option value="DRAFT">Draft</option>
-        <option value="SUBMITTED">Submitted</option>
+        <option value="FOR REVIEW">For Review</option>
         <option value="UNDER_REVIEW">Under Review</option>
         <option value="APPROVED">Approved</option>
         <option value="REJECTED">Rejected</option>
@@ -83,14 +83,14 @@
           <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
           <td>{{ proposal.projectTitle || proposal.title }}</td>
           <td>
-            <span class="status" :class="(proposal.status || '').toLowerCase()">
-              {{ proposal.status }}
+            <span class="status" :class="statusTone(proposal.status)">
+              {{ proposalStatusLabel(proposal.status) }}
             </span>
           </td>
           <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
           <td>
             <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
-            <button v-if="proposal.status === 'DRAFT'" class="btn-delete"
+            <button v-if="proposal.status === 'DRAFT'" class="btn-delete btn-reject"
               @click="deleteProposal(proposal.id)">Delete</button>
           </td>
         </tr>
@@ -110,6 +110,8 @@ import api from '@/utils/api'
 // arrived through "Continue to Proposal Submission".
 import { endorsementProposalPrefill, fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
 import { draftEndorsementFields } from '@/utils/endorsementDocument'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -332,7 +334,7 @@ const openDraftForEdit = async (id) => {
 
 const filteredProposals = computed(() => {
   return proposals.value.filter(p => {
-    if (statusFilter.value && p.status !== statusFilter.value) return false
+    if (!proposalStatusMatches(p.status, statusFilter.value)) return false
     if (search.value.trim()) {
       const kw = search.value.toLowerCase()
       const title = String(p.projectTitle || p.title || '').toLowerCase()
@@ -576,10 +578,9 @@ const refreshOnClose = () => {
   gap: 12px;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-revisions {
-  background: #4b3f72;
   border: none;
-  color: #ffffff;
   padding: 8px 16px;
   border-radius: 6px;
   font-weight: 600;
@@ -592,7 +593,6 @@ const refreshOnClose = () => {
 }
 
 .btn-new {
-  background: #facc15;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -643,40 +643,9 @@ const refreshOnClose = () => {
   font-weight: 600;
 }
 
-.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.revision {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 
 .btn-view {
-  background: #60a5fa;
-  border: none;
-  color: #ffffff;
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -684,16 +653,9 @@ const refreshOnClose = () => {
 }
 
 .btn-delete {
-  background: #ef4444;
-  border: none;
-  color: #ffffff;
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
 }
 
 .error-text {

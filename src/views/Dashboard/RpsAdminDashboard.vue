@@ -99,8 +99,8 @@
               <td>{{ formatDate(user.dateRegistered) }}</td>
               <td class="text-right">
                 <div class="action-btns">
-                  <button class="approve-btn" @click="approveUser(user)" :disabled="actionLoading">✓ Approve</button>
-                  <button class="reject-btn" @click="rejectUser(user)" :disabled="actionLoading">✕ Reject</button>
+                  <button class="approve-btn btn-approve" @click="approveUser(user)" :disabled="actionLoading">✓ Approve</button>
+                  <button class="reject-btn btn-reject" @click="rejectUser(user)" :disabled="actionLoading">✕ Reject</button>
                 </div>
               </td>
             </tr>
@@ -461,10 +461,9 @@ onMounted(loadDashboardData)
   justify-content: flex-end;
 }
 
+/* Approve and Reject keep their size; the colours come from the shared action system
+   (assets/actions.css), so they match every other Approve/Reject button in RPIS. */
 .approve-btn {
-  background: #10b981;
-  color: white;
-  border: none;
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -473,13 +472,9 @@ onMounted(loadDashboardData)
   transition: all 0.15s;
 }
 
-.approve-btn:hover:not(:disabled) { background: #059669; }
 .approve-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .reject-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -488,7 +483,6 @@ onMounted(loadDashboardData)
   transition: all 0.15s;
 }
 
-.reject-btn:hover:not(:disabled) { background: #dc2626; }
 .reject-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Empty State */

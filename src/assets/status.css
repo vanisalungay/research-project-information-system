@@ -1,0 +1,249 @@
+/**
+ * status.css
+ * ---------------------------------------------------------------------------
+ * The one status colour system of RPIS.
+ *
+ * Every badge that shows a workflow status uses the same five tones, whichever role or
+ * module renders it:
+ *
+ *   is-approved  green       SUBMITTED / APPROVED / COMPLETED / ENDORSED / RELEASED
+ *   is-returned  amber       every RETURN* / REVISION status
+ *   is-rejected  red         every REJECT* status
+ *   is-pending   light blue  UNDER_REVIEW / PENDING / FOR_*_APPROVAL / IMPLEMENTATION
+ *   is-draft     grey        DRAFT
+ *   is-neutral   grey        an unknown or inactive value
+ *
+ * The tone is chosen in one place - src/utils/statusTone.js - so the same status can never
+ * pick a different colour on another page. Only colours live here; the geometry (padding,
+ * radius, font) stays with the badge class that owns it, which is why a page can keep its
+ * own layout without overriding the palette.
+ *
+ * Imported globally by src/assets/main.css.
+ */
+
+/* The canonical badge. Pages that do not already have a badge class use this one. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* Statuses still being processed keep the light-blue pending treatment. The review badges
+   deliberately have no tone class for these, so their base must already read as pending. */
+.status-badge,
+.end-badge,
+.rv-status,
+.rv-status-line {
+  background: var(--status-pending-bg);
+  color: var(--status-pending-text);
+}
+
+/* The shared tones, applied to every badge family already in use across the application. */
+.status-badge.is-approved,
+.end-badge.is-approved,
+.badge.is-approved,
+.status.is-approved,
+.status-pill.is-approved,
+.call-status.is-approved,
+.rv-status.is-approved,
+.rv-status-line.is-approved {
+  background: var(--status-approved-bg);
+  color: var(--status-approved-text);
+  border-color: var(--status-approved-border);
+}
+
+.status-badge.is-returned,
+.end-badge.is-returned,
+.badge.is-returned,
+.status.is-returned,
+.status-pill.is-returned,
+.call-status.is-returned,
+.rv-status.is-returned,
+.rv-status-line.is-returned {
+  background: var(--status-returned-bg);
+  color: var(--status-returned-text);
+  border-color: var(--status-returned-border);
+}
+
+.status-badge.is-rejected,
+.end-badge.is-rejected,
+.badge.is-rejected,
+.status.is-rejected,
+.status-pill.is-rejected,
+.call-status.is-rejected,
+.rv-status.is-rejected,
+.rv-status-line.is-rejected {
+  background: var(--status-rejected-bg);
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
+}
+
+/* is-info and is-progress are the names the role dashboards already used for "in the
+   pipeline". They now resolve to the same light blue as is-pending. */
+.status-badge.is-pending,
+.end-badge.is-pending,
+.badge.is-pending,
+.status.is-pending,
+.status-pill.is-pending,
+.call-status.is-pending,
+.rv-status.is-pending,
+.rv-status-line.is-pending,
+.status-badge.is-info,
+.end-badge.is-info,
+.badge.is-info,
+.status.is-info,
+.status-pill.is-info,
+.call-status.is-info,
+.rv-status.is-info,
+.rv-status-line.is-info,
+.status-badge.is-progress,
+.end-badge.is-progress,
+.badge.is-progress,
+.status.is-progress,
+.status-pill.is-progress,
+.call-status.is-progress,
+.rv-status.is-progress,
+.rv-status-line.is-progress {
+  background: var(--status-pending-bg);
+  color: var(--status-pending-text);
+  border-color: var(--status-pending-border);
+}
+
+.status-badge.is-neutral,
+.end-badge.is-neutral,
+.badge.is-neutral,
+.status.is-neutral,
+.status-pill.is-neutral,
+.call-status.is-neutral,
+.rv-status.is-neutral,
+.rv-status-line.is-neutral,
+.status-badge.is-draft,
+.end-badge.is-draft,
+.badge.is-draft,
+.status.is-draft,
+.status-pill.is-draft,
+.call-status.is-draft,
+.rv-status.is-draft,
+.rv-status-line.is-draft {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
+  border-color: var(--status-neutral-border);
+}
+
+/* The status is always spelled out inside the badge, so the colour is a reinforcement,
+   never the only way the state is communicated. */
+
+/* ===== Dark theme =====
+   base.css forces the text colour of every span/p/label with !important, and a badge is a
+   span. The dark tones therefore have to repeat with !important as well. */
+@media (prefers-color-scheme: dark) {
+  .status-badge,
+  .end-badge,
+  .rv-status,
+  .rv-status-line {
+    background: var(--status-pending-bg) !important;
+    color: var(--status-pending-text) !important;
+  }
+
+  .status-badge.is-approved,
+  .end-badge.is-approved,
+  .badge.is-approved,
+  .status.is-approved,
+  .status-pill.is-approved,
+  .call-status.is-approved,
+  .rv-status.is-approved,
+  .rv-status-line.is-approved {
+    background: var(--status-approved-bg) !important;
+    color: var(--status-approved-text) !important;
+  }
+
+  .status-badge.is-returned,
+  .end-badge.is-returned,
+  .badge.is-returned,
+  .status.is-returned,
+  .status-pill.is-returned,
+  .call-status.is-returned,
+  .rv-status.is-returned,
+  .rv-status-line.is-returned {
+    background: var(--status-returned-bg) !important;
+    color: var(--status-returned-text) !important;
+  }
+
+  .status-badge.is-rejected,
+  .end-badge.is-rejected,
+  .badge.is-rejected,
+  .status.is-rejected,
+  .status-pill.is-rejected,
+  .call-status.is-rejected,
+  .rv-status.is-rejected,
+  .rv-status-line.is-rejected {
+    background: var(--status-rejected-bg) !important;
+    color: var(--status-rejected-text) !important;
+  }
+
+  .status-badge.is-pending,
+  .end-badge.is-pending,
+  .badge.is-pending,
+  .status.is-pending,
+  .status-pill.is-pending,
+  .call-status.is-pending,
+  .rv-status.is-pending,
+  .rv-status-line.is-pending,
+  .status-badge.is-info,
+  .end-badge.is-info,
+  .badge.is-info,
+  .status.is-info,
+  .status-pill.is-info,
+  .call-status.is-info,
+  .rv-status.is-info,
+  .rv-status-line.is-info,
+  .status-badge.is-progress,
+  .end-badge.is-progress,
+  .badge.is-progress,
+  .status.is-progress,
+  .status-pill.is-progress,
+  .call-status.is-progress,
+  .rv-status.is-progress,
+  .rv-status-line.is-progress {
+    background: var(--status-pending-bg) !important;
+    color: var(--status-pending-text) !important;
+  }
+
+  .status-badge.is-neutral,
+  .end-badge.is-neutral,
+  .badge.is-neutral,
+  .status.is-neutral,
+  .status-pill.is-neutral,
+  .call-status.is-neutral,
+  .rv-status.is-neutral,
+  .rv-status-line.is-neutral,
+  .status-badge.is-draft,
+  .end-badge.is-draft,
+  .badge.is-draft,
+  .status.is-draft,
+  .status-pill.is-draft,
+  .call-status.is-draft,
+  .rv-status.is-draft,
+  .rv-status-line.is-draft {
+    background: var(--status-neutral-bg) !important;
+    color: var(--status-neutral-text) !important;
+  }
+
+  /* Badges sometimes carry a nested label span; keep that text on the tone colour. */
+  .status-badge *,
+  .end-badge *,
+  .badge *,
+  .status *,
+  .status-pill *,
+  .call-status *,
+  .rv-status *,
+  .rv-status-line * {
+    color: inherit !important;
+  }
+}

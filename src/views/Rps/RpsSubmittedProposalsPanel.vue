@@ -21,7 +21,7 @@
         </svg>
         <select v-model="selectedStatus" class="status-select">
           <option value="">All Status</option>
-          <option value="SUBMITTED">Pending</option>
+          <option value="FOR REVIEW">For Review</option>
           <option value="REVISION">Revision</option>
           <option value="ENDORSED">Endorsed</option>
           <option value="REJECTED">Rejected</option>
@@ -62,12 +62,12 @@
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
               <td class="date-cell">{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
               <td>
-                <span :class="['status', (proposal.status || '').toLowerCase()]">
-                  {{ proposal.status }}
+                <span :class="['status', statusTone(proposal.status)]">
+                  {{ proposalStatusLabel(proposal.status) }}
                 </span>
               </td>
               <td>
-                <button class="review-btn" @click="viewProposal(proposal)">Review</button>
+                <button class="review-btn btn-view" @click="viewProposal(proposal)">Review</button>
               </td>
             </tr>
             <tr v-if="filteredProposals.length === 0">
@@ -88,6 +88,12 @@
 
 <script>
 import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import {
+  isForReviewStatus,
+  proposalStatusLabel,
+  proposalStatusMatches,
+} from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsSubmittedProposalsPanel',
@@ -104,7 +110,7 @@ export default {
     filteredProposals() {
       const keyword = this.search.toLowerCase().trim()
       return this.proposals.filter((p) => {
-        const matchesStatus = this.selectedStatus === '' || p.status === this.selectedStatus
+        const matchesStatus = proposalStatusMatches(p.status, this.selectedStatus)
         if (!matchesStatus) return false
         if (!keyword) return true
         const title = String(p.projectTitle || p.title || '').toLowerCase()
@@ -121,11 +127,20 @@ export default {
     },
   },
   methods: {
+    statusTone,
+    proposalStatusLabel,
     async fetchProposals() {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals?statusIn=SUBMITTED&statusIn=REVISION&statusIn=RETURNED_TO_RPS')
+        // Send both spellings of the submitted state so new (FOR REVIEW) and legacy
+        // (SUBMITTED) rows are both listed. parameters are serialized as repeated keys.
+        const res = await api.get('/api/proposals', {
+          params: {
+            statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
+          },
+          paramsSerializer: { indexes: null },
+        })
         this.proposals = Array.isArray(res.data) ? res.data : []
       } catch (err) {
         console.error(err)
@@ -136,8 +151,9 @@ export default {
       }
     },
     viewProposal(proposal) {
-      if (proposal.status === 'SUBMITTED') {
-        // SUBMITTED proposals go to the review page with endorse/return/reject actions
+      if (isForReviewStatus(proposal.status)) {
+        // Newly submitted (FOR REVIEW, or legacy SUBMITTED) proposals go to the review
+        // page with endorse/return/reject actions.
         this.$router.push({ name: 'ProposalReview', params: { id: proposal.id } })
       } else if (proposal.status === 'RETURNED_TO_RPS') {
         this.$router.push({ name: 'RpsForwardRevision', params: { id: proposal.id } })
@@ -352,7 +368,8 @@ export default {
   white-space: nowrap;
 }
 
-/* STATUS BADGES */
+/* STATUS BADGES
+   Geometry only; the `.is-*` colours come from assets/status.css. */
 .status {
   display: inline-block;
   padding: 3px 9px;
@@ -362,31 +379,8 @@ export default {
   white-space: nowrap;
 }
 
-.submitted {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-
-.revision,
-.returned_to_rps {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.endorsed {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.rejected {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
 /* ACTION BUTTON */
 .review-btn {
-  background: #ffd400;
-  color: #25245b;
   border: none;
   height: 29px;
   padding: 0 12px;
@@ -398,12 +392,8 @@ export default {
   transition: background 0.15s ease;
 }
 
-.review-btn:hover {
-  background: #f0c800;
-}
-
 .review-btn:focus-visible {
-  outline: 2px solid #25245b;
+  outline: 2px solid var(--btn-focus-outline);
   outline-offset: 2px;
 }
 

@@ -70,7 +70,7 @@
             :class="{ 'call-card--scheduled': isScheduled(call) }"
           >
             <div class="call-card-head">
-              <span class="call-status" :class="statusClass(call)">
+              <span class="call-status" :class="statusTone(statusOf(call))">
                 <span class="status-dot" aria-hidden="true"></span>{{ statusOf(call) }}
               </span>
             </div>
@@ -129,6 +129,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import api from '@/utils/api'
 import { announcementStatus } from '@/utils/announcementStatus'
+import { statusTone } from '@/utils/statusTone.js'
 import {
   AVAILABLE_CALLS_ENDPOINT,
   CALL_DEADLINE_LABEL,
@@ -136,7 +137,6 @@ import {
   CALL_FOR_PROPOSAL_TITLE,
   CALL_OPENING_LABEL,
   CALL_SELECTION_BUTTON_LABEL,
-  CALL_STATUS_SCHEDULED,
   CALL_WINDOW_LABEL,
   NO_AVAILABLE_CALLS_MESSAGE,
   applicationsOpenOnLabel,
@@ -174,12 +174,6 @@ const calls = ref([])
 
 /** Draft / Scheduled / Open / Closed, from the saved status plus the saved dates. */
 const statusOf = (call) => announcementStatus(call)
-
-/** Badge modifier, so an upcoming call looks different from an open one. */
-const statusClass = (call) =>
-  announcementStatus(call) === CALL_STATUS_SCHEDULED
-    ? 'call-status--scheduled'
-    : 'call-status--open'
 
 const isOpen = (call) => isCallOpen(call)
 const isScheduled = (call) => isCallScheduled(call)
@@ -448,32 +442,12 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-/* An open call keeps the existing green badge. */
-.call-status--open {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.call-status--open .status-dot {
-  background: #10b981;
-}
-
-/* A scheduled (upcoming) call is clearly different: amber, with an outline dot. */
-.call-status--scheduled {
-  background: #fff7ed;
-  color: #b45309;
-}
-
-.call-status--scheduled .status-dot {
-  background: transparent;
-  border: 2px solid #f59e0b;
-}
-
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 .status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #10b981;
+  background: currentColor;
   box-sizing: border-box;
 }
 
@@ -630,39 +604,26 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-secondary {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
 }
 
 .btn-primary {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #4f46e5;
-  border: none;
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
   transition: all 0.15s;
-}
-
-.btn-primary:hover {
-  background: #4338ca;
 }
 
 /* ===== SMALL SCREENS =====

@@ -22,7 +22,7 @@
 
         <button
           v-if="!notification.isRead"
-          class="mark-btn"
+          class="mark-btn btn-view"
           @click="markAsRead(notification.id)"
         >
           Mark as Read
@@ -124,19 +124,13 @@ onMounted(loadNotifications)
   color: #ccc;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .mark-btn {
   margin-top: 12px;
-  background: #ffd429;
-  color: #1c1a3c;
-  border: none;
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-}
-
-.mark-btn:hover {
-  opacity: 0.9;
 }
 
 .empty-state {

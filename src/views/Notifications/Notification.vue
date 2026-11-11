@@ -25,7 +25,7 @@
         <label><input type="checkbox" /> System Notifications</label>
       </div>
 
-      <button class="btn-save">Save Settings</button>
+      <button class="btn-save btn-primary">Save Settings</button>
     </div>
   </div>
 </template>
@@ -70,9 +70,8 @@ label {
   margin-bottom: 6px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-save {
-  background: #ffd429;
-  border: none;
   padding: 8px 18px;
   border-radius: 6px;
   margin-top: 20px;

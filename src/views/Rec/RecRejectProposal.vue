@@ -6,7 +6,7 @@
     <!-- HEADER -->
     <div class="page-header">
       <h2>Reject Proposal</h2>
-      <span class="badge-danger">⚠️ Permanent Action</span>
+      <span class="badge-danger status-badge is-rejected">⚠️ Permanent Action</span>
     </div>
 
     <p class="subtitle">Provide clear justification for proposal rejection</p>
@@ -85,7 +85,7 @@
             <li>Comments will be visible to the applicant</li>
           </ul>
 
-          <button class="reject-btn" @click="rejectProposal">Reject Proposal</button>
+          <button class="reject-btn btn-reject" @click="rejectProposal">Reject Proposal</button>
 
           <div class="note-box">
             Ensure the rejection details are properly filled before submitting.
@@ -104,8 +104,8 @@
       <div class="modal-box">
         <p>Are you sure you want to reject this proposal?</p>
         <div class="modal-actions">
-          <button class="cancel-btn" @click="cancelReject">Cancel</button>
-          <button class="reject-btn" @click="confirmReject">Confirm</button>
+          <button class="cancel-btn btn-cancel" @click="cancelReject">Cancel</button>
+          <button class="reject-btn btn-reject" @click="confirmReject">Confirm</button>
         </div>
       </div>
     </div>
@@ -115,7 +115,7 @@
       <div class="modal-box">
         <p>Proposal rejected successfully!</p>
         <div class="modal-actions">
-          <button class="reject-btn" @click="closeSuccess">OK</button>
+          <button class="btn-primary" @click="closeSuccess">OK</button>
         </div>
       </div>
     </div>
@@ -235,11 +235,10 @@ const goToSubmission = () => {
   font-weight: 700;
 }
 
+/* Geometry only; the rejected tone comes from assets/status.css. */
 .badge-danger {
-  background: #ffe5e5;
   padding: 4px 12px;
   border-radius: 6px;
-  color: #c62828;
   font-size: 13px;
 }
 
@@ -334,10 +333,8 @@ textarea {
   font-size: 14px;
 }
 
+/* Layout only; the reject/cancel colours come from assets/actions.css. */
 .reject-btn {
-  background: #e53935;
-  color: white;
-  border: none;
   width: 100%;
   padding: 12px;
   border-radius: 6px;
@@ -347,9 +344,6 @@ textarea {
 }
 
 .cancel-btn {
-  background: white;
-  color: #1f2937;
-  border: 1px solid #ccc;
   width: 100%;
   padding: 12px;
   border-radius: 6px;

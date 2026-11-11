@@ -40,7 +40,7 @@
             <p v-if="!isLoading && candidates.length === 0" class="no-candidates">
               No eligible replacement Dean found
             </p>
-            <button type="button" class="link-btn" @click="showCreate = true" :disabled="isLoading">
+            <button type="button" class="link-btn btn-primary" @click="showCreate = true" :disabled="isLoading">
               + Create a new Dean account
             </button>
           </div>
@@ -65,7 +65,7 @@
           </p>
 
           <div class="buttons">
-            <button type="button" class="cancel-btn" @click="$emit('close')" :disabled="isLoading">Cancel</button>
+            <button type="button" class="cancel-btn btn-secondary" @click="$emit('close')" :disabled="isLoading">Cancel</button>
             <button v-if="!confirming" type="button" class="create-btn" @click="askConfirm" :disabled="isLoading">
               Replace Dean
             </button>
@@ -341,11 +341,9 @@ select {
   box-sizing: border-box;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .link-btn {
   align-self: flex-start;
-  background: transparent;
-  border: none;
-  color: #2452ff;
   cursor: pointer;
   font-size: 0.8125rem;
   padding: 2px 0;
@@ -367,6 +365,7 @@ select {
   gap: 12px;
 }
 
+/* Layout only; the action colours come from assets/actions.css. */
 .cancel-btn,
 .create-btn {
   padding: 10px 18px;
@@ -375,18 +374,6 @@ select {
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-}
-
-.cancel-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.create-btn {
-  background: #2452ff;
-  border: 1px solid #2452ff;
-  color: #ffffff;
 }
 
 .create-btn:disabled,

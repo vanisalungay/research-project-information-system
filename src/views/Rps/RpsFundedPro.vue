@@ -35,17 +35,13 @@
                         <td>₱ {{ proposal.budget }}</td>
 
                         <td>
-                            <span class="status" :class="{
-                                ready: proposal.status == 'Ready for Release',
-                                returned: proposal.status == 'Returned',
-                                released: proposal.status == 'Released'
-                            }">
-                                {{ proposal.status }}
+                            <span class="status" :class="statusTone(proposal.status)">
+                                {{ proposalStatusLabel(proposal.status) }}
                             </span>
                         </td>
 
                         <td>
-                            <button class="view-btn" @click="viewProposal(proposal)">
+                            <button class="view-btn btn-view" @click="viewProposal(proposal)">
                                 View
                             </button>
                         </td>
@@ -68,6 +64,9 @@
 </template>
 
 <script>
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+
 export default {
 
     name: "RpsBudgetProcessing",
@@ -101,6 +100,10 @@ export default {
     },
 
     methods: {
+
+        statusTone,
+
+        proposalStatusLabel,
 
         viewProposal(proposal) {
 
@@ -198,6 +201,7 @@ export default {
     background: #f8fafc;
 }
 
+/* Geometry only; the `.is-*` tone colours come from assets/status.css. */
 .status {
     padding: 6px 12px;
     border-radius: 20px;
@@ -208,33 +212,12 @@ export default {
     min-width: 140px;
 }
 
-.ready {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.returned {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.released {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
+/* Layout only; the action colours are global (assets/actions.css). */
 .view-btn {
-    background: #2563eb;
-    color: #fff;
-    border: none;
     padding: 8px 18px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-}
-
-.view-btn:hover {
-    background: #1d4ed8;
 }
 
 .empty {

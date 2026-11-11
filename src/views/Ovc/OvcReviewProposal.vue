@@ -19,7 +19,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">Go Back</button>
+      <button class="btn-secondary" @click="goBack">Go Back</button>
     </div>
 
     <!-- Content -->
@@ -146,30 +146,30 @@
             <ul class="files-list">
               <li v-if="proposal.reviewFileName" class="file-item">
                 <span>📄 Review of Literature</span>
-                <button class="download-btn" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
+                <button class="download-btn btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.roadmapFileName" class="file-item">
                 <span>📄 Technology Roadmap</span>
-                <button class="download-btn"
+                <button class="download-btn btn-download"
                   @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.gadFileName" class="file-item">
                 <span>📄 GAD Score</span>
-                <button class="download-btn" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
+                <button class="download-btn btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="file-item">
                 <span>📄 Line-Item Budget</span>
-                <button class="download-btn"
+                <button class="download-btn btn-download"
                   @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.submittedByFileName || proposal.submittedByFilePath" class="file-item">
                 <span>📄 Submitted By Signature</span>
-                <button class="download-btn"
+                <button class="download-btn btn-download"
                   @click="downloadFile(proposal.submittedByFilePath || proposal.submittedByFileName)">DOWNLOAD</button>
               </li>
               <li v-if="proposal.endorsementFileName || proposal.endorsementFilePath" class="file-item">
                 <span>📄 Endorsement Document</span>
-                <button class="download-btn"
+                <button class="download-btn btn-download"
                   @click="downloadFile(proposal.endorsementFilePath || proposal.endorsementFileName)">DOWNLOAD</button>
               </li>
               <li
@@ -461,27 +461,6 @@ const formatReviewerPosition = (position) => {
   flex: 1;
 }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-top: 4px;
-}
-
-.back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
 .header-info {
   flex: 1;
 }
@@ -505,96 +484,19 @@ const formatReviewerPosition = (position) => {
   font-family: monospace;
 }
 
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.draft {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.status-badge.submitted {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.status-badge.endorsed {
-  background: #bbdefb;
-  color: #1565c0;
-}
-
-.status-badge.under_review {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.status-badge.rec_approved {
-  background: #c8e6c9;
-  color: #2e7d32;
-}
-
-.status-badge.for_ovcaf_approval {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.for_oc_approval {
-  background: #ffe0b2;
-  color: #e65100;
-}
-
-.status-badge.approved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-badge.revision {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
+/* The header and sidebar render the status through the shared .rv-status classes
+   (assets/status.css); the old page-local .status-badge palette is gone. */
 .header-actions {
   display: flex;
   gap: 10px;
 }
 
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background: #f1f5f9;
-}
-
+/* Layout only; the primary colour comes from assets/actions.css. */
 .btn-primary {
-  background: #4f46e5;
-  border: none;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
   cursor: pointer;
 }
 
@@ -855,18 +757,12 @@ const formatReviewerPosition = (position) => {
   margin: 0;
 }
 
+/* Layout only; the action colours are global (assets/actions.css). */
 .btn-download {
   padding: 6px 12px;
-  background: #4f46e5;
-  color: #fff;
-  border: none;
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
-}
-
-.btn-download:hover {
-  background: #4338ca;
 }
 
 /* SIDEBAR */
@@ -890,57 +786,6 @@ const formatReviewerPosition = (position) => {
   margin: 0 0 12px 0;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-}
-
-/* STATUS INDICATOR */
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-
-.status-indicator.submitted {
-  background: #f3e8ff;
-}
-
-.status-indicator.endorsed {
-  background: #bbdefb;
-}
-
-.status-indicator.under_review {
-  background: #ede9fe;
-}
-
-.status-indicator.rec_approved {
-  background: #c8e6c9;
-}
-
-.status-indicator.approved {
-  background: #dcfce7;
-}
-
-.status-indicator.rejected {
-  background: #fee2e2;
-}
-
-.status-indicator.revision {
-  background: #e0e7ff;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #4f46e5;
-}
-
-.status-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
 }
 
 .status-meta p {
@@ -1048,7 +893,7 @@ const formatReviewerPosition = (position) => {
 }
 
 .dot.completed {
-  background: #22c55e;
+  background: var(--status-approved-solid);
 }
 
 .timeline li strong {
@@ -1085,32 +930,7 @@ const formatReviewerPosition = (position) => {
   cursor: not-allowed;
 }
 
-.btn-action.btn-primary {
-  background: #4f46e5;
-  color: #fff;
-}
-
-.btn-action.btn-primary:hover:not(:disabled) {
-  background: #4338ca;
-}
-
-.btn-action.btn-warning {
-  background: #f59e0b;
-  color: #fff;
-}
-
-.btn-action.btn-warning:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.btn-action.btn-danger {
-  background: #ef4444;
-  color: #fff;
-}
-
-.btn-action.btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-}
+/* The colours for .btn-primary / .btn-warning / .btn-danger come from assets/actions.css. */
 
 /* FILES LIST */
 .files-list {
@@ -1133,8 +953,6 @@ const formatReviewerPosition = (position) => {
 }
 
 .download-btn {
-  background: none;
-  border: none;
   cursor: pointer;
   font-size: 16px;
 }

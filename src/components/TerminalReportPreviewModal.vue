@@ -240,10 +240,8 @@ onBeforeUnmount(() => {
 .modal-body {
   padding: 16px 20px 24px;
 }
+/* Layout only; the action colours come from assets/actions.css. */
 .btn-primary {
-  background: #ffd400;
-  color: #1c2145;
-  border: none;
   padding: 12px 20px;
   border-radius: 8px;
   font-weight: 700;
@@ -254,9 +252,6 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 .btn-secondary {
-  background: #e2e8f0;
-  color: #1c2145;
-  border: none;
   padding: 12px 20px;
   border-radius: 8px;
   font-weight: 700;
