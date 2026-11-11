@@ -158,7 +158,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
@@ -320,8 +320,23 @@ const reviewRows = computed(() => [
   { label: 'Position', value: formatReviewerPosition(proposal.value.reviewedByPosition) || '' },
 ])
 
-const downloadProposal = () => {
-  downloadOfficialProposal(proposal.value)
+const downloadProposal = async () => {
+  if (!proposal.value?.id) {
+    await showAlert('The proposal is still loading. Please try again in a moment.', {
+      type: 'warning',
+      title: 'Proposal Not Ready',
+    })
+    return
+  }
+  try {
+    await downloadProposalRecord({ proposalId: proposal.value.id, proposal: proposal.value })
+  } catch (err) {
+    console.error('Preparing the proposal document failed:', err)
+    await showAlert('The proposal document could not be prepared. Please try again.', {
+      type: 'error',
+      title: 'Download Failed',
+    })
+  }
 }
 
 const downloadFile = (fileName) => {

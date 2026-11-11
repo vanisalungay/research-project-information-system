@@ -1205,7 +1205,7 @@ import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
 import RiskManagementTable from '@/components/RiskManagementTable.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { budgetDocumentNameFromPath } from '@/utils/budgetDocument'
 import {
   buildStandaloneHtml,
@@ -2336,8 +2336,18 @@ const toOfficialProposal = () => {
   }
 }
 
-const downloadForm = () => {
-  downloadOfficialProposal(toOfficialProposal())
+const downloadForm = async () => {
+  try {
+    // The form may still be unsaved, so the in-memory values are printed exactly as
+    // typed - through the same shared document used by the reviewing offices.
+    await downloadProposalRecord({ proposal: toOfficialProposal() })
+  } catch (err) {
+    console.error('Preparing the proposal document failed:', err)
+    await showAlert('The proposal document could not be prepared. Please try again.', {
+      type: 'error',
+      title: 'Download Failed',
+    })
+  }
 }
 
 const proposalDocumentBody = () => {

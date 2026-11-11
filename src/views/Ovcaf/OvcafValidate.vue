@@ -95,6 +95,7 @@
           <p v-if="budgetDocError" class="error-text">{{ budgetDocError }}</p>
 
           <button class="download-btn btn-download" @click="downloadProject">DOWNLOAD COMPLETE PROPOSAL</button>
+          <p v-if="downloadError" class="error-text">{{ downloadError }}</p>
         </div>
       </div>
     </template>
@@ -143,7 +144,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -342,8 +343,20 @@ const confirmReject = async () => {
   }
 }
 
-const downloadProject = () => {
-  downloadOfficialProposal(proposal.value)
+const downloadError = ref('')
+const downloadProject = async () => {
+  downloadError.value = ''
+  if (!proposal.value) {
+    downloadError.value = 'The proposal is still loading. Please try again in a moment.'
+    return
+  }
+  try {
+    await downloadProposalRecord({ proposalId: proposal.value.id, proposal: proposal.value })
+  } catch (err) {
+    // A print/document failure is a real failure: say so instead of staying silent.
+    console.error('Preparing the proposal document failed:', err)
+    downloadError.value = 'The proposal document could not be prepared. Please try again.'
+  }
 }
 </script>
 

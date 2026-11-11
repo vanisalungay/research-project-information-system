@@ -1,5 +1,6 @@
 package com.rpis.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -407,4 +408,12 @@ public class Proposal {
 
     @OneToMany(mappedBy = "proposal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProposalLimitation> limitations = new ArrayList<>();
+
+    /**
+     * The audited status transitions of this proposal. Writing a row is part of the
+     * same transaction as the status change that caused it (see ProposalService).
+     */
+    @OneToMany(mappedBy = "proposal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<ProposalStatusHistory> statusHistory = new ArrayList<>();
 }

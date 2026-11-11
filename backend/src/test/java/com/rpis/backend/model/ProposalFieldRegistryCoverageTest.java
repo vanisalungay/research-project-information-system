@@ -57,6 +57,9 @@ class ProposalFieldRegistryCoverageTest {
             "endorsementRequestId",
             // timestamps
             "createdAt", "updatedAt",
+            // the audited status transitions (who moved the proposal, when and why):
+            // workflow history rather than proposal content, so it has no remark control
+            "statusHistory",
             // repeated collections: covered through their columns below
             "sites", "logFrames", "personnel", "budget", "otherProjects", "priorityAgendas", "limitations",
             // Section 21 (Risk Management Plan): the structured table is a repeated
@@ -116,7 +119,8 @@ class ProposalFieldRegistryCoverageTest {
             if (elementType == null || elementType.equals(String.class)) {
                 continue;
             }
-            if (KEYED_COLLECTIONS.contains(field.getName())) {
+            if (NOT_REVIEWABLE.contains(field.getName())
+                    || KEYED_COLLECTIONS.contains(field.getName())) {
                 continue;
             }
             // The collection itself must be declared so the UI can render its rows.

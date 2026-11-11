@@ -69,8 +69,8 @@ test('the title, subtitle and both endpoints are unchanged', () => {
   )
 
   assert.ok(
-    DASHBOARD.includes("api.get('/api/proposals?statusIn=REC_APPROVED&statusIn=FOR_OC_APPROVAL&statusIn=OVC_APPROVED')"),
-    'the pending fetch must keep its status filters',
+    DASHBOARD.includes("api.get('/api/proposals?statusIn=FOR_OC_APPROVAL')"),
+    'the pending fetch must contain only the status the Chancellor can act on',
   )
   assert.ok(
     DASHBOARD.includes(
@@ -102,4 +102,26 @@ test('the empty states are the real ones, not placeholder text', () => {
     DASHBOARD.includes('Approved proposals and those forwarded to Finance/OVCAF for budget processing will appear here.'),
     'the approved empty state must be kept',
   )
+})
+
+test('downloads live inside Proposal Details, not on the dashboard', () => {
+  // The request is explicit: the Chancellor downloads from the proposal's own page,
+  // after opening it, so no row may offer a Download action.
+  assert.ok(!DASHBOARD.includes('is-download'), 'the dashboard must not render a Download button')
+  assert.ok(!DASHBOARD.includes('downloadProposal'), 'the dashboard must not carry a download handler')
+  assert.ok(
+    !DASHBOARD.includes('proposalDetailsDocument'),
+    'the dashboard must not import the document generator',
+  )
+  assert.match(DASHBOARD, /@click="reviewProposal\(p\.id\)"/, 'the row action opens the details page instead')
+})
+
+test('a saved SO draft is visible in the pending table', () => {
+  assert.match(DASHBOARD, /import \{ isSoDraft \} from '@\/utils\/soDraft\.js'/,
+    'the shared draft rule must be used')
+  assert.ok(DASHBOARD.includes('v-if="isSoDraft(p)"'), 'the pending row must show the draft state')
+  assert.ok(DASHBOARD.includes('end-badge is-draft'), 'the shared draft badge tone must be used')
+  assert.ok(DASHBOARD.includes('>SO Draft<'), 'the badge must name the draft')
+  assert.ok(DASHBOARD.includes('soFilePath: p.soFilePath'), 'the row must carry the fields the rule reads')
+  assert.ok(DASHBOARD.includes('soUploadedAt: p.soUploadedAt'), 'the row must carry the SO date')
 })

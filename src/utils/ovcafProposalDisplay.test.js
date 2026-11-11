@@ -98,7 +98,7 @@ test('the details header reads the Project Leader and budget from the viewer rec
 test('the details page still follows the route and downloads the official document', () => {
   assert.ok(/route\.(params|query)\.id/.test(DETAILS))
   assert.match(DETAILS, /watch\(/)
-  assert.ok(DETAILS.includes('downloadOfficialProposal('))
+  assert.ok(DETAILS.includes('downloadProposalRecord('))
   assert.ok(DETAILS.includes('Could not prepare the proposal document'), 'a failure is reported')
 })
 

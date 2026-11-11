@@ -93,6 +93,28 @@
             <version>2.0.3</version>
         </dependency>
 
+        <!-- openhtmltopdf: server-side rendering of the shared proposal document.
+             Chrome always prints its own header (date + document title) and footer
+             (URL + page number) when the user's print dialog has "Headers and
+             footers" enabled, regardless of the @page margin size, so a browser
+             print can never guarantee a clean downloaded proposal. The frontend
+             builds the same single HTML template as before and posts it here;
+             this renderer turns it into the PDF, including the document's own
+             bottom-right "Page n of N" margin box. -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+        <!-- The shared document is authored as HTML5 (entities such as &mdash;, the
+             HTML5 doctype). openhtmltopdf parses XML, so jsoup normalises the markup
+             into a W3C DOM before rendering; without it any HTML-only entity fails. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>

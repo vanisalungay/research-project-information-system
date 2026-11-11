@@ -212,7 +212,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadUploadedFile } from '@/utils/fileDownload'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import GadChecklist from '@/components/GadChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
@@ -374,7 +374,7 @@ const downloadFile = (fileName) => {
 
 /**
  * The DOWNLOAD action of the header: the complete proposal document, built and printed by
- * the same shared helper every other role's review page uses (officialProposalForm.js).
+ * the same shared helper every other role's page uses (proposalDetailsDocument.js).
  *
  * This page used to only fire the four attachment downloads here, so on a proposal without
  * those attachments the button did nothing at all - no document, no error, no feedback. The
@@ -389,7 +389,9 @@ const downloadProposal = async () => {
 
   downloadLoading.value = true
   try {
-    await downloadOfficialProposal(proposal.value)
+    // The shared role-neutral document, re-read by id so the printed proposal is
+    // current, followed by the official Full-Blown R&D Proposal form.
+    await downloadProposalRecord({ proposalId: proposal.value.id, proposal: proposal.value })
   } catch (err) {
     console.error(err)
     errorMessage.value = 'Could not prepare the proposal document. Please try again.'

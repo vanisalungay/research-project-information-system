@@ -81,11 +81,15 @@
                 <td class="cell-id">{{ p.date }}</td>
                 <td>
                   <span class="end-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
+                  <!-- An SO form saved without finalizing the approval. -->
+                  <span v-if="isSoDraft(p)" class="end-badge is-draft draft-badge">SO Draft</span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">
-                    Review &amp; Approve
-                  </button>
+                  <div class="row-actions">
+                    <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">
+                      Review &amp; Approve
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -122,7 +126,9 @@
                   <span class="end-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">View</button>
+                  <div class="row-actions">
+                    <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">View</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -145,6 +151,7 @@ import '@/assets/endorsement.css'
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { isSoDraft } from '@/utils/soDraft.js'
 
 const router = useRouter()
 
@@ -185,13 +192,24 @@ const forFinalApproval = ref([])
 const approvedProposals = ref([])
 const isLoading = ref(true)
 
+/** The fields the draft badge and the document generator read from a list row. */
+const soFields = (p) => ({
+  soNumber: p.soNumber,
+  soFileName: p.soFileName,
+  soFilePath: p.soFilePath,
+  soUploadedAt: p.soUploadedAt,
+  needsBudget: p.needsBudget,
+})
+
 const loadDashboard = async () => {
   try {
     isLoading.value = true
 
-    // Fetch proposals that are relevant to OC
+    // Only proposals that are actually awaiting the Chancellor can be acted on.
+    // REC_APPROVED and OVC_APPROVED belong to OVCRIGE's queue - listing them here
+    // produced rows whose action buttons could only fail.
     const [pendingRes, approvedRes] = await Promise.all([
-      api.get('/api/proposals?statusIn=REC_APPROVED&statusIn=FOR_OC_APPROVAL&statusIn=OVC_APPROVED'),
+      api.get('/api/proposals?statusIn=FOR_OC_APPROVAL'),
       api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED'),
     ])
 
@@ -208,6 +226,7 @@ const loadDashboard = async () => {
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
       date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
       status: p.status,
+      ...soFields(p),
     }))
 
     approvedProposals.value = approvedData.map(p => ({
@@ -217,6 +236,7 @@ const loadDashboard = async () => {
       date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
       status: p.status,
       badgeClass: p.status === 'FOR_OVCAF_APPROVAL' ? 'budget' : 'approved',
+      ...soFields(p),
     }))
   } catch (error) {
     console.error('Failed to load Chancellor dashboard:', error)
@@ -290,6 +310,32 @@ onMounted(loadDashboard)
 .row-btn {
   padding: 7px 14px;
   font-size: 0.8125rem;
+}
+
+/* The two row actions sit side by side and wrap on a narrow screen. */
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* A draft badge sits beside the status pill. */
+.draft-badge {
+  margin-left: 8px;
+}
+
+/* A failed download is reported once, above the tables. */
+.dash-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* ===== Loading ===== */

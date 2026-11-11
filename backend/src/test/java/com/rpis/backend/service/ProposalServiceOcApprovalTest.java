@@ -1,6 +1,8 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.ProposalStatusHistory;
+import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
@@ -11,10 +13,13 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +44,9 @@ class ProposalServiceOcApprovalTest {
 
     private ProposalRepository proposalRepository;
     private UploadStorage uploadStorage;
+    private CurrentUser currentUser;
+    private UserRepository userRepository;
+    private NotificationService notificationService;
     private ProposalService service;
     private Proposal proposal;
 
@@ -46,13 +54,16 @@ class ProposalServiceOcApprovalTest {
     void setUp() {
         proposalRepository = mock(ProposalRepository.class);
         uploadStorage = mock(UploadStorage.class);
+        currentUser = mock(CurrentUser.class);
+        userRepository = mock(UserRepository.class);
+        notificationService = mock(NotificationService.class);
         service = new ProposalService(proposalRepository,
-                mock(UserRepository.class),
-                mock(NotificationService.class),
+                userRepository,
+                notificationService,
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),
-                mock(CurrentUser.class),
+                currentUser,
                 mock(CooperatingAgencyService.class),
                 mock(PriorityAgendaService.class),
                 uploadStorage);
@@ -257,5 +268,68 @@ class ProposalServiceOcApprovalTest {
                 () -> service.approveWithSpecialOrder(404L, "SO-2026-053", null, true, null));
 
         assertEquals(404, error.getStatusCode().value());
+    }
+
+    /**
+     * Every approval writes exactly one audited transition, with the office that made
+     * it and its notes - this is what the proposal history page reads.
+     */
+    @Test
+    void anApprovalRecordsOneAuditedStatusTransitionWithItsActor() {
+        when(currentUser.getUserId()).thenReturn(5L);
+        when(currentUser.getRole()).thenReturn("OC");
+        User actor = new User();
+        actor.setName("The Chancellor");
+        when(userRepository.findById(5L)).thenReturn(Optional.of(actor));
+
+        Proposal saved = service.approveWithSpecialOrder(
+                PROPOSAL_ID, "SO-2026-060", null, false, "  Approved.  ");
+
+        assertEquals(1, saved.getStatusHistory().size(), "one transition per approval");
+        ProposalStatusHistory entry = saved.getStatusHistory().get(0);
+        assertEquals("FOR_OC_APPROVAL", entry.getFromStatus());
+        assertEquals("APPROVED", entry.getToStatus());
+        assertEquals(5L, entry.getActorUserId());
+        assertEquals("OC", entry.getActorRole());
+        assertEquals("The Chancellor", entry.getActorName());
+        assertEquals("Approved.", entry.getRemarks());
+        assertEquals(ProposalStatusHistory.SOURCE_APPLICATION, entry.getSource());
+        assertSame(saved, entry.getProposal());
+        assertNotNull(entry.getChangedAt());
+    }
+
+    /**
+     * The Chancellor's WITHOUT BUDGET classification sends the proposal straight to
+     * implementation. Finance must not receive the "ready for budget endorsement"
+     * notification, because no budget was recorded for it.
+     */
+    @Test
+    void aWithoutBudgetApprovalDoesNotAskFinanceToEndorseABudget() {
+        User finance = new User();
+        finance.setId(9L);
+        finance.setRole("OVCAF");
+        when(userRepository.findByRoleIn(List.of("OVCAF"))).thenReturn(List.of(finance));
+
+        service.approveWithSpecialOrder(PROPOSAL_ID, "SO-2026-062", null, false, null);
+
+        verify(notificationService, never()).createNotification(
+                eq(9L), anyString(), anyString(), anyString(), any());
+    }
+
+    /**
+     * The WITH BUDGET route still puts the proposal in front of Finance, so the
+     * without-budget guard must not silence the OVCAF review notification.
+     */
+    @Test
+    void aWithBudgetApprovalStillNotifiesFinanceToReviewTheProposal() {
+        User finance = new User();
+        finance.setId(9L);
+        finance.setRole("OVCAF");
+        when(userRepository.findByRoleIn(List.of("OVCAF"))).thenReturn(List.of(finance));
+
+        service.approveWithSpecialOrder(PROPOSAL_ID, "SO-2026-063", null, true, null);
+
+        verify(notificationService).createNotification(
+                eq(9L), anyString(), eq("Proposal for OVCAF Review"), eq("ENDORSEMENT"), eq(PROPOSAL_ID));
     }
 }

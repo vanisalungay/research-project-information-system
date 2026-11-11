@@ -130,13 +130,13 @@ test('the OVCRIGE review page downloads the proposal through the shared helper',
   // header, so on a proposal without them the DOWNLOAD button did nothing at all.
   const ovc = read('../views/Ovc/OvcReviewProposal.vue')
   assert.ok(
-    ovc.includes("import { downloadOfficialProposal } from '@/utils/officialProposalForm'"),
-    'the page must use the shared document builder',
+    ovc.includes("import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'"),
+    'the page must use the shared role-neutral document',
   )
   assert.ok(ovc.includes('@download="downloadProposal"'), 'the header calls the page handler')
   assert.ok(
-    ovc.includes('downloadOfficialProposal(proposal.value)'),
-    'which builds the complete proposal document',
+    ovc.includes('downloadProposalRecord({ proposalId: proposal.value.id, proposal: proposal.value })'),
+    'which builds the complete proposal document from the current record',
   )
   assert.ok(
     !ovc.includes('@download="downloadAll"'),
@@ -156,8 +156,8 @@ test('every role keeps using the shared proposal-download helper', () => {
     '../views/Proponent/ProponentDetiailedProp.vue',
   ]) {
     assert.ok(
-      read(file).includes('downloadOfficialProposal('),
-      file + ' must still use the shared helper',
+      read(file).includes('downloadProposalRecord('),
+      file + ' must still use the shared document entry point',
     )
   }
   assert.ok(HEADER.includes('downloadLoading'), 'the shared header exposes the busy state')

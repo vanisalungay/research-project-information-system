@@ -796,7 +796,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { budgetDocumentName } from '@/utils/budgetDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
@@ -987,8 +987,18 @@ const downloadFile = async (fileName) => {
   }
 }
 
-const printProposal = () => {
-  downloadOfficialProposal(proposal.value)
+const printProposal = async () => {
+  try {
+    // Re-read by id so the printed proposal matches the saved record, then print the
+    // same shared document every reviewing office downloads.
+    await downloadProposalRecord({ proposalId: proposal.value?.id, proposal: proposal.value })
+  } catch (err) {
+    console.error('Preparing the proposal document failed:', err)
+    await showAlert('The proposal document could not be prepared. Please try again.', {
+      type: 'error',
+      title: 'Download Failed',
+    })
+  }
 }
 
 const editDraft = () => {

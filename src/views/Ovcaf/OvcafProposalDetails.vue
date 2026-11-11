@@ -166,7 +166,7 @@ import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.
 import { PROPOSAL_FIELD_SECTIONS } from '@/utils/proposalFields';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
 import { downloadUploadedFile } from '@/utils/fileDownload';
-import { downloadOfficialProposal } from '@/utils/officialProposalForm';
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument';
 import { statusTone } from '@/utils/statusTone.js';
 import { proposalStatusLabel } from '@/utils/proposalStatus.js';
 import { normalizeStatusKey } from '@/utils/statusLabel.js';
@@ -407,7 +407,7 @@ const downloadProposal = async () => {
     downloadLoading.value = true;
     downloadError.value = '';
     try {
-        await downloadOfficialProposal(fullProposal.value);
+        await downloadProposalRecord({ proposalId: fullProposal.value.id, proposal: fullProposal.value });
     } catch (err) {
         console.error('Error preparing the proposal document:', err);
         downloadError.value = 'Could not prepare the proposal document. Please try again.';

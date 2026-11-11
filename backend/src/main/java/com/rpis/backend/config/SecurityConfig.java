@@ -183,6 +183,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/approve-with-so")
                         .hasRole(UserRoles.OC)
 
+                        // Saving the SO form as a draft is the same Office of the
+                        // Chancellor workflow, but never finalizes the approval. The
+                        // service enforces the same FOR_OC_APPROVAL requirement.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/special-order-draft")
+                        .hasRole(UserRoles.OC)
+
+                        // Returning an awaiting proposal to OVCRIGE is a Chancellor's
+                        // Office decision. The record goes back to REC_APPROVED (the
+                        // existing OVCRIGE-owned state); the service requires the
+                        // proposal to still be at FOR_OC_APPROVAL.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-to-ovcrige")
+                        .hasRole(UserRoles.OC)
+
                         // The generic status route serves only the two transitions its
                         // callers own: REC's recommendation (REC_APPROVED) and OVCAF's
                         // release readiness (READY_FOR_RELEASE). ProposalController
@@ -213,6 +226,11 @@ public class SecurityConfig {
                         // another's history. The routes are read-only by design.
                         .requestMatchers("/api/activity-logs", "/api/activity-logs/**")
                         .hasRole(UserRoles.RPS_ADMIN)
+
+                        // Server-rendered proposal PDFs: any authenticated user. The
+                        // endpoint only renders HTML the caller's own browser built;
+                        // it reads no record and exposes no data by itself.
+                        .requestMatchers(HttpMethod.POST, "/api/documents/pdf").authenticated()
 
                         // All other API requests require authentication
                         .anyRequest().authenticated())

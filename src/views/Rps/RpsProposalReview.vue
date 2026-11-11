@@ -142,7 +142,7 @@
 <script>
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { downloadOfficialProposal } from '@/utils/officialProposalForm'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
@@ -422,7 +422,18 @@ export default {
       }
     },
     async downloadProposal() {
-      downloadOfficialProposal(this.proposal)
+      if (!this.proposal?.id) {
+        this.errorMessage = 'The proposal is still loading. Please try again in a moment.'
+        this.showError = true
+        return
+      }
+      try {
+        await downloadProposalRecord({ proposalId: this.proposal.id, proposal: this.proposal })
+      } catch (err) {
+        console.error('Preparing the proposal document failed:', err)
+        this.errorMessage = 'The proposal document could not be prepared. Please try again.'
+        this.showError = true
+      }
     },
     downloadFile(fileName) {
       downloadUploadedFile(fileName)

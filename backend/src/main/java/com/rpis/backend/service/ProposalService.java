@@ -233,6 +233,11 @@ public class ProposalService {
     public static final String SPECIAL_ORDER_NOT_AT_OC_MESSAGE =
             "Only a proposal awaiting the Chancellor's final approval can be approved. "
                     + "The proposal must be at FOR_OC_APPROVAL.";
+    public static final String SPECIAL_ORDER_DRAFT_EMPTY_MESSAGE =
+            "Enter the SO number or attach the SO document before saving a draft.";
+    public static final String RETURN_TO_OVCRIGE_NOT_AT_OC_MESSAGE =
+            "Only a proposal awaiting the Chancellor's final approval can be returned to OVCRIGE. "
+                    + "The proposal must be at FOR_OC_APPROVAL.";
 
     // ========================
     // PERSONNEL "% TIME DEVOTED" (section 24 of the Create Proposal form)
@@ -1014,6 +1019,18 @@ public class ProposalService {
     @Transactional
     public Proposal approveWithSpecialOrder(Long proposalId, String soNumber, MultipartFile soFile,
                                             Boolean needsBudget, String chancellorNotes) {
+        return approveWithSpecialOrder(proposalId, soNumber, soFile, needsBudget, chancellorNotes, false);
+    }
+
+    /**
+     * Finalizes the OC approval. {@code removeSoFile} discards an SO document saved
+     * earlier as a draft, so a file the Chancellor's Office removed in the form is
+     * not resurrected by the final approval.
+     */
+    @Transactional
+    public Proposal approveWithSpecialOrder(Long proposalId, String soNumber, MultipartFile soFile,
+                                            Boolean needsBudget, String chancellorNotes,
+                                            boolean removeSoFile) {
         String normalisedSoNumber = soNumber == null ? "" : soNumber.trim();
         if (normalisedSoNumber.isEmpty()) {
             throw new IllegalArgumentException(SPECIAL_ORDER_NUMBER_REQUIRED_MESSAGE);
@@ -1051,6 +1068,10 @@ public class ProposalService {
             throw new IllegalStateException(SPECIAL_ORDER_NOT_AT_OC_MESSAGE);
         }
 
+        // A document saved by an earlier SO draft, if any, is replaced or removed by
+        // this approval. It is deleted only after the transaction commits.
+        String previousPath = proposal.getSoFilePath();
+
         String storedPath = null;
         if (soBytes != null) {
             try {
@@ -1073,20 +1094,143 @@ public class ProposalService {
             if (storedPath != null) {
                 proposal.setSoFileName(specialOrderDisplayName(soFile, soFormat));
                 proposal.setSoFilePath(storedPath);
+            } else if (removeSoFile) {
+                proposal.setSoFileName(null);
+                proposal.setSoFilePath(null);
             }
-            if (chancellorNotes != null && !chancellorNotes.isBlank()) {
-                proposal.setRemarks(truncate(chancellorNotes.trim(), 2000));
+            String normalisedNotes = chancellorNotes != null && !chancellorNotes.isBlank()
+                    ? truncate(chancellorNotes.trim(), 2000)
+                    : null;
+            if (normalisedNotes != null) {
+                proposal.setRemarks(normalisedNotes);
             }
             // The budget routing decision is the Chancellor's: with budget the proposal
             // waits for OVCAF; without it, it is approved for immediate implementation.
-            proposal.setStatus(needsBudget ? "FOR_OVCAF_APPROVAL" : "APPROVED");
+            String targetStatus = needsBudget ? "FOR_OVCAF_APPROVAL" : "APPROVED";
+            proposal.setStatus(targetStatus);
+            // The transition is audited in the same transaction as the status change.
+            recordStatusChange(proposal, "FOR_OC_APPROVAL", targetStatus, normalisedNotes);
 
             Proposal saved = proposalRepository.save(proposal);
             notifySubscribedRoles(saved, null);
+            if (previousPath != null && !previousPath.isBlank()
+                    && (storedPath != null || removeSoFile)) {
+                deleteStoredSpecialOrderAfterCommit(previousPath);
+            }
             return saved;
         } catch (RuntimeException e) {
             // Compensates the filesystem write for a failure before commit. The rollback
             // synchronization above covers a failure during commit as well.
+            if (storedPath != null) {
+                uploadStorage.delete(storedPath);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Saves the Special Order form as a draft without finalizing the approval: the
+     * proposal's status is unchanged, no SO date is recorded and no notification is
+     * sent. Only the fields entered in the form are written, so the form can be
+     * reopened later and continue from where it was left.
+     *
+     * <p>At least an SO number or an SO document must be present (a budget choice or
+     * notes alone cannot be distinguished from an untouched proposal). Because a
+     * draft never sets {@code soUploadedAt}, the OVCAF workflow does not treat it as
+     * a completed OC approval.
+     *
+     * @param proposalId      the proposal awaiting the Chancellor's final approval
+     * @param soNumber        the SO number entered so far (optional)
+     * @param soFile          an SO document to stage (optional)
+     * @param needsBudget     the budget routing chosen so far (optional)
+     * @param chancellorNotes notes entered so far (optional)
+     * @param removeSoFile    whether a previously staged SO document must be removed
+     * @return the saved proposal, still at {@code FOR_OC_APPROVAL}
+     */
+    @Transactional
+    public Proposal saveSpecialOrderDraft(Long proposalId, String soNumber, MultipartFile soFile,
+                                          Boolean needsBudget, String chancellorNotes,
+                                          boolean removeSoFile) {
+        String normalisedSoNumber = soNumber == null ? "" : soNumber.trim();
+        if (normalisedSoNumber.length() > 100) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_NUMBER_TOO_LONG_MESSAGE);
+        }
+
+        // Validate the document before the row lock is taken, so an invalid or
+        // oversized upload never holds a database lock.
+        byte[] soBytes = null;
+        String soFormat = null;
+        if (soFile != null && !soFile.isEmpty()) {
+            if (soFile.getSize() > getSpecialOrderMaxBytes()) {
+                throw new IllegalArgumentException(getSpecialOrderMaxSizeMessage());
+            }
+            try {
+                soBytes = soFile.getBytes();
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "The Special Order document could not be read.");
+            }
+            soFormat = readSpecialOrderFileFormat(soFile, soBytes);
+        }
+
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        String status = proposal.getStatus() == null
+                ? ""
+                : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"FOR_OC_APPROVAL".equals(status)) {
+            throw new IllegalStateException(SPECIAL_ORDER_NOT_AT_OC_MESSAGE);
+        }
+
+        String previousPath = proposal.getSoFilePath();
+        boolean keepsStoredFile = previousPath != null && !previousPath.isBlank() && !removeSoFile;
+        if (normalisedSoNumber.isEmpty() && soBytes == null && !keepsStoredFile) {
+            throw new IllegalArgumentException(SPECIAL_ORDER_DRAFT_EMPTY_MESSAGE);
+        }
+        // Whether an earlier draft wrote the SO fields (and therefore owned `remarks`).
+        // On a first save with no notes, remarks may still hold REC/return comments and
+        // must not be wiped; on a later save, an empty notes box clears the draft notes.
+        boolean draftExisted = (proposal.getSoNumber() != null && !proposal.getSoNumber().isBlank())
+                || (previousPath != null && !previousPath.isBlank());
+
+        String storedPath = null;
+        if (soBytes != null) {
+            try {
+                storedPath = uploadStorage.store(soBytes, SPECIAL_ORDER_DIR, "special-order." + soFormat);
+            } catch (RuntimeException e) {
+                log.error("Could not store the draft Special Order document of proposal {}: {}",
+                        proposalId, e.getMessage());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "The Special Order document could not be stored. Please try again.", e);
+            }
+            deleteStoredSpecialOrderOnRollback(storedPath);
+        }
+
+        try {
+            proposal.setSoNumber(normalisedSoNumber.isEmpty() ? null : normalisedSoNumber);
+            proposal.setNeedsBudget(needsBudget);
+            if (storedPath != null) {
+                proposal.setSoFileName(specialOrderDisplayName(soFile, soFormat));
+                proposal.setSoFilePath(storedPath);
+            } else if (removeSoFile) {
+                proposal.setSoFileName(null);
+                proposal.setSoFilePath(null);
+            }
+            if (chancellorNotes != null && !chancellorNotes.isBlank()) {
+                proposal.setRemarks(truncate(chancellorNotes.trim(), 2000));
+            } else if (draftExisted) {
+                proposal.setRemarks(null);
+            }
+            // Deliberately no soUploadedAt and no status/notification change: the draft
+            // is not an OC approval.
+
+            Proposal saved = proposalRepository.save(proposal);
+            if (previousPath != null && !previousPath.isBlank() && !previousPath.equals(storedPath)
+                    && (storedPath != null || removeSoFile)) {
+                deleteStoredSpecialOrderAfterCommit(previousPath);
+            }
+            return saved;
+        } catch (RuntimeException e) {
             if (storedPath != null) {
                 uploadStorage.delete(storedPath);
             }
@@ -1122,6 +1266,37 @@ public class ProposalService {
                 if (status != TransactionSynchronization.STATUS_COMMITTED) {
                     uploadStorage.delete(storedPath);
                 }
+            }
+        });
+    }
+
+    /**
+     * Deletes an SO document that a committed transaction replaced or removed. The
+     * row is updated only if the transaction commits, so deleting before that point
+     * could leave the database pointing at a file that a rollback still needs.
+     */
+    private void deleteStoredSpecialOrderAfterCommit(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) {
+            return;
+        }
+        Runnable delete = () -> {
+            try {
+                uploadStorage.delete(storedPath);
+            } catch (RuntimeException e) {
+                // The approval/draft is already committed; an orphaned old file must
+                // not turn a successful request into an error.
+                log.warn("Could not delete the replaced Special Order document {}: {}",
+                        storedPath, e.getMessage());
+            }
+        };
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            delete.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                delete.run();
             }
         });
     }
@@ -1235,6 +1410,69 @@ public class ProposalService {
         notifySubscribedRoles(proposal, null);
 
         return proposal;
+    }
+
+    /**
+     * The Chancellor's Office returns a proposal to OVCRIGE instead of deciding it.
+     *
+     * <p>The target is {@code REC_APPROVED}, the existing state in which OVCRIGE owns
+     * the record and can forward it to the Chancellor again - so no new status or
+     * transition vocabulary is introduced. The transition is recorded in
+     * {@code proposal_status_history} together with the actor and the remarks, and
+     * OVCRIGE is notified through the existing REC_APPROVED recipient rule.
+     */
+    @Transactional
+    public Proposal returnToOvcrige(Long proposalId, String remarks) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+
+        String status = proposal.getStatus() == null
+                ? ""
+                : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"FOR_OC_APPROVAL".equals(status)) {
+            throw new IllegalStateException(RETURN_TO_OVCRIGE_NOT_AT_OC_MESSAGE);
+        }
+
+        String normalisedRemarks = remarks == null || remarks.isBlank()
+                ? null
+                : truncate(remarks.trim(), 2000);
+
+        proposal.setStatus("REC_APPROVED");
+        if (normalisedRemarks != null) {
+            proposal.setRemarks(normalisedRemarks);
+        }
+        recordStatusChange(proposal, "FOR_OC_APPROVAL", "REC_APPROVED", normalisedRemarks);
+
+        Proposal saved = proposalRepository.save(proposal);
+        notifySubscribedRoles(saved, null);
+        return saved;
+    }
+
+    /**
+     * Appends one audited status transition to the proposal. The row is cascaded by
+     * the proposal's own save, so it commits (or rolls back) with the status change.
+     */
+    private void recordStatusChange(Proposal proposal, String fromStatus, String toStatus, String remarks) {
+        Long actorUserId = currentUser.getUserId();
+        String actorRole = currentUser.getRole();
+        String actorName = null;
+        if (actorUserId != null) {
+            actorName = userRepository.findById(actorUserId)
+                    .map(User::getName)
+                    .orElse(null);
+        }
+
+        ProposalStatusHistory entry = new ProposalStatusHistory();
+        entry.setProposal(proposal);
+        entry.setFromStatus(fromStatus);
+        entry.setToStatus(toStatus);
+        entry.setActorUserId(actorUserId);
+        entry.setActorRole(actorRole);
+        entry.setActorName(actorName);
+        entry.setRemarks(remarks);
+        entry.setSource(ProposalStatusHistory.SOURCE_APPLICATION);
+        entry.setChangedAt(LocalDateTime.now());
+        proposal.getStatusHistory().add(entry);
     }
 
     /**
@@ -2583,7 +2821,10 @@ public class ProposalService {
                     break;
 
                 // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to
-                // authorize budget
+                // authorize budget. The Chancellor's WITHOUT BUDGET classification
+                // approves the proposal for immediate implementation, so Finance is not
+                // asked to endorse a budget it was told does not apply. A record that is
+                // merely missing the classification keeps the previous behaviour.
                 case "APPROVED":
                     if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
                         notificationService.createNotification(
@@ -2593,7 +2834,7 @@ public class ProposalService {
                                 "Proposal Approved",
                                 "APPROVAL",
                                 proposal.getId());
-                    } else if ("OVCAF".equals(role)) {
+                    } else if ("OVCAF".equals(role) && !Boolean.FALSE.equals(proposal.getNeedsBudget())) {
                         notificationService.createNotification(
                                 user.getId(),
                                 "A proposal is approved and ready for budget endorsement: \""

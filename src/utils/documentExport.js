@@ -6,6 +6,7 @@
  */
 
 import { SDG_OPTIONS, sdgToSet } from '@/utils/sdg'
+import api from '@/utils/api'
 // Section 21: the structured Risk Management Plan (one row per identified risk with its
 // likelihood, impact and mitigation measure). A proposal saved before the table existed
 // has no rows and keeps showing its single text.
@@ -320,10 +321,12 @@ const PRINT_STYLES = `
 
   @page {
     size: A4;
-    /* Chrome draws its own automatic header (date + document title) and footer (URL + page
-       number) inside the @page margin whenever that margin is 10mm or more. Keeping it below
-       10mm suppresses that browser chrome; the document carries the rest of the margin
-       itself (see the body padding below). */
+    /* Browser print chrome cannot be controlled from CSS: Chrome draws its own
+       automatic header (date + document title) and footer (URL + page number)
+       whenever "Headers and footers" is enabled, regardless of this margin. The
+       proposal download therefore no longer uses the print dialog - it is
+       rendered to a PDF by the server (DocumentPdfService), which has no browser
+       chrome. This stylesheet remains for the in-app reports that still print. */
     margin: 8mm 15mm;
   }
 
@@ -360,7 +363,7 @@ export function buildStandaloneHtml({ title, subtitle = '', body }) {
  * dialog so the user can save it as a PDF with full formatting preserved.
  */
 export function printDocument({ title, html }) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('aria-hidden', 'true')
     Object.assign(iframe.style, {
@@ -379,46 +382,161 @@ export function printDocument({ title, html }) {
     doc.open()
     doc.write(html)
     doc.close()
+    // The title names the printed document (and the tab). It is not printed as running text.
+    // Note that Chrome's own print header/footer cannot be disabled from the page: when the
+    // dialog's "Headers and footers" option is on it prints the date, title and URL regardless
+    // of the @page margin. Proposal downloads therefore use savePdfDocument() below, which has
+    // no browser chrome at all; this helper remains for the in-app reports.
+    if (title) {
+      try {
+        doc.title = title
+      } catch (e) {
+        /* a title is a nicety; printing must still work without it */
+      }
+    }
 
     let cleanedUp = false
-    const cleanup = () => {
+    const cleanup = (error) => {
       if (cleanedUp) return
       cleanedUp = true
       setTimeout(() => {
         if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
-        resolve()
+        if (error) reject(error)
+        else resolve()
       }, 300)
     }
 
     const trigger = () => {
       try {
-        win.addEventListener('afterprint', cleanup, { once: true })
+        win.addEventListener('afterprint', () => cleanup(), { once: true })
       } catch (e) {
         /* older browsers fall back to the timer below */
       }
-      win.focus()
-      win.print()
+      try {
+        win.focus()
+        win.print()
+      } catch (error) {
+        // The dialog never opened (blocked, no print service, iframe destroyed). Report it
+        // instead of resolving - a caller must never show "downloaded" for a failed print.
+        cleanup(error instanceof Error ? error : new Error('The print dialog could not be opened.'))
+        return
+      }
       // Safety fallback in case afterprint is not fired.
-      setTimeout(cleanup, 120000)
+      setTimeout(() => cleanup(), 120000)
     }
 
-    const images = Array.from(doc.images || [])
-    if (images.length === 0) {
-      setTimeout(trigger, 150)
-    } else {
-      Promise.all(
-        images.map(
-          (img) =>
-            img.complete
-              ? Promise.resolve()
-              : new Promise((r) => {
-                  img.onload = r
-                  img.onerror = r
-                })
-        )
-      ).then(() => setTimeout(trigger, 200))
+    // Wait until the fonts and the images (the seal, signatures) are actually ready: printing
+    // before they load is what produced blank images and shifted/reflowed text in the PDF.
+    const waitForAssets = async () => {
+      try {
+        if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
+          await doc.fonts.ready
+        }
+      } catch (e) {
+        /* fonts.ready is best effort */
+      }
+      await Promise.all(
+        Array.from(doc.images || []).map((img) => {
+          if (typeof img.decode === 'function') {
+            return img.decode().catch(() => {})
+          }
+          return img.complete
+            ? Promise.resolve()
+            : new Promise((r) => {
+                img.onload = r
+                img.onerror = r
+              })
+        })
+      )
     }
+
+    waitForAssets()
+      .catch(() => {})
+      .then(() => {
+        // One frame plus a short settle delay, so the layout has settled after the assets
+        // above (a decoded image can still change the row heights it sits in).
+        if (typeof win.requestAnimationFrame === 'function') {
+          win.requestAnimationFrame(() => setTimeout(trigger, 60))
+        } else {
+          setTimeout(trigger, 150)
+        }
+      })
   })
+}
+
+/** A safe, readable file name for a generated document. */
+export function documentFileName(title, fallback = 'Proposal Details') {
+  const base = String(title ?? '')
+    .replace(/[\\/:*?"<>|\r\n]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 90)
+  return `${base || fallback}.pdf`
+}
+
+/**
+ * Render a standalone document to a PDF and save it as a file.
+ *
+ * The PDF is produced by the backend {@code POST /api/documents/pdf} endpoint
+ * (DocumentPdfService), not by the browser's print dialog. That is deliberate:
+ * Chrome prints its own automatic header (date + document title) and footer
+ * (URL + page number) whenever the dialog's "Headers and footers" option is on,
+ * and no CSS margin can prevent it. A server-rendered file has no browser chrome,
+ * so no date, timestamp, localhost URL or browser title can reach the download.
+ * The document's own bottom-right "Page n of N" margin box is part of the render.
+ *
+ * The file is written through a Blob + download link, so no print preview is
+ * opened and the PDF is the file the user gets.
+ *
+ * @param {{title?: string, html: string, filename?: string}} input
+ * @returns {Promise<void>} resolves once the browser has been handed the file;
+ *   rejects with the server's message when the document cannot be generated.
+ */
+export async function savePdfDocument({ title, html, filename } = {}) {
+  let response
+  try {
+    response = await api.post(
+      '/api/documents/pdf',
+      { html },
+      { responseType: 'blob', timeout: 120000 },
+    )
+  } catch (error) {
+    // With responseType 'blob' the JSON error body also arrives as a Blob, so the
+    // callers' usual `error.response.data.message` would be unreadable. Decode it
+    // here and keep the normal error shape.
+    const data = error?.response?.data
+    if (data && typeof data.text === 'function') {
+      try {
+        const text = await data.text()
+        try {
+          error.response.data = JSON.parse(text)
+        } catch (parseError) {
+          error.response.data = { message: text }
+        }
+      } catch (readError) {
+        /* the status/message fallback in the caller is still used */
+      }
+    }
+    throw error
+  }
+
+  const blob = response.data instanceof Blob
+    ? response.data
+    : new Blob([response.data], { type: 'application/pdf' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  // Both an explicit file name and the title can contain characters Windows and
+  // macOS reject in a file name (proposal titles may contain "/" or ":"), so the
+  // final name is always sanitised.
+  link.download = documentFileName(filename ? String(filename).replace(/\.pdf$/i, '') : title)
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Revoking immediately can cancel the download in some browsers; one second is
+  // enough for the browser to take the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 // ===== Proposal document builder (backend `Proposal` DTO shape) =====

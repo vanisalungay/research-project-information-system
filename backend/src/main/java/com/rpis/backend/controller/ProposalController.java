@@ -7,6 +7,7 @@ import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.dto.ProposalSectionRemarksResponse;
 import com.rpis.backend.dto.ProposalVersionResponse;
 import com.rpis.backend.dto.ReturnRevisionRequest;
+import com.rpis.backend.dto.ReturnToOvcrigeRequest;
 import com.rpis.backend.model.CooperatingAgency;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
@@ -227,11 +228,16 @@ public class ProposalController {
             @PathVariable Long id,
             @RequestParam("soNumber") String soNumber,
             @RequestParam(value = "soFile", required = false) MultipartFile soFile,
-            @RequestParam("needsBudget") Boolean needsBudget,
-            @RequestParam(value = "chancellorNotes", required = false) String chancellorNotes) {
+            @RequestParam(value = "needsBudget", required = false) String[] needsBudgetValues,
+            @RequestParam(value = "chancellorNotes", required = false) String chancellorNotes,
+            @RequestParam(value = "removeSoFile", defaultValue = "false") boolean removeSoFile) {
         try {
+            // One proposal has exactly one budget classification. The array form is used on
+            // purpose: a request that sends both "true" and "false" is rejected below instead
+            // of the server silently keeping whichever value happened to bind first.
+            Boolean needsBudget = parseBudgetClassification(needsBudgetValues);
             Proposal saved = proposalService.approveWithSpecialOrder(
-                    id, soNumber, soFile, needsBudget, chancellorNotes);
+                    id, soNumber, soFile, needsBudget, chancellorNotes, removeSoFile);
 
             Map<String, Object> response = new HashMap<>();
             response.put("proposal", saved);
@@ -254,11 +260,75 @@ public class ProposalController {
         }
     }
 
+    /**
+     * Saves the Special Order form of a proposal awaiting OC approval as a draft.
+     * Nothing is finalized: the status, the SO date and the downstream notifications
+     * are untouched, so the draft can be reopened, edited and saved again. The same
+     * validation and error mapping as the final approval apply here.
+     */
+    @PutMapping("/{id}/special-order-draft")
+    public ResponseEntity<?> saveSpecialOrderDraft(
+            @PathVariable Long id,
+            @RequestParam(value = "soNumber", required = false) String soNumber,
+            @RequestParam(value = "soFile", required = false) MultipartFile soFile,
+            @RequestParam(value = "needsBudget", required = false) String[] needsBudgetValues,
+            @RequestParam(value = "chancellorNotes", required = false) String chancellorNotes,
+            @RequestParam(value = "removeSoFile", defaultValue = "false") boolean removeSoFile) {
+        try {
+            Boolean needsBudget = parseBudgetClassification(needsBudgetValues);
+            Proposal saved = proposalService.saveSpecialOrderDraft(
+                    id, soNumber, soFile, needsBudget, chancellorNotes, removeSoFile);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("proposal", saved);
+            response.put("message", "SO draft saved.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid draft request."));
+        } catch (IllegalStateException e) {
+            // The proposal is no longer awaiting the Chancellor's final approval.
+            // Caught here so the class-level handler cannot turn it into a 403.
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage()
+                            : "This proposal is not awaiting final approval."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getReason() != null ? e.getReason() : "Saving the draft failed."));
+        }
+    }
+
+    /**
+     * Returns a proposal that is awaiting the Chancellor's final approval to OVCRIGE.
+     * The record goes back to {@code REC_APPROVED} so OVCRIGE can forward it to the
+     * Chancellor again; the transition, the actor and the remarks are audited. Error
+     * mapping is local for the same reason as {@link #approveWithSpecialOrder}.
+     */
+    @PutMapping("/{id}/return-to-ovcrige")
+    public ResponseEntity<?> returnToOvcrige(
+            @PathVariable Long id,
+            @RequestBody(required = false) ReturnToOvcrigeRequest request) {
+        try {
+            Proposal saved = proposalService.returnToOvcrige(
+                    id, request != null ? request.getRemarks() : null);
+            Map<String, Object> response = new HashMap<>();
+            response.put("proposal", saved);
+            response.put("message", "Proposal returned to OVCRIGE for re-forwarding.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage()
+                            : "This proposal is not awaiting final approval."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getReason() != null ? e.getReason() : "Return failed."));
+        }
+    }
+
     @PutMapping("/{id}/return-revision")
     public ResponseEntity<Proposal> returnForRevision(
             @PathVariable Long id,
-            @RequestBody(required = false) ReturnRevisionRequest request) {
-        String remarks = request != null ? request.getRemarks() : null;
+            @RequestBody(required = false) ReturnRevisionRequest request) {        String remarks = request != null ? request.getRemarks() : null;
         String office = request != null ? request.getReturnedByOffice() : null;
         Long userId = request != null ? request.getReturnedById() : null;
         String userName = request != null ? request.getReturnedByName() : null;
@@ -377,6 +447,38 @@ public class ProposalController {
     public ResponseEntity<Void> deleteProposal(@PathVariable Long id) {
         proposalService.deleteProposal(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Resolve the single optional budget classification of the OC decision.
+     *
+     * <p>One proposal can only ever be WITH budget or WITHOUT budget. A multipart request
+     * that repeats {@code needsBudget} (for example both {@code true} and {@code false}) is
+     * exactly the ambiguous state the workflow forbids, so it is rejected with a 400 rather
+     * than silently keeping the first value. A missing or blank value means "not chosen"
+     * and is left to the service, which requires it for the final approval.</p>
+     */
+    private static Boolean parseBudgetClassification(String[] values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        if (values.length > 1) {
+            throw new IllegalArgumentException(
+                    "Submit exactly one budget classification - WITH BUDGET (needsBudget=true) "
+                            + "or WITHOUT BUDGET (needsBudget=false) - not both.");
+        }
+        String value = values[0] == null ? "" : values[0].trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+        if ("true".equalsIgnoreCase(value)) {
+            return Boolean.TRUE;
+        }
+        if ("false".equalsIgnoreCase(value)) {
+            return Boolean.FALSE;
+        }
+        throw new IllegalArgumentException(
+                "The budget classification must be WITH BUDGET (true) or WITHOUT BUDGET (false).");
     }
 
     // Maps Proposal Announcement gatekeeper rejections (closed submissions window) to
