@@ -70,7 +70,7 @@
               </span>
             </td>
             <td>
-              <button class="view-btn btn-view" @click.stop="openProposal(proposal)">View</button>
+              <button class="view-btn btn-view" @click.stop="openProposal(proposal)">{{ proposalActionLabel(proposal.status) }}</button>
             </td>
           </tr>
 
@@ -89,7 +89,7 @@
 <script>
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: "RpsBudgetProcessing",
@@ -103,7 +103,7 @@ export default {
       error: null,
       filters: [
         "All",
-        "Approved",
+        "Completed",
         "Ready for Release",
         "Released",
         "Returned"
@@ -126,7 +126,7 @@ export default {
 
       if (this.activeFilter !== "All") {
         const statusMap = {
-          "Approved": "APPROVED",
+          "Completed": "APPROVED",
           "Ready for Release": "READY_FOR_RELEASE",
           "Released": "RELEASED",
           "Returned": "RETURNED",
@@ -160,6 +160,8 @@ export default {
     formatStatus(status) {
       return proposalStatusLabel(status)
     },
+
+    proposalActionLabel,
 
     statusTone,
 

@@ -66,9 +66,8 @@
             <option value="REC_APPROVED">REC Approved</option>
             <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
             <option value="FOR_OC_APPROVAL">For OC Approval</option>
-            <option value="APPROVED">Approved</option>
+            <option value="APPROVED">Completed</option>
             <option value="RELEASED">Released</option>
-            <option value="COMPLETED">Completed</option>
             <option value="RPS_RETURNED">RPS Returned</option>
             <option value="REC_REVISION">REC Revision</option>
             <option value="RETURNED">Returned</option>
@@ -297,7 +296,7 @@ const BASE_STAGES = [
 ]
 
 const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: 'OVCAF' }
-const APPROVED_STAGE = { key: 'APPROVED', label: 'Approved' }
+const APPROVED_STAGE = { key: 'APPROVED', label: 'Completed' }
 
 // Statuses that are already past the 100% approval milestone.
 const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']

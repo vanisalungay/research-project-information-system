@@ -53,7 +53,7 @@
                 </span>
               </td>
               <td>
-                <button class="view-btn btn-view" @click="viewProposal(proposal)">View</button>
+                <button class="view-btn btn-view" @click="viewProposal(proposal)">{{ proposalActionLabel(proposal.status) }}</button>
               </td>
             </tr>
             <tr v-if="filteredProposals.length === 0">
@@ -75,7 +75,7 @@
 <script>
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsEndorsedProPanel',
@@ -122,6 +122,8 @@ export default {
     formatStatus(status) {
       return proposalStatusLabel(status)
     },
+
+    proposalActionLabel,
 
     statusTone,
   },

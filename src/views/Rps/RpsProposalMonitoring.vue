@@ -49,7 +49,7 @@
               <option value="FOR REVIEW">For Review</option>
               <option value="ENDORSED">Endorsed</option>
               <option value="UNDER_REVIEW">Under Review</option>
-              <option value="APPROVED">Approved</option>
+              <option value="APPROVED">Completed</option>
               <option value="RPS_RETURNED">RPS Returned</option>
               <option value="REJECTED">Rejected</option>
               <option value="READY_FOR_RELEASE">Ready for Release</option>

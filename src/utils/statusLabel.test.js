@@ -63,6 +63,11 @@ test('SUBMITTED is generic in the formatter and For Review in a proposal context
   assert.equal(proposalStatusLabel('FOR REVIEW'), 'For Review')
 })
 
+test('the global formatter keeps APPROVED as Approved for non-proposal domains', () => {
+  assert.equal(statusLabel('APPROVED'), 'Approved')
+  assert.equal(statusLabel('COMPLETED'), 'Completed')
+})
+
 test('minor words stay lowercase inside a label', () => {
   assert.equal(statusLabel('RETURNED_TO_RPS'), 'Returned to RPS')
   assert.equal(statusLabel('READY_FOR_RELEASE'), 'Ready for Release')

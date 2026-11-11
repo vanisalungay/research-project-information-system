@@ -1,14 +1,17 @@
 <template>
   <div class="proposals-content">
-    <div class="top-bar">
-      <h2>myProjects</h2>
+    <header class="page-header">
+      <div class="page-heading">
+        <h2 class="page-title">myProjects</h2>
+        <p class="subtitle">Manage and track all your proposal submissions</p>
+      </div>
       <div class="top-bar-actions">
-        <button class="btn-revisions btn-secondary" @click="openRevisions">Revisions</button>
-        <button class="btn-new btn-primary" @click="openNewProposal">
+        <button type="button" class="btn-revisions btn-secondary" @click="openRevisions">Revisions</button>
+        <button type="button" class="btn-new btn-primary" @click="openNewProposal">
           + Create New Proposal
         </button>
       </div>
-    </div>
+    </header>
 
     <!-- MODALS -->
     <!-- Step 1: the Call for Proposal the proponent responds to -->
@@ -41,61 +44,83 @@
       :endorsement-request-id="endorsementRequestId" @back="goBackToStep2"
       @savedraft="handleSaveDraft" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
-    <p class="subtitle">
-      Manage and track all your proposal submissions
-    </p>
-
     <!-- FILTERS -->
-    <div class="filters">
-      <input type="text" v-model="search" placeholder="Search by title, ID, college, leader, or date..." />
-      <select v-model="statusFilter">
-        <option value="">All Status</option>
-        <option value="DRAFT">Draft</option>
-        <option value="FOR REVIEW">For Review</option>
-        <option value="UNDER_REVIEW">Under Review</option>
-        <option value="APPROVED">Approved</option>
-        <option value="REJECTED">Rejected</option>
-      </select>
+    <div class="filters-card">
+      <div class="filters">
+        <input type="text" v-model="search" aria-label="Search proposals"
+          placeholder="Search by title, ID, college, leader, or date..." />
+        <select v-model="statusFilter" aria-label="Filter by status">
+          <option value="">All Status</option>
+          <option value="DRAFT">Draft</option>
+          <option value="FOR REVIEW">For Review</option>
+          <option value="UNDER_REVIEW">Under Review</option>
+          <option value="APPROVED">Completed</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
     </div>
 
     <!-- LOADING -->
-    <p v-if="loading">Loading proposals...</p>
+    <p v-if="loading" class="state-message state-loading" role="status">Loading proposals...</p>
 
     <!-- ERROR -->
-    <p v-if="error" class="error-text">{{ error }}</p>
+    <p v-if="error" class="state-message state-error error-text">{{ error }}</p>
 
     <!-- EMPTY STATE -->
-    <p v-if="!loading && proposals.length === 0">No proposals found.</p>
+    <p v-if="!loading && proposals.length === 0" class="state-message state-empty">No proposals found.</p>
 
     <!-- TABLE -->
-    <table v-if="proposals.length > 0" class="proposals-table">
-      <thead>
-        <tr>
-          <th>Proposal ID</th>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Submitted</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="proposal in filteredProposals" :key="proposal.id">
-          <td>{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
-          <td>{{ proposal.projectTitle || proposal.title }}</td>
-          <td>
-            <span class="status" :class="statusTone(proposal.status)">
-              {{ proposalStatusLabel(proposal.status) }}
-            </span>
-          </td>
-          <td>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
-          <td>
-            <button class="btn-view" @click="viewProposal(proposal.id)">View</button>
-            <button v-if="proposal.status === 'DRAFT'" class="btn-delete btn-reject"
-              @click="deleteProposal(proposal.id)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="proposals.length > 0" class="table-card">
+      <div class="table-scroll">
+        <table class="proposals-table">
+          <colgroup>
+            <col class="col-id" />
+            <col class="col-title" />
+            <col class="col-status" />
+            <col class="col-submitted" />
+            <col class="col-actions" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">Proposal ID</th>
+              <th scope="col">Title</th>
+              <th scope="col">Status</th>
+              <th scope="col">Submitted</th>
+              <th scope="col" class="actions-head">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="proposal in filteredProposals" :key="proposal.id">
+              <td class="cell-id" :title="proposal.documentId || proposal.proposalCode || '—'">
+                {{ proposal.documentId || proposal.proposalCode || '—' }}
+              </td>
+              <td class="cell-title">
+                <span class="title-text" :title="proposal.projectTitle || proposal.title">
+                  {{ proposal.projectTitle || proposal.title }}
+                </span>
+              </td>
+              <td class="cell-status">
+                <span class="status" :class="statusTone(proposal.status)">
+                  {{ proposalStatusLabel(proposal.status) }}
+                </span>
+              </td>
+              <td class="cell-date">{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
+              <td class="cell-actions">
+                <div class="row-actions">
+                  <button type="button" class="btn-view" @click="viewProposal(proposal.id)">{{ proposalActionLabel(proposal.status) }}</button>
+                  <button v-if="proposal.status === 'DRAFT'" type="button" class="btn-delete btn-reject"
+                    @click="deleteProposal(proposal.id)">Delete</button>
+                  <span v-else class="action-placeholder" aria-hidden="true"></span>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="filteredProposals.length === 0">
+              <td colspan="5" class="empty-row">No proposals match your search.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
@@ -111,7 +136,7 @@ import api from '@/utils/api'
 import { endorsementProposalPrefill, fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
 import { draftEndorsementFields } from '@/utils/endorsementDocument'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -561,43 +586,112 @@ const refreshOnClose = () => {
 </script>
 
 <style scoped>
+/* ============================================================
+   Proponent — My Projects
+   Layout and typography only. Status tones stay with assets/status.css and
+   action colours with assets/actions.css; this page never redefines them.
+   ============================================================ */
+
 .proposals-content {
-  padding: 24px;
-  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0;               /* the shell's .app-content owns the gutter */
+  background: transparent;  /* let the lavender canvas show through */
+  color: #262342;
 }
 
-.top-bar {
+/* ===== Page header ===== */
+.page-header {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-heading {
+  min-width: 0;
+}
+
+.page-title {
+  /* Claim the full heading box: ProfileInformation.vue ships an UNscoped
+     `.page-title` rule (dark #1e1c3a background, 16px padding, width:100%)
+     that otherwise leaks onto this page and paints a dark block behind the
+     dark-ink heading. Reset those inherited box properties here. */
+  margin: 0;
+  padding: 0;
+  width: auto;
+  background: transparent;
+  color: #262342;
+  font-size: var(--fs-xl, 1.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: #5b6478;
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.5;
 }
 
 .top-bar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Layout only; the action colours are global (assets/actions.css). */
+/* ===== Header buttons ===== */
+/* Revisions: light purple surface + a visible purple border so it reads as a control.
+   Hover and press change colours only; the box never changes size or position. */
 .btn-revisions {
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #d9c9f2;
+  border-radius: 10px;
+  background: #f4eefc;
+  color: #5b3e96;
+  font-size: var(--fs-sm, 0.875rem);
   font-weight: 600;
-  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(75, 63, 114, 0.06);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.subtitle {
-  color: #6b7280;
-  margin-bottom: 16px;
+.btn-revisions:hover:not(:disabled),
+.btn-revisions:active:not(:disabled) {
+  background: #ece1fa;
+  border-color: #c9b1ea;
+  color: #4f3585;
 }
 
+.btn-revisions:focus-visible {
+  outline: 2px solid #6b5ca5;
+  outline-offset: 2px;
+}
+
+/* Create New Proposal keeps the global blue action colour (assets/actions.css);
+   only its geometry and shadow are refined here. */
 .btn-new {
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: var(--fs-sm, 0.875rem);
   font-weight: 600;
-  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(36, 82, 255, 0.18);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-new:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(36, 82, 255, 0.24);
 }
 
 .btn-new:disabled {
@@ -605,60 +699,440 @@ const refreshOnClose = () => {
   cursor: not-allowed;
 }
 
+/* ===== Search + status filter ===== */
+.filters-card {
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e6e8f4;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(38, 35, 66, 0.05);
+}
+
 .filters {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
-.filters input,
+.filters input[type='text'] {
+  flex: 1 1 320px;
+  min-width: 220px;
+  height: 42px;
+  /* Cancel the leftover margin-top that ProfileInformation.vue's unscoped
+     `input` rule applies, so the search field aligns with the select. */
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #e3ddf2;
+  border-radius: 10px;
+  background: #fbfbff;
+  color: #262342;
+  font-size: var(--fs-sm, 0.875rem);
+}
+
 .filters select {
-  padding: 8px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  flex: 0 0 190px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e3ddf2;
+  border-radius: 10px;
+  background: #fbfbff;
+  color: #262342;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.proposals-table td:first-child {
-  font-family: monospace;
-  font-weight: 600;
-  color: #4b3f72;
+.filters input[type='text']:focus,
+.filters select:focus {
+  outline: none;
+  border-color: #8b7cc9;
+  box-shadow: 0 0 0 3px rgba(107, 92, 165, 0.16);
 }
 
-.proposals-table th {
-  text-align: left;
-  padding: 12px;
+/* ===== Loading / error / empty states ===== */
+.state-message {
+  margin: 0;
+  padding: 26px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #e3ddf2;
+  border-radius: 14px;
+  color: #6b7591;
+  font-size: var(--fs-sm, 0.875rem);
+}
+
+.state-message.state-error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+/* ===== Table card ===== */
+.table-card {
+  background: #ffffff;
+  border: 1px solid #e6e8f4;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(38, 35, 66, 0.07);
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.proposals-table {
+  width: 100%;
+  min-width: 920px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #ffffff;
+  font-size: var(--fs-sm, 0.875rem);
+}
+
+.col-id { width: 150px; }
+.col-title { width: auto; }
+.col-status { width: 192px; }
+.col-submitted { width: 128px; }
+.col-actions { width: 200px; }
+
+/* Purple header band with the gold brand hairline. */
+.proposals-table thead th {
+  padding: 14px 16px;
   background: #4b3f72;
   color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 3px solid var(--rpis-accent, #ffd000);
 }
 
-.proposals-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
+.proposals-table thead th.actions-head {
+  text-align: right;
 }
 
-.status {
-  padding: 4px 10px;
+/* ===== Rows ===== */
+.proposals-table tbody tr {
+  background: #ffffff;
+}
+
+.proposals-table tbody td {
+  height: 64px;
+  padding: 10px 16px;
+  vertical-align: middle;
+  color: #262342;
+  border-bottom: 1px solid #ece9f7;
+  transition: background-color 0.15s ease;
+}
+
+.proposals-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.proposals-table tbody tr:hover td {
+  background: #f6f2ff;
+}
+
+/* Proposal ID */
+.cell-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4b3f72;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Title: two lines maximum, so every row keeps the same height. */
+.cell-title {
+  font-weight: 500;
+  color: #262342;
+}
+
+.title-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.9em;
+  max-height: 2.9em;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.cell-date {
+  color: #5b6478;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell-status {
+  white-space: nowrap;
+}
+
+/* Badge geometry only. The tone background/text stay with assets/status.css. */
+.proposals-table .status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
-/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
-
-.btn-view {
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-right: 6px;
+/* ===== Actions =====
+   A fixed two-column grid on every row: View always occupies the first column and
+   Delete the second, whether or not Delete is rendered. Rows without Delete fill the
+   second column with an invisible placeholder, so nothing shifts and nothing jumps. */
+.cell-actions {
+  text-align: right;
 }
 
-.btn-delete {
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+.row-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 176px;
+  margin-left: auto;
+}
+
+.row-actions .btn-view,
+.row-actions .btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  margin: 0;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transform: none;
+}
+
+/* Hovering or pressing only changes the action colour. */
+.row-actions .btn-view:hover,
+.row-actions .btn-delete:hover,
+.row-actions .btn-view:active,
+.row-actions .btn-delete:active {
+  transform: none;
+}
+
+.action-placeholder {
+  display: block;
+  height: 34px;
+}
+
+/* ===== No results ===== */
+.proposals-table tbody td.empty-row {
+  height: auto;
+  padding: 34px 16px;
+  text-align: center;
+  color: #5b6478;
 }
 
 .error-text {
   color: #dc2626;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .page-header {
+    align-items: flex-start;
+  }
+
+  .top-bar-actions {
+    width: 100%;
+  }
+
+  .filters select {
+    flex: 1 1 160px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters input[type='text'],
+  .filters select {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .top-bar-actions .btn-revisions,
+  .top-bar-actions .btn-new {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .filters-card {
+    padding: 12px;
+  }
+}
+
+/* ===== Dark theme =====
+   base.css forces table/card/span colours with !important, so these overrides use
+   !important too; the scoped [data-v] attribute gives them the higher specificity. */
+@media (prefers-color-scheme: dark) {
+  .proposals-content {
+    background: transparent !important;
+    color: #f1f5f9 !important;
+  }
+
+  .page-title {
+    padding: 0 !important;
+    width: auto !important;
+    background: transparent !important;
+    color: #e7e2fb !important;
+  }
+
+  .subtitle {
+    color: #cbd5e1 !important;
+  }
+
+  .btn-revisions {
+    background: #2c2748 !important;
+    border-color: #8b7cc9 !important;
+    color: #e6e0ff !important;
+    box-shadow: none;
+  }
+
+  .btn-revisions:hover:not(:disabled),
+  .btn-revisions:active:not(:disabled) {
+    background: #3a3360 !important;
+    border-color: #a394dd !important;
+    color: #ffffff !important;
+  }
+
+  .filters-card,
+  .state-message,
+  .table-card {
+    background: #22304d !important;
+    border-color: #334155 !important;
+    box-shadow: none;
+  }
+
+  .state-message.state-error {
+    background: #3a2329 !important;
+    border-color: #6b2a2a !important;
+    color: #fca5a5 !important;
+  }
+
+  .filters input[type='text'],
+  .filters select {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f1f5f9 !important;
+  }
+
+  .filters input::placeholder {
+    color: #64748b !important;
+  }
+
+  .filters input[type='text']:focus,
+  .filters select:focus {
+    border-color: #8ab4ff !important;
+    box-shadow: 0 0 0 3px rgba(138, 180, 255, 0.22) !important;
+  }
+
+  .proposals-table {
+    background: #22304d !important;
+  }
+
+  .proposals-table thead th {
+    background: #3d3460 !important;
+    color: #f5f3ff !important;
+    border-bottom-color: #ffd000 !important;
+    border-bottom-width: 3px !important;
+  }
+
+  .proposals-table tbody tr {
+    background: #22304d !important;
+  }
+
+  .proposals-table tbody td {
+    background: #22304d !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+  }
+
+  .proposals-table tbody tr:hover td {
+    background: #2d3f63 !important;
+  }
+
+  .cell-id {
+    color: #c4b8f0 !important;
+  }
+
+  .cell-title,
+  .title-text {
+    color: #f1f5f9 !important;
+  }
+
+  .cell-date {
+    color: #94a3b8 !important;
+  }
+
+  .proposals-table tbody td.empty-row {
+    color: #94a3b8 !important;
+  }
+
+  .error-text {
+    color: #fca5a5 !important;
+  }
+}
+
+/* ===== Print =====
+   The global print guard hides the header and buttons; only the card clipping and
+   the filter chrome have to go. */
+@media print {
+  .filters-card {
+    display: none !important;
+  }
+
+  .table-card {
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .table-scroll {
+    overflow: visible;
+  }
+
+  .proposals-table {
+    min-width: 0;
+    table-layout: auto;
+    background: #ffffff;
+  }
+
+  .title-text {
+    display: block;
+    min-height: 0;
+    max-height: none;
+    -webkit-line-clamp: unset;
+  }
 }
 </style>

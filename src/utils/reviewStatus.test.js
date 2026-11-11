@@ -67,6 +67,15 @@ test('both submission spellings read "For Review"', () => {
   assert.equal(reviewStatusTone('SUBMITTED'), 'is-approved')
 })
 
+test('the final approval outcome reads Completed on review pages too', () => {
+  assert.equal(reviewStatusLabel('APPROVED'), 'Completed')
+  assert.equal(reviewStatusLabel('approved'), 'Completed')
+  assert.equal(reviewStatusLabel('COMPLETED'), 'Completed')
+  assert.equal(reviewStatusLabel('FOR_OC_APPROVAL'), 'For OC Approval')
+  assert.equal(reviewStatusLabel('FOR_OVCAF_APPROVAL'), 'For OVCAF Approval')
+  assert.equal(reviewStatusTone('APPROVED'), 'is-approved')
+})
+
 test('every tone the helper returns is one the design layer styles', () => {
   for (const status of ['APPROVED', 'REJECTED', 'RETURNED', 'DRAFT', 'UNDER_REVIEW']) {
     const tone = reviewStatusTone(status)

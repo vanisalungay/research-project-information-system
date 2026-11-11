@@ -35,7 +35,7 @@
                                     <option value="All">All Statuses</option>
                                     <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
                                     <option value="FOR_OC_APPROVAL">For OC Approval</option>
-                                    <option value="APPROVED">Approved</option>
+                                    <option value="APPROVED">Completed</option>
                                 </select>
                             </div>
                             <div>
@@ -133,7 +133,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import api from '@/utils/api';
 import { statusTone } from '@/utils/statusTone.js';
-import { proposalStatusLabel } from '@/utils/proposalStatus.js';
+import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js';
 import { normalizeStatusKey } from '@/utils/statusLabel.js';
 
 // ── Shell State ───────────────────────────────────
@@ -195,7 +195,7 @@ const filteredProposals = computed(() => {
             (p.projectLeader || '').toLowerCase().includes(q)
         );
     }
-    if (filters.status !== 'All') result = result.filter(p => normalizeStatusKey(p.status) === filters.status);
+    if (filters.status !== 'All') result = result.filter(p => proposalStatusMatches(p.status, filters.status));
     if (filters.college !== 'All') result = result.filter(p => p.college === filters.college);
     result.sort((a, b) => {
         let fa = a[filters.sortBy], fb = b[filters.sortBy];

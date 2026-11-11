@@ -11,8 +11,7 @@
  * Verifiable without a browser - see reviewStatus.test.js.
  */
 import { statusTone } from './statusTone.js'
-import { isForReviewStatus } from './proposalStatus.js'
-import { statusLabel } from './statusLabel.js'
+import { proposalStatusLabel } from './proposalStatus.js'
 
 /** Tones the design layer knows: approved (green), rejected (red), returned (amber), draft (grey). */
 export const REVIEW_STATUS_TONES = ['is-approved', 'is-rejected', 'is-returned', 'is-draft']
@@ -32,15 +31,15 @@ export function reviewStatusTone(status) {
 }
 
 /**
- * The badge text: the saved status through the one shared formatter
- * (utils/statusLabel.js), so it is Title Case with no underscores. Both
- * submission spellings (FOR REVIEW and the legacy SUBMITTED) read "For Review".
+ * The badge text: the saved status through the proposal-domain formatter
+ * (utils/proposalStatus.js), so it is Title Case with no underscores everywhere. Both
+ * submission spellings (FOR REVIEW and the legacy SUBMITTED) read "For Review" and the
+ * final-approval outcome reads "Completed".
  */
 export function reviewStatusLabel(status) {
   const value = String(status ?? '').trim()
   if (!value) return 'Draft'
-  if (isForReviewStatus(value)) return 'For Review'
-  return statusLabel(value)
+  return proposalStatusLabel(value)
 }
 
 /**

@@ -117,7 +117,7 @@
               </td>
               <td class="text-right">
                 <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
-                  View
+                  {{ proposalActionLabel(proposal.status) }}
                 </button>
               </td>
             </tr>
@@ -136,7 +136,7 @@ import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon

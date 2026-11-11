@@ -12,14 +12,19 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  APPROVED,
   COPYABLE_STATUSES,
   FOR_REVIEW,
   LEGACY_SUBMITTED,
   PROPOSAL_STATUSES,
+  PROJECT_STATUSES,
   canonicalProposalStatus,
+  isApprovedProject,
+  isCompletedStatus,
   isDuplicable,
   isForReviewStatus,
   normalizeProposalStatus,
+  proposalActionLabel,
   proposalStatusLabel,
   proposalStatusMatches,
 } from './proposalStatus.js'
@@ -107,4 +112,67 @@ test('both submission spellings read "For Review"; other statuses are unchanged'
   assert.equal(proposalStatusLabel('RPS_RETURNED'), 'RPS Returned')
   assert.equal(proposalStatusLabel(''), '')
   assert.equal(normalizeProposalStatus(' approved '), 'APPROVED')
+})
+
+test('the final approval outcome reads Completed, pending approval does not', () => {
+  for (const status of ['APPROVED', 'approved', '  Approved  ']) {
+    assert.equal(proposalStatusLabel(status), 'Completed', status)
+  }
+  assert.equal(proposalStatusLabel('COMPLETED'), 'Completed')
+  assert.equal(proposalStatusLabel('FOR_OC_APPROVAL'), 'For OC Approval')
+  assert.equal(proposalStatusLabel('FOR_OVCAF_APPROVAL'), 'For OVCAF Approval')
+  assert.equal(proposalStatusLabel('REC_APPROVED'), 'REC Approved')
+  assert.equal(proposalStatusLabel('OVC_APPROVED'), 'OVC Approved')
+  assert.equal(proposalStatusLabel('APPROVED_ENDORSED'), 'Approved & Endorsed')
+})
+
+test('a Completed filter matches both stored APPROVED and COMPLETED', () => {
+  assert.equal(proposalStatusMatches('APPROVED', 'APPROVED'), true)
+  assert.equal(proposalStatusMatches('COMPLETED', 'APPROVED'), true)
+  assert.equal(proposalStatusMatches('APPROVED', 'COMPLETED'), true)
+  assert.equal(proposalStatusMatches('COMPLETED', 'COMPLETED'), true)
+  for (const status of [
+    'READY_FOR_RELEASE',
+    'FOR_OC_APPROVAL',
+    'FOR_OVCAF_APPROVAL',
+    'REC_APPROVED',
+    'APPROVED_ENDORSED',
+  ]) {
+    assert.equal(proposalStatusMatches(status, 'APPROVED'), false, status)
+    assert.equal(proposalStatusMatches(status, 'COMPLETED'), false, status)
+  }
+  assert.equal(proposalStatusMatches('COMPLETED', 'READY_FOR_RELEASE'), false)
+  assert.equal(isCompletedStatus('APPROVED'), true)
+  assert.equal(isCompletedStatus('COMPLETED'), true)
+  assert.equal(isCompletedStatus('READY_FOR_RELEASE'), false)
+})
+
+test('the Open row action triggers only at final approval or later', () => {
+  assert.equal(APPROVED, 'APPROVED')
+  for (const status of PROJECT_STATUSES) {
+    assert.equal(isApprovedProject(status), true, status)
+    assert.equal(proposalActionLabel(status), 'Open', status)
+  }
+  for (const status of [
+    'DRAFT',
+    'FOR REVIEW',
+    'SUBMITTED',
+    'ENDORSED',
+    'UNDER_REVIEW',
+    'REC_APPROVED',
+    'FOR_OVCAF_APPROVAL',
+    'FOR_OC_APPROVAL',
+    'RETURNED',
+    'RPS_RETURNED',
+    'REJECTED',
+    'REC_REJECTED',
+    'REC_REVISION',
+    'REVISION',
+    '',
+    null,
+    undefined,
+  ]) {
+    assert.equal(isApprovedProject(status), false, String(status))
+    assert.equal(proposalActionLabel(status), 'View', String(status))
+  }
 })

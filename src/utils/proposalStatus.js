@@ -6,6 +6,11 @@
  * saved before that wording change carry the legacy `SUBMITTED` value, which means the
  * exact same workflow state: every helper here treats the two as equivalent, so old and
  * new rows display, filter and count the same way.
+ *
+ * `APPROVED` is the outcome of the last approval step: the stored value is left untouched
+ * (backend filters and status history keep reading it), but the interface presents the
+ * record as a completed project - the badge reads "Completed" and the row action "Open".
+ * `FOR_OC_APPROVAL` / `FOR_OVCAF_APPROVAL` are still pending and keep their own wording.
  */
 import { statusLabel } from './statusLabel.js'
 
@@ -39,6 +44,40 @@ export const PROPOSAL_STATUSES = [
   'IMPLEMENTATION',
   'COMPLETED',
 ]
+
+/** The stored status of a proposal whose final approval step has completed. */
+export const APPROVED = 'APPROVED'
+
+/**
+ * The statuses at or past final approval: the proposal is now a finished project. They are
+ * the statuses whose row action reads "Open" instead of "View".
+ */
+export const PROJECT_STATUSES = [
+  APPROVED,
+  'READY_FOR_RELEASE',
+  'RELEASED',
+  'IMPLEMENTATION',
+  'COMPLETED',
+]
+
+/**
+ * The statuses whose badge reads "Completed". A stored `COMPLETED` already formats that way
+ * through the shared formatter; `APPROVED` is the value the running backend actually writes.
+ */
+export function isCompletedStatus(status) {
+  const value = normalizeProposalStatus(status)
+  return value === APPROVED || value === 'COMPLETED'
+}
+
+/** True when the proposal has passed final approval and is displayed as a project. */
+export function isApprovedProject(status) {
+  return PROJECT_STATUSES.includes(normalizeProposalStatus(status))
+}
+
+/** The row action for a proposal/project: "Open" once fully approved, else "View". */
+export function proposalActionLabel(status) {
+  return isApprovedProject(status) ? 'Open' : 'View'
+}
 
 /**
  * The statuses whose proposal content may be reused through "Make a Copy".
@@ -78,24 +117,30 @@ export function canonicalProposalStatus(status) {
 /**
  * True when a stored status matches a filter value. A filter for either submission
  * spelling matches both, so selecting "For Review" also returns legacy `SUBMITTED` rows;
- * every other comparison is an exact normalized match (never a substring match).
+ * a "Completed" filter likewise matches both the stored `APPROVED` outcome and the legacy
+ * `COMPLETED` value. Every other comparison is an exact normalized match (never a
+ * substring match).
  */
 export function proposalStatusMatches(status, filter) {
   const expected = normalizeProposalStatus(filter)
   if (!expected) return true
   if (isForReviewStatus(expected)) return isForReviewStatus(status)
+  if (isCompletedStatus(expected)) return isCompletedStatus(status)
   return normalizeProposalStatus(status) === expected
 }
 
 /**
  * The badge text for a stored proposal status: both submission spellings read
- * "For Review"; every other status is formatted by the one shared formatter
- * (utils/statusLabel.js), so it is Title Case with no underscores everywhere.
+ * "For Review", the final-approval outcome reads "Completed"; every other status is
+ * formatted by the one shared formatter (utils/statusLabel.js), so it is Title Case
+ * with no underscores everywhere.
  */
 export function proposalStatusLabel(status) {
   const value = String(status ?? '').trim()
   if (!value) return ''
-  return isForReviewStatus(value) ? 'For Review' : statusLabel(value)
+  if (isForReviewStatus(value)) return 'For Review'
+  if (normalizeProposalStatus(value) === APPROVED) return 'Completed'
+  return statusLabel(value)
 }
 
 /**

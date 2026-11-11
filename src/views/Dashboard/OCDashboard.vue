@@ -127,7 +127,7 @@
                 </td>
                 <td class="text-right">
                   <div class="row-actions">
-                    <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">View</button>
+                    <button class="end-btn is-view row-btn" @click="reviewProposal(p.id)">{{ proposalActionLabel(p.status) }}</button>
                   </div>
                 </td>
               </tr>
@@ -150,7 +150,7 @@ import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { isSoDraft } from '@/utils/soDraft.js'
 
 const router = useRouter()

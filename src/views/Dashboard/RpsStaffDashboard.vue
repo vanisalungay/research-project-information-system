@@ -287,7 +287,7 @@
                   class="row-btn btn-view"
                   @click="$router.push({ name: 'ProposalDetails', params: { id: prop.id } })"
                 >
-                  <span>View</span>
+                  <span>{{ proposalActionLabel(prop.status) }}</span>
                 </button>
               </td>
             </tr>
@@ -303,7 +303,7 @@ import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
 import { announcementStatus } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 // The shared design layer: the same cards, pills, tables and spacing the Proponent and Dean
 // dashboards already use. Importing it changes how this page looks and nothing else - every
@@ -368,9 +368,9 @@ const pendingReviewList = computed(() => byStatus(PENDING_STATUSES))
 const awaitingAction = computed(() => pendingReviewList.value.slice(0, AWAITING_LIMIT))
 
 // Budget category filters mirror the existing Budget Processing page.
-const budgetFilters = ['All', 'Approved', 'Ready for Release', 'Released', 'Returned']
+const budgetFilters = ['All', 'Completed', 'Ready for Release', 'Released', 'Returned']
 const budgetStatusMap = {
-  'Approved': 'APPROVED',
+  'Completed': 'APPROVED',
   'Ready for Release': 'READY_FOR_RELEASE',
   'Released': 'RELEASED',
   'Returned': 'RETURNED',
