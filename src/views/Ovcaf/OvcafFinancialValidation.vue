@@ -753,6 +753,10 @@ const resetForm = () => {
 }
 
 .checklist-item {
+    /* The row is the containing block for the visually-hidden checkbox. Without this the
+       absolutely positioned input resolves against the initial containing block, and the
+       browser's focus scroll moves the whole document instead of this page's scroller. */
+    position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -828,6 +832,9 @@ const resetForm = () => {
 }
 
 .radio-option {
+    /* Same containment as .checklist-item: the hidden radio must not be positioned
+       against the initial containing block. */
+    position: relative;
     display: flex;
     gap: 16px;
     align-items: flex-start;
@@ -1313,12 +1320,21 @@ const resetForm = () => {
     margin-top: 8px;
 }
 
+/* The native control is not painted; the whole row/option is the clickable control.
+   It is pinned to the top-left of its positioned parent so that, when a label click
+   focuses it, the browser has nothing to scroll into view. */
 .sr-only {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
 }
 </style>
