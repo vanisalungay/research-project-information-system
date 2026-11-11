@@ -55,9 +55,11 @@ test('the card reads the same saved record as the proposal viewer', () => {
   )
 })
 
-test('the OVCAF card links to the proposal details page', () => {
+test('the OVCAF card opens the proposal details in a modal', () => {
   assert.ok(CARD.includes('View Proposal Details'), 'the button label')
-  assert.ok(CARD.includes('/ovcaf/proposals/${proposal.id}'), 'and opens this proposal')
+  assert.ok(CARD.includes('OvcafProposalDetails'), 'the existing details viewer is embedded')
+  assert.ok(CARD.includes('showProposalDetails'), 'the modal state drives it')
+  assert.ok(CARD.includes(':proposal-id="proposal.id"'), 'and shows this proposal')
 })
 
 test('the card is labelled Project Leader and reads the form value, not the account', () => {

@@ -1,8 +1,8 @@
 <template>
-    <div class="ovcaf-shell">
+    <div class="ovcaf-shell" :class="{ 'is-embedded': embedded }">
         <!-- ── Main Area ── -->
         <div class="ovcaf-main">
-            <main class="ovcaf-body">
+            <div class="ovcaf-body">
                 <div v-if="loading" class="card">
                     <p style="padding:2rem;text-align:center;color:var(--text-muted)">Loading proposal details...</p>
                 </div>
@@ -10,20 +10,22 @@
                 <div v-else-if="!proposal" class="card empty-state-box">
                     <p class="empty-title">Proposal Not Found</p>
                     <p class="empty-desc">The proposal you are trying to view does not exist or has been removed.</p>
-                    <router-link to="/ovcaf/inbox" class="btn btn-primary" style="margin-top:1rem">Back to
+                    <router-link v-if="!embedded" to="/ovcaf/inbox" class="btn btn-primary"
+                        style="margin-top:1rem">Back to
                         Inbox</router-link>
                 </div>
 
                 <div v-else>
                     <!-- Action Bar -->
                     <div class="action-bar">
-                        <router-link to="/ovcaf/inbox" class="btn btn-secondary btn-sm">← Back to Inbox</router-link>
+                        <router-link v-if="!embedded" to="/ovcaf/inbox" class="btn btn-secondary btn-sm">← Back
+                            to Inbox</router-link>
                         <div class="action-bar-right">
-                            <button type="button" class="btn btn-secondary"
+                            <button type="button" class="btn btn-download"
                                 :disabled="downloadLoading || !fullProposal" @click="downloadProposal">
                                 {{ downloadLoading ? 'Preparing...' : 'Download Proposal Document' }}
                             </button>
-                            <router-link v-if="isPending" :to="`/ovcaf/validate/${proposal.id}`"
+                            <router-link v-if="isPending && !embedded" :to="`/ovcaf/validate/${proposal.id}`"
                                 class="btn btn-primary">Proceed to Validation</router-link>
                         </div>
                     </div>
@@ -49,9 +51,9 @@
                                 <template v-if="budgetFileName">
                                     <p class="budget-document-name">📄 {{ budgetFileName }}</p>
                                     <div class="budget-document-actions">
-                                        <button type="button" class="btn btn-secondary btn-sm"
+                                        <button type="button" class="btn btn-view btn-sm"
                                             @click="viewBudgetDocument">View</button>
-                                        <button type="button" class="btn btn-secondary btn-sm"
+                                        <button type="button" class="btn btn-download btn-sm"
                                             @click="saveBudgetDocument">Download</button>
                                     </div>
                                 </template>
@@ -146,7 +148,7 @@
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
 
         <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
@@ -171,6 +173,23 @@ import { normalizeStatusKey } from '@/utils/statusLabel.js';
 
 const route = useRoute();
 
+// The same read-only viewer is rendered both as the standalone /ovcaf/proposals/:id
+// page and inside the evaluation screen's details modal. When embedded, the caller
+// supplies the proposal id and the page-level navigation actions are suppressed.
+const props = defineProps({
+    proposalId: { type: [String, Number], default: null },
+    embedded: { type: Boolean, default: false }
+});
+const emit = defineEmits(['preview-change']);
+
+const proposalKey = computed(() => {
+    const fromProp = props.proposalId;
+    if (fromProp !== null && fromProp !== undefined && String(fromProp).trim() !== '') {
+        return String(fromProp);
+    }
+    return String(route.params.id ?? '');
+});
+
 // ── Shell State ───────────────────────────────────
 const sidebarOpen = ref(false);
 const dropdownOpen = ref(false);
@@ -191,6 +210,10 @@ const downloadError = ref('');
 // View opens an in-page preview of the uploaded document; reset whenever the page
 // loads another proposal so the modal never shows the previous record.
 const showBudgetPreview = ref(false);
+
+// Let the host of the embedded viewer know when the nested budget preview is open, so
+// Escape closes only the preview instead of both layers at once.
+watch(showBudgetPreview, (open) => emit('preview-change', open));
 
 // ── Computed ──────────────────────────────────────
 const isPending = computed(() =>
@@ -227,7 +250,7 @@ const fetchProposal = async () => {
         downloadError.value = '';
         fullProposal.value = null;
         showBudgetPreview.value = false;
-        const id = route.params.id;
+        const id = proposalKey.value;
         const response = await api.get(`/api/ovcaf/proposals/${id}`);
         const p = response.data;
         if (p) {
@@ -324,9 +347,12 @@ onMounted(async () => {
 });
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
 
-// Vue Router reuses this component when only the id changes, so the route id is watched:
-// opening another proposal, or Back/Forward between two, reloads the right record.
-watch(() => route.params.id, () => fetchProposal());
+// Vue Router reuses this component when only the id changes, so the proposal key is
+// watched: opening another proposal, Back/Forward between two, or the embedding host
+// passing a different id reloads the right record.
+watch(proposalKey, (id, previous) => {
+    if (id && id !== previous) fetchProposal();
+});
 
 const handleOutsideClick = (e) => {
     if (dropdownRef.value && !dropdownRef.value.contains(e.target)) dropdownOpen.value = false;
@@ -410,6 +436,26 @@ const getTlClass = (action) => {
 
 .ovcaf-body {
     padding: 32px;
+}
+
+/* Embedded viewer (inside the evaluation screen's details modal): the host provides the
+   chrome, so the page keeps only its content and the Download Proposal Document action. */
+.ovcaf-shell.is-embedded .ovcaf-main {
+    max-width: none;
+}
+
+.ovcaf-shell.is-embedded .action-bar {
+    justify-content: flex-end;
+}
+
+.ovcaf-shell.is-embedded .ovcaf-body {
+    padding: 20px 24px 32px;
+}
+
+@media (max-width: 640px) {
+    .ovcaf-shell.is-embedded .ovcaf-body {
+        padding: 16px;
+    }
 }
 
 .action-bar {
@@ -577,8 +623,25 @@ const getTlClass = (action) => {
 
 .budget-document-actions {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.6rem;
+}
+
+.budget-document-actions .btn {
+    min-width: 96px;
+    justify-content: center;
+}
+
+@media (max-width: 520px) {
+    .budget-document-actions {
+        width: 100%;
+    }
+
+    .budget-document-actions .btn {
+        flex: 1 1 auto;
+    }
 }
 
 .budget-document-empty {

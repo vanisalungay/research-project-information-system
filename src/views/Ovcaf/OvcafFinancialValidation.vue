@@ -39,10 +39,12 @@
                                     <span class="chip-label">In-line Item Budget</span>
                                     <div v-if="budgetFileName" class="budget-document-row">
                                         <span class="budget-document-name">{{ budgetFileName }}</span>
-                                        <button type="button" class="btn btn-secondary btn-sm"
-                                            @click="viewBudgetDocument">View</button>
-                                        <button type="button" class="btn btn-secondary btn-sm"
-                                            @click="saveBudgetDocument">Download</button>
+                                        <div class="budget-document-actions">
+                                            <button type="button" class="btn btn-view btn-sm"
+                                                @click="viewBudgetDocument">View</button>
+                                            <button type="button" class="btn btn-download btn-sm"
+                                                @click="saveBudgetDocument">Download</button>
+                                        </div>
                                     </div>
                                     <!-- A stored reference that yielded no printable name is a
                                          retrieval problem, not a missing document. -->
@@ -60,9 +62,8 @@
                                 </div>
 
                                 <div class="summary-actions">
-                                    <router-link :to="`/ovcaf/proposals/${proposal.id}`" class="btn btn-primary btn-sm">
-                                        View Proposal Details
-                                    </router-link>
+                                    <button ref="detailsTriggerRef" type="button" class="btn btn-primary btn-sm"
+                                        @click="openProposalDetails">View Proposal Details</button>
                                 </div>
                             </div>
 
@@ -183,9 +184,10 @@
                                 </div>
                                 <p class="modal-message">{{ modalMessage }}</p>
                                 <div class="modal-actions">
-                                    <button @click="showModal = false" class="btn btn-secondary">Cancel</button>
-                                    <button @click="submitDecision" class="btn" :class="confirmBtnClass">Confirm &amp;
-                                        Proceed</button>
+                                    <button type="button" @click="showModal = false"
+                                        class="btn btn-secondary">Cancel</button>
+                                    <button type="button" @click="submitDecision" class="btn"
+                                        :class="confirmBtnClass">Confirm &amp; Proceed</button>
                                 </div>
                             </div>
                         </div>
@@ -197,16 +199,45 @@
         <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
         <LineItemBudgetPreviewModal v-if="showBudgetPreview" :file-path="budgetDocumentPath(budgetSource)"
             :file-name="budgetFileName" @close="showBudgetPreview = false" />
+
+        <!-- Proposal details: the same read-only viewer the details route renders, opened
+             in place so the evaluator never loses the checklist/remarks they are editing. -->
+        <Teleport to="body">
+            <transition name="modal-fade">
+                <div v-if="showProposalDetails && proposal" class="proposal-details-overlay"
+                    @click.self="closeProposalDetails">
+                    <section class="proposal-details-surface" role="dialog" aria-modal="true"
+                        aria-labelledby="ovcaf-proposal-details-title">
+                        <header class="proposal-details-header">
+                            <div class="proposal-details-heading">
+                                <h2 id="ovcaf-proposal-details-title">Proposal Details</h2>
+                                <p class="proposal-details-subtitle">
+                                    {{ proposal.documentId || '—' }} · {{ proposal.title }}
+                                </p>
+                            </div>
+                            <button ref="detailsCloseRef" type="button" class="proposal-details-close"
+                                aria-label="Close proposal details" @click="closeProposalDetails">✕</button>
+                        </header>
+                        <div class="proposal-details-body">
+                            <OvcafProposalDetails :proposal-id="proposal.id" embedded
+                                @preview-change="detailsPreviewOpen = $event" />
+                        </div>
+                    </section>
+                </div>
+            </transition>
+        </Teleport>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '@/utils/api';
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
+import OvcafProposalDetails from './OvcafProposalDetails.vue';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
 import { downloadUploadedFile } from '@/utils/fileDownload';
+import { getScrollContainer } from '@/utils/scrollReset';
 
 const route = useRoute();
 const router = useRouter();
@@ -226,6 +257,76 @@ const decision = ref('Approved & Endorsed');
 const remarks = ref('');
 const formError = ref('');
 const showModal = ref(false);
+
+// ── Proposal details modal ────────────────────────
+// The read-only viewer is opened in place so the evaluator never loses the checklist and
+// remarks they are editing. The nested budget preview reports when it is open, so Escape
+// closes only the top layer.
+const showProposalDetails = ref(false);
+const detailsPreviewOpen = ref(false);
+const detailsTriggerRef = ref(null);
+const detailsCloseRef = ref(null);
+
+let isBackgroundScrollLocked = false;
+let lockedBodyOverflow = '';
+let lockedContainer = null;
+let lockedContainerOverflow = '';
+
+// The authenticated layout scrolls main.app-content, not the document body, so both are
+// frozen while the modal is open and restored to their exact previous values on close.
+const lockBackgroundScroll = () => {
+    if (isBackgroundScrollLocked) return;
+    const body = document.body;
+    lockedBodyOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+
+    const container = getScrollContainer();
+    if (container && container !== body) {
+        lockedContainer = container;
+        lockedContainerOverflow = container.style.overflow;
+        container.style.overflow = 'hidden';
+    }
+    isBackgroundScrollLocked = true;
+};
+
+const unlockBackgroundScroll = () => {
+    if (!isBackgroundScrollLocked) return;
+    document.body.style.overflow = lockedBodyOverflow;
+    if (lockedContainer) {
+        lockedContainer.style.overflow = lockedContainerOverflow;
+        lockedContainer = null;
+    }
+    isBackgroundScrollLocked = false;
+};
+
+const openProposalDetails = () => {
+    if (!proposal.value?.id) return;
+    detailsPreviewOpen.value = false;
+    showProposalDetails.value = true;
+};
+
+const closeProposalDetails = () => {
+    showProposalDetails.value = false;
+};
+
+watch(showProposalDetails, async (open) => {
+    if (open) {
+        lockBackgroundScroll();
+        await nextTick();
+        detailsCloseRef.value?.focus?.();
+        return;
+    }
+    unlockBackgroundScroll();
+    detailsPreviewOpen.value = false;
+    detailsTriggerRef.value?.focus?.();
+});
+
+const onDetailsKeydown = (event) => {
+    if (event.key !== 'Escape' || !showProposalDetails.value) return;
+    // The nested budget preview handles its own Escape; do not close both at once.
+    if (detailsPreviewOpen.value) return;
+    closeProposalDetails();
+};
 
 const checklist = reactive({
     budgetComplete: false,
@@ -384,7 +485,13 @@ const fetchProposal = async () => {
 
 // ── Lifecycle ─────────────────────────────────────
 onMounted(async () => {
+    window.addEventListener('keydown', onDetailsKeydown);
     await fetchProposal();
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onDetailsKeydown);
+    unlockBackgroundScroll();
 });
 
 // ── Actions ───────────────────────────────────────
@@ -553,6 +660,32 @@ const resetForm = () => {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.budget-document-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.budget-document-actions .btn {
+    min-width: 92px;
+    justify-content: center;
+}
+
+@media (max-width: 520px) {
+    .budget-document-row {
+        align-items: flex-start;
+    }
+
+    .budget-document-actions {
+        width: 100%;
+    }
+
+    .budget-document-actions .btn {
+        flex: 1 1 110px;
+    }
 }
 
 .budget-document-name {
@@ -865,6 +998,8 @@ const resetForm = () => {
 .modal-box {
     width: 90%;
     max-width: 500px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
     padding: 26px;
 }
 
@@ -901,6 +1036,100 @@ const resetForm = () => {
     margin-top: 22px;
 }
 
+.modal-actions .btn {
+    min-width: 140px;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Cancel: a visible neutral surface instead of white-on-white. */
+.modal-actions .btn-secondary {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+    background: #e2e8f0 !important;
+}
+
+.modal-actions .btn-secondary:active:not(:disabled) {
+    background: #cbd5e1 !important;
+}
+
+/* Confirm: explicit semantic tones from the shared action tokens. */
+.modal-actions .btn-success {
+    background: var(--btn-approve-bg) !important;
+    border-color: var(--btn-approve-border) !important;
+    color: var(--btn-approve-text) !important;
+}
+
+.modal-actions .btn-warning {
+    background: var(--btn-return-bg) !important;
+    border-color: var(--btn-return-border) !important;
+    color: var(--btn-return-text) !important;
+}
+
+.modal-actions .btn-danger {
+    background: var(--btn-reject-bg) !important;
+    border-color: var(--btn-reject-border) !important;
+    color: var(--btn-reject-text) !important;
+}
+
+.modal-actions .btn-success:hover:not(:disabled),
+.modal-actions .btn-success:active:not(:disabled) {
+    background: var(--btn-approve-hover-bg) !important;
+    border-color: var(--btn-approve-hover-bg) !important;
+}
+
+.modal-actions .btn-warning:hover:not(:disabled),
+.modal-actions .btn-warning:active:not(:disabled) {
+    background: var(--btn-return-hover-bg) !important;
+    border-color: var(--btn-return-hover-bg) !important;
+}
+
+.modal-actions .btn-danger:hover:not(:disabled),
+.modal-actions .btn-danger:active:not(:disabled) {
+    background: var(--btn-reject-hover-bg) !important;
+    border-color: var(--btn-reject-hover-bg) !important;
+}
+
+.modal-actions .btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+@media (max-width: 520px) {
+    .modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .modal-actions .btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .modal-actions .btn-secondary {
+        background: #334155 !important;
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+    }
+
+    .modal-actions .btn-secondary:hover:not(:disabled) {
+        background: #475569 !important;
+    }
+
+    .modal-actions .btn-secondary:active:not(:disabled) {
+        background: #64748b !important;
+    }
+
+    /* base.css forces an opaque dark background onto [class*="modal"]; restore the scrim. */
+    .modal-overlay {
+        background: rgba(15, 23, 42, .7) !important;
+    }
+}
+
 .modal-fade-enter-active,
 .modal-fade-leave-active {
     transition: .2s;
@@ -909,6 +1138,158 @@ const resetForm = () => {
 .modal-fade-enter-from,
 .modal-fade-leave-to {
     opacity: 0;
+}
+
+/* ---------------- Proposal details modal ---------------- */
+/* Class names deliberately avoid "modal"/"card"/"panel"/"box"/"container"/"content" so
+   the dark-mode surface rules in base.css do not repaint them with !important. */
+
+.proposal-details-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100; /* budget preview is 1200; the confirmation modal is 999 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(4px);
+}
+
+.proposal-details-surface {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    height: 90vh;
+    height: 90dvh;
+    max-height: calc(100dvh - 48px);
+    overflow: hidden;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25);
+}
+
+.proposal-details-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.proposal-details-heading {
+    min-width: 0;
+}
+
+.proposal-details-heading h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.proposal-details-subtitle {
+    margin: 2px 0 0;
+    font-size: .8rem;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.proposal-details-close {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    font-size: 22px;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.proposal-details-close:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.proposal-details-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.proposal-details-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+    .proposal-details-overlay {
+        padding: 0;
+    }
+
+    .proposal-details-surface {
+        max-width: none;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+
+    .proposal-details-header {
+        padding: 14px 16px;
+    }
+
+    .proposal-details-subtitle {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .proposal-details-surface {
+        background: #1e293b;
+    }
+
+    .proposal-details-header {
+        background: #1e293b;
+        border-bottom-color: #334155;
+    }
+
+    .proposal-details-heading h2 {
+        color: #f8fafc !important;
+    }
+
+    .proposal-details-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    .proposal-details-close {
+        color: #cbd5e1;
+    }
+
+    .proposal-details-close:hover {
+        background: #334155;
+        color: #f1f5f9;
+    }
+
+    .proposal-details-body {
+        background: #0f172a;
+    }
 }
 
 /* ---------------- Utility ---------------- */
