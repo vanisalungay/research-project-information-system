@@ -24,6 +24,9 @@ import {
 import { formatTimestamp } from './timestamps.js'
 import { statusTone } from './statusTone.js'
 import { statusLabel } from './statusLabel.js'
+import { ENDORSEMENT_STATUS_LABELS } from './statusCatalog.js'
+
+export { ENDORSEMENT_STATUS_LABELS }
 
 /** Base path of the endorsement endpoints. */
 export const ENDORSEMENTS_ENDPOINT = '/api/endorsements'
@@ -36,13 +39,6 @@ export const ENDORSEMENT_STATUS = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
-}
-
-/** Label of each state, as shown to the Proponent and to the Dean. */
-export const ENDORSEMENT_STATUS_LABELS = {
-  [ENDORSEMENT_STATUS.PENDING]: 'Pending',
-  [ENDORSEMENT_STATUS.APPROVED]: 'Approved',
-  [ENDORSEMENT_STATUS.REJECTED]: 'Rejected',
 }
 
 /** Short explanation of each state. */
@@ -83,10 +79,11 @@ export function endorsementStatusDescription(status) {
 export function endorsementStatusTone(status) {
   const normalized = normalizeEndorsementStatus(status)
   // The workflow has exactly three states; anything else is still awaiting the Dean, which
-  // is how this helper has always treated it.
-  const tone = statusTone(normalized)
-  if (tone === 'is-approved' || tone === 'is-rejected') return tone
-  return 'is-pending'
+  // is how this helper has always treated it. Approved is green, rejected red and pending
+  // amber (the awaiting-approval colour of the approved palette).
+  if (normalized === ENDORSEMENT_STATUS.APPROVED) return statusTone(ENDORSEMENT_STATUS.APPROVED)
+  if (normalized === ENDORSEMENT_STATUS.REJECTED) return statusTone(ENDORSEMENT_STATUS.REJECTED)
+  return statusTone(ENDORSEMENT_STATUS.PENDING)
 }
 
 /** True while the Dean still has to decide. */

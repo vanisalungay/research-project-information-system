@@ -7,7 +7,7 @@
         <div class="page-header">
           <div>
             <h2>Community Development Program 2024</h2>
-            <span class="badge is-pending">Pending Release</span>
+            <span class="badge is-amber">Pending Release</span>
             <p class="proposal-id">Proposal ID: #6</p>
           </div>
 
@@ -110,7 +110,7 @@
             <section class="card highlight">
               <div class="decision-header">
                 <h3>OVCRIGE Decision</h3>
-                <span class="badge is-approved">Endorsed</span>
+                <span class="badge is-teal">Endorsed</span>
               </div>
 
               <p class="decision-date">Decision Date: 2024-12-11</p>

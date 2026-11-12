@@ -15,7 +15,7 @@
 
         <!-- STATUS -->
         <span class="status" :class="statusTone(status)">
-          {{ statusLabel(status) }}
+          {{ accountStatusLabel(status) }}
         </span>
       </div>
 
@@ -137,7 +137,7 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { accountStatusLabel } from '@/utils/statusCatalog.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 

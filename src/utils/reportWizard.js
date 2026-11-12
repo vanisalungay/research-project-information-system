@@ -13,8 +13,11 @@
  * The wizard does not invent new mandatory fields: it only enforces rules the
  * existing reporting workflow already has (the backend requires the Project
  * Workplan - at least one objective - for reporting stages 1-3) plus a plain
- * data-consistency check on the project dates printed in the report header.
+ * data-consistency check on the project dates printed in the report header and
+ * the numeric range of the percentage fields.
  */
+
+import { isValidPercentage } from './percentageInput.js'
 
 /** Number of pages of the report wizard. */
 export const REPORT_WIZARD_STEPS = 3
@@ -24,13 +27,27 @@ export const REPORT_WIZARD_STEPS = 3
  * the heading of the page.
  */
 export const REPORT_WIZARD_PAGES = [
-  { key: 'qpr', label: 'Quarterly Progress Report', title: 'Quarterly Progress Report' },
+  {
+    key: 'qpr',
+    label: 'Quarterly Progress Report',
+    shortLabel: 'Progress Report',
+    description: 'Project metadata & actual accomplishments',
+    title: 'Quarterly Progress Report',
+  },
   {
     key: 'continuation',
     label: 'Report Continuation',
+    shortLabel: 'Report Continuation',
+    description: 'Expected 6Ps, problems & solutions',
     title: 'Quarterly Progress Report — Continuation',
   },
-  { key: 'workplan', label: 'Workplan', title: 'Workplan' },
+  {
+    key: 'workplan',
+    label: 'Workplan',
+    shortLabel: 'Project Workplan',
+    description: 'Monthly target schedule & sign-off',
+    title: 'Workplan',
+  },
 ]
 
 /** Keeps a page number inside 1..REPORT_WIZARD_STEPS. */
@@ -64,7 +81,7 @@ export function stepState(step, currentStep) {
  *   which is empty while the page is valid
  */
 export function validateReportStep(step, context = {}) {
-  const { payload = {}, hasWorkplan = false } = context
+  const { payload = {}, hasWorkplan = false, workplan = null } = context
   const errors = {}
   let summary = ''
 
@@ -76,6 +93,26 @@ export function validateReportStep(step, context = {}) {
     if (start && end && String(end) < String(start)) {
       errors.projectEndDate = 'The end date cannot be earlier than the start date.'
     }
+    // (7) Major accomplishments: the percentage columns are numeric 0-100. The
+    // inputs already prevent invalid typing; this catches values restored from an
+    // older report and blocks the page until they are corrected.
+    const rows = Array.isArray(payload.objectives) ? payload.objectives : []
+    rows.forEach((row, index) => {
+      for (const [field, label] of [
+        ['percentagePeriod', 'Percentage for the period'],
+        ['percentageCumulative', 'Cumulative percentage'],
+      ]) {
+        if (!isValidPercentage(row?.[field])) {
+          errors[`objective-${index}-${field}`] =
+            `${label} must be a number from 0 to 100.`
+        }
+      }
+    })
+    if (rows.some((row, index) =>
+      errors[`objective-${index}-percentagePeriod`] ||
+      errors[`objective-${index}-percentageCumulative`])) {
+      errors.percentages = 'Percentages must be numbers from 0 to 100.'
+    }
     if (Object.keys(errors).length) {
       summary = 'Please correct the highlighted field on this page before continuing.'
     }
@@ -84,11 +121,23 @@ export function validateReportStep(step, context = {}) {
   // Page 2 (the continuation: expected outputs / 6Ps, problems and concerns,
   // suggested solutions) has no required field in the existing report
   // specification, so it is always valid.
-  if (clampStep(step) === REPORT_WIZARD_STEPS && !hasWorkplan) {
-    errors.workplan =
-      'The Project Workplan is required before this report can be submitted. ' +
-      'Please describe at least one objective.'
-    summary = errors.workplan
+  if (clampStep(step) === REPORT_WIZARD_STEPS) {
+    const workplanRows = Array.isArray(workplan?.objectives) ? workplan.objectives : []
+    const hasInvalidMonth = workplanRows.some((row) =>
+      (Array.isArray(row?.months) ? row.months : []).some(
+        (month) => !isValidPercentage(month),
+      ),
+    )
+    if (hasInvalidMonth) {
+      errors.workplan =
+        'Monthly percentages must be numbers from 0 to 100.'
+      summary = errors.workplan
+    } else if (!hasWorkplan) {
+      errors.workplan =
+        'The Project Workplan is required before this report can be submitted. ' +
+        'Please describe at least one objective.'
+      summary = errors.workplan
+    }
   }
 
   return { errors, summary }

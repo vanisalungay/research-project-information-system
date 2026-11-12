@@ -8,9 +8,9 @@
       <input type="text" v-model="search" placeholder="Search by title or proponent..." class="search-bar" />
       <select v-model="statusFilter" class="status-select">
         <option value="ALL">All Status</option>
-        <option value="UNDER_REVIEW">Under Review</option>
-        <option value="REC_APPROVED">REC Approved</option>
-        <option value="REC_REJECTED">REC Rejected</option>
+        <option value="UNDER_REVIEW">{{ proposalStatusLabel('UNDER_REVIEW') }}</option>
+        <option value="REC_APPROVED">{{ proposalStatusLabel('REC_APPROVED') }}</option>
+        <option value="REC_REJECTED">{{ proposalStatusLabel('REC_REJECTED') }}</option>
       </select>
     </div>
 

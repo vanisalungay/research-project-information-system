@@ -1,26 +1,24 @@
 /**
  * useQuarterlyReportLauncher.js
  * ---------------------------------------------------------------------------
- * The one way the proponent interface opens the existing quarterly-report
- * creation form.
+ * The one way the proponent interface opens the Quarterly Progress Reports
+ * overview for a project.
  *
- * The Project Details page and Proposal Monitoring both call this composable,
- * so they cannot disagree about eligibility, the report stage or the target
- * route. It only navigates: the report row is written by the existing form when
- * the proponent saves a draft or submits it.
+ * The Project Details page and Proposal Monitoring both call this composable, so
+ * they cannot disagree about eligibility or the target route. It only navigates
+ * to the existing overview page: the overview loads the project's reports and
+ * resolves the next required stage itself, and its own Start Quarterly Report
+ * button opens the report form. Nothing is created here.
  *
- * The backend re-checks the same rule on every quarterly-report request, so the
- * hidden button is never the authorization.
+ * The backend re-checks the reporting rule on every quarterly-report request, so
+ * the hidden button is never the authorization.
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/utils/api'
-import { useDialog } from '@/composables/useDialog'
-import { isQuarterlyReportEligible, nextQuarterlyReportPath } from '@/utils/quarterlyReport'
+import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
 export function useQuarterlyReportLauncher() {
   const router = useRouter()
-  const { showAlert } = useDialog()
 
   /** Id of the project currently being opened, so its button can show progress. */
   const openingReportId = ref(null)
@@ -29,33 +27,19 @@ export function useQuarterlyReportLauncher() {
   const canCreateQuarterlyReport = (proposal) => isQuarterlyReportEligible(proposal)
 
   /**
-   * Opens the existing quarterly-report form for the project's next required
-   * stage. An unfinished draft is continued instead of duplicated, and a project
-   * whose reporting is already complete is reported rather than shown an empty
-   * form. Nothing is created here.
+   * Opens the existing Quarterly Progress Reports overview for the project. The
+   * overview page reads the submitted reports and the next required stage, so this
+   * never guesses a quarter, opens the form directly or creates a report record.
    */
   async function openQuarterlyReport(proposal) {
     if (!proposal?.id || !canCreateQuarterlyReport(proposal) || openingReportId.value) return
 
     openingReportId.value = proposal.id
     try {
-      const res = await api.get(`/api/quarterly-reports/next-stage/${proposal.id}`)
-      const path = nextQuarterlyReportPath(proposal.id, res.data)
-      if (!path) {
-        await showAlert('All required reports for this project have already been submitted.', {
-          type: 'info',
-          title: 'Quarterly Reporting',
-        })
-        return
-      }
-      router.push(path)
-    } catch (err) {
-      console.error('Could not open the quarterly report form:', err)
-      const body = err.response?.data
-      const message =
-        (body && typeof body === 'object' ? body.error : body) ||
-        'Quarterly reporting is not available for this project.'
-      await showAlert(String(message), { type: 'error', title: 'Quarterly Report' })
+      await router.push({
+        name: 'ProponentQuarterlyReports',
+        params: { proposalId: proposal.id },
+      })
     } finally {
       openingReportId.value = null
     }

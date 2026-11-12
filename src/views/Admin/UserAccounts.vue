@@ -59,7 +59,7 @@
             </td>
             <td>
               <span class="status-badge" :class="statusTone(user.status)">
-                {{ statusLabel(user.status) || 'Approved' }}
+                {{ accountStatusLabel(user.status) || 'Active' }}
               </span>
             </td>
             <td class="actions-cell">
@@ -158,7 +158,7 @@ import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { accountStatusLabel } from '@/utils/statusCatalog.js'
 
 const users = ref([])
 const showModal = ref(false)

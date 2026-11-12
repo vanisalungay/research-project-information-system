@@ -10,31 +10,30 @@
  *
  * Verifiable without a browser - see reviewStatus.test.js.
  */
-import { statusTone } from './statusTone.js'
+import { STATUS_TONES, statusTone } from './statusTone.js'
 import { proposalStatusLabel } from './proposalStatus.js'
 
-/** Tones the design layer knows: approved (green), rejected (red), returned (amber), draft (grey). */
-export const REVIEW_STATUS_TONES = ['is-approved', 'is-rejected', 'is-returned', 'is-draft']
+/** Tones the design layer knows: the full approved palette (see statusCatalog.js). */
+export const REVIEW_STATUS_TONES = STATUS_TONES
 
 /**
  * The tone class for a saved status, from the one shared mapping (utils/statusTone.js) so a
  * status looks the same here as on every dashboard and workflow page.
  *
- * A status that is still being processed (UNDER_REVIEW, REC_EVALUATION, CHANCELLOR_REVIEW, ...)
- * has no tone here: it keeps the review badge's own pending treatment rather than a tone class.
+ * Every status has a colour now - an in-progress status reads purple/blue instead of the
+ * badge's own fallback - so the header and the status card follow the approved palette.
  */
 export function reviewStatusTone(status) {
-  const value = String(status ?? '').toUpperCase()
+  const value = String(status ?? '').trim()
   if (!value) return 'is-draft'
-  const tone = statusTone(value)
-  return tone === 'is-pending' || tone === 'is-neutral' ? '' : tone
+  return statusTone(value)
 }
 
 /**
  * The badge text: the saved status through the proposal-domain formatter
- * (utils/proposalStatus.js), so it is Title Case with no underscores everywhere. Both
- * submission spellings (FOR REVIEW and the legacy SUBMITTED) read "For Review" and the
- * final-approval outcome reads "Completed".
+ * (utils/proposalStatus.js), so it uses the canonical proposal labels everywhere. Both
+ * submission spellings (FOR REVIEW and the legacy SUBMITTED) read "For RPS Review",
+ * APPROVED reads "Implementation Approved" and COMPLETED reads "Completed".
  */
 export function reviewStatusLabel(status) {
   const value = String(status ?? '').trim()

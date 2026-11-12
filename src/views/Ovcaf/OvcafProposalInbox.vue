@@ -33,9 +33,10 @@
                                 <label class="form-label">Status</label>
                                 <select v-model="filters.status" @change="filters.page = 1" class="form-control">
                                     <option value="All">All Statuses</option>
-                                    <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
-                                    <option value="FOR_OC_APPROVAL">For OC Approval</option>
-                                    <option value="APPROVED">Completed</option>
+                                    <option value="FOR_OVCAF_APPROVAL">{{ proposalStatusLabel('FOR_OVCAF_APPROVAL') }}</option>
+                                    <option value="FOR_OC_APPROVAL">{{ proposalStatusLabel('FOR_OC_APPROVAL') }}</option>
+                                    <option value="READY_FOR_RELEASE">{{ proposalStatusLabel('READY_FOR_RELEASE') }}</option>
+                                    <option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>
                                 </select>
                             </div>
                             <div>

@@ -12,6 +12,11 @@
  * every quarterly report request is still validated by the backend.
  */
 
+export {
+  REPORT_STATUS_LABELS,
+  reportStatusLabel,
+} from './statusCatalog.js'
+
 /**
  * Proposal statuses that mean "approved for implementation". Mirrors
  * QuarterlyProgressReportService.IMPLEMENTATION_STATUSES on the backend, including
@@ -19,6 +24,14 @@
  * treats as approved (proposalStatus.js / proposalSummary.js).
  */
 export const IMPLEMENTATION_STATUSES = ['APPROVED', 'RELEASED', 'IMPLEMENTATION']
+
+/**
+ * Statuses whose reports remain available on the reporting pages. It adds the completed
+ * status to IMPLEMENTATION_STATUSES so a project does not lose access to the reports it
+ * already filed once its final required report moves it to COMPLETED. This never grants
+ * the right to create a new report; that stays with isQuarterlyReportEligible() below.
+ */
+export const REPORTABLE_STATUSES = [...IMPLEMENTATION_STATUSES, 'COMPLETED']
 
 /** True when the project has an issued Special Order (SO) number. */
 export function hasIssuedSpecialOrder(proposal) {
@@ -43,6 +56,18 @@ export function hasRecordedOcApproval(proposal) {
 export function isApprovedForImplementation(proposal) {
   const status = typeof proposal?.status === 'string' ? proposal.status.trim().toUpperCase() : ''
   return IMPLEMENTATION_STATUSES.includes(status)
+}
+
+/**
+ * True when the project's filed reports may still be read and its next reporting stage
+ * resolved. The approval-chain evidence is the same as for reporting eligibility; a
+ * COMPLETED project is accepted because it already passed that chain and keeps access
+ * to the reports it submitted. Creating a new report still requires
+ * {@link isQuarterlyReportEligible}.
+ */
+export function isReportableProject(proposal) {
+  const status = typeof proposal?.status === 'string' ? proposal.status.trim().toUpperCase() : ''
+  return REPORTABLE_STATUSES.includes(status) && hasRecordedOcApproval(proposal)
 }
 
 /**

@@ -1,8 +1,8 @@
 /**
  * announcementStatus.test.js
  * Verifies the status label and colour tone shown next to a Call for Proposal: Open is
- * green, Closed is red and Scheduled is blue, and the label is always available so a
- * status never depends on colour alone.
+ * green, Scheduled is blue and Draft/Closed are gray, and the label is always available so
+ * a status never depends on colour alone.
  *
  * Run with: npm test
  */
@@ -17,16 +17,16 @@ import {
 
 test('the status codes a notification carries map to a label and a tone', () => {
   assert.equal(announcementStatusLabel('OPEN'), 'Open')
-  assert.equal(announcementStatusTone('OPEN'), 'open')
+  assert.equal(announcementStatusTone('OPEN'), 'is-approved')
 
   assert.equal(announcementStatusLabel('CLOSED'), 'Closed')
-  assert.equal(announcementStatusTone('CLOSED'), 'closed')
+  assert.equal(announcementStatusTone('CLOSED'), 'is-gray')
 
   assert.equal(announcementStatusLabel('SCHEDULED'), 'Scheduled')
-  assert.equal(announcementStatusTone('SCHEDULED'), 'scheduled')
+  assert.equal(announcementStatusTone('SCHEDULED'), 'is-blue')
 
   assert.equal(announcementStatusLabel('DRAFT'), 'Draft')
-  assert.equal(announcementStatusTone('DRAFT'), 'draft')
+  assert.equal(announcementStatusTone('DRAFT'), 'is-gray')
 })
 
 test('the labels the status helper returns map to the same badge', () => {
@@ -35,10 +35,10 @@ test('the labels the status helper returns map to the same badge', () => {
 
   assert.equal(label, 'Open')
   assert.equal(announcementStatusLabel(label), 'Open')
-  assert.equal(announcementStatusTone(label), 'open')
+  assert.equal(announcementStatusTone(label), 'is-approved')
 })
 
-test('open is green, closed is red and scheduled is blue', () => {
+test('open is green, closed is gray and scheduled is blue', () => {
   assert.deepEqual(
     [
       announcementStatusTone(
@@ -60,7 +60,7 @@ test('open is green, closed is red and scheduled is blue', () => {
         ),
       ),
     ],
-    ['open', 'closed', 'scheduled'],
+    ['is-approved', 'is-gray', 'is-blue'],
   )
 })
 

@@ -91,7 +91,7 @@ test('what the administrator dashboard still does is intact', () => {
   for (const kept of [
     'Total Users',
     'Pending Approvals',
-    'Approved Users',
+    'Active Users',
     'Rejected Users',
     'PENDING APPROVALS',
     'Refresh Data',

@@ -511,15 +511,15 @@
 }
 
 .end-stat.is-pending .end-stat-value {
-  color: #b45309;
+  color: var(--status-amber-solid);
 }
 
 .end-stat.is-approved .end-stat-value {
-  color: #047857;
+  color: var(--status-approved-solid);
 }
 
 .end-stat.is-rejected .end-stat-value {
-  color: #b91c1c;
+  color: var(--status-rejected-solid);
 }
 
 /* ===== Dean dashboard and Dean endorsement requests =====

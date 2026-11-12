@@ -137,16 +137,18 @@ public class OvcafService {
         // Update proposal status based on decision
         switch (request.getDecision()) {
             case "APPROVED_ENDORSED":
-                // Budget endorsed, proposal is now approved for implementation
-                // (no longer loops back to OC - OVCAF approval is final for budget matters).
-                // An implementation approval is only valid for a project whose Special
-                // Order has actually been issued by the Office of the Chancellor; without
-                // the SO the proposal would look approved but could never create the
-                // quarterly reports an implementation-approved project must file.
+                // The budget is approved, but the project is not yet approved for
+                // implementation: the budget release it requires has not been recorded.
+                // READY_FOR_RELEASE is the existing intermediate state between the two,
+                // and only releaseFunds() performs the final transition to APPROVED.
+                // An implementation approval is also only valid for a project whose
+                // Special Order has actually been issued by the Office of the Chancellor;
+                // without the SO the proposal could never create the quarterly reports an
+                // implementation-approved project must file.
                 requireIssuedSpecialOrder(proposal);
                 validation.setBudgetEndorsed(true);
                 validation.setBudgetEndorsedAt(LocalDateTime.now());
-                proposal.setStatus("APPROVED");
+                proposal.setStatus("READY_FOR_RELEASE");
                 break;
             case "RETURNED_FOR_REVISION":
                 proposal.setStatus("RETURNED");
@@ -168,8 +170,8 @@ public class OvcafService {
     }
 
     /**
-     * Endorse budget - mark proposal as approved for implementation
-     * (OVCAF approval is final - no longer loops back to OC)
+     * Endorse budget - record OVCAF's budget approval and make the proposal ready for
+     * the budget release that must precede implementation approval.
      */
     @Transactional
     public Proposal endorseBudget(Long proposalId, Long endorsedById) {
@@ -192,29 +194,39 @@ public class OvcafService {
 
         validation.setBudgetEndorsed(true);
         validation.setBudgetEndorsedAt(LocalDateTime.now());
+        if (validation.getDecision() == null) {
+            // The endorsement is OVCAF's budget approval. Recording the decision keeps
+            // the reporting-eligibility check (which requires an APPROVED_ENDORSED
+            // record) consistent with the proposal's approved-for-implementation status.
+            validation.setDecision("APPROVED_ENDORSED");
+            validation.setValidatedAt(LocalDateTime.now());
+        }
         if (endorsedById != null) {
             validation.setValidatedBy(userRepository.findById(endorsedById).orElse(null));
         }
         validationRepository.save(validation);
 
-        // Set status to APPROVED - OVCAF endorsement is final, no loop back to OC
-        proposal.setStatus("APPROVED");
+        // The budget is approved, not yet released: READY_FOR_RELEASE is the state the
+        // proposal must be in before releaseFunds() records the release and moves it to
+        // APPROVED (Implementation Approved).
+        proposal.setStatus("READY_FOR_RELEASE");
         Proposal saved = proposalRepository.save(proposal);
 
-        // Notify proponent that their proposal is approved for implementation
+        // Notify proponent that the budget is approved and the release is awaited.
         if (saved.getProponent() != null) {
             notificationService.createNotification(
                     saved.getProponent().getId(),
-                    "Your proposal \"" + saved.getProjectTitle()
-                            + "\" has been approved by OVCAF and is ready for implementation.",
-                    "Proposal Approved for Implementation",
+                    "The budget for your proposal \"" + saved.getProjectTitle()
+                            + "\" has been approved by OVCAF and is awaiting fund release. "
+                            + "The project becomes approved for implementation once the release is recorded.",
+                    "Budget Approved",
                     "APPROVAL",
                     saved.getId());
         }
         // Notify RPS for monitoring
         notifyRole("RPS_ADMIN", saved,
-                "Proposal approved by OVCAF for implementation: \"" + saved.getProjectTitle() + "\"",
-                "Implementation Approval", "PROPOSAL_UPDATE");
+                "Budget approved by OVCAF; awaiting fund release: \"" + saved.getProjectTitle() + "\"",
+                "Budget Approved", "PROPOSAL_UPDATE");
 
         return saved;
     }
@@ -251,7 +263,12 @@ public class OvcafService {
     }
 
     /**
-     * Release project funds
+     * Release project funds.
+     *
+     * <p>This is the final step of the budget route: it may only be recorded after
+     * OVCAF has approved the budget, and it is what moves the proposal to
+     * {@code APPROVED} (Implementation Approved). Merely approving the budget never
+     * does that on its own.</p>
      */
     @Transactional
     public Proposal releaseFunds(Long proposalId, Long releasedById) {
@@ -267,12 +284,35 @@ public class OvcafService {
                     return v;
                 });
 
+        // A release is never a substitute for OVCAF's budget decision: without the
+        // recorded approval the proposal would be marked Implementation Approved while
+        // its budget had never actually been approved.
+        if (!Boolean.TRUE.equals(validation.getBudgetEndorsed())) {
+            throw new IllegalStateException(
+                    "OVCAF must approve the budget before funds can be released. Record the "
+                            + "budget approval first; the proposal then becomes ready for release.");
+        }
+
+        String status = normaliseStatus(proposal.getStatus());
+        if (!"READY_FOR_RELEASE".equals(status) && !"APPROVED".equals(status)) {
+            throw new IllegalStateException(
+                    "This proposal is not awaiting fund release (current status: "
+                            + (status.isEmpty() ? "none" : status) + ").");
+        }
+        // Repeating the release of an already-approved project is harmless and must not
+        // duplicate notifications; the first release is the recorded transition.
+        if ("APPROVED".equals(status) && Boolean.TRUE.equals(validation.getFundsReleased())) {
+            return proposal;
+        }
+
         validation.setFundsReleased(true);
         validation.setFundsReleasedAt(LocalDateTime.now());
         validation.setReleasedBy(releasedById);
         validationRepository.save(validation);
 
-        proposal.setStatus("RELEASED");
+        // The budget release completes the approval chain: the proposal is now approved
+        // for implementation. RELEASED is intentionally not the final status.
+        proposal.setStatus("APPROVED");
         Proposal saved = proposalRepository.save(proposal);
 
         // Notify proponent and RPS
@@ -394,9 +434,7 @@ public class OvcafService {
      * second validation record or advance an already-decided proposal.
      */
     private void requireAwaitingBudgetEvaluation(Proposal proposal) {
-        String status = proposal.getStatus() == null
-                ? ""
-                : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
+        String status = normaliseStatus(proposal.getStatus());
         if (!"FOR_OVCAF_APPROVAL".equals(status)) {
             throw new IllegalStateException(
                     "This proposal is not awaiting OVCAF budget evaluation "
@@ -440,6 +478,11 @@ public class OvcafService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** The same trim + upper-case comparison the rest of the workflow uses. */
+    private static String normaliseStatus(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private OvcafProposalResponse mapToResponse(Proposal proposal) {
@@ -542,20 +585,21 @@ public class OvcafService {
     private void sendValidationNotifications(Proposal proposal, String decision) {
         switch (decision) {
             case "APPROVED_ENDORSED":
-                // Notify proponent that proposal is approved for implementation
+                // The budget is approved; implementation approval follows the release.
                 if (proposal.getProponent() != null) {
                     notificationService.createNotification(
                             proposal.getProponent().getId(),
-                            "Your proposal \"" + proposal.getProjectTitle()
-                                    + "\" has been approved by OVCAF and is ready for implementation.",
-                            "Proposal Approved for Implementation",
+                            "The budget for your proposal \"" + proposal.getProjectTitle()
+                                    + "\" has been approved by OVCAF and is awaiting fund release. "
+                                    + "The project becomes approved for implementation once the release is recorded.",
+                            "Budget Approved",
                             "APPROVAL",
                             proposal.getId());
                 }
-                // Notify RPS for implementation monitoring
+                // Notify RPS that the budget cleared and the release is awaited.
                 notifyRole("RPS_ADMIN", proposal,
-                        "Proposal approved by OVCAF for implementation: \"" + proposal.getProjectTitle() + "\"",
-                        "Implementation Approval", "PROPOSAL_UPDATE");
+                        "Budget approved by OVCAF; awaiting fund release: \"" + proposal.getProjectTitle() + "\"",
+                        "Budget Approved", "PROPOSAL_UPDATE");
                 break;
             case "RETURNED_FOR_REVISION":
                 if (proposal.getProponent() != null) {

@@ -1,14 +1,48 @@
 <template>
-  <div class="qpr-form-page" :class="{ 'qpr-form-page--terminal': isTerminalStage }">
-    <div class="page-header">
+  <div
+    class="qpr-form-page"
+    :class="isTerminalStage ? 'qpr-form-page--terminal' : 'qpr-form-page--report'"
+  >
+    <!-- Terminal Report keeps the existing page heading. -->
+    <div v-if="isTerminalStage" class="page-header">
       <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
       <div class="page-header-text">
         <h1>{{ pageTitle }}</h1>
-        <p class="subtitle" :class="{ 'subtitle--terminal': isTerminalStage }">
+        <p class="subtitle subtitle--terminal">
           {{ project?.projectTitle || '' }}
         </p>
       </div>
     </div>
+
+    <!-- Quarterly Progress Report: top bar with the report title, reporting
+         period, the return action and Save Draft. -->
+    <header v-if="!isTerminalStage" class="qpr-topbar">
+      <button type="button" class="qpr-back" aria-label="Back" @click="$router.back()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div class="qpr-topbar-text">
+        <span class="qpr-eyebrow">
+          MSUN Internally-Funded Project<template v-if="reportingPeriodLabel">
+            <span class="qpr-eyebrow-dot"> • </span>{{ reportingPeriodLabel }} Report</template>
+        </span>
+        <h1 class="qpr-title">Quarterly Progress Report &amp; Workplan</h1>
+      </div>
+      <div class="qpr-topbar-actions">
+        <button type="button" class="qpr-return" @click="$router.back()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Return to Revise Part B
+        </button>
+        <button
+          type="button"
+          class="qpr-save"
+          :disabled="saving || loading || !report"
+          @click="saveQuarterly('DRAFT', qprPayload())"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          {{ saving ? 'Saving…' : 'Save Draft' }}
+        </button>
+      </div>
+    </header>
 
     <div v-if="loading" class="state">Loading...</div>
     <div v-else-if="error" class="state error">{{ error }}</div>
@@ -201,45 +235,35 @@
          Page 3 = Project Workplan. All three pages share one form state, so
          moving between steps never clears what was already entered. -->
     <template v-else>
-      <!-- Wizard header: title of the current page, project + reporting period
-           and the step progress indicator. -->
-      <div class="wizard-card">
-        <div class="wizard-head">
-          <div class="wizard-head-text">
-            <span class="wizard-eyebrow">MSUN Internally-Funded Project</span>
-            <h2 class="wizard-title">{{ currentStepTitle }}</h2>
-            <p class="wizard-meta">
-              <span class="wizard-meta-item">{{ project?.projectTitle || '—' }}</span>
-              <span v-if="reportingPeriodLabel" class="wizard-meta-item">
-                Reporting period: {{ reportingPeriodLabel }}
-              </span>
-            </p>
-          </div>
-          <span class="wizard-page-badge">Page {{ currentStep }} of {{ TOTAL_STEPS }}</span>
-        </div>
-
-        <ol class="wizard-progress">
-          <li
-            v-for="(step, index) in wizardSteps"
-            :key="step.key"
-            class="wizard-progress-item"
-            :class="`is-${stepStateOf(index + 1)}`"
-          >
-            <button
-              type="button"
-              class="wizard-progress-btn"
-              :aria-current="currentStep === index + 1 ? 'step' : undefined"
-              @click="goToStep(index + 1)"
-            >
-              <span class="wizard-progress-marker" aria-hidden="true">
-                <template v-if="stepStateOf(index + 1) === 'done'">✓</template>
-                <template v-else>{{ index + 1 }}</template>
-              </span>
-              <span class="wizard-progress-label">{{ step.label }}</span>
-            </button>
-          </li>
-        </ol>
-      </div>
+      <!-- Three-step progress indicator. Each column shows a coloured top line
+           (green completed, blue active, grey upcoming), the step number and a
+           short description. The active step follows the visible page. -->
+      <nav class="qpr-progress" aria-label="Report progress">
+        <button
+          v-for="(step, index) in wizardSteps"
+          :key="step.key"
+          type="button"
+          class="qpr-step"
+          :class="`is-${stepStateOf(index + 1)}`"
+          :aria-current="currentStep === index + 1 ? 'step' : undefined"
+          @click="goToStep(index + 1)"
+        >
+          <span class="qpr-step-line" aria-hidden="true"></span>
+          <span class="qpr-step-body">
+            <span class="qpr-step-marker" aria-hidden="true">
+              <template v-if="stepStateOf(index + 1) === 'done'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-9"/></svg>
+              </template>
+              <template v-else>{{ index + 1 }}</template>
+            </span>
+            <span class="qpr-step-text">
+              <span class="qpr-step-label">STEP {{ index + 1 }}</span>
+              <span class="qpr-step-title">{{ step.shortLabel || step.label }}</span>
+              <span class="qpr-step-desc">{{ step.description }}</span>
+            </span>
+          </span>
+        </button>
+      </nav>
 
       <p v-if="stepError" class="wizard-field-error">{{ stepError }}</p>
 
@@ -277,7 +301,10 @@
            submitted together with the Quarterly Progress Report through the
            existing Save Draft / Submit Report workflow. -->
       <div v-show="currentStep === TOTAL_STEPS" class="wizard-panel">
-        <ProjectWorkplanForm v-model="workplan" />
+        <ProjectWorkplanForm
+          v-model="workplan"
+          :report-status="report?.status || 'DRAFT'"
+        />
 
         <p v-if="existingWorkplanName" class="existing-file">
           A workplan file previously uploaded for this report is preserved: {{ existingWorkplanName }}
@@ -286,25 +313,46 @@
         <p v-if="stepErrors.workplan" class="wizard-field-error">{{ stepErrors.workplan }}</p>
       </div>
 
-      <!-- Bottom navigation: Previous Page on the left (pages 2-3 only), the
-           forward / final action on the right. -->
-      <div class="wizard-actions">
-        <div class="wizard-actions-left">
-          <button v-if="currentStep > 1" class="btn-secondary" @click="goToStep(currentStep - 1)">
+      <p v-if="saveError" class="state error">{{ saveError }}</p>
+
+      <!-- Bottom navigation: Previous Page on the left, the page indicator in
+           the centre and the forward / final action on the right. Page 3 opens
+           the existing review step, where the report is confirmed and submitted. -->
+      <footer class="qpr-footer">
+        <div class="qpr-footer-left">
+          <button
+            type="button"
+            class="qpr-nav-btn qpr-nav-btn--ghost"
+            :disabled="currentStep === 1"
+            @click="goToStep(currentStep - 1)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
             Previous Page
           </button>
         </div>
-        <div class="wizard-actions-right">
-          <button v-if="currentStep < TOTAL_STEPS" class="btn-submit" @click="nextPage">Next Page</button>
-          <template v-else>
-            <button class="btn-draft btn-secondary" :disabled="saving" @click="saveQuarterly('DRAFT', qprPayload())">
-              Save Draft
-            </button>
-            <button class="btn-submit" :disabled="saving" @click="openReview">Review Report</button>
-          </template>
+        <span class="qpr-page-indicator">Page {{ currentStep }} of {{ TOTAL_STEPS }}</span>
+        <div class="qpr-footer-right">
+          <button
+            v-if="currentStep < TOTAL_STEPS"
+            type="button"
+            class="qpr-nav-btn qpr-nav-btn--primary"
+            @click="nextPage"
+          >
+            Next Page
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <button
+            v-else
+            type="button"
+            class="qpr-nav-btn qpr-nav-btn--success"
+            :disabled="saving"
+            @click="openReview"
+          >
+            Submit Report
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
         </div>
-      </div>
-      <p v-if="saveError" class="state error">{{ saveError }}</p>
+      </footer>
     </template>
 
     <!-- Review Report: read-only view of all three pages, or of the Terminal Report
@@ -337,6 +385,13 @@
           <p class="review-success-text">
             Terminal Report submitted. It is now listed in your reports as submitted.
           </p>
+          <!-- The submission response carries the proposal status that resulted from
+               this request, so the completed project is shown immediately rather than
+               after a manual refresh. -->
+          <p v-if="projectCompleted" class="review-success-text">
+            All required reports are submitted. This project is now marked
+            <strong>Completed</strong>.
+          </p>
           <button class="btn-submit" @click="goToReports">Back to My Reports</button>
         </div>
 
@@ -356,7 +411,11 @@
           </template>
           <template v-else>
             <QuarterlyReportForm :report="reviewReport" readonly />
-            <ProjectWorkplanForm :model-value="reviewWorkplan" readonly />
+            <ProjectWorkplanForm
+              :model-value="reviewWorkplan"
+              readonly
+              :report-status="report?.status || 'DRAFT'"
+            />
           </template>
         </div>
 
@@ -419,7 +478,12 @@ import {
   validateReportStep,
 } from '@/utils/reportWizard'
 import { copyReportValues, copySourceId } from '@/utils/quarterlyReportCopy'
-import { workplanFormState, workplanPayload } from '@/utils/quarterlyReportFormState'
+import {
+  proposalProjectInfo,
+  withProposalProjectInfo,
+  workplanFormState,
+  workplanPayload,
+} from '@/utils/quarterlyReportFormState'
 import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
 
 // Official ORPS Terminal Report format shipped with the app (public/templates).
@@ -487,6 +551,9 @@ const terminalError = ref('')
 const terminalDirty = ref(false)
 const terminalSubmitted = ref(false)
 const terminalDocRef = ref(null)
+
+/** The proposal status returned by the last submission, when the backend reports it. */
+const projectCompleted = computed(() => report.value?.proposalStatus === 'COMPLETED')
 
 const currentTerminalSection = computed(() => TERMINAL_SECTIONS[terminalSectionIndex.value])
 
@@ -646,8 +713,6 @@ const stepErrors = ref({})
 const stepError = ref('')
 const reviewing = ref(false)
 
-const currentStepTitle = computed(() => wizardSteps[currentStep.value - 1].title)
-
 // Reporting quarter the proponent is reporting on, read from the report form so
 // it is never hardcoded. The stage period is used while the form is loading.
 const reportingPeriodLabel = computed(() => qprFormRef.value?.periodLabel || stagePeriod.value || '')
@@ -669,7 +734,11 @@ function clearStepErrors() {
 // progress report payload (pages 1-2) and whether the Project Workplan has at
 // least one described objective (page 3).
 function reportContext() {
-  return { payload: qprPayload(), hasWorkplan: hasWorkplanContent() }
+  return {
+    payload: qprPayload(),
+    hasWorkplan: hasWorkplanContent(),
+    workplan: serializeWorkplan(),
+  }
 }
 
 /** Validates a page (rules in src/utils/reportWizard.js) and shows its messages. */
@@ -773,6 +842,10 @@ async function fetchData() {
       // the draft is still missing, so continuing a draft never overwrites work the
       // proponent already saved for this period.
       report.value = source ? copyReportValues(source, r.data, { fillEmptyOnly: true }) : r.data
+      // Saved report values are the historical snapshot; only a field the old report
+      // never recorded is filled from the proposal, so a proposal edit after filing can
+      // never rewrite what the proponent already reported.
+      report.value = withProposalProjectInfo(report.value, p.data)
       initWorkplan(report.value.workplan, p.data)
       initTerminalReport(report.value.terminalReport, p.data)
     } else {
@@ -787,17 +860,15 @@ async function fetchData() {
       const base = {
         period: n.data?.period || 'Q1',
         reportType: n.data?.reportType || 'QUARTERLY_PROGRESS',
-        projectTitle: p.data.projectTitle || '',
-        projectLeader: p.data.projectLeader || '',
-        projectDuration: p.data.duration || '',
-        projectStartDate: p.data.startDate || '',
-        projectEndDate: p.data.endDate || '',
         objectives: [],
         outputs: [],
       }
       // One merged object carries the report content and its Project Workplan, so the
       // form state is seeded from exactly what the form will display and save.
       report.value = source ? copyReportValues(source, base) : base
+      // The six identification fields are always the associated proposal's saved
+      // values (including the leader's gender), even when a previous report was copied.
+      Object.assign(report.value, proposalProjectInfo(p.data))
       initWorkplan(report.value.workplan, p.data)
       // The Terminal Report content of a copied report is a starting point the proponent
       // reviews and updates; the prefill fills in only what the report is still missing.
@@ -1471,326 +1542,247 @@ onMounted(async () => {
 /* ============================================================
    3-step report wizard (proponent side)
    ============================================================ */
-.wizard-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px 22px;
-  margin-bottom: 16px;
+/* The report pages sit on the light blue-grey canvas; the app shell already
+   provides the outer gutter, so the page itself adds only bottom spacing. */
+.qpr-form-page--report {
+  padding: 0 0 28px;
+  background: #f7f9fc;
+  max-width: 1600px;
 }
-.wizard-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.wizard-head-text {
-  min-width: 0;
-}
-.wizard-eyebrow {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #64748b;
-}
-.wizard-title {
-  margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: #1c2145;
-}
-.wizard-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  margin: 6px 0 0;
-  font-size: 15px;
-  line-height: 1.45;
-  color: #475569;
-}
-.wizard-page-badge {
-  flex-shrink: 0;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: #ffd400;
-  color: #1c2145;
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-/* Progress indicator: descriptive labels, the current page highlighted and
-   completed pages ticked. */
-.wizard-progress {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 18px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.wizard-progress-item {
-  flex: 1 1 210px;
-  min-width: 0;
-}
-.wizard-progress-btn {
+
+/* ---------- Top bar ---------- */
+.qpr-topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 52px;
-  padding: 12px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #475569;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
-  text-align: left;
-  cursor: pointer;
+  gap: 13px;
+  padding: 2px 0 18px;
 }
-.wizard-progress-marker {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+
+.qpr-back {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #40506b;
+  cursor: pointer;
+}
+
+.qpr-back:hover {
+  background: #e9eef6;
+}
+
+.qpr-back svg {
+  width: 19px;
+  height: 19px;
+}
+
+.qpr-topbar-text {
+  min-width: 0;
+}
+
+.qpr-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: #7a879c;
+}
+
+.qpr-eyebrow-dot {
+  color: #b3bdcc;
+}
+
+.qpr-title {
+  margin: 2px 0 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #172b4d;
+}
+
+.qpr-topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+}
+
+.qpr-return,
+.qpr-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: 6px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.qpr-return {
+  border: 1px solid #f0c878;
+  color: #b7791f;
+}
+
+.qpr-return:hover {
+  background: #fffaf0;
+}
+
+.qpr-save {
+  border: 1px solid #dce5f0;
+  color: #33415c;
+  box-shadow: 0 1px 2px rgba(16, 27, 51, 0.05);
+}
+
+.qpr-save:hover:not(:disabled) {
+  border-color: #c3d1e3;
+  background: #fbfcfe;
+}
+
+.qpr-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.qpr-return svg,
+.qpr-save svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Step progress ---------- */
+.qpr-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 27, 51, 0.04);
+  overflow: hidden;
+}
+
+.qpr-step {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 21px 18px 15px;
+  border: none;
+  background: #ffffff;
+  color: #63708a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.qpr-step:hover {
+  background: #fbfcfe;
+}
+
+.qpr-step-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #dce5f0;
+}
+
+.qpr-step.is-done .qpr-step-line {
+  background: #10b981;
+}
+
+.qpr-step.is-current .qpr-step-line {
+  background: #2454e8;
+}
+
+.qpr-step-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.qpr-step-marker {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
   border-radius: 50%;
-  background: #e2e8f0;
-  color: #475569;
-  font-size: 13px;
+  background: #dce5f0;
+  color: #63708a;
+  font-size: 10.5px;
   font-weight: 700;
 }
-.wizard-progress-item.is-current .wizard-progress-btn {
-  border-color: #a5b4fc;
-  background: #eef2ff;
-  color: #1c2145;
+
+.qpr-step-marker svg {
+  width: 12px;
+  height: 12px;
 }
-.wizard-progress-item.is-current .wizard-progress-marker {
-  background: #1c2145;
-  color: #fff;
+
+.qpr-step.is-done .qpr-step-marker {
+  background: #10b981;
+  color: #ffffff;
 }
-.wizard-progress-item.is-done .wizard-progress-btn {
-  border-color: #86efac;
-  background: #f0fdf4;
-  color: #166534;
+
+.qpr-step.is-current .qpr-step-marker {
+  background: #2454e8;
+  color: #ffffff;
 }
-.wizard-progress-item.is-done .wizard-progress-marker {
-  background: #16834b;
-  color: #fff;
+
+.qpr-step-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
+
+.qpr-step-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  color: #7a879c;
+}
+
+.qpr-step.is-done .qpr-step-label {
+  color: #10b981;
+}
+
+.qpr-step.is-current .qpr-step-label {
+  color: #2454e8;
+}
+
+.qpr-step-title {
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #172b4d;
+}
+
+.qpr-step-desc {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #7a879c;
+}
+
 .wizard-panel {
   margin-bottom: 4px;
-}
-/* ---------- On-screen reading scale for the report document ----------
-   The report sheets are authored for a printed A4 page (reportDocument.css sets
-   .doc-sheet { width: 210mm; font-size: 10px } and the components use 7-10px
-   text), which is far too small and narrow on a screen. Inside the wizard the
-   same components are presented at a comfortable reading size: the sheet fills
-   the available content width, the typography grows to 13-28px and the fields
-   get room to breathe. Every rule below is scoped to @media screen and to
-   .qpr-form-page, so the printed A4 form and the read-only report viewers keep
-   their existing document styling. */
-@media screen {
-  .qpr-form-page :deep(.doc-sheet) {
-    /* width: 100% fills the card (the page container sets the maximum width);
-       min-width keeps the wide report tables usable on small screens, where
-       .doc-scroll scrolls them horizontally as it already did. */
-    width: 100%;
-    min-width: 760px;
-    min-height: 0; /* content-driven height: no empty A4 sheet */
-    font-size: 16px;
-    line-height: 1.5;
-  }
-  /* Base size for every report field; the more specific rules below refine it.
-     border-box keeps the 42px minimum an outer height (the printed document is
-     authored without box-sizing on its inline fields). */
-  .qpr-form-page :deep(.doc-sheet input),
-  .qpr-form-page :deep(.doc-sheet select),
-  .qpr-form-page :deep(.doc-sheet textarea) {
-    box-sizing: border-box;
-    font-size: 16px;
-    line-height: 1.45;
-  }
-  .qpr-form-page :deep(.doc-body) {
-    padding: 16px 20px 20px;
-  }
-  /* Document header */
-  .qpr-form-page :deep(.doc-header) {
-    min-height: 88px;
-    padding: 14px 20px;
-  }
-  .qpr-form-page :deep(.doc-emblem) {
-    width: 40px;
-    height: 40px;
-  }
-  .qpr-form-page :deep(.doc-eyebrow) {
-    font-size: 12px;
-  }
-  .qpr-form-page :deep(.doc-title) {
-    font-size: 28px;
-  }
-  .qpr-form-page :deep(.doc-badge) {
-    padding: 6px 14px;
-    font-size: 14px;
-  }
-  .qpr-form-page :deep(.doc-badge-sub) {
-    font-size: 13px;
-  }
-  .qpr-form-page :deep(.doc-badge-input) {
-    width: 170px;
-    padding: 4px 8px;
-    font-size: 13.5px;
-  }
-  /* Section headings */
-  .qpr-form-page :deep(.doc-section) {
-    gap: 10px;
-    margin: 24px 0 12px;
-    font-size: 21px;
-  }
-  .qpr-form-page :deep(.doc-section-accent) {
-    width: 4px;
-    height: 24px;
-  }
-  .qpr-form-page :deep(.doc-subsection) {
-    margin: 16px 0 8px;
-    font-size: 17px;
-  }
-  .qpr-form-page :deep(.doc-hint) {
-    margin: 0 0 10px;
-    font-size: 14.5px;
-  }
-  /* Labels, values and narrative notes */
-  .qpr-form-page :deep(.doc-label) {
-    font-size: 15px;
-    letter-spacing: 0.2px;
-  }
-  .qpr-form-page :deep(.doc-value) {
-    margin-top: 4px;
-    font-size: 16px;
-  }
-  .qpr-form-page :deep(.doc-note) {
-    padding: 12px 14px 12px 20px;
-    font-size: 16px;
-  }
-  /* Document tables */
-  .qpr-form-page :deep(.doc-info-table td) {
-    padding: 10px 12px;
-  }
-  .qpr-form-page :deep(.doc-table th) {
-    padding: 9px 8px;
-    font-size: 13.5px;
-  }
-  .qpr-form-page :deep(.doc-table td) {
-    padding: 8px 8px;
-    font-size: 15px;
-  }
-  /* Report fields. These selectors include .doc-sheet so they outrank the base
-     field rule above (an element-qualified selector wins on specificity). */
-  .qpr-form-page :deep(.doc-sheet .doc-cell-input) {
-    min-height: 42px;
-    padding: 8px 0;
-  }
-  .qpr-form-page :deep(.doc-sheet .doc-badge-input) {
-    width: 170px;
-    padding: 4px 8px;
-    font-size: 13.5px;
-  }
-  .qpr-form-page :deep(.doc-sheet .qr-period-input) {
-    min-height: 42px;
-    padding: 8px 10px;
-    font-size: 15px;
-    border-radius: 6px;
-  }
-  .qpr-form-page :deep(.doc-sheet .qr-cell-area) {
-    min-height: 60px;
-    font-size: 15px;
-  }
-  /* The workplan grid carries 12 month columns beside the objectives column, so
-     its cells use slightly smaller text and tighter padding to stay readable
-     instead of wrapping every word. */
-  .qpr-form-page :deep(.doc-sheet .wp-cell-area) {
-    min-height: 60px;
-    font-size: 14px;
-  }
-  .qpr-form-page :deep(.doc-sheet .wp-table th),
-  .qpr-form-page :deep(.doc-sheet .wp-table td) {
-    padding: 6px 5px;
-  }
-  .qpr-form-page :deep(.doc-sheet .qr-cell-input),
-  .qpr-form-page :deep(.doc-sheet .wp-cell-month),
-  .qpr-form-page :deep(.doc-sheet .wp-cell-total) {
-    min-height: 34px;
-    font-size: 15px;
-  }
-  .qpr-form-page :deep(.doc-sheet .qr-note-area),
-  .qpr-form-page :deep(.doc-sheet .wp-note-area) {
-    min-height: 110px;
-    font-size: 16px;
-  }
-  .qpr-form-page :deep(.wp-cell-text),
-  .qpr-form-page :deep(.wp-note-text) {
-    font-size: 15px;
-  }
-  /* Read-only display values (the review dialog renders the report without
-     editable controls) carry no minimum height, so only their typography is
-     scaled: no empty space is introduced. */
-  .qpr-form-page :deep(.doc-sheet .qr-cell-text),
-  .qpr-form-page :deep(.doc-sheet .qr-cell-value) {
-    font-size: 15px;
-  }
-  .qpr-form-page :deep(.doc-sheet .qr-note-text) {
-    font-size: 16px;
-  }
-  /* Row controls and hints */
-  .qpr-form-page :deep(.row-remove) {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-  }
-  .qpr-form-page :deep(.qr-add-btn),
-  .qpr-form-page :deep(.wp-btn-add),
-  .qpr-form-page :deep(.wp-btn-remove) {
-    padding: 8px 14px;
-    font-size: 14px;
-    border-radius: 6px;
-  }
-  .qpr-form-page :deep(.wp-hint) {
-    font-size: 13.5px;
-  }
-  /* Workplan rows grow with the larger text so nothing is cramped */
-  .qpr-form-page :deep(.wp-table .row-first td) {
-    height: 150px;
-  }
-  .qpr-form-page :deep(.wp-table .row-objective td) {
-    height: 90px;
-  }
-  /* Signatures */
-  .qpr-form-page :deep(.wp-sign-name) {
-    font-size: 16px;
-  }
-  .qpr-form-page :deep(.wp-sign-role) {
-    font-size: 13.5px;
-  }
-  /* Document footer */
-  .qpr-form-page :deep(.doc-footer) {
-    padding: 10px 20px;
-    font-size: 12.5px;
-  }
-  .qpr-form-page :deep(.doc-page-badge) {
-    padding: 4px 12px;
-    font-size: 12.5px;
-  }
-  /* Field-level validation message */
-  .qpr-form-page :deep(.field-error) {
-    margin-top: 4px;
-    font-size: 13.5px;
-  }
 }
 .wizard-field-error {
   margin: 0 0 14px;
@@ -1844,21 +1836,96 @@ onMounted(async () => {
   font-weight: 600;
   line-height: 1.45;
 }
-/* Bottom navigation, placed below the page content: Previous Page on the left,
-   the forward / final action on the right. */
-.wizard-actions {
+/* Bottom navigation: Previous Page on the left, the page indicator in the
+   centre and the forward / final action on the right. */
+.qpr-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e9f3;
+}
+
+.qpr-footer-left {
+  justify-self: start;
+}
+
+.qpr-footer-right {
+  justify-self: end;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-top: 18px;
+  gap: 10px;
 }
-/* Comfortable, consistent button size for the wizard navigation and the review
-   dialog (the Terminal Report screen keeps its own button sizing). */
-.wizard-actions .btn-submit,
-.wizard-actions .btn-draft,
-.wizard-actions .btn-secondary,
+
+.qpr-page-indicator {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #7a879c;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.qpr-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 33px;
+  padding: 7px 13px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.qpr-nav-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.qpr-nav-btn--ghost {
+  border: 1px solid #dce5f0;
+  background: #ffffff;
+  color: #40506b;
+}
+
+.qpr-nav-btn--ghost:hover:not(:disabled) {
+  background: #f5f8fc;
+}
+
+.qpr-nav-btn--primary {
+  border: 1px solid #2454e8;
+  background: #2454e8;
+  color: #ffffff;
+}
+
+.qpr-nav-btn--primary:hover {
+  background: #1c46c7;
+  border-color: #1c46c7;
+}
+
+.qpr-nav-btn--success {
+  border: 1px solid #0e9f6e;
+  background: #0e9f6e;
+  color: #ffffff;
+}
+
+.qpr-nav-btn--success:hover:not(:disabled) {
+  background: #0b8a5f;
+  border-color: #0b8a5f;
+}
+
+.qpr-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Comfortable, consistent button size for the review dialog (the Terminal
+   Report screen keeps its own button sizing). */
 .review-footer .btn-submit,
 .review-footer .btn-draft,
 .review-footer .btn-secondary {
@@ -1866,7 +1933,7 @@ onMounted(async () => {
   padding: 12px 26px;
   font-size: 15.5px;
 }
-.wizard-actions-right,
+
 .review-footer-right {
   display: flex;
   flex-wrap: wrap;
@@ -2143,26 +2210,66 @@ onMounted(async () => {
   .qpr-form-page {
     padding: 16px;
   }
+  .qpr-form-page--report {
+    padding: 0 0 20px;
+  }
 }
-/* Keep the navigation and action buttons usable on smaller screens. */
+/* Keep the top bar, progress indicator and navigation usable on smaller
+   screens. */
+@media (max-width: 760px) {
+  .qpr-topbar {
+    flex-wrap: wrap;
+  }
+  .qpr-topbar-text {
+    flex: 1 1 200px;
+  }
+  .qpr-topbar-actions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+  .qpr-return,
+  .qpr-save {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
 @media (max-width: 640px) {
   .qpr-form-page {
     padding: 12px;
   }
+  .qpr-form-page--report {
+    padding: 0 0 14px;
+  }
   .page-header h1 {
     font-size: 22px;
   }
-  .wizard-card {
-    padding: 16px;
+  .qpr-title {
+    font-size: 18px;
   }
-  .wizard-title {
-    font-size: 19px;
+  .qpr-progress {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .wizard-head {
+  .qpr-step {
+    padding: 16px 16px 14px;
+  }
+  .qpr-step + .qpr-step {
+    border-top: 1px solid #edf1f7;
+  }
+  .qpr-footer {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+  .qpr-footer-left,
+  .qpr-footer-right {
+    justify-self: stretch;
+  }
+  .qpr-footer-right {
     flex-direction: column;
   }
-  .wizard-progress-item {
-    flex: 1 1 100%;
+  .qpr-nav-btn {
+    width: 100%;
+    justify-content: center;
   }
   .tr-progress-item {
     flex: 1 1 100%;
@@ -2172,16 +2279,11 @@ onMounted(async () => {
   .terminal-actions .btn-secondary {
     width: 100%;
   }
-  .wizard-actions,
-  .wizard-actions-right,
   .review-footer,
   .review-footer-right {
     flex-direction: column;
     align-items: stretch;
   }
-  .wizard-actions .btn-submit,
-  .wizard-actions .btn-draft,
-  .wizard-actions .btn-secondary,
   .review-footer .btn-submit,
   .review-footer .btn-draft,
   .review-footer .btn-secondary {

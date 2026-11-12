@@ -75,7 +75,7 @@
             <td>{{ assignment.designation || '—' }}</td>
             <td>
               <span class="status-badge" :class="statusTone(assignment.status)">
-                {{ statusLabel(assignment.status) }}
+                {{ deanAssignmentStatusLabel(assignment.status) }}
               </span>
             </td>
             <td>{{ formatDate(assignment.dateAssigned) }}</td>
@@ -124,7 +124,7 @@
           <p>
             <strong>Status:</strong>
             <span class="status-badge" :class="statusTone(selected.status)">
-              {{ statusLabel(selected.status) || 'Approved' }}
+              {{ accountStatusLabel(selected.status) || 'Active' }}
             </span>
           </p>
           <p><strong>Role:</strong> Dean</p>
@@ -162,7 +162,10 @@ import api from '@/utils/api'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import {
+  accountStatusLabel,
+  deanAssignmentStatusLabel,
+} from '@/utils/statusCatalog.js'
 
 const assignments = ref([])
 const loading = ref(true)
@@ -171,8 +174,8 @@ const successMessage = ref('')
 
 const filter = ref('ACTIVE')
 const filters = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'REVOKED', label: 'Revoked' },
+  { value: 'ACTIVE', label: deanAssignmentStatusLabel('ACTIVE') },
+  { value: 'REVOKED', label: deanAssignmentStatusLabel('REVOKED') },
   { value: 'ALL', label: 'All' },
 ]
 

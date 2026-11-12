@@ -71,7 +71,8 @@ public class OvcafController {
     }
 
     /**
-     * Endorse budget - forward to OC for final approval
+     * Record OVCAF's budget approval; the proposal becomes READY_FOR_RELEASE and is
+     * only approved for implementation once the release is recorded.
      */
     @PutMapping("/proposals/{id}/endorse")
     public ResponseEntity<?> endorseBudget(

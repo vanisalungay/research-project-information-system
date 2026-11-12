@@ -46,12 +46,16 @@ const UNDER_REVIEW_STATUSES = [
   'FOR_OC_APPROVAL',
   'FOR_OVCAF_APPROVAL',
   'OVC_APPROVED',
-  'APPROVED_ENDORSED',
   'READY_FOR_RELEASE',
   'FINANCE_AUTHORIZATION',
 ]
 
-/** Statuses of a proposal that has been approved (and, later, funded or implemented). */
+/**
+ * Statuses of a proposal that has been approved (and, later, funded or completed).
+ * This is one count bucket only: APPROVED ("Implementation Approved") and
+ * COMPLETED ("Completed") remain distinct stored statuses and distinct labels - the
+ * bucket never changes which status a proposal is in.
+ */
 const APPROVED_STATUSES = ['APPROVED', 'RELEASED', 'IMPLEMENTATION', 'COMPLETED']
 
 /**
@@ -64,7 +68,6 @@ const RETURNED_STATUSES = [
   'RPS_RETURNED',
   'RETURNED',
   'RETURNED_TO_RPS',
-  'RETURNED_FOR_REVISION',
   'REVISION',
   'PENDING_REVISION',
   'REC_REVISION',
@@ -72,15 +75,25 @@ const RETURNED_STATUSES = [
   'REJECTED',
 ]
 
+/*
+ * `APPROVED_ENDORSED` and `RETURNED_FOR_REVISION` are OVCAF *decision* values
+ * (OvcafValidation.decision), not proposal statuses: the decision writes APPROVED or
+ * RETURNED onto the proposal. They must not be bucketed here as if they were statuses.
+ */
+
 /**
  * The summary cards, in display order. `id` is the key of the returned counts, `accent` is
  * the dashboard's stat-card accent (see assets/dashboard.css) and `icon` is the key of the
  * icon the card shows - both declared here so the six cards can never drift apart.
+ *
+ * The labels are group headings for the counts, not status badges; a row's status is still
+ * rendered with `proposalStatusLabel`. The submitted group is exactly one workflow state,
+ * so it carries that state's canonical label ("For RPS Review").
  */
 export const PROPOSAL_SUMMARY_BUCKETS = [
   { id: 'total', label: 'Total proposals', accent: 'indigo', icon: 'stack' },
   { id: 'draft', label: 'Draft', accent: 'blue', icon: 'draft' },
-  { id: 'submitted', label: 'For Review', accent: 'violet', icon: 'sent' },
+  { id: 'submitted', label: 'For RPS Review', accent: 'violet', icon: 'sent' },
   { id: 'underReview', label: 'Under Review', accent: 'amber', icon: 'review' },
   { id: 'approved', label: 'Approved', accent: 'green', icon: 'approved' },
   { id: 'returned', label: 'Returned / Rejected', accent: 'red', icon: 'returned' },

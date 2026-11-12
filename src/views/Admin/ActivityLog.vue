@@ -33,8 +33,8 @@
 
       <select v-model="statusFilter" class="filter-select" @change="applyFilters">
         <option value="">All statuses</option>
-        <option value="SUCCESS">Success</option>
-        <option value="FAILED">Failed</option>
+        <option value="SUCCESS">{{ activityStatusLabel('SUCCESS') }}</option>
+        <option value="FAILED">{{ activityStatusLabel('FAILED') }}</option>
       </select>
 
       <label class="date-field">
@@ -194,7 +194,7 @@
 import { computed, onMounted, ref } from 'vue'
 import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { activityStatusLabel } from '@/utils/statusCatalog.js'
 
 const entries = ref([])
 const modules = ref([])
@@ -325,7 +325,7 @@ const formatDateTime = (value) => {
   })
 }
 
-const formatStatus = (status) => statusLabel(status) || 'Success'
+const formatStatus = (status) => activityStatusLabel(status) || 'Success'
 
 onMounted(() => {
   loadModules()

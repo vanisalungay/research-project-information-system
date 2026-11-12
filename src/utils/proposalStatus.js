@@ -7,12 +7,17 @@
  * exact same workflow state: every helper here treats the two as equivalent, so old and
  * new rows display, filter and count the same way.
  *
- * `APPROVED` is the outcome of the last approval step: the stored value is left untouched
- * (backend filters and status history keep reading it), but the interface presents the
- * record as a completed project - the badge reads "Completed" and the row action "Open".
- * `FOR_OC_APPROVAL` / `FOR_OVCAF_APPROVAL` are still pending and keep their own wording.
+ * `APPROVED` means approved for implementation; it is distinct from `COMPLETED`
+ * (finished reporting). The stored value is left untouched - backend filters and status
+ * history keep reading it - while the badge reads "Implementation Approved" and the
+ * row action "Open". `FOR_OC_APPROVAL` / `FOR_OVCAF_APPROVAL` are still pending and keep
+ * their own wording.
  */
 import { statusLabel } from './statusLabel.js'
+import {
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_TIMELINE_STATUS_LABELS,
+} from './statusCatalog.js'
 
 /** The stored status of a proposal the Proponent has submitted and ORPS must review. */
 export const FOR_REVIEW = 'FOR REVIEW'
@@ -61,12 +66,11 @@ export const PROJECT_STATUSES = [
 ]
 
 /**
- * The statuses whose badge reads "Completed". A stored `COMPLETED` already formats that way
- * through the shared formatter; `APPROVED` is the value the running backend actually writes.
+ * True only for the stored `COMPLETED` status (required reporting finished).
+ * `APPROVED` (approved for implementation) is deliberately not included.
  */
 export function isCompletedStatus(status) {
-  const value = normalizeProposalStatus(status)
-  return value === APPROVED || value === 'COMPLETED'
+  return normalizeProposalStatus(status) === 'COMPLETED'
 }
 
 /** True when the proposal has passed final approval and is displayed as a project. */
@@ -116,31 +120,34 @@ export function canonicalProposalStatus(status) {
 
 /**
  * True when a stored status matches a filter value. A filter for either submission
- * spelling matches both, so selecting "For Review" also returns legacy `SUBMITTED` rows;
- * a "Completed" filter likewise matches both the stored `APPROVED` outcome and the legacy
- * `COMPLETED` value. Every other comparison is an exact normalized match (never a
- * substring match).
+ * spelling matches both, so selecting "For RPS Review" also returns legacy `SUBMITTED`
+ * rows. Every other comparison is an exact normalized match (never a substring match);
+ * in particular `APPROVED` (approved for implementation) and `COMPLETED` (finished
+ * reporting) are different statuses and each filter matches only its own value.
  */
 export function proposalStatusMatches(status, filter) {
   const expected = normalizeProposalStatus(filter)
   if (!expected) return true
   if (isForReviewStatus(expected)) return isForReviewStatus(status)
-  if (isCompletedStatus(expected)) return isCompletedStatus(status)
   return normalizeProposalStatus(status) === expected
 }
 
 /**
- * The badge text for a stored proposal status: both submission spellings read
- * "For Review", the final-approval outcome reads "Completed"; every other status is
- * formatted by the one shared formatter (utils/statusLabel.js), so it is Title Case
- * with no underscores everywhere.
+ * The badge text for a stored proposal status. Both submission spellings read
+ * "For RPS Review"; `APPROVED` reads "Implementation Approved" and `COMPLETED`
+ * reads "Completed". Timeline-only codes retained for historical records fall back to
+ * their timeline label, and anything else uses the generic Title Case formatter.
  */
 export function proposalStatusLabel(status) {
   const value = String(status ?? '').trim()
   if (!value) return ''
-  if (isForReviewStatus(value)) return 'For Review'
-  if (normalizeProposalStatus(value) === APPROVED) return 'Completed'
-  return statusLabel(value)
+  const key = normalizeProposalStatus(value).replace(/[\s-]+/g, '_')
+  const canonicalKey = key === 'SUBMITTED' ? 'FOR_REVIEW' : key
+  return (
+    PROPOSAL_STATUS_LABELS[canonicalKey] ||
+    PROPOSAL_TIMELINE_STATUS_LABELS[canonicalKey] ||
+    statusLabel(value)
+  )
 }
 
 /**

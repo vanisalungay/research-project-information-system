@@ -59,19 +59,20 @@
           <label>Filter by Status</label>
           <select v-model="statusFilter" class="form-select">
             <option value="">All Statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="FOR REVIEW">For Review</option>
-            <option value="ENDORSED">Endorsed</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="REC_APPROVED">REC Approved</option>
-            <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
-            <option value="FOR_OC_APPROVAL">For OC Approval</option>
-            <option value="APPROVED">Completed</option>
-            <option value="RELEASED">Released</option>
-            <option value="RPS_RETURNED">RPS Returned</option>
-            <option value="REC_REVISION">REC Revision</option>
-            <option value="RETURNED">Returned</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="DRAFT">{{ proposalStatusLabel('DRAFT') }}</option>
+            <option value="FOR REVIEW">{{ proposalStatusLabel('FOR REVIEW') }}</option>
+            <option value="ENDORSED">{{ proposalStatusLabel('ENDORSED') }}</option>
+            <option value="UNDER_REVIEW">{{ proposalStatusLabel('UNDER_REVIEW') }}</option>
+            <option value="REC_APPROVED">{{ proposalStatusLabel('REC_APPROVED') }}</option>
+            <option value="FOR_OVCAF_APPROVAL">{{ proposalStatusLabel('FOR_OVCAF_APPROVAL') }}</option>
+            <option value="FOR_OC_APPROVAL">{{ proposalStatusLabel('FOR_OC_APPROVAL') }}</option>
+            <option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>
+            <option value="COMPLETED">{{ proposalStatusLabel('COMPLETED') }}</option>
+            <option value="RELEASED">{{ proposalStatusLabel('RELEASED') }}</option>
+            <option value="RPS_RETURNED">{{ proposalStatusLabel('RPS_RETURNED') }}</option>
+            <option value="REC_REVISION">{{ proposalStatusLabel('REC_REVISION') }}</option>
+            <option value="RETURNED">{{ proposalStatusLabel('RETURNED') }}</option>
+            <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
           </select>
         </div>
         <div class="filter-group btn-group">
@@ -287,16 +288,16 @@ const router = useRouter()
 // Approval stages. OVCAF is only part of the workflow for proposals that
 // require budget; proposals without budget skip it and reach 100% at APPROVED.
 const BASE_STAGES = [
-  { key: 'DRAFT', label: 'Draft' },
-  { key: 'FOR REVIEW', label: 'For Review' },
-  { key: 'ENDORSED', label: 'RPS Endorsed' },
-  { key: 'UNDER_REVIEW', label: 'REC Review' },
-  { key: 'REC_APPROVED', label: 'REC Approved' },
-  { key: 'FOR_OC_APPROVAL', label: 'Chancellor' }
+  { key: 'DRAFT', label: proposalStatusLabel('DRAFT') },
+  { key: 'FOR REVIEW', label: proposalStatusLabel('FOR REVIEW') },
+  { key: 'ENDORSED', label: proposalStatusLabel('ENDORSED') },
+  { key: 'UNDER_REVIEW', label: proposalStatusLabel('UNDER_REVIEW') },
+  { key: 'REC_APPROVED', label: proposalStatusLabel('REC_APPROVED') },
+  { key: 'FOR_OC_APPROVAL', label: proposalStatusLabel('FOR_OC_APPROVAL') }
 ]
 
-const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: 'OVCAF' }
-const APPROVED_STAGE = { key: 'APPROVED', label: 'Completed' }
+const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: proposalStatusLabel('FOR_OVCAF_APPROVAL') }
+const APPROVED_STAGE = { key: 'APPROVED', label: proposalStatusLabel('APPROVED') }
 
 // Statuses that are already past the 100% approval milestone.
 const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']

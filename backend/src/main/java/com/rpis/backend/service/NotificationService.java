@@ -1,11 +1,13 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.Notification;
+import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
+import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.util.AnnouncementStatus;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final ProposalAnnouncementRepository announcementRepository;
+    private final ProposalRepository proposalRepository;
 
     /**
      * The notification types raised by the proposal review/processing workflow.
@@ -68,7 +71,50 @@ public class NotificationService {
                 .filter(notification -> !hiddenFrom(user, notification))
                 .collect(Collectors.toList());
         fillAnnouncementDetails(notifications);
+        fillProposalDocumentIds(notifications);
         return notifications;
+    }
+
+    /**
+     * Fills the computed (not persisted) formatted Proposal ID of every proposal-workflow
+     * notification in one batch. The displayed identifier is the proposal's stored
+     * {@code documentId} (for example {@code MSUN-ORPS-DA-028-2026-REV00}), never the
+     * database primary key, so revision suffixes are kept exactly as recorded.
+     * <p>
+     * An endorsement notification stores the endorsement request id in {@code proposalId},
+     * so only the proposal-workflow types are resolved here. A notification with no linked
+     * proposal, or whose proposal no longer exists / has no formatted identifier, keeps the
+     * field null and the UI shows no identifier rather than a wrong one.
+     */
+    private void fillProposalDocumentIds(List<Notification> notifications) {
+        Set<Long> proposalIds = new HashSet<>();
+        for (Notification notification : notifications) {
+            if (isProposalWorkflowNotification(notification)
+                    && notification.getProposalId() != null) {
+                proposalIds.add(notification.getProposalId());
+            }
+        }
+        if (proposalIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, String> documentIds = proposalRepository.findAllById(proposalIds)
+                .stream()
+                .filter(proposal -> proposal.getDocumentId() != null
+                        && !proposal.getDocumentId().isBlank())
+                .collect(Collectors.toMap(Proposal::getId, Proposal::getDocumentId));
+
+        for (Notification notification : notifications) {
+            if (isProposalWorkflowNotification(notification)) {
+                notification.setProposalDocumentId(
+                        documentIds.get(notification.getProposalId()));
+            }
+        }
+    }
+
+    private static boolean isProposalWorkflowNotification(Notification notification) {
+        String type = notification.getType();
+        return type != null && PROPOSAL_WORKFLOW_TYPES.contains(type.toUpperCase(Locale.ROOT));
     }
 
     /**

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * The workflow status of a proposal once the Proponent submits it to ORPS.
@@ -30,6 +31,45 @@ public final class ProposalStatus {
 
     /** Legacy value stored before the rename; the same workflow state as {@link #FOR_REVIEW}. */
     public static final String LEGACY_SUBMITTED = "SUBMITTED";
+
+    /**
+     * Every status a proposal or a proposal status history row may store.
+     *
+     * <p>Mirrors the codes seeded into {@code public.proposal_statuses} by migration-03,
+     * plus {@link #FOR_REVIEW}, which is the current application spelling and is added to
+     * that lookup by {@code migration-norm-04-proposal-status-fks.sql}. The legacy
+     * {@link #LEGACY_SUBMITTED} spelling is accepted as input but is always persisted as
+     * {@link #FOR_REVIEW}, so it is intentionally not a member of the stored set.</p>
+     */
+    public static final Set<String> SUPPORTED_STORED_STATUSES = Set.of(
+            DRAFT,
+            FOR_REVIEW,
+            "RPS_RETURNED",
+            "RETURNED_TO_RPS",
+            "ENDORSED",
+            "OVCRIGE_COORDINATION",
+            "UNDER_REVIEW",
+            "REC_EVALUATION",
+            "REC_APPROVED",
+            "OVC_APPROVED",
+            "CHANCELLOR_REVIEW",
+            "FOR_OC_APPROVAL",
+            "FOR_OVCAF_APPROVAL",
+            "FINANCE_AUTHORIZATION",
+            "READY_FOR_RELEASE",
+            "RELEASED",
+            "IMPLEMENTATION",
+            "APPROVED",
+            "APPROVED_ENDORSED",
+            "COMPLETED",
+            "REJECTED",
+            "REC_REJECTED",
+            "REVISION",
+            "REC_REVISION",
+            "PENDING_REVISION",
+            "RETURNED",
+            "RETURNED_FOR_REVISION",
+            "RPS_REVIEW");
 
     private ProposalStatus() {
     }
@@ -65,6 +105,39 @@ public final class ProposalStatus {
             return null;
         }
         return isForReview(value) ? FOR_REVIEW : value;
+    }
+
+    /**
+     * The canonical status to persist, rejecting a missing or unknown value.
+     *
+     * <p>This is the application-level guard in front of the proposal-status foreign
+     * keys: an API or integration value that is not part of the RPIS workflow fails with
+     * a readable {@link IllegalArgumentException} (HTTP 400) instead of reaching
+     * PostgreSQL and surfacing as a foreign-key violation. The legacy {@code SUBMITTED}
+     * input is still accepted and converted to {@link #FOR_REVIEW}.</p>
+     *
+     * @throws IllegalArgumentException when the status is null, blank or not supported
+     */
+    public static String requireSupportedStatus(String status) {
+        String stored = toStoredStatus(status);
+        if (stored == null) {
+            throw new IllegalArgumentException("A proposal status is required.");
+        }
+        if (!SUPPORTED_STORED_STATUSES.contains(stored)) {
+            throw new IllegalArgumentException(
+                    "Invalid proposal status '" + normalize(status)
+                            + "'. Use a status supported by the proposal workflow.");
+        }
+        return stored;
+    }
+
+    /**
+     * Same as {@link #requireSupportedStatus(String)} but treats a missing or blank value
+     * as "not provided" and returns {@code null}. Used for optional history values such as
+     * {@code from_status} on a baseline row.
+     */
+    public static String optionalSupportedStatus(String status) {
+        return normalize(status) == null ? null : requireSupportedStatus(status);
     }
 
     /**

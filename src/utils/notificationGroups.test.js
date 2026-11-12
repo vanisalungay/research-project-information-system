@@ -81,7 +81,7 @@ test('a missing or invalid list yields two empty groups', () => {
 
 const read = (path) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 
-test('the page renders the two groups and collapses the proposal updates', () => {
+test('the page renders the proposal updates expanded, with no collapse control', () => {
   const page = read('../views/Notifications/NotificationPage.vue')
 
   assert.ok(page.includes('groupNotifications'), 'the page must use the shared split')
@@ -90,11 +90,57 @@ test('the page renders the two groups and collapses the proposal updates', () =>
     page.includes('v-for="group in notificationGroups"'),
     'the page must render the groups, not one flat list',
   )
-  // Collapsed until opened, and opened by itself while its kind filter is selected.
+  assert.ok(
+    page.includes('<div class="notifications-list">'),
+    'the notification list must always be rendered, never hidden behind a toggle',
+  )
+
+  // The old compact presentation: a collapsed group the reader had to open.
+  for (const removed of [
+    'showProposalUpdates',
+    'isGroupOpen',
+    'toggleGroup',
+    'collapsible',
+    'group-chevron',
+    'v-show=',
+    'Show more',
+    'Read more',
+  ]) {
+    assert.ok(!page.includes(removed), `${removed} must not hide notification content`)
+  }
+})
+
+test('each proposal update shows the full message and its record details', () => {
+  const page = read('../views/Notifications/NotificationPage.vue')
+
+  assert.match(page, /\{\{ notification\.message \}\}/, 'the complete message is rendered')
   assert.match(
     page,
-    /showProposalUpdates\.value \|\| filterKind\.value === 'proposal'/,
-    'the group must auto-expand with the Proposal updates filter',
+    /notification-proposal[\s\S]{0,220}notification\.proposalDocumentId/,
+    'the linked proposal\'s formatted Proposal ID is shown',
+  )
+  assert.ok(
+    !page.includes('Proposal #') && !page.includes('notification.proposalId'),
+    'the database primary key must never be displayed as the Proposal ID',
+  )
+  assert.match(
+    page,
+    /\{\{ formatDateTime\(notification\.createdAt\) \}\}/,
+    'the notification date and time are shown',
+  )
+  assert.match(
+    page,
+    /notification-time[\s\S]*?year:\s*'numeric'[\s\S]*?minute:\s*'2-digit'/,
+    'the timestamp includes both the date and the time',
+  )
+  assert.match(
+    page,
+    /\.notification-message\s*\{[^}]*white-space:\s*pre-line[^}]*overflow-wrap:\s*anywhere/,
+    'long messages wrap onto multiple lines instead of being clipped',
+  )
+  assert.ok(
+    !/line-clamp|text-overflow:\s*ellipsis/.test(page),
+    'notification content is never truncated with a clamp or ellipsis',
   )
 })
 

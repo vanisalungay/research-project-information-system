@@ -98,6 +98,17 @@ test("the summary needs the proponent's own content, not the pre-filled rows", (
   assert.equal(terminalSectionFilled(report, 'summary'), true)
 })
 
+test('a submission that completes the project is shown immediately from the response', () => {
+  assert.ok(
+    VIEW.includes("report.value?.proposalStatus === 'COMPLETED'"),
+    'the form reads the proposal status returned by the submission response'
+  )
+  assert.ok(
+    VIEW.includes('This project is now marked'),
+    'the proponent is told the project completed without reopening it'
+  )
+})
+
 test('the section being edited is never shown as complete', () => {
   assert.ok(
     VIEW.includes("if (index === terminalSectionIndex.value) return 'current'"),

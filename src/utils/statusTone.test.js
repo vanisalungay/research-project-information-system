@@ -3,9 +3,9 @@
  * ---------------------------------------------------------------------------
  * Verifies the one status -> colour tone mapping every role and module uses.
  *
- * The point of the helper is that the same saved status can never be green on one page and
- * amber on another, so the mapping table below is the contract: every real RPIS status is
- * asserted here, plus the normalisation and the fallbacks.
+ * The approved palette is the contract: every real RPIS status is asserted here, plus the
+ * normalisation, the aliases and the safe fallback. A value that matches nothing must read
+ * gray, never green, so an unknown status can never look approved or completed.
  *
  * Run with: npm test
  */
@@ -17,25 +17,30 @@ import { reviewStatusTone } from './reviewStatus.js'
 import { endorsementStatusTone } from './endorsement.js'
 import { announcementStatusTone } from './announcementStatus.js'
 
-test('a finished or successful status is green', () => {
-  for (const status of [
-    'FOR REVIEW',
-    'SUBMITTED',
-    'APPROVED',
-    'REC_APPROVED',
-    'OVC_APPROVED',
-    'APPROVED_ENDORSED',
-    'ENDORSED',
-    'COMPLETED',
-    'RELEASED',
-    'SUCCESS',
-    'OPEN',
-  ]) {
-    assert.equal(statusTone(status), 'is-approved', status)
+test('a submission or schedule reads blue', () => {
+  for (const status of ['FOR REVIEW', 'FOR_REVIEW', 'for review', 'SUBMITTED', 'SCHEDULED']) {
+    assert.equal(statusTone(status), 'is-blue', status)
   }
 })
 
-test('every return or revision status is amber', () => {
+test('each workflow stage keeps its approved colour', () => {
+  // ENDORSED is the RPS -> OVCRIGE forwarding stage: it shares the OVCRIGE office cyan.
+  assert.equal(statusTone('ENDORSED'), 'is-cyan', 'RPS endorsed to OVCRIGE')
+  assert.equal(statusTone('UNDER_REVIEW'), 'is-purple', 'REC under review')
+  assert.equal(statusTone('REC_APPROVED'), 'is-indigo', 'REC approval')
+  assert.equal(statusTone('OVC_APPROVED'), 'is-cyan', 'OVCRIGE approval')
+  assert.equal(statusTone('APPROVED'), 'is-approved', 'Implementation Approved')
+  assert.equal(statusTone('COMPLETED'), 'is-completed', 'Completed')
+  assert.equal(statusTone('RELEASED'), 'is-released', 'funds released')
+})
+
+test('Implementation Approved and Completed use distinguishable greens', () => {
+  assert.equal(statusTone('APPROVED'), 'is-approved')
+  assert.equal(statusTone('COMPLETED'), 'is-completed')
+  assert.notEqual(statusTone('APPROVED'), statusTone('COMPLETED'))
+})
+
+test('every returned or revision status is orange', () => {
   for (const status of [
     'RETURNED',
     'RETURNED_BY_REC',
@@ -48,72 +53,76 @@ test('every return or revision status is amber', () => {
     'PENDING_REVISION',
     'REVISION',
     'REC_REVISION',
-    'REVOKED',
-    'WARNING',
   ]) {
-    assert.equal(statusTone(status), 'is-returned', status)
+    assert.equal(statusTone(status), 'is-orange', status)
   }
 })
 
-test('every rejection status is red', () => {
+test('Ready for Fund Release is orange, never green', () => {
+  assert.equal(statusTone('READY_FOR_RELEASE'), 'is-orange')
+  assert.notEqual(statusTone('READY_FOR_RELEASE'), statusTone('APPROVED'))
+})
+
+test('every rejection or failure is red', () => {
   for (const status of [
     'REJECTED',
     'REJECTED_BY_REC',
     'REC_REJECTED',
     'FAILED',
     'ERROR',
-    'CLOSED',
   ]) {
     assert.equal(statusTone(status), 'is-rejected', status)
   }
 })
 
-test('a status still in the workflow is light blue', () => {
-  for (const status of [
-    'UNDER_REVIEW',
-    'RPS_REVIEW',
-    'REC_EVALUATION',
-    'OVCRIGE_COORDINATION',
-    'CHANCELLOR_REVIEW',
-    'FINANCE_AUTHORIZATION',
-    'FOR_OVCAF_APPROVAL',
-    'FOR_OC_APPROVAL',
-    'READY_FOR_RELEASE',
-    'PENDING',
-    'PENDING_VALIDATION',
-    'UNDER_VALIDATION',
-    'IMPLEMENTATION',
-    'ONGOING',
-    'WAITING',
-    'SCHEDULED',
-    'INFO',
-  ]) {
-    assert.equal(statusTone(status), 'is-pending', status)
+test('a pending item is amber, an under-review item purple', () => {
+  for (const status of ['PENDING', 'PENDING_VALIDATION', 'PENDING_APPROVAL', 'WAITING']) {
+    assert.equal(statusTone(status), 'is-amber', status)
+  }
+  for (const status of ['UNDER_REVIEW', 'REC_EVALUATION', 'CHANCELLOR_REVIEW']) {
+    assert.equal(statusTone(status), 'is-purple', status)
   }
 })
 
-test('a draft is grey and a neutral or unknown status falls back to grey', () => {
-  assert.equal(statusTone('DRAFT'), 'is-draft')
-  assert.equal(statusTone('INACTIVE'), 'is-neutral')
-  assert.equal(statusTone('SOMETHING_NEW'), 'is-neutral')
-  assert.equal(statusTone(''), 'is-neutral')
-  assert.equal(statusTone(null), 'is-neutral')
-  assert.equal(statusTone(undefined), 'is-neutral')
+test('a status still moving through the pipeline reads blue', () => {
+  for (const status of ['RPS_REVIEW', 'UNDER_VALIDATION', 'ONGOING', 'INFO']) {
+    assert.equal(statusTone(status), 'is-blue', status)
+  }
+  // The OVCRIGE stage keeps the cyan of the office that owns it.
+  assert.equal(statusTone('OVCRIGE_COORDINATION'), 'is-cyan')
 })
 
-test('a plain active/inactive flag reads green/grey', () => {
+test('a call for proposal keeps its approved colours', () => {
+  assert.equal(statusTone('OPEN'), 'is-approved')
+  assert.equal(statusTone('CLOSED'), 'is-gray')
+  assert.equal(statusTone('SCHEDULED'), 'is-blue')
+  assert.equal(statusTone('DRAFT'), 'is-gray')
+})
+
+test('a draft is gray and an unknown status falls back to gray, never green', () => {
+  assert.equal(statusTone('DRAFT'), 'is-gray')
+  assert.equal(statusTone('INACTIVE'), 'is-gray')
+  assert.equal(statusTone('REVOKED'), 'is-gray')
+  assert.equal(statusTone('SUPERSEDED'), 'is-gray')
+  assert.equal(statusTone('SOMETHING_NEW'), 'is-gray')
+  assert.equal(statusTone(''), 'is-gray')
+  assert.equal(statusTone(null), 'is-gray')
+  assert.equal(statusTone(undefined), 'is-gray')
+})
+
+test('a plain active/inactive flag reads green/gray', () => {
   assert.equal(statusTone('ACTIVE'), 'is-approved')
   assert.equal(statusTone('active'), 'is-approved')
-  assert.equal(statusTone('INACTIVE'), 'is-neutral')
-  assert.equal(statusTone('inactive'), 'is-neutral')
+  assert.equal(statusTone('INACTIVE'), 'is-gray')
+  assert.equal(statusTone('inactive'), 'is-gray')
 })
 
 test('the status is normalised before it is matched', () => {
   assert.equal(normalizeStatus(' submitted '), 'SUBMITTED')
   assert.equal(normalizeStatus(null), '')
-  assert.equal(statusTone(' submitted '), 'is-approved')
-  assert.equal(statusTone('Pending Validation'), 'is-pending')
-  assert.equal(statusTone('Under Review'), 'is-pending')
+  assert.equal(statusTone(' submitted '), 'is-blue')
+  assert.equal(statusTone('Pending Validation'), 'is-amber')
+  assert.equal(statusTone('Under Review'), 'is-purple')
 })
 
 test('a known status never changes colour when it is written differently', () => {
@@ -131,22 +140,22 @@ test('every value the helper returns is one of the shared tones, and never empty
 })
 
 test('the existing public helpers delegate to the shared mapping', () => {
-  // The review pages keep no tone class for in-progress statuses; their badge base is the
-  // pending treatment. SUBMITTED is now green like every other finished status.
-  assert.equal(reviewStatusTone('UNDER_REVIEW'), '')
-  assert.equal(reviewStatusTone('FOR REVIEW'), 'is-approved')
-  assert.equal(reviewStatusTone('SUBMITTED'), 'is-approved')
-  assert.equal(reviewStatusTone('RETURNED'), 'is-returned')
+  // The review pages now follow the approved palette for every status, including the
+  // in-progress stages that used to keep the badge's own fallback.
+  assert.equal(reviewStatusTone('UNDER_REVIEW'), 'is-purple')
+  assert.equal(reviewStatusTone('FOR REVIEW'), 'is-blue')
+  assert.equal(reviewStatusTone('SUBMITTED'), 'is-blue')
+  assert.equal(reviewStatusTone('RETURNED'), 'is-orange')
   assert.equal(reviewStatusTone('REJECTED'), 'is-rejected')
 
   // The endorsement workflow keeps exactly its three business states.
-  assert.equal(endorsementStatusTone('PENDING'), 'is-pending')
+  assert.equal(endorsementStatusTone('PENDING'), 'is-amber')
   assert.equal(endorsementStatusTone('APPROVED'), 'is-approved')
   assert.equal(endorsementStatusTone('REJECTED'), 'is-rejected')
 
-  // Announcements keep their own four states.
-  assert.equal(announcementStatusTone('DRAFT'), 'draft')
-  assert.equal(announcementStatusTone('SCHEDULED'), 'scheduled')
-  assert.equal(announcementStatusTone('OPEN'), 'open')
-  assert.equal(announcementStatusTone('CLOSED'), 'closed')
+  // Announcements keep their own four states, painted from the same palette.
+  assert.equal(announcementStatusTone('DRAFT'), 'is-gray')
+  assert.equal(announcementStatusTone('SCHEDULED'), 'is-blue')
+  assert.equal(announcementStatusTone('OPEN'), 'is-approved')
+  assert.equal(announcementStatusTone('CLOSED'), 'is-gray')
 })

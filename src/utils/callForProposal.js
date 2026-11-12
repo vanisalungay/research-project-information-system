@@ -19,6 +19,7 @@
  * Run the rules with: npm test
  */
 import { announcementStatus, localTodayISO } from './announcementStatus.js'
+import { ANNOUNCEMENT_STATUS_LABELS } from './statusCatalog.js'
 
 /** Endpoint that returns the open and scheduled Calls for Proposal. */
 export const AVAILABLE_CALLS_ENDPOINT = '/api/proposal-announcements/available'
@@ -47,7 +48,7 @@ export const CALL_WINDOW_LABEL = 'Submission period'
 export const CALL_OPENING_LABEL = 'Opening date'
 
 /** The status a scheduled call shows in its badge. */
-export const CALL_STATUS_SCHEDULED = 'Scheduled'
+export const CALL_STATUS_SCHEDULED = ANNOUNCEMENT_STATUS_LABELS.SCHEDULED
 
 /**
  * An ISO date (YYYY-MM-DD, the format the API returns) as a readable date

@@ -3,6 +3,7 @@ package com.rpis.backend.service;
 import com.rpis.backend.dto.NextReportStageResponse;
 import com.rpis.backend.dto.QuarterlyProgressReportRequest;
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.QuarterlyObjective;
 import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.WorkplanData;
@@ -13,6 +14,7 @@ import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,6 +62,12 @@ class QuarterlyProgressReportServiceTest {
         proposal.setStatus("APPROVED");
         proposal.setSoNumber("SO-2026-001");
         proposal.setSoUploadedAt(LocalDateTime.of(2026, 7, 28, 23, 20));
+        proposal.setProjectTitle("Mangrove Restoration");
+        proposal.setProjectLeader("Andrea Mae Villanueva");
+        proposal.setProjectLeaderSex("Female");
+        proposal.setDuration("12");
+        proposal.setStartDate(LocalDate.of(2026, 1, 1));
+        proposal.setEndDate(LocalDate.of(2026, 12, 31));
         User proponent = new User();
         proponent.setId(7L);
         proposal.setProponent(proponent);
@@ -373,8 +382,90 @@ class QuarterlyProgressReportServiceTest {
         QuarterlyProgressReport saved = service.create(req);
         assertNotNull(saved.getWorkplan());
         assertEquals("Objective one", saved.getWorkplan().getObjectives().get(0).getObjective());
-        assertEquals("100%", saved.getWorkplan().getObjectives().get(0).getTotal());
+        assertEquals("100", saved.getWorkplan().getObjectives().get(0).getTotal(),
+                "the client-sent total is replaced by the derived average");
         assertEquals("2026-03-31", saved.getWorkplan().getAsOf());
+    }
+
+    @Test
+    void projectIdentificationComeFromTheStoredProposalNotTheRequest() {
+        stubReports();
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        req.setProjectTitle("A fabricated title");
+        req.setProjectLeader("A fabricated leader");
+        req.setLeaderGender("Other");
+        req.setProjectDuration("99");
+        req.setProjectStartDate("2000-01-01");
+        req.setProjectEndDate("2000-12-31");
+
+        QuarterlyProgressReport saved = service.create(req);
+
+        assertEquals("Mangrove Restoration", saved.getProjectTitle());
+        assertEquals("Andrea Mae Villanueva", saved.getProjectLeader());
+        assertEquals("Female", saved.getLeaderGender());
+        assertEquals("12", saved.getProjectDuration());
+        assertEquals(LocalDate.of(2026, 1, 1), saved.getProjectStartDate());
+        assertEquals(LocalDate.of(2026, 12, 31), saved.getProjectEndDate());
+    }
+
+    @Test
+    void aSavedProjectSnapshotIsNotOverwrittenByAnUpdate() {
+        QuarterlyProgressReport draft = report("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        draft.setId(9L);
+        draft.setProjectTitle("Title recorded when the report was filed");
+        when(reportRepository.findById(9L)).thenReturn(Optional.of(draft));
+
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        req.setProjectTitle("A later title");
+        service.update(9L, req);
+
+        assertEquals("Title recorded when the report was filed", draft.getProjectTitle());
+    }
+
+    @Test
+    void accomplishmentPercentagesAreStoredWithoutTheSign() {
+        stubReports();
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        QuarterlyObjective row = new QuarterlyObjective();
+        row.setObjective("Objective one");
+        row.setPercentagePeriod("80%");
+        row.setPercentageCumulative("40.50%");
+        req.setObjectives(List.of(row));
+
+        QuarterlyProgressReport saved = service.create(req);
+
+        assertEquals("80", saved.getObjectives().get(0).getPercentagePeriod());
+        assertEquals("40.5", saved.getObjectives().get(0).getPercentageCumulative());
+    }
+
+    @Test
+    void anInvalidPercentageRejectsTheSaveInsteadOfBeingStored() {
+        stubReports();
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        QuarterlyObjective row = new QuarterlyObjective();
+        row.setPercentagePeriod("101");
+        req.setObjectives(List.of(row));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.create(req));
+        assertTrue(ex.getMessage().contains("0 to 100"));
+    }
+
+    @Test
+    void workplanAverageIsDerivedAndTheClientTotalIsIgnored() {
+        stubReports();
+        WorkplanData wp = new WorkplanData();
+        wp.setObjectives(List.of(
+                new WorkplanObjective("Objective one",
+                        List.of("50", "70", "", "", "", "", "", "", "", "", "", ""), "999")));
+        QuarterlyProgressReportRequest req = request("QUARTERLY_PROGRESS", "Q1", "DRAFT");
+        req.setWorkplan(wp);
+
+        WorkplanObjective saved = service.create(req).getWorkplan().getObjectives().get(0);
+
+        assertEquals("60", saved.getTotal());
+        assertEquals(12, saved.getMonths().size());
+        assertEquals("", saved.getMonths().get(2));
     }
 
     @Test
@@ -401,13 +492,179 @@ class QuarterlyProgressReportServiceTest {
         assertEquals("Existing objective", draft.getWorkplan().getObjectives().get(0).getObjective());
     }
 
+    // ===== Project completion after the required reporting is finished =====
+
+    /** A quarterly draft that carries the Project Workplan needed to submit it. */
+    private QuarterlyProgressReport workplanDraft(String period) {
+        QuarterlyProgressReport draft = report("QUARTERLY_PROGRESS", period, "DRAFT");
+        draft.setWorkplanFilePath("uploads/reports/workplan.pdf");
+        return draft;
+    }
+
+    private QuarterlyProgressReport submittedQuarter(String period) {
+        return report("QUARTERLY_PROGRESS", period, "SUBMITTED");
+    }
+
+    private QuarterlyProgressReport terminalDraft() {
+        QuarterlyProgressReport draft = report(QuarterlyProgressReportService.TYPE_TERMINAL,
+                "TERMINAL", "DRAFT");
+        draft.setTerminalReportFilePath("uploads/reports/terminal.pdf");
+        return draft;
+    }
+
+    private Proposal storedProposal() {
+        return proposalRepository.findById(PROPOSAL_ID).orElseThrow();
+    }
+
+    /**
+     * Scenario 1: no reporting stage is complete. Saving a draft (and submitting no
+     * report at all) must leave the project at APPROVED - "Implementation Approved".
+     */
+    @Test
+    void noCompletedReportLeavesTheProjectApproved() {
+        stubReports(workplanDraft("Q1"));
+
+        service.create(request("QUARTERLY_PROGRESS", "Q1", "DRAFT"));
+
+        assertEquals("APPROVED", storedProposal().getStatus());
+        verify(proposalRepository, never()).save(any(Proposal.class));
+    }
+
+    /**
+     * Scenario 2: some stages are complete while others are unfinished. Submitting Q2
+     * while Q3 and the Terminal Report are still outstanding keeps APPROVED.
+     */
+    @Test
+    void someCompletedReportsLeaveTheProjectApproved() {
+        stubReports(submittedQuarter("Q1"), workplanDraft("Q2"));
+
+        service.create(request("QUARTERLY_PROGRESS", "Q2", "SUBMITTED"));
+
+        assertEquals("APPROVED", storedProposal().getStatus());
+        verify(proposalRepository, never()).save(any(Proposal.class));
+    }
+
+    /**
+     * Scenario 3: all three quarterly reports are submitted but the Terminal Report is
+     * still outstanding. The project must remain APPROVED.
+     */
+    @Test
+    void allQuarterlyReportsWithoutTheTerminalReportLeaveTheProjectApproved() {
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"), workplanDraft("Q3"));
+
+        service.create(request("QUARTERLY_PROGRESS", "Q3", "SUBMITTED"));
+
+        assertEquals("APPROVED", storedProposal().getStatus());
+        verify(proposalRepository, never()).save(any(Proposal.class));
+    }
+
+    /** An unfinished Terminal Report (a saved draft) is not a final report either. */
+    @Test
+    void aSavedTerminalDraftDoesNotCompleteTheProject() {
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"),
+                submittedQuarter("Q3"), terminalDraft());
+
+        service.create(request(QuarterlyProgressReportService.TYPE_TERMINAL, "TERMINAL", "DRAFT"));
+
+        assertEquals("APPROVED", storedProposal().getStatus());
+        verify(proposalRepository, never()).save(any(Proposal.class));
+    }
+
+    /**
+     * Scenario 4: every required stage - Q1, Q2, Q3 and the Terminal Report - is
+     * submitted. The project is persisted as COMPLETED.
+     */
+    @Test
+    void theFinalTerminalReportMovesAnApprovedProjectToCompleted() {
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"),
+                submittedQuarter("Q3"), terminalDraft());
+
+        QuarterlyProgressReport saved = service.create(
+                request(QuarterlyProgressReportService.TYPE_TERMINAL, "TERMINAL", "SUBMITTED"));
+
+        assertEquals("SUBMITTED", saved.getStatus());
+        assertEquals("COMPLETED", storedProposal().getStatus());
+        verify(proposalRepository).save(any(Proposal.class));
+
+        // The transition is audited alongside the status change.
+        assertEquals(1, storedProposal().getStatusHistory().size());
+        assertEquals("APPROVED", storedProposal().getStatusHistory().get(0).getFromStatus());
+        assertEquals("COMPLETED", storedProposal().getStatusHistory().get(0).getToStatus());
+    }
+
+    /** Submitting the final draft through the update path completes the project too. */
+    @Test
+    void submittingTheFinalTerminalDraftThroughUpdateAlsoCompletesTheProject() {
+        QuarterlyProgressReport terminal = terminalDraft();
+        terminal.setId(77L);
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"),
+                submittedQuarter("Q3"), terminal);
+        when(reportRepository.findById(77L)).thenReturn(Optional.of(terminal));
+
+        service.update(77L,
+                request(QuarterlyProgressReportService.TYPE_TERMINAL, "TERMINAL", "SUBMITTED"));
+
+        assertEquals("COMPLETED", storedProposal().getStatus());
+    }
+
+    /**
+     * A repeated submission path on an already-completed project must not append a
+     * second COMPLETED row: the transition is audited once, when it actually happens.
+     */
+    @Test
+    void resubmittingAfterCompletionAddsNoDuplicateHistoryRow() {
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"),
+                submittedQuarter("Q3"), terminalDraft());
+        service.create(request(QuarterlyProgressReportService.TYPE_TERMINAL, "TERMINAL", "SUBMITTED"));
+        assertEquals(1, storedProposal().getStatusHistory().size());
+
+        // A leftover draft for the same final stage is submitted after completion.
+        QuarterlyProgressReport leftover = terminalDraft();
+        leftover.setId(88L);
+        when(reportRepository.findById(88L)).thenReturn(Optional.of(leftover));
+        service.update(88L,
+                request(QuarterlyProgressReportService.TYPE_TERMINAL, "TERMINAL", "SUBMITTED"));
+
+        assertEquals("COMPLETED", storedProposal().getStatus());
+        assertEquals(1, storedProposal().getStatusHistory().size(),
+                "the completion transition is recorded exactly once");
+    }
+
+    /**
+     * Scenario 5/6: a completed project keeps its stage resolvable and its reports
+     * listed, while the creation rule still refuses a completed project.
+     */
+    @Test
+    void aCompletedProjectStaysReportableButCannotStartAnotherStage() {
+        Proposal completed = storedProposal();
+        completed.setStatus("COMPLETED");
+        assertFalse(service.isEligible(completed), "no new report may be created");
+        assertTrue(service.isReportable(completed), "its reports stay accessible");
+
+        stubReports(submittedQuarter("Q1"), submittedQuarter("Q2"),
+                submittedQuarter("Q3"), report(QuarterlyProgressReportService.TYPE_TERMINAL,
+                        "TERMINAL", "SUBMITTED"));
+        assertTrue(service.getNextStage(PROPOSAL_ID).isAllStagesComplete());
+    }
+
+    @Test
+    void completedProjectsStayInTheReportingList() {
+        Proposal completed = storedProposal();
+        completed.setStatus("COMPLETED");
+        when(proposalRepository.findEligibleForQuarterlyReport(
+                QuarterlyProgressReportService.REPORTABLE_STATUSES))
+                .thenReturn(List.of(completed));
+
+        assertEquals(List.of(completed), service.getEligibleProjects());
+    }
+
     private WorkplanData workplan(String objective) {
         WorkplanData wp = new WorkplanData();
         wp.setAsOf("2026-03-31");
         wp.setProjectTitle("Test Project");
         wp.setProjectLeader("Juan Dela Cruz");
         wp.setProjectDuration("12");
-        wp.setObjectives(List.of(new WorkplanObjective(objective, List.of("Process PRs", ""), "100%")));
+        wp.setObjectives(List.of(new WorkplanObjective(objective, List.of("100", ""), "999")));
         wp.setRemarks("On track.");
         return wp;
     }

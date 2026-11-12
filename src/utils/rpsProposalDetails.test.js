@@ -49,9 +49,16 @@ test('the bindings the template uses live at the top level of setup', () => {
 
 test('the page loads the proposal from the route and reacts when the id changes', () => {
   assert.ok(PAGE.includes('route.params.id ?? route.query.id'), 'the id comes from the route')
-  assert.ok(PAGE.includes('api.get(`/api/proposals/${proposalId}`)'), 'the proposal is fetched')
   assert.ok(
-    PAGE.includes('api.get(`/api/proposals/${proposalId}/field-remarks`)'),
+    PAGE.includes('api.get(`/api/proposals/${routeProposalId}`)'),
+    'the proposal is fetched with the route id',
+  )
+  assert.ok(
+    PAGE.includes('const proposalId = computed(() => proposal.value?.id ?? null)'),
+    'the loaded proposal id is available to the remark bindings outside fetchProposal',
+  )
+  assert.ok(
+    PAGE.includes('api.get(`/api/proposals/${proposalId.value}/field-remarks`)'),
     'and so are its remarks',
   )
   assert.match(PAGE, /watch\(/, 'a route change reloads')

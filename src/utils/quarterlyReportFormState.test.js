@@ -14,9 +14,11 @@ import {
   OUTPUT_TYPES,
   WORKPLAN_MONTHS,
   emptyObjective,
+  proposalProjectInfo,
   reportFormState,
   reportPayload,
   seedOutputs,
+  withProposalProjectInfo,
   workplanFormState,
   workplanPayload,
 } from './quarterlyReportFormState.js'
@@ -66,7 +68,7 @@ const sourceReport = {
     projectLeader: 'Juan Dela Cruz',
     projectDuration: '12',
     objectives: [
-      { objective: 'Identify the fishes at market sites', months: ['Process PRs'], total: '100%' },
+      { objective: 'Identify the fishes at market sites', months: ['50', '70'], total: '100%' },
     ],
     remarks: 'On track.',
   },
@@ -119,9 +121,9 @@ test('a saved report is applied to the form state as it is stored', () => {
   for (const field of TEXT_FIELDS) {
     assert.equal(form[field], sourceReport[field], field)
   }
-  assert.equal(form.objectives[0].actual, '80%')
-  assert.equal(form.objectives[0].percentagePeriod, '80%')
-  assert.equal(form.objectives[0].percentageCumulative, '40%')
+  assert.equal(form.objectives[0].actual, '80%', 'free-text accomplishments keep their sign')
+  assert.equal(form.objectives[0].percentagePeriod, '80', 'the legacy sign is not part of the value')
+  assert.equal(form.objectives[0].percentageCumulative, '40')
   assert.equal(form.outputs[0].expectedOutput, 'One journal article')
   assert.equal(form.outputs[0].actualOutput, 'Draft only')
   assert.equal(form.outputs.length, OUTPUT_TYPES.length)
@@ -137,7 +139,15 @@ test('every copied field reaches the form state of the new report', () => {
   for (const field of TEXT_FIELDS) {
     assert.equal(form[field], sourceReport[field], field)
   }
-  assert.deepEqual(form.objectives, sourceReport.objectives)
+  assert.deepEqual(form.objectives, [
+    {
+      objective: 'Identify the fishes at market sites',
+      target: '100%',
+      actual: '80%',
+      percentagePeriod: '80',
+      percentageCumulative: '40',
+    },
+  ])
   assert.equal(form.outputs[0].actualOutput, 'Draft only')
   assert.equal(form.outputs[5].outputType, 'Policy', 'the 6Ps rows stay in form order')
 })
@@ -170,6 +180,8 @@ test('the saved payload carries exactly the values the form shows', () => {
   assert.deepEqual(payload.objectives, form.objectives)
   assert.deepEqual(payload.outputs, form.outputs)
   assert.equal(payload.objectives[0].actual, '80%')
+  assert.equal(payload.objectives[0].percentagePeriod, '80')
+  assert.equal(payload.objectives[0].percentageCumulative, '40')
   assert.equal(payload.outputs[0].actualOutput, 'Draft only')
   assert.equal(payload.projectStartDate, '2026-01-01')
 })
@@ -191,8 +203,8 @@ test('the workplan form state keeps the whole copied plan', () => {
   assert.equal(workplan.projectLeader, 'Juan Dela Cruz')
   assert.equal(workplan.projectDuration, '12')
   assert.equal(workplan.objectives[0].objective, 'Identify the fishes at market sites')
-  assert.equal(workplan.objectives[0].total, '100%')
-  assert.equal(workplan.objectives[0].months[0], 'Process PRs')
+  assert.equal(workplan.objectives[0].total, '60', 'the average is derived from the months')
+  assert.equal(workplan.objectives[0].months[0], '50')
   assert.equal(workplan.objectives[0].months.length, WORKPLAN_MONTHS)
   assert.equal(workplan.objectives.length, 3, 'the editable workplan keeps its minimum rows')
 })
@@ -205,9 +217,9 @@ test('the workplan payload carries every month cell and value of the form', () =
   assert.equal(payload.remarks, 'On track.')
   assert.equal(payload.objectives.length, 3)
   assert.equal(payload.objectives[0].objective, 'Identify the fishes at market sites')
-  assert.equal(payload.objectives[0].total, '100%')
+  assert.equal(payload.objectives[0].total, '60')
   assert.equal(payload.objectives[0].months.length, WORKPLAN_MONTHS)
-  assert.equal(payload.objectives[0].months[0], 'Process PRs')
+  assert.equal(payload.objectives[0].months[0], '50')
   assert.equal(payload.objectives[1].objective, '', 'the padded rows stay empty')
 })
 
@@ -236,4 +248,90 @@ test('a saved workplan value always wins over the proposal value', () => {
   assert.equal(workplan.projectTitle, 'Saved workplan title')
   assert.equal(workplan.projectLeader, 'Saved leader')
   assert.equal(workplan.projectDuration, '24')
+})
+
+test('the six project fields are read from the associated proposal', () => {
+  const info = proposalProjectInfo({
+    projectTitle: 'Mangrove Restoration',
+    projectLeader: 'Andrea Mae Villanueva',
+    projectLeaderSex: 'Female',
+    duration: '12',
+    startDate: '2026-01-01',
+    endDate: '2026-12-31',
+  })
+
+  assert.deepEqual(info, {
+    projectTitle: 'Mangrove Restoration',
+    projectLeader: 'Andrea Mae Villanueva',
+    leaderGender: 'Female',
+    projectDuration: '12',
+    projectStartDate: '2026-01-01',
+    projectEndDate: '2026-12-31',
+  })
+})
+
+test('a missing proposal field is blank, never a fabricated value', () => {
+  assert.deepEqual(proposalProjectInfo(null), {
+    projectTitle: '',
+    projectLeader: '',
+    leaderGender: '',
+    projectDuration: '',
+    projectStartDate: '',
+    projectEndDate: '',
+  })
+  assert.deepEqual(proposalProjectInfo({ projectTitle: 'Only a title' }), {
+    projectTitle: 'Only a title',
+    projectLeader: '',
+    leaderGender: '',
+    projectDuration: '',
+    projectStartDate: '',
+    projectEndDate: '',
+  })
+})
+
+test('a reopened report keeps its saved snapshot and only fills a blank field', () => {
+  const report = {
+    projectTitle: 'Title recorded when this report was filed',
+    projectLeader: '',
+    leaderGender: 'Male',
+    projectDuration: '',
+    projectStartDate: '2026-01-01',
+    projectEndDate: '',
+  }
+  const filled = withProposalProjectInfo(report, {
+    projectTitle: 'A later proposal title',
+    projectLeader: 'Current leader',
+    projectLeaderSex: 'Female',
+    duration: '18',
+    startDate: '2026-02-01',
+    endDate: '2027-07-31',
+  })
+
+  assert.equal(filled.projectTitle, 'Title recorded when this report was filed')
+  assert.equal(filled.leaderGender, 'Male')
+  assert.equal(filled.projectStartDate, '2026-01-01')
+  assert.equal(filled.projectLeader, 'Current leader', 'a legacy blank field is filled')
+  assert.equal(filled.projectDuration, '18')
+  assert.equal(filled.projectEndDate, '2027-07-31')
+  assert.equal(report.projectLeader, '', 'the input report is not modified')
+})
+
+test('the workplan total is recalculated from the saved months, not the stored total', () => {
+  const workplan = workplanFormState({
+    objectives: [{ objective: 'One', months: ['50', '70', '90'], total: '12' }],
+  })
+
+  assert.equal(workplan.objectives[0].total, '70')
+})
+
+test('clearing every month leaves an empty average total, not 0', () => {
+  const form = reportFormState({
+    objectives: [],
+  })
+  const workplan = workplanFormState({
+    objectives: [{ objective: 'One', months: ['', '', ''], total: '100' }],
+  })
+
+  assert.equal(form.objectives.length, 1)
+  assert.equal(workplan.objectives[0].total, '')
 })

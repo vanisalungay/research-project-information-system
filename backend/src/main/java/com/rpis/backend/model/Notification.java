@@ -69,6 +69,15 @@ public class Notification {
     @Transient
     private String proposalAnnouncementStatus;
 
+    /**
+     * Computed (not persisted) formatted Proposal ID of the proposal this notification is
+     * about (for example {@code MSUN-ORPS-DA-028-2026-REV00}), filled by the notification
+     * service from the referenced proposal. Null for notifications that are not about a
+     * proposal, and for a proposal whose formatted identifier is unavailable.
+     */
+    @Transient
+    private String proposalDocumentId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

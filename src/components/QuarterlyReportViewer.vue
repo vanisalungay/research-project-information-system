@@ -52,7 +52,12 @@
 
       <!-- Page 3: the submitted Project Workplan. -->
       <div v-show="currentStep === TOTAL_STEPS" class="wizard-panel">
-        <ProjectWorkplanForm v-if="workplan" :model-value="workplan" readonly />
+        <ProjectWorkplanForm
+          v-if="workplan"
+          :model-value="workplan"
+          readonly
+          :report-status="report?.status || 'DRAFT'"
+        />
         <p v-else class="viewer-notice">
           No Project Workplan has been saved for this reporting stage.
         </p>

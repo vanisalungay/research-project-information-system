@@ -3,14 +3,19 @@ package com.rpis.backend.service;
 import com.rpis.backend.dto.NextReportStageResponse;
 import com.rpis.backend.dto.QuarterlyProgressReportRequest;
 import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.ProposalStatusHistory;
+import com.rpis.backend.model.QuarterlyObjective;
 import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.TerminalReportData;
 import com.rpis.backend.model.TerminalReportSection;
 import com.rpis.backend.model.WorkplanData;
+import com.rpis.backend.model.WorkplanObjective;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.PercentageValue;
+import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -21,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +42,27 @@ public class QuarterlyProgressReportService {
      */
     public static final List<String> IMPLEMENTATION_STATUSES =
             List.of("APPROVED", "RELEASED", "IMPLEMENTATION");
+
+    /**
+     * The proposal status that means the project's required reporting is finished. It is
+     * written by this service only, when the last required reporting stage (the Terminal
+     * Report) is submitted, and it is never set by creating or saving a draft.
+     */
+    public static final String PROPOSAL_COMPLETED = "COMPLETED";
+
+    /**
+     * Statuses whose reports stay readable and whose reporting stage may still be
+     * resolved. It adds {@link #PROPOSAL_COMPLETED} to {@link #IMPLEMENTATION_STATUSES}
+     * so a project does not lose access to the reports it already filed after its final
+     * report moves it to COMPLETED. Creating a new report still requires an
+     * {@link #IMPLEMENTATION_STATUSES} project, so a completed project can never start
+     * another reporting stage.
+     */
+    public static final List<String> REPORTABLE_STATUSES =
+            List.of("APPROVED", "RELEASED", "IMPLEMENTATION", PROPOSAL_COMPLETED);
+
+    /** Twelve month cells per Project Workplan row (January-December). */
+    private static final int WORKPLAN_MONTHS = 12;
 
     /** Reporting stage 1-3: Quarterly Progress Report + Project Workplan. */
     public static final String TYPE_QUARTERLY = "QUARTERLY_PROGRESS";
@@ -77,8 +102,11 @@ public class QuarterlyProgressReportService {
         // rule (including the recorded OC approval and the OVCAF decision where budget
         // evaluation was required) is applied here so the list cannot disagree with
         // the per-proposal check.
-        return proposalRepository.findEligibleForQuarterlyReport(IMPLEMENTATION_STATUSES).stream()
-                .filter(this::isEligible)
+        // Completed projects stay on the list so their filed reports remain viewable; the
+        // per-proposal creation check still uses IMPLEMENTATION_STATUSES, so a completed
+        // project cannot start another stage.
+        return proposalRepository.findEligibleForQuarterlyReport(REPORTABLE_STATUSES).stream()
+                .filter(this::isReportable)
                 .toList();
     }
 
@@ -89,7 +117,9 @@ public class QuarterlyProgressReportService {
      * drafts, failed uploads and retries never advance the sequence.
      */
     public NextReportStageResponse getNextStage(Long proposalId) {
-        Proposal proposal = getEligibleProposal(proposalId);
+        // A completed project still resolves its stage (as "all stages complete") so the
+        // reporting page keeps showing the reports it filed.
+        Proposal proposal = getReportableProposal(proposalId);
         return computeNextStage(proposal.getId());
     }
 
@@ -170,13 +200,15 @@ public class QuarterlyProgressReportService {
         report.setReportType(type);
         report.setPeriod(period);
         applyRequest(report, request);
+        // A new report (and a legacy draft missing them) takes the identification
+        // fields from the saved proposal, never from the request body.
+        applyProposalProjectInfo(report, proposal);
 
         if ("SUBMITTED".equalsIgnoreCase(request.getStatus())) {
             validateRequiredDocuments(report);
-            submit(report, proposal);
-        } else {
-            report.setStatus("DRAFT");
+            return submit(report, proposal);
         }
+        report.setStatus("DRAFT");
         return reportRepository.save(report);
     }
 
@@ -186,13 +218,19 @@ public class QuarterlyProgressReportService {
         if ("SUBMITTED".equals(report.getStatus())) {
             throw new IllegalStateException("A submitted quarterly progress report can no longer be edited.");
         }
-        Proposal proposal = getEligibleProposal(report.getProposalId());
+        // Only an unfinished draft can be reached here (a submitted report is rejected
+        // above). A completed project resolves through the reportable rule so a legacy
+        // draft on an already-completed project can still be saved or submitted.
+        Proposal proposal = getReportableProposal(report.getProposalId());
         // The reporting stage of an existing report is immutable; only its content
         // and (for a submission) the required document are validated here.
         applyRequest(report, request);
+        // Preserve the snapshot the report already recorded; only a legacy blank field
+        // is filled from the project.
+        applyProposalProjectInfo(report, proposal);
         if ("SUBMITTED".equalsIgnoreCase(request.getStatus())) {
             validateRequiredDocuments(report);
-            submit(report, proposal);
+            return submit(report, proposal);
         }
         return reportRepository.save(report);
     }
@@ -341,10 +379,77 @@ public class QuarterlyProgressReportService {
         return text.trim().split("\\s+").length;
     }
 
-    private void submit(QuarterlyProgressReport report, Proposal proposal) {
+    /**
+     * The single submission routine. Every path that submits a report - creating a
+     * stage straight from the form, or saving an existing draft as submitted - goes
+     * through here, because submission itself is the event that can finish reporting.
+     *
+     * <p>The report is persisted as SUBMITTED first and the completion transition runs
+     * afterwards, so the completion check reads this report from the project's stored
+     * stages. Both happen inside the caller's transaction: either the report and the
+     * project status are committed together, or neither is.</p>
+     */
+    private QuarterlyProgressReport submit(QuarterlyProgressReport report, Proposal proposal) {
         report.setStatus("SUBMITTED");
         report.setSubmittedAt(LocalDateTime.now());
         report.setSubmittedBy(proponentId(proposal));
+        QuarterlyProgressReport saved = reportRepository.save(report);
+        completeProjectWhenReportingFinished(proposal, saved);
+        // The submission response carries the proposal status that resulted from this
+        // request, so the client can show a project that just became COMPLETED without
+        // waiting for a separate read.
+        saved.setProposalStatus(proposal.getStatus());
+        return saved;
+    }
+
+    /**
+     * The project completion transition. It runs only after a report was actually stored
+     * as SUBMITTED and reads the project's own stored reporting stages: when Q1, Q2, Q3
+     * and the Terminal Report are all submitted, an implementation-phase project
+     * ({@link #IMPLEMENTATION_STATUSES}) becomes {@link #PROPOSAL_COMPLETED}.
+     *
+     * <p>A draft never completes the project, and a project still missing any required
+     * stage keeps its current status - in particular APPROVED, which is displayed as
+     * "Implementation Approved". A project in any other status is never overwritten.</p>
+     */
+    private void completeProjectWhenReportingFinished(Proposal proposal,
+            QuarterlyProgressReport savedReport) {
+        if (proposal == null || !"SUBMITTED".equals(savedReport.getStatus())) {
+            return;
+        }
+        String status = proposal.getStatus() == null ? "" : proposal.getStatus().trim().toUpperCase();
+        if (!IMPLEMENTATION_STATUSES.contains(status)) {
+            return;
+        }
+        if (!computeNextStage(proposal.getId()).isAllStagesComplete()) {
+            return;
+        }
+        recordCompletion(proposal, status);
+        proposal.setStatus(PROPOSAL_COMPLETED);
+        proposalRepository.save(proposal);
+    }
+
+    /**
+     * Records the completion transition in the same transaction as the status change,
+     * as every application status change is required to do. The actor is the Proponent
+     * whose final report triggered it.
+     */
+    private void recordCompletion(Proposal proposal, String fromStatus) {
+        ProposalStatusHistory entry = new ProposalStatusHistory();
+        entry.setProposal(proposal);
+        // Recorded values must satisfy the same proposal-status lookup as proposals.status.
+        entry.setFromStatus(ProposalStatus.requireSupportedStatus(fromStatus));
+        entry.setToStatus(ProposalStatus.requireSupportedStatus(PROPOSAL_COMPLETED));
+        if (proposal.getProponent() != null) {
+            entry.setActorUserId(proposal.getProponent().getId());
+            entry.setActorRole(proposal.getProponent().getRole());
+            entry.setActorName(proposal.getProponent().getName());
+        }
+        entry.setRemarks("All required reporting stages were submitted: Q1, Q2, Q3 and "
+                + "the Terminal Report.");
+        entry.setSource(ProposalStatusHistory.SOURCE_APPLICATION);
+        entry.setChangedAt(LocalDateTime.now());
+        proposal.getStatusHistory().add(entry);
     }
 
     private Long proponentId(Proposal proposal) {
@@ -368,12 +473,22 @@ public class QuarterlyProgressReportService {
     }
 
     private Proposal getEligibleProposal(Long proposalId) {
+        return requireProposal(proposalId, false);
+    }
+
+    /** The same project, with COMPLETED also accepted so its reports stay accessible. */
+    private Proposal getReportableProposal(Long proposalId) {
+        return requireProposal(proposalId, true);
+    }
+
+    private Proposal requireProposal(Long proposalId, boolean allowCompleted) {
         if (proposalId == null) {
             throw new IllegalArgumentException("Proposal id is required.");
         }
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
-        if (!isEligible(proposal)) {
+        boolean permitted = allowCompleted ? isReportable(proposal) : isEligible(proposal);
+        if (!permitted) {
             throw new IllegalStateException(
                     "This project has not completed the full approval chain: it must be approved "
                             + "for implementation with a recorded Office of the Chancellor Special "
@@ -402,6 +517,19 @@ public class QuarterlyProgressReportService {
      * required to carry an OVCAF record.
      */
     public boolean isEligible(Proposal proposal) {
+        return isInApprovalChain(proposal, IMPLEMENTATION_STATUSES);
+    }
+
+    /**
+     * True when the project's reports may still be read and its reporting stage resolved:
+     * the same approval-chain evidence as {@link #isEligible(Proposal)}, with a completed
+     * project also accepted. This never grants the right to create a new report.
+     */
+    public boolean isReportable(Proposal proposal) {
+        return isInApprovalChain(proposal, REPORTABLE_STATUSES);
+    }
+
+    private boolean isInApprovalChain(Proposal proposal, List<String> acceptedStatuses) {
         if (proposal == null) {
             return false;
         }
@@ -411,7 +539,7 @@ public class QuarterlyProgressReportService {
         boolean hasSo = proposal.getSoNumber() != null && !proposal.getSoNumber().isBlank();
         boolean soRecorded = hasSo && proposal.getSoUploadedAt() != null;
         String status = proposal.getStatus() == null ? "" : proposal.getStatus().trim().toUpperCase();
-        boolean approved = IMPLEMENTATION_STATUSES.contains(status);
+        boolean approved = acceptedStatuses.contains(status);
         if (!approved || !soRecorded) {
             return false;
         }
@@ -432,14 +560,12 @@ public class QuarterlyProgressReportService {
         } else if (report.getYear() == null) {
             report.setYear(LocalDate.now().getYear());
         }
-        report.setProjectTitle(request.getProjectTitle());
-        report.setProjectLeader(request.getProjectLeader());
-        report.setLeaderGender(request.getLeaderGender());
+        // The project identification fields (title, leader, gender, duration, start
+        // date, end date) are NOT taken from the request: they are the saved proposal
+        // snapshot applied by applyProposalProjectInfo. A client can therefore never
+        // make a report describe a different project.
         report.setBaseStation(request.getBaseStation());
         report.setSitesOfImplementation(request.getSitesOfImplementation());
-        report.setProjectDuration(request.getProjectDuration());
-        report.setProjectStartDate(parseDate(request.getProjectStartDate()));
-        report.setProjectEndDate(parseDate(request.getProjectEndDate()));
         report.setCatchUpPlan(request.getCatchUpPlan());
         report.setProblemsConcerns(request.getProblemsConcerns());
         report.setSuggestedSolutions(request.getSuggestedSolutions());
@@ -455,6 +581,86 @@ public class QuarterlyProgressReportService {
         // never wipes the content the proponent already entered.
         if (request.getTerminalReport() != null) {
             report.setTerminalReport(request.getTerminalReport());
+        }
+        normalizePercentages(report);
+    }
+
+    /**
+     * Copies the six identification fields from the saved proposal into a report that
+     * does not have them yet. Existing values are never replaced, so reopening a filed
+     * report keeps the snapshot it recorded while a legacy blank field is filled from
+     * the project instead of staying empty.
+     */
+    private void applyProposalProjectInfo(QuarterlyProgressReport report, Proposal proposal) {
+        if (proposal == null) {
+            return;
+        }
+        if (isBlank(report.getProjectTitle())) {
+            report.setProjectTitle(proposal.getProjectTitle());
+        }
+        if (isBlank(report.getProjectLeader())) {
+            report.setProjectLeader(proposal.getProjectLeader());
+        }
+        if (isBlank(report.getLeaderGender())) {
+            report.setLeaderGender(proposal.getProjectLeaderSex());
+        }
+        if (isBlank(report.getProjectDuration())) {
+            report.setProjectDuration(proposal.getDuration());
+        }
+        if (report.getProjectStartDate() == null) {
+            report.setProjectStartDate(proposal.getStartDate());
+        }
+        if (report.getProjectEndDate() == null) {
+            report.setProjectEndDate(proposal.getEndDate());
+        }
+    }
+
+    /**
+     * Validates and normalises every percentage the report carries:
+     * <ul>
+     *   <li>(7) Major accomplishments - FOR THE PERIOD and CUMULATIVE (FROM START);</li>
+     *   <li>Project Workplan - the twelve monthly cells of every row.</li>
+     * </ul>
+     * The workplan AVERAGE TOTAL is always recalculated from the stored month values,
+     * so a total sent through the API can never disagree with them. An invalid value
+     * rejects the whole request (the transaction rolls back) instead of being stored.
+     */
+    private void normalizePercentages(QuarterlyProgressReport report) {
+        if (report.getObjectives() != null) {
+            for (QuarterlyObjective row : report.getObjectives()) {
+                if (row == null) {
+                    continue;
+                }
+                row.setPercentagePeriod(PercentageValue.normalize(
+                        row.getPercentagePeriod(), "Percentage for the period"));
+                row.setPercentageCumulative(PercentageValue.normalize(
+                        row.getPercentageCumulative(), "Cumulative percentage"));
+            }
+        }
+
+        WorkplanData workplan = report.getWorkplan();
+        if (workplan == null || workplan.getObjectives() == null) {
+            return;
+        }
+        for (WorkplanObjective row : workplan.getObjectives()) {
+            if (row == null) {
+                continue;
+            }
+            List<String> months = new ArrayList<>();
+            if (row.getMonths() != null) {
+                for (String month : row.getMonths()) {
+                    if (months.size() == WORKPLAN_MONTHS) {
+                        break;
+                    }
+                    months.add(PercentageValue.normalize(month, "Monthly percentage"));
+                }
+            }
+            while (months.size() < WORKPLAN_MONTHS) {
+                months.add("");
+            }
+            row.setMonths(months);
+            // Derived, never trusted from the request.
+            row.setTotal(PercentageValue.average(months));
         }
     }
 
@@ -502,17 +708,6 @@ public class QuarterlyProgressReportService {
         // name and returns the path relative to its configured root.
         String stored = uploadStorage.store(file.getBytes(), REPORTS_FOLDER, prefix + "-report");
         return new SavedFile(file.getOriginalFilename(), stored);
-    }
-
-    private LocalDate parseDate(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(value);
-        } catch (DateTimeParseException e) {
-            return null;
-        }
     }
 
     private static boolean isBlank(String value) {

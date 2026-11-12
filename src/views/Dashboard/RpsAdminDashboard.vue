@@ -43,7 +43,7 @@
 
       <div class="stat-card green-accent">
         <div class="stat-meta">
-          <span class="stat-label">Approved Users</span>
+          <span class="stat-label">Active Users</span>
           <h3 class="stat-value">{{ approvedUsers }}</h3>
         </div>
         <div class="stat-icon-wrapper green">

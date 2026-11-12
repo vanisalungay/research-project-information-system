@@ -13,31 +13,21 @@
  *   CLOSED                           -> Closed
  */
 import { statusLabel } from './statusLabel.js'
+import { ANNOUNCEMENT_STATUS_LABELS, statusVariantClass } from './statusCatalog.js'
+
+export { ANNOUNCEMENT_STATUS_LABELS }
 
 /**
- * The label shown for a Call for Proposal status, from either form the app uses: the
- * uppercase code the API sends on a notification (OPEN / CLOSED / SCHEDULED / DRAFT) or
- * the label {@link announcementStatus} returns (Open / Closed / Scheduled / Draft).
- * A status without a known label has no badge.
- */
-export const ANNOUNCEMENT_STATUS_LABELS = {
-  DRAFT: 'Draft',
-  SCHEDULED: 'Scheduled',
-  OPEN: 'Open',
-  CLOSED: 'Closed',
-}
-
-/**
- * The colour tone of a Call for Proposal status, used by the status badges:
- * open -> green, closed -> red, scheduled -> blue, draft -> neutral. The label is always
+ * The colour tone class of a Call for Proposal status, from the one approved palette:
+ * open -> green, scheduled -> blue, draft and closed -> gray. The label is always
  * rendered next to the colour, so a status never depends on colour alone.
  */
-export const ANNOUNCEMENT_STATUS_TONES = {
-  DRAFT: 'draft',
-  SCHEDULED: 'scheduled',
-  OPEN: 'open',
-  CLOSED: 'closed',
-}
+export const ANNOUNCEMENT_STATUS_TONES = Object.freeze({
+  DRAFT: statusVariantClass('DRAFT'),
+  SCHEDULED: statusVariantClass('SCHEDULED'),
+  OPEN: statusVariantClass('OPEN'),
+  CLOSED: statusVariantClass('CLOSED'),
+})
 
 /** The status code both forms above share, or '' for anything unusable. */
 function statusKey(value) {
@@ -71,12 +61,16 @@ export function localTodayISO() {
 export function announcementStatus(announcement, today = localTodayISO()) {
   if (!announcement) return ''
   const status = String(announcement.status || '').toUpperCase()
-  if (status === 'DRAFT') return 'Draft'
-  if (status === 'CLOSED') return 'Closed'
+  if (status === 'DRAFT') return ANNOUNCEMENT_STATUS_LABELS.DRAFT
+  if (status === 'CLOSED') return ANNOUNCEMENT_STATUS_LABELS.CLOSED
   if (status === 'ACTIVE') {
-    if (announcement.startDate && announcement.startDate > today) return 'Scheduled'
-    if (announcement.endDate && announcement.endDate < today) return 'Closed'
-    return 'Open'
+    if (announcement.startDate && announcement.startDate > today) {
+      return ANNOUNCEMENT_STATUS_LABELS.SCHEDULED
+    }
+    if (announcement.endDate && announcement.endDate < today) {
+      return ANNOUNCEMENT_STATUS_LABELS.CLOSED
+    }
+    return ANNOUNCEMENT_STATUS_LABELS.OPEN
   }
   return statusLabel(announcement.status)
 }

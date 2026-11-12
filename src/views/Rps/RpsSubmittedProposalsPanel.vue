@@ -21,10 +21,10 @@
         </svg>
         <select v-model="selectedStatus" class="status-select">
           <option value="">All Status</option>
-          <option value="FOR REVIEW">For Review</option>
-          <option value="REVISION">Revision</option>
-          <option value="ENDORSED">Endorsed</option>
-          <option value="REJECTED">Rejected</option>
+          <option value="FOR REVIEW">{{ proposalStatusLabel('FOR REVIEW') }}</option>
+          <option value="REVISION">{{ proposalStatusLabel('REVISION') }}</option>
+          <option value="ENDORSED">{{ proposalStatusLabel('ENDORSED') }}</option>
+          <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
         </select>
         <svg class="field-icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>

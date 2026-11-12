@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -230,6 +231,15 @@ class ProposalDraftPersistenceServiceTest {
     @Test
     void aDraftRequestStaysADraft() {
         assertEquals("DRAFT", service.saveProposal(request("DRAFT"), null).getStatus());
+    }
+
+    @Test
+    void anUnknownStatusIsRejectedBeforeAnythingIsSaved() {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.saveProposal(request("NOT_A_PROPOSAL_STATUS"), null));
+
+        assertTrue(error.getMessage().contains("NOT_A_PROPOSAL_STATUS"), error.getMessage());
+        verify(proposalRepository, never()).save(any(Proposal.class));
     }
 
     @Test

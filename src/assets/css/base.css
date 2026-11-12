@@ -43,35 +43,80 @@
   --color-info: #3b82f6;
 
   /* ===== Status tones =====
-     One semantic palette for every workflow status, in every role and module.
-     A badge consumes --status-<tone>-bg / -text / -border; see assets/status.css.
-     Green: SUBMITTED / APPROVED / COMPLETED. Amber: returned & revision.
-     Red: rejected. Light blue: pending / under review. Grey: draft / neutral. */
+     One approved semantic palette for every workflow status, in every role and module.
+     A badge consumes --status-<variant>-bg / -text / -border; see assets/status.css.
+     The variant of each stored status is decided in one place - src/utils/statusCatalog.js
+     (statusVariant). Each family keeps a light badge background and darker text of the same
+     hue, so the semantic colour is preserved with readable contrast. */
+  /* Approved: green text on a light green surface (soft badge). */
   --status-approved-bg: #dcfce7;
-  --status-approved-text: #166534;
+  --status-approved-text: #15803d;
   --status-approved-border: #a7f3d0;
-  --status-returned-bg: #fef3c7;
-  --status-returned-text: #92400e;
-  --status-returned-border: #fde68a;
-  --status-rejected-bg: #fee2e2;
+  /* Completed: white text on the dark forest green surface, clearly darker than Approved. */
+  --status-completed-bg: #14532d;
+  --status-completed-text: #ffffff;
+  --status-completed-border: #14532d;
+  --status-blue-bg: #dbeafe; /* submitted / for review / scheduled */
+  --status-blue-text: #1e40af;
+  --status-blue-border: #bfdbfe;
+  --status-purple-bg: #ede9fe; /* under review */
+  --status-purple-text: #5b21b6;
+  --status-purple-border: #ddd6fe;
+  --status-indigo-bg: #e0e7ff; /* REC approval */
+  --status-indigo-text: #3730a3;
+  --status-indigo-border: #c7d2fe;
+  --status-cyan-bg: #cffafe; /* OVCRIGE approval */
+  --status-cyan-text: #155e75;
+  --status-cyan-border: #a5f3fc;
+  --status-teal-bg: #ccfbf1; /* Dean endorsement */
+  --status-teal-text: #115e59;
+  --status-teal-border: #99f6e4;
+  --status-released-bg: #ccfbf1; /* funds released (distinct teal) */
+  --status-released-text: #115e59;
+  --status-released-border: #5eead4;
+  --status-amber-bg: #fef3c7; /* pending / awaiting approval */
+  --status-amber-text: #92400e;
+  --status-amber-border: #fde68a;
+  --status-orange-bg: #ffedd5; /* ready for release / every returned status */
+  --status-orange-text: #9a3412;
+  --status-orange-border: #fed7aa;
+  --status-rejected-bg: #fee2e2; /* rejected / failed */
   --status-rejected-text: #991b1b;
   --status-rejected-border: #fecaca;
-  --status-pending-bg: #dbeafe;
-  --status-pending-text: #1e40af;
-  --status-pending-border: #bfdbfe;
-  --status-neutral-bg: #e5e7eb;
-  --status-neutral-text: #374151;
-  --status-neutral-border: #d1d5db;
-  --status-draft-bg: var(--status-neutral-bg);
-  --status-draft-text: var(--status-neutral-text);
-  --status-draft-border: var(--status-neutral-border);
+  --status-gray-bg: #f1f5f9; /* draft / inactive / revoked / superseded / closed */
+  --status-gray-text: #475569;
+  --status-gray-border: #cbd5e1;
+
+  /* Legacy tone names kept as aliases: unrelated screens already reference them. */
+  --status-returned-bg: var(--status-orange-bg);
+  --status-returned-text: var(--status-orange-text);
+  --status-returned-border: var(--status-orange-border);
+  --status-pending-bg: var(--status-blue-bg);
+  --status-pending-text: var(--status-blue-text);
+  --status-pending-border: var(--status-blue-border);
+  --status-neutral-bg: var(--status-gray-bg);
+  --status-neutral-text: var(--status-gray-text);
+  --status-neutral-border: var(--status-gray-border);
+  --status-draft-bg: var(--status-gray-bg);
+  --status-draft-text: var(--status-gray-text);
+  --status-draft-border: var(--status-gray-border);
 
   /* Solid accents for progress fills and statistic card edges. */
-  --status-approved-solid: #047857;
-  --status-returned-solid: #b45309;
-  --status-rejected-solid: #b91c1c;
-  --status-pending-solid: #1e40af;
-  --status-neutral-solid: #64748b;
+  --status-approved-solid: #15803d;
+  --status-completed-solid: #166534;
+  --status-blue-solid: #2563eb;
+  --status-purple-solid: #7c3aed;
+  --status-indigo-solid: #4f46e5;
+  --status-cyan-solid: #0891b2;
+  --status-teal-solid: #0f766e;
+  --status-released-solid: #0d9488;
+  --status-amber-solid: #d97706;
+  --status-orange-solid: #ea580c;
+  --status-rejected-solid: #dc2626;
+  --status-gray-solid: #64748b;
+  --status-returned-solid: var(--status-orange-solid);
+  --status-pending-solid: var(--status-blue-solid);
+  --status-neutral-solid: var(--status-gray-solid);
 
   /* Compatibility aliases: these names are referenced by a few reports pages but were
      never declared, so the status colours there resolved to nothing. */
@@ -84,10 +129,12 @@
   --color-rejected: var(--status-rejected-solid);
   --color-rejected-bg: var(--status-rejected-bg);
   --color-rejected-text: var(--status-rejected-text);
-  --color-pending: var(--status-pending-solid);
-  --color-pending-bg: var(--status-pending-bg);
-  --color-pending-text: var(--status-pending-text);
-  --color-info-bg: var(--status-pending-bg);
+  /* "Pending" in these reports is a status (awaiting a decision), so it follows the
+     approved amber status family rather than the blue informational tone. */
+  --color-pending: var(--status-amber-solid);
+  --color-pending-bg: var(--status-amber-bg);
+  --color-pending-text: var(--status-amber-text);
+  --color-info-bg: var(--status-blue-bg);
   --text-primary: var(--color-text);
   --text-secondary: var(--color-text-soft);
   --text-muted: var(--color-text-muted);
@@ -240,21 +287,44 @@ body {
 
     /* Status tones on a dark surface: the hue is kept, the surface is darkened so the
        badge never turns into a white block. */
-    --status-approved-bg: #123a2c;
-    --status-approved-text: #6ee7b7;
-    --status-approved-border: #1c4034;
-    --status-returned-bg: #4a3a17;
-    --status-returned-text: #fcd34d;
-    --status-returned-border: #6b551f;
+    /* Implementation Approved and Completed keep their fixed badge colours in both
+       themes: green on light green, and white on dark forest green. */
+    --status-approved-bg: #dcfce7;
+    --status-approved-text: #15803d;
+    --status-approved-border: #a7f3d0;
+    --status-completed-bg: #14532d;
+    --status-completed-text: #ffffff;
+    --status-completed-border: #14532d;
+    --status-blue-bg: #1f2f55;
+    --status-blue-text: #93b4ff;
+    --status-blue-border: #2b3f6e;
+    --status-purple-bg: #2e2352;
+    --status-purple-text: #c4b5fd;
+    --status-purple-border: #42367a;
+    --status-indigo-bg: #262650;
+    --status-indigo-text: #a5b4fc;
+    --status-indigo-border: #373c78;
+    --status-cyan-bg: #0e3a44;
+    --status-cyan-text: #67e8f9;
+    --status-cyan-border: #155e75;
+    --status-teal-bg: #0e3a35;
+    --status-teal-text: #5eead4;
+    --status-teal-border: #115e59;
+    --status-released-bg: #0b3a35;
+    --status-released-text: #5eead4;
+    --status-released-border: #0f766e;
+    --status-amber-bg: #4a3a17;
+    --status-amber-text: #fcd34d;
+    --status-amber-border: #6b551f;
+    --status-orange-bg: #4a2a12;
+    --status-orange-text: #fdba74;
+    --status-orange-border: #7c3d12;
     --status-rejected-bg: #4a2222;
     --status-rejected-text: #fca5a5;
     --status-rejected-border: #6b2a2a;
-    --status-pending-bg: #1f2f55;
-    --status-pending-text: #93b4ff;
-    --status-pending-border: #2b3f6e;
-    --status-neutral-bg: #22304d;
-    --status-neutral-text: #cbd5e1;
-    --status-neutral-border: #334155;
+    --status-gray-bg: #22304d;
+    --status-gray-text: #cbd5e1;
+    --status-gray-border: #334155;
 
     /* Action buttons: solid actions brighten slightly; surface actions go dark. */
     --btn-primary-bg: #315bff;

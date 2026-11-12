@@ -68,7 +68,7 @@
           <div class="card-top">
             <div class="status-row">
               <span class="status-dot"></span>
-              <span class="revision-tag">Revision Required</span>
+              <span class="revision-tag">{{ proposalStatusLabel('RPS_RETURNED') }}</span>
             </div>
 
             <h3 class="proposal-title">{{ revision.title }}</h3>
@@ -177,6 +177,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import {
   compareRevisionDeadlines,

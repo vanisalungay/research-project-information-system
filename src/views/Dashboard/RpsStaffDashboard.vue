@@ -367,14 +367,15 @@ const budgetProposals = computed(() => byStatus(BUDGET_STATUSES))
 const pendingReviewList = computed(() => byStatus(PENDING_STATUSES))
 const awaitingAction = computed(() => pendingReviewList.value.slice(0, AWAITING_LIMIT))
 
-// Budget category filters mirror the existing Budget Processing page.
-const budgetFilters = ['All', 'Completed', 'Ready for Release', 'Released', 'Returned']
+// Budget category filters mirror the existing Budget Processing page. The chip text is
+// the canonical proposal label; the map keeps the raw stored value used to filter.
 const budgetStatusMap = {
-  'Completed': 'APPROVED',
-  'Ready for Release': 'READY_FOR_RELEASE',
-  'Released': 'RELEASED',
-  'Returned': 'RETURNED',
+  [proposalStatusLabel('APPROVED')]: 'APPROVED',
+  [proposalStatusLabel('READY_FOR_RELEASE')]: 'READY_FOR_RELEASE',
+  [proposalStatusLabel('RELEASED')]: 'RELEASED',
+  [proposalStatusLabel('RETURNED')]: 'RETURNED',
 }
+const budgetFilters = ['All', ...Object.keys(budgetStatusMap)]
 const budgetFilter = ref('All')
 const filteredBudget = computed(() => {
   if (budgetFilter.value === 'All') return budgetProposals.value
@@ -735,7 +736,7 @@ onMounted(() => {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #9ca3af;
+  background: var(--status-gray-solid);
 }
 
 .status-label {

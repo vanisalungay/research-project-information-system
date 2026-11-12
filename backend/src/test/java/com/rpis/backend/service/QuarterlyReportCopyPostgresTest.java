@@ -108,7 +108,7 @@ class QuarterlyReportCopyPostgresTest {
         wp.setProjectTitle("Fish Landing Survey");
         wp.setProjectLeader("Copy Proponent");
         wp.setProjectDuration("12");
-        wp.setObjectives(List.of(new WorkplanObjective("Objective one", List.of("Process PRs"), "100%")));
+        wp.setObjectives(List.of(new WorkplanObjective("Objective one", List.of("50"), "100%")));
         wp.setRemarks("On track.");
         return wp;
     }
@@ -182,7 +182,9 @@ class QuarterlyReportCopyPostgresTest {
         Map<String, Object> copy = storedRow(q2.getId());
         assertEquals("DRAFT", copy.get("status"));
         assertEquals("Q2", copy.get("period"));
-        assertEquals("Q2 revised title", copy.get("project_title"));
+        // The report header is the saved proposal snapshot: the request cannot rename the
+        // project by sending a different title with an update.
+        assertEquals("Fish Landing Survey", copy.get("project_title"));
         assertEquals(q1.getId(), ((Number) copy.get("copied_from_report_id")).longValue());
 
         // The stored source content is untouched as well.

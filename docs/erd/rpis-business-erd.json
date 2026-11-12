@@ -1,0 +1,4340 @@
+{
+    "counts": {
+        "foreign_keys": 57,
+        "business_tables": 30
+    },
+    "schema": "public",
+    "tables": [
+        {
+            "name": "activity_logs",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('activity_logs_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "user_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "action",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "description",
+                    "type": "text",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "module",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "details",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "certifications",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('certifications_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proponent_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_request_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "document_type",
+                    "type": "character varying(40)",
+                    "default": "'ENDORSEMENT_LETTER'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "title",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "issuing_dean_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(20)",
+                    "default": "'ISSUED'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "cooperating_agencies",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('cooperating_agencies_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "name",
+                    "type": "character varying(200)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "dean_assignments",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('dean_assignments_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dean_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dean_email",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "assigned_college",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "designation",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(20)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "date_assigned",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "date_revoked",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revoked_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revoked_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "endorsement_letter_settings",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "director_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "director_surname",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "director_designation",
+                    "type": "character varying(160)",
+                    "default": "'Director'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "office_name",
+                    "type": "character varying(255)",
+                    "default": "'Office of Research and Publication Services (ORPS)'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "university_name",
+                    "type": "character varying(255)",
+                    "default": "'Mindanao State University at Naawan'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_by_user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "endorsement_request_events",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('endorsement_request_events_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "endorsement_request_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "event_type",
+                    "type": "character varying(40)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_role",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "detail",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "endorsement_requests",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('endorsement_requests_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "reference_number",
+                    "type": "character varying(60)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proponent_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "assigned_dean_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "college",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "department",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_title",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_announcement_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "research_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(20)",
+                    "default": "'PENDING'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decided_by_user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decided_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decided_by_designation",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decided_at",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "rejection_reason",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "letter_document_code",
+                    "type": "character varying(80)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "letter_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "letter_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "letter_version",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "letter_generated_at",
+                    "type": "timestamp without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "signature_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "signature_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "certification_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "program_title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "notifications",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('notifications_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "message",
+                    "type": "text",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "is_read",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "type",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_announcement_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_request_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "ovcaf_validations",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('ovcaf_validations_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "budget_authorized",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "budget_authorized_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "budget_complete",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "budget_computation_correct",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "budget_endorsed",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "budget_endorsed_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "compliance_verified",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decision",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "expenses_reasonable",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "funding_source_identified",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "funds_released",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "funds_released_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "released_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "supporting_docs_complete",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "validated_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "validated_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "priority_agenda_sets",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('priority_agenda_sets_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "coverage_end_year",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "coverage_start_year",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "framework_name",
+                    "type": "character varying(150)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "priority_agendas",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('priority_agendas_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "agenda_key",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "description",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "display_order",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "name",
+                    "type": "character varying(150)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "sub_label",
+                    "type": "character varying(80)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "agenda_set_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "project_reports",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('project_reports_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "file_path",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "period",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remarks",
+                    "type": "character varying(1000)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "report_type",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "review_comments",
+                    "type": "character varying(1000)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "review_status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewed_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewed_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_announcement_updates",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_announcement_updates_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "actor_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_role",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "effective_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "explanation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "new_end_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "new_start_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "new_status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "previous_end_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "previous_start_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "previous_status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "update_type",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "announcement_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_announcements",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_announcements_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "end_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "start_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "additional_announcement",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "priority_agendas",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reminder_ids",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "funding_program",
+                    "type": "character varying(40)",
+                    "default": "'IFP'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_budget",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_budget_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "agency",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "ps",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "mooe",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "eo",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "total",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_cooperating_agencies",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_cooperating_agencies_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "cooperating_agency_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_limitations",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_limitations_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "limitation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_log_frames",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_log_frames_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outcome",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "output",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_other_projects",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_other_projects_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "agency",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "involvement",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_personnel",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_personnel_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "position",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "time_devoted",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "responsibilities",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_priority_agendas",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_priority_agendas_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "agenda_key",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "selected",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "value",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_reviews",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_reviews_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_role",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "soundness_sector_need_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "soundness_effective_solution_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "soundness_reasonable_budget_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "soundness_doable_workplan_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "suitability_cost_effective_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "suitability_partners_identified_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "suitability_commercialization_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "suitability_timely_utilization_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "significance_economic_impact_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "significance_social_impact_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "significance_environmental_impact_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "significance_sustainability_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "competence_alignment_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "competence_collaboration_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "competence_deliverables_understanding_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "overall_comments",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "decision",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_section_remarks",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_section_remarks_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "entry_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "entry_index",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "entry_snapshot",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "field_key",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "field_label",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remark",
+                    "type": "text",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_role",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "round",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "section_key",
+                    "type": "character varying(10)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "section_label",
+                    "type": "character varying(150)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(20)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_sites",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_sites_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "country",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "region",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "province",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "district",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "municipality",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "barangay",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_status_history",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_status_history_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "from_status",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "to_status",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_role",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "actor_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "source",
+                    "type": "character varying(30)",
+                    "default": "'APPLICATION'::character varying",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "changed_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_statuses",
+            "columns": [
+                {
+                    "name": "code",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "stage_label",
+                    "type": "character varying(80)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stage_order",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "bucket",
+                    "type": "character varying(30)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposal_versions",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposal_versions_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "details_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "document_id",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "is_current",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_date",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submission_date",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "version_number",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "proposals",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('proposals_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "proponent_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "program_title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_leader",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "duration",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "start_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "end_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "college",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "cooperating_agencies",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "research_type",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "innovation_goals",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "sector_relevance",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "sdg",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "executive_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "rationale",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "framework",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "objectives_general",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "objectives_specific",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "review",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "review_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "methodology",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "roadmap_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "technology_trl",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outputs",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outcomes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "impact_economic",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "impact_social",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "beneficiaries",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "beneficiaries_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "sustainability",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "gad_score",
+                    "type": "numeric(38,2)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "gad_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "risks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "references_text",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "other_projects_number",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(50)",
+                    "default": "'DRAFT'::character varying",
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp without time zone",
+                    "default": "CURRENT_TIMESTAMP",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewed_by",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewed_by_position",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "document_number",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id_seq",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewed_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "reviewer_role",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_no",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "so_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "so_file_path",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "so_number",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "so_uploaded_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "document_id",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_code",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_number",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "return_remarks",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "returned_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "returned_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "returned_by_office",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "returned_by_user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_deadline",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_forwarded_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_forwarded_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_forwarded_by_user_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "revision_notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "needs_budget",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_announcement_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "limitations_text",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_leader_sex",
+                    "type": "character varying(20)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_barangay",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_country",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_district",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_municipality",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_province",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "address_region",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "contact_type",
+                    "type": "character varying(30)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "contact_value",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "roadmap_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "beneficiaries_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "references_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_request_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "gad_checklist_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "rps_reviewer_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "risk_management_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsement_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_designation",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_date",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by_file_path",
+                    "type": "character varying(500)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsed_by_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsed_by_designation",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "endorsed_by_date",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "quarterly_progress_reports",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('quarterly_progress_reports_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "base_station",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "catch_up_plan",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "created_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "leader_gender",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "objectives_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outputs_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "period",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "problems_concerns",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_duration",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_end_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_leader",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_start_date",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "project_title",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "proposal_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "sites_of_implementation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "submitted_by",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "suggested_solutions",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp(6) without time zone",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "year",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "report_type",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "terminal_report_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "terminal_report_file_path",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "workplan_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "workplan_file_path",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "workplan_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "copied_from_report_id",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "terminal_report_json",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        },
+        {
+            "name": "users",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "bigint",
+                    "default": "nextval('users_id_seq'::regclass)",
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "name",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "email",
+                    "type": "character varying(100)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "password",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "role",
+                    "type": "character varying(50)",
+                    "default": null,
+                    "nullable": false,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "status",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "date_registered",
+                    "type": "date",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "department_office",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "email_verified",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "contact_number",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "specialization",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "signature_file_name",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "signature_file_path",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "designation",
+                    "type": "character varying(120)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "assigned_college",
+                    "type": "character varying(255)",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "notify_deadlines",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "notify_proposals",
+                    "type": "text",
+                    "default": null,
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "must_change_password",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": true,
+                    "is_foreign_key": false,
+                    "is_primary_key": false
+                }
+            ]
+        }
+    ],
+    "database": "rpis_db",
+    "foreign_keys": [
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "activity_logs",
+            "parent_table": "users",
+            "child_columns": [
+                "user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_activity_logs_user"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "certifications",
+            "parent_table": "endorsement_requests",
+            "child_columns": [
+                "endorsement_request_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "certifications_endorsement_request_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "certifications",
+            "parent_table": "users",
+            "child_columns": [
+                "proponent_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "certifications_proponent_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "certifications",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "certifications_proposal_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "dean_assignments",
+            "parent_table": "users",
+            "child_columns": [
+                "user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "dean_assignments_user_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "dean_assignments",
+            "parent_table": "users",
+            "child_columns": [
+                "created_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_dean_assignments_created_by"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "dean_assignments",
+            "parent_table": "users",
+            "child_columns": [
+                "revoked_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_dean_assignments_revoked_by"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_letter_settings",
+            "parent_table": "users",
+            "child_columns": [
+                "updated_by_user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_letter_settings_updated_by_user_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_request_events",
+            "parent_table": "endorsement_requests",
+            "child_columns": [
+                "endorsement_request_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_request_events_endorsement_request_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "users",
+            "child_columns": [
+                "assigned_dean_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_requests_assigned_dean_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "users",
+            "child_columns": [
+                "decided_by_user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_requests_decided_by_user_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "users",
+            "child_columns": [
+                "proponent_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_requests_proponent_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "proposal_announcements",
+            "child_columns": [
+                "proposal_announcement_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_requests_proposal_announcement_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "endorsement_requests_proposal_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "endorsement_requests",
+            "parent_table": "certifications",
+            "child_columns": [
+                "certification_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_endorsement_requests_certification"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "notifications",
+            "parent_table": "endorsement_requests",
+            "child_columns": [
+                "endorsement_request_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_notifications_endorsement_request"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "notifications",
+            "parent_table": "proposal_announcements",
+            "child_columns": [
+                "proposal_announcement_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_notifications_proposal_announcement"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "notifications",
+            "parent_table": "users",
+            "child_columns": [
+                "user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "notifications_user_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "ovcaf_validations",
+            "parent_table": "users",
+            "child_columns": [
+                "released_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_ovcaf_released_by"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "ovcaf_validations",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fkeqy2kcn3fh4wb2fnj8dw3tm6e"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "ovcaf_validations",
+            "parent_table": "users",
+            "child_columns": [
+                "validated_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fkh91wk6nh38pdjtfoaljq5m8hj"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "priority_agendas",
+            "parent_table": "priority_agenda_sets",
+            "child_columns": [
+                "agenda_set_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk7gf7l29cnka6a4txorqj05t5j"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "project_reports",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_project_reports_proposal"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "project_reports",
+            "parent_table": "users",
+            "child_columns": [
+                "reviewed_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_project_reports_reviewed_by"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "project_reports",
+            "parent_table": "users",
+            "child_columns": [
+                "submitted_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_project_reports_submitted_by"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_announcement_updates",
+            "parent_table": "users",
+            "child_columns": [
+                "actor_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_pau_actor"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_announcement_updates",
+            "parent_table": "proposal_announcements",
+            "child_columns": [
+                "announcement_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk2mf1bgspvarc1d7gu36ngq501"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_budget",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_budget_proposal_id_fkey"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_cooperating_agencies",
+            "parent_table": "cooperating_agencies",
+            "child_columns": [
+                "cooperating_agency_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk9dpl80lm9llhykoh8uk9pi1vj"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_cooperating_agencies",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fktbqn8kf6aorwve3ofxd5vxu29"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_limitations",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_limitations_proposal_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_log_frames",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_log_frames_proposal_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_other_projects",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_other_projects_proposal_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_personnel",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_personnel_proposal_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_priority_agendas",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_priority_agendas_proposal_id_fkey"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_reviews",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_reviews_proposal_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_reviews",
+            "parent_table": "users",
+            "child_columns": [
+                "reviewer_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_reviews_reviewer_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_section_remarks",
+            "parent_table": "users",
+            "child_columns": [
+                "reviewer_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_psr_reviewer"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_section_remarks",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fkkgfw0c2v2y5r5ic47ihdih9wu"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_sites",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposal_sites_proposal_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_status_history",
+            "parent_table": "users",
+            "child_columns": [
+                "actor_user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_psh_actor_user"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_status_history",
+            "parent_table": "proposal_statuses",
+            "child_columns": [
+                "from_status"
+            ],
+            "parent_columns": [
+                "code"
+            ],
+            "constraint_name": "fk_psh_from_status"
+        },
+        {
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_status_history",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_psh_proposal"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_status_history",
+            "parent_table": "proposal_statuses",
+            "child_columns": [
+                "to_status"
+            ],
+            "parent_columns": [
+                "code"
+            ],
+            "constraint_name": "fk_psh_to_status"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_versions",
+            "parent_table": "users",
+            "child_columns": [
+                "submitted_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fkac9gd8ex7rmj51993g87wqqs6"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposal_versions",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fkb9mcb7x0wngsd1ix6wyv151b9"
+        },
+        {
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "endorsement_requests",
+            "child_columns": [
+                "endorsement_request_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_proposals_endorsement_request"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "proposal_announcements",
+            "child_columns": [
+                "proposal_announcement_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_proposals_proposal_announcement"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "users",
+            "child_columns": [
+                "returned_by_user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_proposals_returned_by_user"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "users",
+            "child_columns": [
+                "revision_forwarded_by_user_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_proposals_revision_forwarded_by_user"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "users",
+            "child_columns": [
+                "rps_reviewer_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_proposals_rps_reviewer"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "proposal_statuses",
+            "child_columns": [
+                "status"
+            ],
+            "parent_columns": [
+                "code"
+            ],
+            "constraint_name": "fk_proposals_status"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "proposals",
+            "parent_table": "users",
+            "child_columns": [
+                "proponent_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "proposals_proponent_id_fkey"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "quarterly_progress_reports",
+            "parent_table": "quarterly_progress_reports",
+            "child_columns": [
+                "copied_from_report_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_qpr_copied_from"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "quarterly_progress_reports",
+            "parent_table": "users",
+            "child_columns": [
+                "created_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_qpr_created_by"
+        },
+        {
+            "on_delete": "RESTRICT",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "quarterly_progress_reports",
+            "parent_table": "proposals",
+            "child_columns": [
+                "proposal_id"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_qpr_proposal"
+        },
+        {
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "validated": true,
+            "child_table": "quarterly_progress_reports",
+            "parent_table": "users",
+            "child_columns": [
+                "submitted_by"
+            ],
+            "parent_columns": [
+                "id"
+            ],
+            "constraint_name": "fk_qpr_submitted_by"
+        }
+    ],
+    "generated_at": "2026-11-12T07:26:13",
+    "excluded_tables": [
+        "database_migration_rollback_log"
+    ]
+}

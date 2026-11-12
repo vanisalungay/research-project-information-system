@@ -832,7 +832,7 @@
               <div class="info-item">
                 <span class="info-label">Status</span>
                 <span class="info-value status-badge is-returned">
-                  Revision
+                  {{ proposalStatusLabel('RPS_RETURNED') }}
                 </span>
               </div>
             </div>
@@ -917,6 +917,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SectionRemarksNotice from '@/components/SectionRemarksNotice.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'

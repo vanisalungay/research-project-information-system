@@ -19,31 +19,29 @@ import {
   reviewStatusTone,
 } from './reviewStatus.js'
 
-test('a finished or successful status reads green', () => {
-  for (const status of ['APPROVED', 'REC_APPROVED', 'ENDORSED', 'COMPLETED']) {
-    assert.equal(reviewStatusTone(status), 'is-approved', status)
-  }
+test('each approval stage keeps its approved colour', () => {
+  assert.equal(reviewStatusTone('APPROVED'), 'is-approved', 'green')
+  assert.equal(reviewStatusTone('REC_APPROVED'), 'is-indigo', 'REC')
+  assert.equal(reviewStatusTone('OVC_APPROVED'), 'is-cyan', 'OVCRIGE')
+  assert.equal(reviewStatusTone('ENDORSED'), 'is-cyan', 'RPS → OVCRIGE')
+  assert.equal(reviewStatusTone('COMPLETED'), 'is-completed', 'dark green')
 })
 
-test('a rejection reads red and a return reads amber', () => {
+test('a rejection reads red and a return reads orange', () => {
   for (const status of ['REJECTED', 'REC_REJECTED']) {
     assert.equal(reviewStatusTone(status), 'is-rejected', status)
   }
   for (const status of ['RETURNED', 'RPS_RETURNED', 'REVISION']) {
-    assert.equal(reviewStatusTone(status), 'is-returned', status)
+    assert.equal(reviewStatusTone(status), 'is-orange', status)
   }
 })
 
-test('a status that is still being processed keeps the default badge', () => {
-  for (const status of [
-    'UNDER_REVIEW',
-    'REC_EVALUATION',
-    'OVCRIGE_COORDINATION',
-    'CHANCELLOR_REVIEW',
-    'IMPLEMENTATION',
-  ]) {
-    assert.equal(reviewStatusTone(status), '', status)
-  }
+test('a status that is still being processed uses its review stage colour', () => {
+  assert.equal(reviewStatusTone('UNDER_REVIEW'), 'is-purple')
+  assert.equal(reviewStatusTone('REC_EVALUATION'), 'is-purple')
+  assert.equal(reviewStatusTone('OVCRIGE_COORDINATION'), 'is-cyan')
+  assert.equal(reviewStatusTone('CHANCELLOR_REVIEW'), 'is-purple')
+  assert.equal(reviewStatusTone('IMPLEMENTATION'), 'is-approved')
 })
 
 test('a missing status is a draft', () => {
@@ -53,23 +51,23 @@ test('a missing status is a draft', () => {
   assert.equal(reviewStatusLabel(''), 'Draft')
 })
 
-test('the label spells the saved status the way the workflow does', () => {
-  assert.equal(reviewStatusLabel('UNDER_REVIEW'), 'Under Review')
-  assert.equal(reviewStatusLabel('REC_APPROVED'), 'REC Approved')
+test('the label spells the saved status canonically', () => {
+  assert.equal(reviewStatusLabel('UNDER_REVIEW'), 'Under Review by REC')
+  assert.equal(reviewStatusLabel('REC_APPROVED'), 'Approved by REC')
   assert.equal(reviewStatusLabel('DRAFT'), 'Draft')
 })
 
-test('both submission spellings read "For Review"', () => {
-  assert.equal(reviewStatusLabel('FOR REVIEW'), 'For Review')
-  assert.equal(reviewStatusLabel('for review'), 'For Review')
-  assert.equal(reviewStatusLabel('SUBMITTED'), 'For Review')
-  assert.equal(reviewStatusTone('FOR REVIEW'), 'is-approved')
-  assert.equal(reviewStatusTone('SUBMITTED'), 'is-approved')
+test('both submission spellings read "For RPS Review"', () => {
+  assert.equal(reviewStatusLabel('FOR REVIEW'), 'For RPS Review')
+  assert.equal(reviewStatusLabel('for review'), 'For RPS Review')
+  assert.equal(reviewStatusLabel('SUBMITTED'), 'For RPS Review')
+  assert.equal(reviewStatusTone('FOR REVIEW'), 'is-blue')
+  assert.equal(reviewStatusTone('SUBMITTED'), 'is-blue')
 })
 
-test('the final approval outcome reads Completed on review pages too', () => {
-  assert.equal(reviewStatusLabel('APPROVED'), 'Completed')
-  assert.equal(reviewStatusLabel('approved'), 'Completed')
+test('APPROVED and COMPLETED keep their own labels on review pages too', () => {
+  assert.equal(reviewStatusLabel('APPROVED'), 'Implementation Approved')
+  assert.equal(reviewStatusLabel('approved'), 'Implementation Approved')
   assert.equal(reviewStatusLabel('COMPLETED'), 'Completed')
   assert.equal(reviewStatusLabel('FOR_OC_APPROVAL'), 'For OC Approval')
   assert.equal(reviewStatusLabel('FOR_OVCAF_APPROVAL'), 'For OVCAF Approval')
@@ -79,7 +77,7 @@ test('the final approval outcome reads Completed on review pages too', () => {
 test('every tone the helper returns is one the design layer styles', () => {
   for (const status of ['APPROVED', 'REJECTED', 'RETURNED', 'DRAFT', 'UNDER_REVIEW']) {
     const tone = reviewStatusTone(status)
-    assert.ok(tone === '' || REVIEW_STATUS_TONES.includes(tone), status + ' -> ' + tone)
+    assert.ok(REVIEW_STATUS_TONES.includes(tone), status + ' -> ' + tone)
   }
 })
 

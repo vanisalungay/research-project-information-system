@@ -65,7 +65,7 @@
               <td>{{ formatEndorsementDate(item.endorsementDate) || '—' }}</td>
               <td>{{ item.issuingDeanName || '—' }}</td>
               <td>
-                <span class="end-badge" :class="endorsementStatusTone(item.status)">{{ endorsementStatusLabel(item.status) }}</span>
+                <span class="end-badge" :class="statusTone(item.status)">{{ certificationStatusLabel(item.status) }}</span>
               </td>
               <td>
                 <template v-if="item.documentAvailable">
@@ -87,14 +87,14 @@ import { onMounted, ref } from 'vue'
 import '@/assets/endorsement.css'
 import {
   documentTypeLabel,
-  endorsementStatusLabel,
-  endorsementStatusTone,
   fetchCertificationDocument,
   fetchCertifications,
   formatEndorsementDate,
   openDocumentBlob,
   saveDocumentBlob,
 } from '@/utils/endorsement.js'
+import { certificationStatusLabel } from '@/utils/statusCatalog.js'
+import { statusTone } from '@/utils/statusTone.js'
 
 /**
  * `open-requests` asks the page to switch back to the request list: the empty state is the

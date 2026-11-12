@@ -46,7 +46,7 @@
           <div class="framework-title">
             <h3>{{ set.frameworkName }} {{ set.coverageStartYear }}–{{ set.coverageEndYear }}</h3>
             <span class="status-badge" :class="statusTone(set.active ? 'ACTIVE' : 'INACTIVE')">
-              {{ set.active ? 'Active' : 'Inactive' }}
+              {{ priorityAgendaStatusLabel(set.active) }}
             </span>
           </div>
           <div class="framework-actions">
@@ -76,7 +76,7 @@
               <td>{{ item.subLabel || '—' }}</td>
               <td>
                 <span class="status-badge" :class="statusTone(item.active ? 'ACTIVE' : 'INACTIVE')">
-                  {{ item.active ? 'Active' : 'Inactive' }}
+                  {{ priorityAgendaStatusLabel(item.active) }}
                 </span>
               </td>
               <td class="actions-cell">
@@ -244,6 +244,7 @@ import AgendaPicker from '@/components/AgendaPicker.vue'
 import { useDialog } from '@/composables/useDialog'
 import { agendaCatalogue, agendaPrefill, frameworkKeys } from '@/utils/agendaPicker'
 import { statusTone } from '@/utils/statusTone.js'
+import { priorityAgendaStatusLabel } from '@/utils/statusCatalog.js'
 
 /**
  * Administrator management of the Priority Agenda master data (section 05 of the

@@ -6,7 +6,7 @@
         <p class="subtitle">Manage and track all your proposal submissions</p>
       </div>
       <div class="top-bar-actions">
-        <button type="button" class="btn-revisions btn-secondary" @click="openRevisions">Revisions</button>
+        <button type="button" class="btn-revisions btn-secondary" @click="openRevisions">View Revisions</button>
         <button type="button" class="btn-new btn-primary" @click="openNewProposal">
           + Create New Proposal
         </button>
@@ -51,11 +51,12 @@
           placeholder="Search by title, ID, college, leader, or date..." />
         <select v-model="statusFilter" aria-label="Filter by status">
           <option value="">All Status</option>
-          <option value="DRAFT">Draft</option>
-          <option value="FOR REVIEW">For Review</option>
-          <option value="UNDER_REVIEW">Under Review</option>
-          <option value="APPROVED">Completed</option>
-          <option value="REJECTED">Rejected</option>
+          <option value="DRAFT">{{ proposalStatusLabel('DRAFT') }}</option>
+          <option value="FOR REVIEW">{{ proposalStatusLabel('FOR REVIEW') }}</option>
+          <option value="UNDER_REVIEW">{{ proposalStatusLabel('UNDER_REVIEW') }}</option>
+          <option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>
+          <option value="COMPLETED">{{ proposalStatusLabel('COMPLETED') }}</option>
+          <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
         </select>
       </div>
     </div>
@@ -107,7 +108,11 @@
               <td class="cell-date">{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
               <td class="cell-actions">
                 <div class="row-actions">
-                  <button type="button" class="btn-view" @click="viewProposal(proposal.id)">{{ proposalActionLabel(proposal.status) }}</button>
+                  <!-- Open (an approved project) is green; View (still in the workflow) is
+                       blue, so the two row actions read apart at a glance. -->
+                  <button type="button" class="btn-view"
+                    :class="isApprovedProject(proposal.status) ? 'action-open' : 'action-view'"
+                    @click="viewProposal(proposal.id)">{{ proposalActionLabel(proposal.status) }}</button>
                   <button v-if="proposal.status === 'DRAFT'" type="button" class="btn-delete btn-reject"
                     @click="deleteProposal(proposal.id)">Delete</button>
                   <span v-else class="action-placeholder" aria-hidden="true"></span>
@@ -136,7 +141,7 @@ import api from '@/utils/api'
 import { endorsementProposalPrefill, fetchEndorsementRequest, isApproved } from '@/utils/endorsement.js'
 import { draftEndorsementFields } from '@/utils/endorsementDocument'
 import { statusTone } from '@/utils/statusTone.js'
-import { proposalActionLabel, proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
+import { isApprovedProject, proposalActionLabel, proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -589,7 +594,8 @@ const refreshOnClose = () => {
 /* ============================================================
    Proponent — My Projects
    Layout and typography only. Status tones stay with assets/status.css and
-   action colours with assets/actions.css; this page never redefines them.
+   action colours with assets/actions.css, except the row Open/View pair below,
+   which gets a page-local green/blue so the two actions are distinguishable.
    ============================================================ */
 
 .proposals-content {
@@ -645,18 +651,18 @@ const refreshOnClose = () => {
 }
 
 /* ===== Header buttons ===== */
-/* Revisions: light purple surface + a visible purple border so it reads as a control.
+/* View Revisions: light orange surface + soft orange border so it reads as a control.
    Hover and press change colours only; the box never changes size or position. */
 .btn-revisions {
   min-height: 42px;
   padding: 0 18px;
-  border: 1px solid #d9c9f2;
+  border: 1px solid #fed7aa;
   border-radius: 10px;
-  background: #f4eefc;
-  color: #5b3e96;
+  background: #fff0db;
+  color: #c2410c;
   font-size: var(--fs-sm, 0.875rem);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(75, 63, 114, 0.06);
+  box-shadow: 0 1px 2px rgba(194, 65, 12, 0.08);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -665,13 +671,13 @@ const refreshOnClose = () => {
 
 .btn-revisions:hover:not(:disabled),
 .btn-revisions:active:not(:disabled) {
-  background: #ece1fa;
-  border-color: #c9b1ea;
-  color: #4f3585;
+  background: #ffedd5;
+  border-color: #fdba74;
+  color: #9a3412;
 }
 
 .btn-revisions:focus-visible {
-  outline: 2px solid #6b5ca5;
+  outline: 2px solid #c2410c;
   outline-offset: 2px;
 }
 
@@ -930,6 +936,69 @@ const refreshOnClose = () => {
 .row-actions .btn-view:active,
 .row-actions .btn-delete:active {
   transform: none;
+}
+
+/* Row action colours, on this page only.
+   The button is one element whose label flips between "Open" (an approved project) and
+   "View" (a proposal still in the workflow); both used to share the global `.btn-view`
+   blue. `action-open` is green and `action-view` is blue so the two read apart without
+   touching assets/actions.css or any other page's buttons. Only colours are set here -
+   the geometry above is unchanged. */
+.row-actions .btn-view.action-open {
+  background: #DCFCE7;
+  border-color: #BBF7D0;
+  color: #15803D;
+}
+
+.row-actions .btn-view.action-open:hover:not(:disabled),
+.row-actions .btn-view.action-open:active:not(:disabled) {
+  background: #BBF7D0;
+  border-color: #BBF7D0;
+  color: #166534;
+}
+
+.row-actions .btn-view.action-view {
+  background: #DBEAFE;
+  border-color: #BFDBFE;
+  color: #1D4ED8;
+}
+
+.row-actions .btn-view.action-view:hover:not(:disabled),
+.row-actions .btn-view.action-view:active:not(:disabled) {
+  background: #BFDBFE;
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+/* Dark theme: actions.css pins `.btn-view` to the dark palette with !important, which
+   would flatten both rows back to the same colour. Keep the pair distinguishable by
+   forcing the same two tones here; the scoped selector is the more specific one. */
+@media (prefers-color-scheme: dark) {
+  .row-actions .btn-view.action-open {
+    background: #DCFCE7 !important;
+    border-color: #BBF7D0 !important;
+    color: #15803D !important;
+  }
+
+  .row-actions .btn-view.action-open:hover:not(:disabled),
+  .row-actions .btn-view.action-open:active:not(:disabled) {
+    background: #BBF7D0 !important;
+    border-color: #BBF7D0 !important;
+    color: #166534 !important;
+  }
+
+  .row-actions .btn-view.action-view {
+    background: #DBEAFE !important;
+    border-color: #BFDBFE !important;
+    color: #1D4ED8 !important;
+  }
+
+  .row-actions .btn-view.action-view:hover:not(:disabled),
+  .row-actions .btn-view.action-view:active:not(:disabled) {
+    background: #BFDBFE !important;
+    border-color: #BFDBFE !important;
+    color: #1E40AF !important;
+  }
 }
 
 .action-placeholder {

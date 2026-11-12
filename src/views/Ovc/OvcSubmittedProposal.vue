@@ -11,9 +11,9 @@
       <input v-model="search" type="text" placeholder="Search proposal..." />
       <select v-model="statusFilter">
         <option value="ALL">All Status</option>
-        <option value="ENDORSED">Endorsed</option>
-        <option value="FOR_OVCAF_APPROVAL">For OVCAF Approval</option>
-        <option value="FOR_OC_APPROVAL">For OC Approval</option>
+        <option value="ENDORSED">{{ proposalStatusLabel('ENDORSED') }}</option>
+        <option value="FOR_OVCAF_APPROVAL">{{ proposalStatusLabel('FOR_OVCAF_APPROVAL') }}</option>
+        <option value="FOR_OC_APPROVAL">{{ proposalStatusLabel('FOR_OC_APPROVAL') }}</option>
       </select>
     </div>
 

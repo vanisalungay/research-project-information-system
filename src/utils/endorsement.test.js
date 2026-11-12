@@ -54,7 +54,7 @@ test('the three business states are labelled, toned and recognized', () => {
   assert.equal(endorsementStatusLabel('PENDING'), 'Pending')
   assert.equal(endorsementStatusLabel('approved'), 'Approved')
   assert.equal(endorsementStatusLabel('REJECTED'), 'Rejected')
-  assert.equal(endorsementStatusTone('PENDING'), 'is-pending')
+  assert.equal(endorsementStatusTone('PENDING'), 'is-amber')
   assert.equal(endorsementStatusTone('APPROVED'), 'is-approved')
   assert.equal(endorsementStatusTone('REJECTED'), 'is-rejected')
 

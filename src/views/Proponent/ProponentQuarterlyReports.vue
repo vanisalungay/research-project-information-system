@@ -6,7 +6,7 @@
         <h1>Quarterly Progress Reports</h1>
         <p class="subtitle">{{ project?.projectTitle || 'Project' }}</p>
       </div>
-      <button class="btn-primary" :disabled="!eligible || allStagesComplete" @click="createNew">
+      <button class="btn-primary" :disabled="!canCreateReport || allStagesComplete" @click="createNew">
         {{ nextStageAction }}
       </button>
     </div>
@@ -15,7 +15,7 @@
 
     <div v-if="loading" class="state">Loading reports...</div>
     <div v-else-if="error" class="state error">{{ error }}</div>
-    <div v-else-if="!eligible" class="state notice">
+    <div v-else-if="!reportingAvailable" class="state notice">
       Quarterly progress reports are only available for projects that are approved for implementation
       and have an issued Special Order (SO).
     </div>
@@ -62,7 +62,7 @@
             </td>
             <td class="cell-status">
               <div class="report-status">
-                <span class="status-badge" :class="statusTone(r.status)">{{ statusLabel(r.status) }}</span>
+                <span class="status-badge" :class="statusTone(r.status)">{{ reportStatusLabel(r.status) }}</span>
               </div>
             </td>
             <td class="cell-actions">
@@ -178,9 +178,9 @@ import TerminalReportForm from '@/components/TerminalReportForm.vue'
 import { downloadReportDocument } from '@/utils/fileDownload'
 import { printTerminalReport } from '@/utils/terminalReportPrint'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { reportStatusLabel } from '@/utils/statusCatalog.js'
 import { hasAnyTerminalContent, hasTerminalReportContent } from '@/utils/terminalReport'
-import { isQuarterlyReportEligible } from '@/utils/quarterlyReport'
+import { isQuarterlyReportEligible, isReportableProject } from '@/utils/quarterlyReport'
 
 const route = useRoute()
 const router = useRouter()
@@ -201,8 +201,10 @@ const terminalDocRef = ref(null)
 const copying = ref(false)
 
 // Quarterly reporting is only available to approved, SO-issued projects - the
-// same rule the backend enforces (utils/quarterlyReport.js).
-const eligible = computed(() => isQuarterlyReportEligible(project.value))
+// same rule the backend enforces (utils/quarterlyReport.js). A COMPLETED project
+// keeps its reports visible but can no longer start a new stage.
+const reportingAvailable = computed(() => isReportableProject(project.value))
+const canCreateReport = computed(() => isQuarterlyReportEligible(project.value))
 
 const allStagesComplete = computed(() => !!nextStage.value?.allStagesComplete)
 
@@ -287,7 +289,7 @@ async function fetchAll() {
     ])
     project.value = p.data
     reports.value = r.data || []
-    if (eligible.value) {
+    if (reportingAvailable.value) {
       await loadNextStage()
     }
   } catch (e) {
@@ -304,7 +306,7 @@ async function fetchAll() {
  * reporting state may have changed while the report was being viewed.
  */
 async function loadNextStage() {
-  if (!eligible.value) {
+  if (!reportingAvailable.value) {
     nextStage.value = null
     return null
   }
@@ -324,7 +326,7 @@ async function loadNextStage() {
 // report content to copy. The backend re-validates everything when the copy is saved.
 const canCopyReport = computed(
   () =>
-    eligible.value &&
+    canCreateReport.value &&
     !allStagesComplete.value &&
     nextStage.value?.reportType === 'QUARTERLY_PROGRESS',
 )
@@ -347,7 +349,7 @@ async function createCopyFrom(report) {
     const stage = await loadNextStage()
     // The modal is closed on every outcome, so a message is never hidden behind it.
     viewing.value = null
-    if (!eligible.value) {
+    if (!canCreateReport.value) {
       actionError.value =
         'Quarterly progress reports are only available for projects that are approved for implementation and have an issued Special Order (SO).'
       return

@@ -56,23 +56,15 @@
     <!-- NOTIFICATIONS LIST -->
     <template v-else>
       <div v-if="filteredNotifications.length > 0">
-        <!-- The proposal updates are gathered under their own heading (collapsed by
-             default) so the page is not one long flat list. Nothing is dropped: the groups
-             always hold every notification the filters left in. -->
+        <!-- Proposal updates sit under their own heading, but every group is fully
+             expanded: no notification content is hidden behind a collapse control. -->
         <section v-for="group in notificationGroups" :key="group.key" class="notification-group">
-          <button
-            v-if="group.collapsible"
-            type="button"
-            class="group-header"
-            :aria-expanded="isGroupOpen(group)"
-            @click="toggleGroup(group)"
-          >
-            <span class="group-chevron" :class="{ open: isGroupOpen(group) }" aria-hidden="true">&rsaquo;</span>
+          <div v-if="group.title" class="group-header">
             <span class="group-title">{{ group.title }}</span>
             <span class="group-count">{{ group.items.length }}</span>
-          </button>
+          </div>
 
-          <div v-show="isGroupOpen(group)" class="notifications-list">
+          <div class="notifications-list">
             <div
               v-for="notification in group.items"
               :key="notification.id"
@@ -93,7 +85,7 @@
           <div class="notification-content">
             <div class="notification-header">
               <h3 class="notification-title">{{ notification.title }}</h3>
-              <span class="notification-time">{{ formatDate(notification.createdAt) }}</span>
+              <span class="notification-time">{{ formatDateTime(notification.createdAt) }}</span>
             </div>
 
             <!-- Call for Proposal notification: the call it is about, with its CURRENT
@@ -118,11 +110,22 @@
 
             <p class="notification-message">{{ notification.message }}</p>
             <div class="notification-footer">
-              <span class="notification-type" :class="getTypeClass(notification.type)">
-                {{ formatType(notification.type) }}
-              </span>
-              <button 
-                v-if="!notification.isRead" 
+              <div class="notification-meta">
+                <span class="notification-type" :class="getTypeClass(notification.type)">
+                  {{ formatType(notification.type) }}
+                </span>
+                <!-- The formatted Proposal ID the backend resolves from the linked proposal's
+                     stored documentId (MSUN-ORPS-DA-028-2026-REV00). It is omitted when the
+                     record has no proposal or no identifier, never replaced by the database id. -->
+                <span
+                  v-if="notificationKind(notification) === 'proposal' && notification.proposalDocumentId"
+                  class="notification-proposal"
+                >
+                  {{ notification.proposalDocumentId }}
+                </span>
+              </div>
+              <button
+                v-if="!notification.isRead"
                 class="btn-mark-read btn-view"
                 @click.stop="markAsRead(notification.id)"
               >
@@ -238,36 +241,23 @@ const filteredNotifications = computed(() => {
 /**
  * The visible notifications, split so the proposal updates sit in their own group. Nothing
  * is dropped: the groups always hold every notification the filters left in, newest first.
+ * The groups are always rendered in full - there is no collapsed or compact state.
  */
 const notificationGroups = computed(() => {
   const { proposalUpdates, others } = groupNotifications(filteredNotifications.value)
   const groups = []
   if (others.length) {
-    groups.push({ key: 'others', title: '', items: others, collapsible: false })
+    groups.push({ key: 'others', title: '', items: others })
   }
   if (proposalUpdates.length) {
     groups.push({
       key: 'proposal',
       title: 'Proposal Updates',
       items: proposalUpdates,
-      collapsible: true,
     })
   }
   return groups
 })
-
-/** The Proposal Updates group stays collapsed until the reader opens it. */
-const showProposalUpdates = ref(false)
-
-/** The Proposal Updates group opens by itself while its kind filter is selected. */
-const isGroupOpen = (group) =>
-  !group.collapsible || showProposalUpdates.value || filterKind.value === 'proposal'
-
-const toggleGroup = (group) => {
-  if (group.collapsible) {
-    showProposalUpdates.value = !showProposalUpdates.value
-  }
-}
 
 const fetchNotifications = async () => {
   loading.value = true
@@ -344,24 +334,17 @@ const handleNotificationClick = (notification) => {
   }
 }
 
-const formatDate = (dateString) => {
+const formatDateTime = (dateString) => {
   if (!dateString) return 'N/A'
   const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
+  if (Number.isNaN(date.getTime())) return 'N/A'
 
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`
-  
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   })
 }
 
@@ -560,23 +543,7 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 700;
   color: #3730a3;
-  cursor: pointer;
   text-align: left;
-}
-
-.group-header:hover {
-  background: #e0e7ff;
-}
-
-.group-chevron {
-  display: inline-block;
-  font-size: 20px;
-  line-height: 1;
-  transition: transform 0.15s;
-}
-
-.group-chevron.open {
-  transform: rotate(90deg);
 }
 
 .group-count {
@@ -670,6 +637,8 @@ onMounted(() => {
   color: #0f172a;
   margin: 0;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .notification-time {
@@ -683,6 +652,8 @@ onMounted(() => {
   color: #475569;
   line-height: 1.6;
   margin: 0 0 12px 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 /* CALL FOR PROPOSAL STATUS */
@@ -723,6 +694,25 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.notification-proposal {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .notification-type {

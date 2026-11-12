@@ -65,7 +65,7 @@
                                 </div>
 
                                 <div class="metric-block">
-                                    <div class="metric-header"><span class="badge is-pending">Pending</span><span
+                                    <div class="metric-header"><span class="badge is-amber">Pending</span><span
                                             class="metric-budget font-mono">{{ formatCurrency(statusBudgets.Pending)
                                             }}</span></div>
                                     <div class="progress-bg">

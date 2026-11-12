@@ -411,6 +411,16 @@ public class ProposalService {
             proposal.setProponent(resolveOwnerForNewProposal(request));
         }
 
+        // Validate the requested status after the access/ownership checks but before any
+        // write. An unsupported value (for example a typo sent by a client or integration)
+        // is a request error, so it fails with the controller's readable 400 instead of
+        // reaching PostgreSQL and appearing as a status foreign-key violation. Both
+        // submission spellings are accepted and stored as FOR REVIEW.
+        String requestedStatus = ProposalStatus.toStoredStatus(request.getStatus());
+        if (requestedStatus != null) {
+            ProposalStatus.requireSupportedStatus(requestedStatus);
+        }
+
         // Proposal Announcement gatekeeper (server-side enforcement): new proposals and
         // final submissions are only accepted while a proposal announcement is active.
         // Revision resubmissions belong to the review lifecycle of an already
@@ -649,11 +659,13 @@ public class ProposalService {
         proposal.setOtherProjectsNumber(request.getOtherProjectsNumber());
 
         // Status. Both submission spellings ("SUBMITTED" from the current client and the
-        // stored "FOR REVIEW") are persisted as FOR REVIEW; every other status is
-        // uppercased exactly as before.
+        // stored "FOR REVIEW") are persisted as FOR REVIEW; every other supported status
+        // is uppercased exactly as before. The value was validated above, so only a
+        // workflow status can reach the entity.
         if (request.getStatus() != null) {
-            String storedStatus = ProposalStatus.toStoredStatus(request.getStatus());
-            proposal.setStatus(storedStatus != null ? storedStatus : proposal.getStatus());
+            if (requestedStatus != null) {
+                proposal.setStatus(requestedStatus);
+            }
         } else if (proposal.getStatus() == null) {
             proposal.setStatus(ProposalStatus.DRAFT);
         }
@@ -953,14 +965,20 @@ public class ProposalService {
 
     @Transactional
     public Proposal updateProposalStatus(Long id, String status) {
-        String upper = status != null ? status.toUpperCase() : null;
-        if (upper != null && REVISION_STATUSES.contains(upper)) {
+        String upper = ProposalStatus.normalize(status);
+        if (upper == null) {
+            throw new IllegalArgumentException("A proposal status is required.");
+        }
+        if (REVISION_STATUSES.contains(upper)) {
             throw new IllegalStateException(
                     "Revision statuses can only be set through the RPS revision workflow.");
         }
+        // Reject an unknown status before loading or changing the proposal. The legacy
+        // SUBMITTED spelling is accepted and stored as FOR REVIEW, exactly like a save.
+        String storedStatus = ProposalStatus.requireSupportedStatus(upper);
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
-        proposal.setStatus(upper);
+        proposal.setStatus(storedStatus);
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
@@ -1453,6 +1471,11 @@ public class ProposalService {
      * the proposal's own save, so it commits (or rolls back) with the status change.
      */
     private void recordStatusChange(Proposal proposal, String fromStatus, String toStatus, String remarks) {
+        // History rows carry the same codes as proposals.status, so they are validated by
+        // the same rule. A baseline-style empty from_status stays NULL.
+        String storedFromStatus = ProposalStatus.optionalSupportedStatus(fromStatus);
+        String storedToStatus = ProposalStatus.requireSupportedStatus(toStatus);
+
         Long actorUserId = currentUser.getUserId();
         String actorRole = currentUser.getRole();
         String actorName = null;
@@ -1464,8 +1487,8 @@ public class ProposalService {
 
         ProposalStatusHistory entry = new ProposalStatusHistory();
         entry.setProposal(proposal);
-        entry.setFromStatus(fromStatus);
-        entry.setToStatus(toStatus);
+        entry.setFromStatus(storedFromStatus);
+        entry.setToStatus(storedToStatus);
         entry.setActorUserId(actorUserId);
         entry.setActorRole(actorRole);
         entry.setActorName(actorName);

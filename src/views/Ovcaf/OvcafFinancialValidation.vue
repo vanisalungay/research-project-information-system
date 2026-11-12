@@ -24,46 +24,111 @@
                     <div class="validation-layout">
                         <!-- Left: Summary + Checklist -->
                         <div class="left-col">
-                            <!-- Proposal Summary -->
+                            <!-- Proposal information card. Every value is read from the saved
+                                 proposal record; the header/document code, leader, college and
+                                 attachment are never sample data. -->
                             <div class="card summary-card">
-                                <span class="proposal-id font-mono">{{ proposal.documentId || '—' }}</span>
-                                <h3 class="proposal-title-text">{{ proposal.title }}</h3>
-                                <div class="meta-chips">
-                                    <div><span class="chip-label">Project Leader</span><span class="chip-value">{{
-                                        projectLeader }}</span></div>
-                                    <div><span class="chip-label">College</span><span class="chip-value">{{
-                                        proposal.college }}</span></div>
-                                </div>
+                                <header class="oc-header">
+                                    <span class="oc-doc-badge">
+                                        <svg class="oc-doc-icon" viewBox="0 0 24 24" width="14" height="14"
+                                            fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                        <span class="oc-doc-code">{{ proposal.documentId || '—' }}</span>
+                                    </span>
+                                    <h3 class="oc-title">{{ proposal.title }}</h3>
+                                </header>
 
-                                <div class="budget-document">
-                                    <span class="chip-label">In-line Item Budget</span>
-                                    <div v-if="budgetFileName" class="budget-document-row">
-                                        <span class="budget-document-name">{{ budgetFileName }}</span>
-                                        <div class="budget-document-actions">
-                                            <button type="button" class="btn btn-view btn-sm"
-                                                @click="viewBudgetDocument">View</button>
-                                            <button type="button" class="btn btn-download btn-sm"
-                                                @click="saveBudgetDocument">Download</button>
+                                <div class="oc-body">
+                                    <section class="oc-info" aria-label="Project information">
+                                        <div class="oc-info-col">
+                                            <span class="oc-label">Project Leader</span>
+                                            <div class="oc-leader">
+                                                <span class="oc-avatar" aria-hidden="true">{{ projectLeaderInitials
+                                                    }}</span>
+                                                <span class="oc-leader-name">{{ projectLeader }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <!-- A stored reference that yielded no printable name is a
-                                         retrieval problem, not a missing document. -->
-                                    <p v-else-if="hasBudgetReference" class="document-error">
-                                        The Line-Item Budget document is attached, but its reference could not be
-                                        resolved.
-                                    </p>
-                                    <!-- The saved record could not be read, so an empty state would be
-                                         an unverified claim rather than a fact. -->
-                                    <p v-else-if="fullProposalError" class="document-error">
-                                        The Line-Item Budget document could not be retrieved.
-                                    </p>
-                                    <p v-else class="budget-document-empty">No Line-Item Budget uploaded</p>
-                                    <p v-if="documentError" class="document-error">{{ documentError }}</p>
-                                </div>
+                                        <div class="oc-info-col">
+                                            <span class="oc-label">College</span>
+                                            <div class="oc-college">
+                                                <span class="oc-college-name">{{ collegeName }}</span>
+                                                <span v-if="collegeAbbreviation" class="oc-college-badge">{{
+                                                    collegeAbbreviation }}</span>
+                                            </div>
+                                        </div>
+                                    </section>
 
-                                <div class="summary-actions">
-                                    <button ref="detailsTriggerRef" type="button" class="btn btn-primary btn-sm"
-                                        @click="openProposalDetails">View Proposal Details</button>
+                                    <section class="oc-budget" aria-label="In-line Item Budget">
+                                        <span class="oc-label">In-line Item Budget</span>
+                                        <div v-if="budgetFileName" class="oc-file">
+                                            <span class="oc-file-icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+                                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <polyline points="14 2 14 8 20 8" />
+                                                    <path d="M8 13h4" />
+                                                    <path d="M8 17h6" />
+                                                </svg>
+                                            </span>
+                                            <div class="oc-file-info">
+                                                <span class="oc-file-name" :title="budgetFileName">{{ budgetFileName
+                                                    }}</span>
+                                                <span class="oc-file-meta">{{ budgetFileType }}</span>
+                                            </div>
+                                            <div class="oc-file-actions">
+                                                <button type="button" class="oc-view-btn"
+                                                    @click="viewBudgetDocument">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+                                                    <span>View</span>
+                                                </button>
+                                                <button type="button" class="oc-download-btn"
+                                                    :aria-label="'Download ' + budgetFileName" title="Download"
+                                                    @click="saveBudgetDocument">
+                                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
+                                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                        <polyline points="7 10 12 15 17 10" />
+                                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- A stored reference that yielded no printable name is a
+                                             retrieval problem, not a missing document. -->
+                                        <p v-else-if="hasBudgetReference" class="oc-file-state oc-file-state-error">
+                                            The Line-Item Budget document is attached, but its reference could not be
+                                            resolved.
+                                        </p>
+                                        <!-- The saved record could not be read, so an empty state would be
+                                             an unverified claim rather than a fact. -->
+                                        <p v-else-if="fullProposalError" class="oc-file-state oc-file-state-error">
+                                            The Line-Item Budget document could not be retrieved.
+                                        </p>
+                                        <p v-else class="oc-file-state">No Line-Item Budget uploaded</p>
+                                        <p v-if="documentError" class="oc-file-state oc-file-state-error">
+                                            {{ documentError }}</p>
+                                    </section>
+
+                                    <button ref="detailsTriggerRef" type="button" class="oc-details-btn"
+                                        @click="openProposalDetails">
+                                        <span>View Proposal Details</span>
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
+                                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                            stroke-linejoin="round" aria-hidden="true">
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                            <polyline points="12 5 19 12 12 19" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
@@ -96,37 +161,38 @@
                                         <span class="form-label section-label">Select Administrative Action</span>
                                         <div class="radio-list">
                                             <label class="radio-option"
-                                                :class="{ 'selected approve': decision === 'Approved & Endorsed' }">
-                                                <input type="radio" v-model="decision" value="Approved & Endorsed"
+                                                :class="{ 'selected approve': decision === 'APPROVED_ENDORSED' }">
+                                                <input type="radio" v-model="decision" value="APPROVED_ENDORSED"
                                                     class="sr-only" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title approve-title">✅ Approve &amp;
-                                                        Endorse</span>
+                                                    <span class="option-title approve-title">✅ {{
+                                                        ovcafDecisionLabel('APPROVED_ENDORSED') }}</span>
                                                     <span class="option-desc">Budget meets all compliance conditions.
                                                         Proposal will be endorsed back to RII with OVCAF
                                                         certification.</span>
                                                 </div>
                                             </label>
                                             <label class="radio-option"
-                                                :class="{ 'selected return': decision === 'Returned for Revision' }">
-                                                <input type="radio" v-model="decision" value="Returned for Revision"
+                                                :class="{ 'selected return': decision === 'RETURNED_FOR_REVISION' }">
+                                                <input type="radio" v-model="decision" value="RETURNED_FOR_REVISION"
                                                     class="sr-only" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title return-title">🔄 Return for
-                                                        Revision</span>
+                                                    <span class="option-title return-title">🔄 {{
+                                                        ovcafDecisionLabel('RETURNED_FOR_REVISION') }}</span>
                                                     <span class="option-desc">Budget requires corrections. Proposal is
                                                         sent back with revision instructions.</span>
                                                 </div>
                                             </label>
                                             <label class="radio-option"
-                                                :class="{ 'selected reject': decision === 'Rejected' }">
-                                                <input type="radio" v-model="decision" value="Rejected"
+                                                :class="{ 'selected reject': decision === 'REJECTED' }">
+                                                <input type="radio" v-model="decision" value="REJECTED"
                                                     class="sr-only" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title reject-title">❌ Reject Proposal</span>
+                                                    <span class="option-title reject-title">❌ {{
+                                                        ovcafDecisionLabel('REJECTED') }}</span>
                                                     <span class="option-desc">Permanently deny the financial validation
                                                         request.</span>
                                                 </div>
@@ -138,7 +204,7 @@
                                     <div class="form-group mt-6">
                                         <label for="validation-remarks" class="form-label section-label">
                                             Evaluator Remarks / Instructions
-                                            <span v-if="decision !== 'Approved & Endorsed'" class="required-mark">*
+                                            <span v-if="decision !== 'APPROVED_ENDORSED'" class="required-mark">*
                                                 Required</span>
                                         </label>
                                         <textarea id="validation-remarks" v-model="remarks" rows="5"
@@ -179,7 +245,7 @@
                         <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
                             <div class="modal-box card">
                                 <div class="modal-header">
-                                    <h4 class="modal-title">Confirm: {{ decision }}</h4>
+                                    <h4 class="modal-title">Confirm: {{ ovcafDecisionLabel(decision) }}</h4>
                                     <button @click="showModal = false" class="modal-close-btn">&times;</button>
                                 </div>
                                 <p class="modal-message">{{ modalMessage }}</p>
@@ -236,8 +302,10 @@ import api from '@/utils/api';
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
 import OvcafProposalDetails from './OvcafProposalDetails.vue';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
+import { collegeDisplayParts, fileTypeDescription, initialsFromName } from '@/utils/proposalCardDisplay';
 import { downloadUploadedFile } from '@/utils/fileDownload';
 import { getScrollContainer } from '@/utils/scrollReset';
+import { ovcafDecisionLabel } from '@/utils/statusCatalog.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -253,7 +321,7 @@ const proposal = ref(null);
 // card can never disagree with the viewer about the same proposal.
 const fullProposal = ref(null);
 const fullProposalError = ref(false);
-const decision = ref('Approved & Endorsed');
+const decision = ref('APPROVED_ENDORSED');
 const remarks = ref('');
 const formError = ref('');
 const showModal = ref(false);
@@ -363,6 +431,15 @@ const budgetFileName = computed(() => budgetDocumentName(budgetSource.value));
 const hasBudgetReference = computed(() => Boolean(budgetDocumentPath(budgetSource.value)));
 const documentError = ref('');
 
+// ── Card presentation ─────────────────────────────
+// The card's avatar, college badge and file type are derived from the same saved values
+// it already shows; nothing here invents a person, a college or a document.
+const projectLeaderInitials = computed(() => initialsFromName(projectLeader.value));
+const collegeParts = computed(() => collegeDisplayParts(proposal.value?.college));
+const collegeName = computed(() => collegeParts.value.name);
+const collegeAbbreviation = computed(() => collegeParts.value.abbreviation);
+const budgetFileType = computed(() => fileTypeDescription(budgetFileName.value));
+
 // An implementation approval is only valid once OC has issued the Special Order.
 // The backend enforces the same rule; showing it here explains why approval is
 // unavailable instead of letting the reviewer submit and receive an error.
@@ -370,7 +447,7 @@ const hasIssuedSo = computed(() => {
     const value = fullProposal.value ? fullProposal.value.soNumber : proposal.value?.soNumber;
     return typeof value === 'string' && value.trim() !== '';
 });
-const approvalBlocked = computed(() => decision.value === 'Approved & Endorsed' && !hasIssuedSo.value);
+const approvalBlocked = computed(() => decision.value === 'APPROVED_ENDORSED' && !hasIssuedSo.value);
 
 // View opens an in-page modal with the actual uploaded document; the user stays on
 // this evaluation page (no navigation, no new tab) and nothing is uploaded again.
@@ -403,13 +480,13 @@ const saveBudgetDocument = async () => {
 // ── Computed ──────────────────────────────────────
 const isAllChecked = computed(() => Object.values(checklist).every(v => v === true));
 const confirmBtnClass = computed(() => {
-    if (decision.value.includes('Approved')) return 'btn-success';
-    if (decision.value.includes('Returned')) return 'btn-warning';
+    if (decision.value === 'APPROVED_ENDORSED') return 'btn-success';
+    if (decision.value === 'RETURNED_FOR_REVISION') return 'btn-warning';
     return 'btn-danger';
 });
 const modalMessage = computed(() => {
-    if (decision.value.includes('Approved')) return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and the proposal will be approved for implementation with or without funding.`;
-    if (decision.value.includes('Returned')) return `You are about to return "${proposal.value?.title}" for budget revision. The proponent will be notified with your remarks.`;
+    if (decision.value === 'APPROVED_ENDORSED') return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and the proposal will be approved for implementation with or without funding.`;
+    if (decision.value === 'RETURNED_FOR_REVISION') return `You are about to return "${proposal.value?.title}" for budget revision. The proponent will be notified with your remarks.`;
     return `You are about to permanently reject "${proposal.value?.title}". This action cannot be undone.`;
 });
 
@@ -501,11 +578,11 @@ const handleSubmit = () => {
         formError.value = 'No Special Order (SO) has been issued for this proposal. The Office of the Chancellor must record the SO before implementation approval.';
         return;
     }
-    if (decision.value === 'Approved & Endorsed' && !isAllChecked.value) {
+    if (decision.value === 'APPROVED_ENDORSED' && !isAllChecked.value) {
         formError.value = 'All compliance checklist items must be verified before approving.';
         return;
     }
-    if (decision.value !== 'Approved & Endorsed' && !remarks.value.trim()) {
+    if (decision.value !== 'APPROVED_ENDORSED' && !remarks.value.trim()) {
         formError.value = 'Remarks are required when returning or rejecting a proposal.';
         return;
     }
@@ -518,13 +595,10 @@ const submitDecision = async () => {
     submitLoading.value = true;
 
     try {
-        // Map frontend decision to backend decision
-        const backendDecision = decision.value === 'Approved & Endorsed' ? 'APPROVED_ENDORSED' :
-            decision.value === 'Returned for Revision' ? 'RETURNED_FOR_REVISION' :
-                'REJECTED';
-
+        // The radio model already holds the backend decision value; the canonical
+        // wording ("Approved") is display-only.
         const payload = {
-            decision: backendDecision,
+            decision: decision.value,
             remarks: remarks.value,
             budgetComplete: checklist.budgetComplete,
             budgetComputationCorrect: checklist.budgetComputationCorrect,
@@ -552,7 +626,7 @@ const submitDecision = async () => {
 };
 
 const resetForm = () => {
-    decision.value = 'Approved & Endorsed';
+    decision.value = 'APPROVED_ENDORSED';
     remarks.value = '';
     formError.value = '';
     Object.keys(checklist).forEach(k => { checklist[k] = false; });
@@ -601,123 +675,455 @@ const resetForm = () => {
 }
 
 
-/* ---------------- Summary ---------------- */
+/* ---------------- Proposal information card ---------------- */
+/* Reference-led redesign: navy header with the document code and proposal title, a light
+   project-information panel, the uploaded Line-Item Budget row, and one full-width action.
+   The card keeps its existing data bindings and handlers; only its presentation changed. */
 
-.proposal-id {
-    font-family: ui-monospace, monospace;
-    font-size: .95rem;
-    font-weight: 700;
-    color: #64748b;
+.summary-card {
+    --oc-navy: #211b3d;
+    --oc-yellow: #ffc928;
+    --oc-royal: #3155f5;
+    --oc-ink: #1b2140;
+    --oc-muted: #7c86a8;
+    --oc-panel: #f5f6fc;
+    --oc-panel-border: #e5e8f3;
+    --oc-file-border: #e7eaf3;
+
+    overflow: hidden;
+    padding: 0;
+    border: none;
+    border-left: none;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(24, 32, 63, .12), 0 2px 6px rgba(24, 32, 63, .05);
 }
 
-.proposal-title-text {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.25;
-    color: #0f172a;
-    margin: .5rem 0 1.4rem;
+.oc-header {
+    position: relative;
+    padding: 24px 22px 22px;
+    background: var(--oc-navy);
 }
 
-.meta-chips {
+/* The 3px yellow divider along the bottom edge of the header. */
+.oc-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--oc-yellow);
+}
+
+.oc-doc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    color: #d9ddf1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .7rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: .03em;
+}
+
+.oc-doc-icon {
+    flex: 0 0 auto;
+    opacity: .8;
+}
+
+/* The full document code is preserved; it wraps inside the pill instead of overflowing. */
+.oc-doc-code {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.oc-title {
+    margin: 16px 0 0;
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: .01em;
+    overflow-wrap: anywhere;
+}
+
+.oc-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 22px;
+    background: transparent;
+}
+
+/* ---------------- Project information panel ---------------- */
+
+.oc-info {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 22px;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 22px;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    padding: 16px;
+    border: 1px solid var(--oc-panel-border);
+    border-radius: 13px;
+    background: var(--oc-panel);
 }
 
-.chip-label {
+.oc-info-col {
+    min-width: 0;
+}
+
+.oc-label {
     display: block;
-    font-size: .72rem;
+    margin-bottom: 9px;
+    color: var(--oc-muted);
+    font-size: .67rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: .09em;
     text-transform: uppercase;
-    letter-spacing: .08em;
-    font-weight: 700;
-    color: #94a3b8;
-    margin-bottom: 5px;
 }
 
-.chip-value {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #334155;
+.oc-leader {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
 }
 
-.primary-text {
-    color: #8b0000;
+.oc-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 43px;
+    height: 43px;
+    border-radius: 50%;
+    background: var(--oc-navy);
+    color: var(--oc-yellow);
+    font-size: .84rem;
     font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.oc-leader-name,
+.oc-college-name {
+    color: var(--oc-ink);
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.oc-leader-name {
+    min-width: 0;
+}
+
+.oc-college {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+
+.oc-college-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #e8edff;
+    color: #2563eb;
+    font-size: .66rem;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: .05em;
 }
 
 /* ---------------- In-line Item Budget ---------------- */
 
-.budget-document {
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px solid #e5e7eb;
+.oc-budget {
+    display: flex;
+    flex-direction: column;
 }
 
-.budget-document-row {
+.oc-file {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 11px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--oc-file-border);
+    border-radius: 12px;
+    background: #fff;
 }
 
-.budget-document-actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.budget-document-actions .btn {
-    min-width: 92px;
-    justify-content: center;
-}
-
-@media (max-width: 520px) {
-    .budget-document-row {
-        align-items: flex-start;
-    }
-
-    .budget-document-actions {
-        width: 100%;
-    }
-
-    .budget-document-actions .btn {
-        flex: 1 1 110px;
-    }
-}
-
-.budget-document-name {
+.oc-file-icon {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border: 1px solid #d5dce6;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
-    background: #f8fafc;
-    color: #334155;
-    font-size: .92rem;
-    font-weight: 600;
-    word-break: break-word;
+    background: #fff0ee;
+    color: #ef4444;
 }
 
-.budget-document-empty {
-    color: #94a3b8;
-    font-size: .92rem;
-    font-style: italic;
-}
-
-.document-error {
-    margin-top: 10px;
-    color: #dc2626;
-    font-size: .85rem;
-}
-
-.summary-actions {
-    margin-top: 20px;
+.oc-file-info {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1 1 130px;
+    min-width: 0;
+}
+
+/* Long upload names ellipsize; the actions never get pushed out of the container. */
+.oc-file-name {
+    color: var(--oc-ink);
+    font-size: .8rem;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.oc-file-meta {
+    color: var(--oc-muted);
+    font-size: .7rem;
+    line-height: 1.4;
+}
+
+.oc-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.oc-view-btn,
+.oc-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    border-radius: 9px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.oc-view-btn {
+    gap: 6px;
+    padding: 0 14px;
+    border: none;
+    background: #e8edff;
+    color: var(--oc-royal);
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.oc-view-btn:hover {
+    background: #dbe2ff;
+}
+
+.oc-download-btn {
+    width: 42px;
+    padding: 0;
+    border: 1px solid #e0e5f2;
+    background: #fff;
+    color: var(--oc-ink);
+}
+
+.oc-download-btn:hover {
+    border-color: #cfd7ea;
+    background: #f6f8fd;
+}
+
+.oc-view-btn:active,
+.oc-download-btn:active {
+    transform: translateY(1px);
+}
+
+.oc-view-btn:focus-visible,
+.oc-download-btn:focus-visible,
+.oc-details-btn:focus-visible {
+    outline: 2px solid var(--oc-royal);
+    outline-offset: 2px;
+}
+
+.oc-file-state {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px dashed var(--oc-panel-border);
+    border-radius: 12px;
+    color: var(--oc-muted);
+    font-size: .82rem;
+}
+
+.oc-file-state-error {
+    margin-top: 8px;
+    border-style: solid;
+    color: #dc2626;
+}
+
+/* ---------------- View Proposal Details ---------------- */
+
+.oc-details-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 49px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 11px;
+    background: var(--oc-royal);
+    color: #fff;
+    font-family: inherit;
+    font-size: .92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.oc-details-btn:hover {
+    background: #2846de;
+    box-shadow: 0 10px 20px rgba(49, 85, 245, .22);
+}
+
+.oc-details-btn:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+@media (max-width: 560px) {
+    .oc-info {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .oc-header {
+        padding: 20px 17px 19px;
+    }
+
+    .oc-body {
+        padding: 17px;
+    }
+
+    .oc-file-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+}
+
+/* The card keeps the reference palette in dark mode too; base.css otherwise repaints
+   every card/section/span, which would erase the navy header and the light panel. */
+@media (prefers-color-scheme: dark) {
+    .summary-card {
+        border: none !important;
+        background: #1e293b !important;
+    }
+
+    .oc-title {
+        color: #f8fafc !important;
+    }
+
+    .oc-doc-code {
+        color: #e2e8f0 !important;
+    }
+
+    .oc-label {
+        color: #a9b4cf !important;
+    }
+
+    .oc-avatar {
+        color: var(--oc-yellow) !important;
+    }
+
+    .oc-leader-name,
+    .oc-college-name {
+        color: #f1f5f9 !important;
+    }
+
+    .oc-info {
+        border-color: #334155 !important;
+        background: #242c42 !important;
+    }
+
+    .oc-college-badge {
+        background: #2b3a63;
+        color: #93b4ff !important;
+    }
+
+    .oc-file {
+        border-color: #334155 !important;
+        background: #1b2436 !important;
+    }
+
+    .oc-file-icon {
+        background: #38242b;
+        color: #fb7185 !important;
+    }
+
+    .oc-file-name {
+        color: #f1f5f9 !important;
+    }
+
+    .oc-file-meta {
+        color: #9aa6c0 !important;
+    }
+
+    .oc-file-state {
+        border-color: #3b475f;
+        color: #a9b4cf !important;
+    }
+
+    .oc-file-state-error {
+        color: #f87171 !important;
+    }
+
+    .oc-view-btn {
+        background: #26345a;
+        color: #93b4ff !important;
+    }
+
+    .oc-view-btn:hover {
+        background: #2e3f6b;
+    }
+
+    .oc-download-btn {
+        border-color: #3b475f;
+        background: #1e293b;
+        color: #93b4ff !important;
+    }
+
+    .oc-download-btn:hover {
+        background: #26324a;
+    }
+
+    .oc-details-btn {
+        background: #3155f5 !important;
+        color: #fff !important;
+    }
+
+    /* base.css forces every span to near-white; keep nested labels on their button. */
+    .oc-view-btn span,
+    .oc-details-btn span {
+        color: inherit !important;
+    }
 }
 
 .btn-sm {

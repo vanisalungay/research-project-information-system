@@ -1,35 +1,26 @@
 /**
  * statusLabel.test.js
  * ---------------------------------------------------------------------------
- * Verifies the one formatter every role uses to display a status.
+ * Verifies the generic fallback formatter.
  *
- * Stored status codes stay uppercase and underscore-separated; only the text
- * rendered on screen is Title Case. These tests pin the approved label for every
- * known status, the acronyms that must stay uppercase, the generic fallback, and
- * the rule that no proposal status can render with an underscore or in ALL CAPS.
+ * Category labels now live in statusCatalog.js and every screen that knows its
+ * category must use that category's helper. This formatter is only the title-case
+ * fallback for a code with no category entry (and the translation used inside the
+ * category helpers). These tests pin the acronyms that must stay uppercase, the
+ * minor-word rule, the fallback, and the rule that no proposal status can render
+ * with an underscore or in ALL CAPS.
  *
  * Run with: npm test
  */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import {
-  KNOWN_STATUS_LABELS,
-  normalizeStatusKey,
-  statusLabel,
-} from './statusLabel.js'
+import { normalizeStatusKey, statusLabel } from './statusLabel.js'
 import { PROPOSAL_STATUSES, proposalStatusLabel } from './proposalStatus.js'
 
-test('every known status resolves to its approved label', () => {
-  for (const [key, label] of Object.entries(KNOWN_STATUS_LABELS)) {
-    assert.equal(statusLabel(key), label, key)
-  }
-})
-
-test('formatting a label again leaves it unchanged', () => {
-  for (const [key, label] of Object.entries(KNOWN_STATUS_LABELS)) {
-    assert.equal(statusLabel(label), label, `${key} -> ${label} must be idempotent`)
-  }
+test('formatting a fallback label again leaves it unchanged', () => {
+  assert.equal(statusLabel('SOMETHING_NEW'), 'Something New')
+  assert.equal(statusLabel('Something New'), 'Something New')
   for (const value of ['Something New', 'RPS Endorse', 'Approved/Released', 'N/A']) {
     assert.equal(statusLabel(statusLabel(value)), statusLabel(value), value)
   }
@@ -57,13 +48,15 @@ test('institutional acronyms stay uppercase', () => {
   assert.equal(statusLabel('GAD'), 'GAD')
 })
 
-test('SUBMITTED is generic in the formatter and For Review in a proposal context', () => {
+test('the fallback is generic: it never applies a category meaning', () => {
+  // SUBMITTED is a proposal state ("For RPS Review") and a report state ("Submitted").
+  // The fallback must not pick either; each screen uses its category helper.
   assert.equal(statusLabel('SUBMITTED'), 'Submitted')
-  assert.equal(proposalStatusLabel('SUBMITTED'), 'For Review')
-  assert.equal(proposalStatusLabel('FOR REVIEW'), 'For Review')
-})
+  assert.equal(proposalStatusLabel('SUBMITTED'), 'For RPS Review')
+  assert.equal(proposalStatusLabel('FOR REVIEW'), 'For RPS Review')
 
-test('the global formatter keeps APPROVED as Approved for non-proposal domains', () => {
+  // APPROVED means an account is active, a proposal is approved for implementation
+  // and a decision is approved. The fallback can only title-case the token.
   assert.equal(statusLabel('APPROVED'), 'Approved')
   assert.equal(statusLabel('COMPLETED'), 'Completed')
 })
@@ -105,8 +98,9 @@ test('every proposal status is displayed without underscores or ALL CAPS', () =>
   }
 })
 
-test('every known label is free of underscores and ALL CAPS', () => {
-  for (const label of Object.values(KNOWN_STATUS_LABELS)) {
+test('the fallback never leaves underscores or ALL CAPS in a generated label', () => {
+  for (const status of ['SOMETHING_NEW', 'RPS_ENDORSE', 'REC_ENDORSE', 'N_A']) {
+    const label = statusLabel(status)
     assert.ok(!label.includes('_'), `label contains an underscore: ${label}`)
     assert.notEqual(label, label.toUpperCase(), `label is ALL CAPS: ${label}`)
   }

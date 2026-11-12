@@ -107,6 +107,21 @@
                                 <blockquote class="chancellor-quote">"{{ proposal.ocRemarks }}"</blockquote>
                             </div>
 
+                            <!-- Fund release: the budget is approved, but the project is not
+                                 approved for implementation until the release is recorded. -->
+                            <div v-if="!embedded && canReleaseFunds" class="card mt-6 release-card">
+                                <h4 class="card-title">Fund Release</h4>
+                                <p class="release-note">
+                                    The budget has been approved. Record the fund release to complete
+                                    the approval chain; the proposal then becomes Implementation Approved.
+                                </p>
+                                <p v-if="releaseError" class="document-error">{{ releaseError }}</p>
+                                <button type="button" class="btn btn-primary" :disabled="releasing"
+                                    @click="releaseFunds">
+                                    {{ releasing ? 'Recording release...' : 'Record Fund Release' }}
+                                </button>
+                            </div>
+
                             <!-- Validation Result (completed proposals) -->
                             <div v-if="!isPending" class="card mt-6">
                                 <h4 class="card-title">Validation Result</h4>
@@ -170,6 +185,7 @@ import { downloadProposalRecord } from '@/utils/proposalDetailsDocument';
 import { statusTone } from '@/utils/statusTone.js';
 import { proposalStatusLabel } from '@/utils/proposalStatus.js';
 import { normalizeStatusKey } from '@/utils/statusLabel.js';
+import { ovcafDecisionLabel } from '@/utils/statusCatalog.js';
 
 const route = useRoute();
 
@@ -219,6 +235,13 @@ watch(showBudgetPreview, (open) => emit('preview-change', open));
 const isPending = computed(() =>
     normalizeStatusKey(proposal.value?.status) === 'FOR_OVCAF_APPROVAL'
 );
+// The budget is approved and only the release is outstanding. Recording it is what
+// moves the proposal to APPROVED (Implementation Approved).
+const canReleaseFunds = computed(() =>
+    normalizeStatusKey(proposal.value?.status) === 'READY_FOR_RELEASE'
+);
+const releasing = ref(false);
+const releaseError = ref('');
 // The header follows the exact saved record the actual proposal viewer renders
 // (GET /api/proposals/{id}); the OVCAF response is only the fallback while it loads.
 const budgetSource = computed(() => fullProposal.value || proposal.value);
@@ -248,6 +271,7 @@ const fetchProposal = async () => {
         sectionsError.value = '';
         documentError.value = '';
         downloadError.value = '';
+        releaseError.value = '';
         fullProposal.value = null;
         showBudgetPreview.value = false;
         const id = proposalKey.value;
@@ -307,6 +331,32 @@ const loadFullProposal = async (id) => {
     }
 };
 
+/**
+ * Record the budget release. The backend owns the transition: a proposal only becomes
+ * APPROVED (Implementation Approved) after OVCAF's budget approval and this release are
+ * both persisted. The record is reloaded afterwards so the badge and timeline show the
+ * saved status instead of a locally assumed one.
+ */
+const releaseFunds = async () => {
+    const id = proposal.value?.id;
+    if (!id || releasing.value) return;
+    if (!window.confirm(
+        'Record the release of funds for this project? This completes its approval for implementation.'
+    )) return;
+    releasing.value = true;
+    releaseError.value = '';
+    try {
+        await api.put(`/api/ovcaf/proposals/${id}/release`);
+        await fetchProposal();
+    } catch (err) {
+        console.error('Error recording the fund release:', err);
+        releaseError.value = err.response?.data?.error
+            || 'Failed to record the fund release. Please try again.';
+    } finally {
+        releasing.value = false;
+    }
+};
+
 // Build history from proposal data
 const buildHistory = (p) => {
     const history = [];
@@ -319,7 +369,8 @@ const buildHistory = (p) => {
             notes: null
         });
     }
-    if (p.status === 'FOR_OVCAF_APPROVAL' || p.status === 'APPROVED' || p.status === 'FOR_OC_APPROVAL') {
+    if (['FOR_OVCAF_APPROVAL', 'APPROVED', 'FOR_OC_APPROVAL', 'READY_FOR_RELEASE', 'RELEASED']
+        .includes(p.status)) {
         history.push({
             stage: 'OVCAF',
             action: 'Received for Financial Validation',
@@ -331,7 +382,7 @@ const buildHistory = (p) => {
     if (p.ovcafDecision) {
         history.push({
             stage: 'OVCAF',
-            action: p.ovcafDecision,
+            action: ovcafDecisionLabel(p.ovcafDecision) || p.ovcafDecision,
             user: 'OVCAF Evaluator',
             date: new Date(p.updatedAt).toLocaleString('en-PH'),
             notes: p.ovcafRemarks || null

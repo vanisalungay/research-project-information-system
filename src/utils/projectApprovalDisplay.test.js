@@ -1,17 +1,20 @@
 /**
  * projectApprovalDisplay.test.js
  * ---------------------------------------------------------------------------
- * Guards the two presentation rules final approval introduces:
+ * Guards the canonical approval naming on the proposal listing pages:
  *
- *   - a proposal stored as APPROVED is shown as a completed project ("Completed"),
- *     never as a pending "Approved" proposal;
- *   - its row action reads "Open" instead of "View", while every earlier status keeps
- *     "View".
+ *   - a proposal stored as APPROVED is shown as "Implementation Approved",
+ *     never as "Completed";
+ *   - a proposal stored as COMPLETED is shown as "Completed" and has its own
+ *     filter option, so the two states are never merged;
+ *   - filters keep the raw stored value while their text comes from the shared
+ *     proposal label;
+ *   - every listing page still renders its row action through the shared helper.
  *
- * The pages are read as text - the technique ovcafProposalDisplay.test.js and the dashboard
- * guard tests already use - because they import Vite `?inline` assets Node cannot resolve.
- * The wording rule itself is unit-tested in proposalStatus.test.js; this file checks that
- * every listing page actually goes through the shared helper.
+ * The pages are read as text - the technique ovcafProposalDisplay.test.js and the
+ * dashboard guard tests already use - because they import Vite `?inline` assets Node
+ * cannot resolve. The wording rule itself is unit-tested in proposalStatus.test.js;
+ * this file checks that every listing page actually goes through the shared helpers.
  *
  * Run with: npm test
  */
@@ -41,53 +44,93 @@ const LISTING_PAGES = [
   ['RpsEndorsedProPanel.vue', RPS_ENDORSED],
 ]
 
-test('the proposal status filter offers Completed instead of Approved', () => {
+/**
+ * The status-filter select only. RpsProposalMonitoring also offers "Completed" as a
+ * Current Office value, so the status-label guards must not read the office select.
+ */
+function statusFilterSource(source) {
+  const marker = source.indexOf('id="status-filter"')
+  if (marker === -1) return source
+  const open = source.lastIndexOf('<select', marker)
+  const close = source.indexOf('</select>', marker)
+  return open === -1 || close === -1 ? source : source.slice(open, close)
+}
+
+test('the status filters take their text from the canonical label', () => {
   for (const [name, source] of [
     ['ProponentProposals.vue', PROPONENT_PROPOSALS],
     ['ProponentProposalMonitoring.vue', PROPONENT_MONITORING],
     ['RpsProposalMonitoring.vue', RPS_MONITORING],
     ['OvcafProposalInbox.vue', OVCAF_INBOX],
   ]) {
+    const statusFilter = statusFilterSource(source)
     assert.ok(
-      source.includes('<option value="APPROVED">Completed</option>'),
-      name + ' must label the APPROVED filter Completed',
+      statusFilter.includes(`<option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>`),
+      name + ' must render the APPROVED filter through proposalStatusLabel',
     )
-    assert.ok(!/>\s*Approved\s*<\/option>/.test(source), name + ' must not offer an Approved option')
+    assert.ok(
+      !statusFilter.includes('<option value="APPROVED">Completed</option>'),
+      name + ' must not label the APPROVED filter Completed',
+    )
+    assert.ok(!/>\s*Approved\s*<\/option>/.test(statusFilter), name + ' must not hardcode an Approved option')
+    assert.ok(
+      !/>\s*Completed\s*<\/option>/.test(statusFilter),
+      name + ' must not hardcode a Completed option',
+    )
   }
 })
 
-test('the monitoring filter has one Completed option, backed by the alias', () => {
-  const completedOptions = PROPONENT_MONITORING.match(/>\s*Completed\s*<\/option>/g) || []
-  assert.equal(completedOptions.length, 1, 'Completed must be offered exactly once')
-  assert.ok(!PROPONENT_MONITORING.includes('value="COMPLETED"'), 'the duplicate COMPLETED option is gone')
+test('COMPLETED has its own option wherever it is offered', () => {
+  for (const [name, source] of [
+    ['ProponentProposals.vue', PROPONENT_PROPOSALS],
+    ['ProponentProposalMonitoring.vue', PROPONENT_MONITORING],
+    ['RpsProposalMonitoring.vue', RPS_MONITORING],
+  ]) {
+    assert.ok(
+      source.includes(`<option value="COMPLETED">{{ proposalStatusLabel('COMPLETED') }}</option>`),
+      name + ' must offer the stored COMPLETED status separately',
+    )
+  }
+
+  // The OVCAF inbox does not show completed proposals, so it offers no COMPLETED option.
+  assert.ok(!OVCAF_INBOX.includes('value="COMPLETED"'), 'the OVCAF inbox must not add a COMPLETED filter')
+})
+
+test('the monitoring timeline labels its final stage through the helper', () => {
   assert.ok(
-    PROPONENT_MONITORING.includes("const APPROVED_STAGE = { key: 'APPROVED', label: 'Completed' }"),
-    'the final timeline stage is labelled Completed',
+    PROPONENT_MONITORING.includes(
+      "const APPROVED_STAGE = { key: 'APPROVED', label: proposalStatusLabel('APPROVED') }",
+    ),
+    'the final timeline stage must use the canonical APPROVED label',
+  )
+  assert.ok(
+    PROPONENT_MONITORING.includes(
+      "const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: proposalStatusLabel('FOR_OVCAF_APPROVAL') }",
+    ),
+    'the OVCAF timeline stage must use the canonical label',
+  )
+  assert.ok(
+    PROPONENT_MONITORING.includes("POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']"),
+    'post-approval progress keeps RELEASED and COMPLETED distinct from APPROVED',
   )
 })
 
-test('the budget filters read Completed and still select the stored APPROVED rows', () => {
-  assert.match(
-    RPS_BUDGET,
-    /filters:\s*\[[^\]]*"Completed"/,
-    'the Budget Processing filter button must read Completed',
-  )
-  assert.ok(
-    RPS_BUDGET.includes('"Completed": "APPROVED"'),
-    'the Completed button must still map to the stored APPROVED status',
-  )
-  assert.ok(!RPS_BUDGET.includes('"Approved": "APPROVED"'), 'no Approved status-map key remains')
-
-  assert.match(
-    RPS_STAFF,
-    /budgetFilters\s*=\s*\[[^\]]*'Completed'/,
-    'the staff dashboard budget filter must read Completed',
-  )
-  assert.ok(
-    RPS_STAFF.includes("'Completed': 'APPROVED'"),
-    'the Completed chip must still map to the stored APPROVED status',
-  )
-  assert.ok(!RPS_STAFF.includes("'Approved': 'APPROVED'"), 'no Approved status-map key remains')
+test('the budget filters show canonical labels and select the raw stored status', () => {
+  for (const [name, source] of [
+    ['RpsBudgetProcessing.vue', RPS_BUDGET],
+    ['RpsStaffDashboard.vue', RPS_STAFF],
+  ]) {
+    assert.ok(
+      source.includes("[proposalStatusLabel('APPROVED')]: 'APPROVED'"),
+      name + ' must key the APPROVED chip by its canonical label and keep the raw value',
+    )
+    assert.ok(
+      source.includes("[proposalStatusLabel('RETURNED')]: 'RETURNED'"),
+      name + ' must key the RETURNED chip by its canonical label and keep the raw value',
+    )
+    assert.ok(!source.includes("'Completed': 'APPROVED'"), name + ' must not alias Completed to APPROVED')
+    assert.ok(!source.includes('"Completed": "APPROVED"'), name + ' must not alias Completed to APPROVED')
+  }
 })
 
 test('every listing page renders its row action through the shared helper', () => {

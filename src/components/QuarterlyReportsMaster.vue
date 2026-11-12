@@ -43,7 +43,7 @@
               <td class="report-date">{{ formatDate(r.submittedAt) || '—' }}</td>
               <td>
                 <span class="status-badge" :class="statusTone(r.status)">
-                  {{ statusLabel(r.status) }}
+                  {{ reportStatusLabel(r.status) }}
                 </span>
               </td>
               <td class="cell-actions">
@@ -153,7 +153,7 @@ import TerminalReportForm from '@/components/TerminalReportForm.vue'
 import { printTerminalReport } from '@/utils/terminalReportPrint'
 import { hasTerminalReportContent } from '@/utils/terminalReport'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { reportStatusLabel } from '@/utils/statusCatalog.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const projects = ref([])

@@ -367,5 +367,69 @@ class TerminalReportContentPostgresTest {
         assertNull(reloaded.getTerminalReport(), "the legacy row keeps its file-only shape");
         assertFalse(reloaded.getTerminalReportFilePath().isBlank());
     }
+
+    // 8. Submitting the last required stage persists COMPLETED on the proposal, and the
+    //    completed project keeps its reporting stage resolvable (all stages complete).
+    @Test
+    void theFinalTerminalReportPersistsTheCompletedProjectStatus() {
+        service.create(request(coreContent(), "SUBMITTED"));
+
+        Proposal reloaded = proposalRepository.findById(proposal.getId()).orElseThrow();
+        assertEquals("COMPLETED", reloaded.getStatus());
+        assertTrue(service.getNextStage(proposal.getId()).isAllStagesComplete(),
+                "the completed project still resolves its reporting stage");
+
+        // The transition is persisted in the audit table, not only on the proposal.
+        Integer audited = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM proposal_status_history WHERE proposal_id = ? "
+                        + "AND from_status = 'APPROVED' AND to_status = 'COMPLETED' "
+                        + "AND source = 'APPLICATION'",
+                Integer.class, proposal.getId());
+        assertEquals(1, audited);
+    }
+
+    // 9. Saving a terminal draft leaves the project at APPROVED: only the final
+    //    submitted report completes the project.
+    @Test
+    void aTerminalDraftLeavesTheProjectApproved() {
+        service.create(request(coreContent(), "DRAFT"));
+
+        Proposal reloaded = proposalRepository.findById(proposal.getId()).orElseThrow();
+        assertEquals("APPROVED", reloaded.getStatus());
+        assertFalse(service.getNextStage(proposal.getId()).isAllStagesComplete());
+    }
+
+    // 10. The path the form actually takes: the draft is saved first, then the proponent
+    //     presses Submit, which sends the update that stores the report as SUBMITTED.
+    //     That submission completes the project, and the completed project keeps all four
+    //     reports listed and readable while refusing to start a fifth stage.
+    @Test
+    void submittingTheSavedTerminalDraftThroughTheFormCompletesTheProject() {
+        QuarterlyProgressReport draft = service.create(request(coreContent(), "DRAFT"));
+        assertEquals("DRAFT", draft.getStatus());
+
+        // The update the Submit button sends: same report, status SUBMITTED, no content
+        // repeated (the saved draft already holds it).
+        service.update(draft.getId(), request(null, "SUBMITTED"));
+
+        Proposal reloaded = proposalRepository.findById(proposal.getId()).orElseThrow();
+        assertEquals("COMPLETED", reloaded.getStatus());
+        assertEquals("SUBMITTED",
+                reportRepository.findById(draft.getId()).orElseThrow().getStatus());
+
+        List<QuarterlyProgressReport> reports = service.getReportsByProposal(proposal.getId());
+        assertEquals(4, reports.size(), "Q1, Q2, Q3 and the Terminal Report stay listed");
+        assertEquals(1, reports.stream()
+                .filter(r -> QuarterlyProgressReportService.TYPE_TERMINAL.equals(r.getReportType())
+                        && "SUBMITTED".equals(r.getStatus()))
+                .count());
+        assertTrue(service.getNextStage(proposal.getId()).isAllStagesComplete());
+
+        assertThrows(IllegalStateException.class,
+                () -> service.create(request(coreContent(), "DRAFT")),
+                "a completed project cannot start another reporting stage");
+        assertFalse(service.isEligible(reloaded), "creation stays closed");
+        assertTrue(service.isReportable(reloaded), "reading stays open");
+    }
 }
 

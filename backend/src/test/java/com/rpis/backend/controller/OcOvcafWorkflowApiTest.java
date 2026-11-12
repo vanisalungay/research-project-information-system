@@ -276,12 +276,77 @@ class OcOvcafWorkflowApiTest {
         proposalRepository.flush();
         Map<String, Object> after = jdbcTemplate.queryForMap(
                 "SELECT status FROM proposals WHERE id = ?", proposal.getId());
-        assertEquals("APPROVED", after.get("status"));
+        assertEquals("READY_FOR_RELEASE", after.get("status"),
+                "budget approval alone must not mark the proposal Implementation Approved");
         assertTrue(validationRepository.findTopByProposalIdOrderByCreatedAtDesc(proposal.getId())
                         .orElseThrow().getBudgetEndorsed(),
                 "OVCAF's own approval record must be persisted");
 
+        // The release is still outstanding, so the project cannot report yet.
+        mockMvc.perform(get("/api/quarterly-reports/next-stage/{id}", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isForbidden());
+
+        // OVCAF records the required budget release: only now is the proposal approved
+        // for implementation.
+        mockMvc.perform(put("/api/ovcaf/proposals/{id}/release", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        proposalRepository.flush();
+        assertEquals("APPROVED", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+        assertEquals(Boolean.TRUE, jdbcTemplate.queryForObject(
+                "SELECT funds_released FROM ovcaf_validations WHERE proposal_id = ? "
+                        + "ORDER BY created_at DESC LIMIT 1",
+                Boolean.class, proposal.getId()),
+                "the release itself is recorded, not inferred from the status");
+
         // Only the complete chain makes quarterly reporting available.
+        mockMvc.perform(get("/api/quarterly-reports/next-stage/{id}", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.period").value("Q1"));
+    }
+
+    /**
+     * The release can never stand in for OVCAF's budget decision: without the recorded
+     * approval the proposal must not become Implementation Approved.
+     */
+    @Test
+    void aBudgetReleaseWithoutTheOvcafApprovalRecordIsRefused() throws Exception {
+        Proposal proposal = proposal("FOR_OVCAF_APPROVAL");
+        proposal.setSoNumber("SO-2026-300");
+        proposal.setSoUploadedAt(java.time.LocalDateTime.of(2026, 8, 25, 15, 10));
+        proposal.setNeedsBudget(Boolean.TRUE);
+        proposalRepository.saveAndFlush(proposal);
+
+        mockMvc.perform(put("/api/ovcaf/proposals/{id}/release", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error", containsString("approve the budget")));
+
+        assertEquals("FOR_OVCAF_APPROVAL", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+    }
+
+    /**
+     * A proposal without a budget is approved by the Chancellor alone; OVCAF is never
+     * involved and no budget release is required.
+     */
+    @Test
+    void aWithoutBudgetProposalIsApprovedForImplementationByTheChancellorAlone() throws Exception {
+        Proposal proposal = proposal("FOR_OC_APPROVAL");
+
+        mockMvc.perform(approveRequest(proposal.getId(), null, "SO-2026-301", "false")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ocToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.proposal.status").value("APPROVED"));
+
+        assertEquals("APPROVED", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+        // The approved project can start reporting immediately.
         mockMvc.perform(get("/api/quarterly-reports/next-stage/{id}", proposal.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
                 .andExpect(status().isOk())

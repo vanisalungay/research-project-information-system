@@ -35,7 +35,7 @@
               <td>{{ dean.email }}</td>
               <td>{{ dean.assignedCollege || '—' }}</td>
               <td>{{ dean.designation || '—' }}</td>
-              <td>{{ statusLabel(dean.status) || 'Approved' }}</td>
+              <td>{{ accountStatusLabel(dean.status) || 'Active' }}</td>
               <td class="actions-cell">
                 <button class="link-btn btn-edit" @click="edit(dean)">Edit</button>
                 <button class="link-btn btn-reject" @click="revoke(dean)">Revoke role</button>
@@ -85,8 +85,8 @@
           <div class="field-group">
             <label for="deanStatus">Account Status</label>
             <select id="deanStatus" v-model="form.status" :disabled="isLoading">
-              <option value="APPROVED">Approved</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="APPROVED">{{ accountStatusLabel('APPROVED') }}</option>
+              <option value="INACTIVE">{{ accountStatusLabel('INACTIVE') }}</option>
             </select>
           </div>
 
@@ -107,7 +107,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import api from '@/utils/api'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { accountStatusLabel } from '@/utils/statusCatalog.js'
 
 const props = defineProps({
   /** The Dean account whose role management was opened, from its row in the table. */

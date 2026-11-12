@@ -150,6 +150,8 @@
 </template>
 
 <script>
+import { statusTone } from '@/utils/statusTone.js'
+
 const STORAGE_KEY = 'proposals_workflow_db';
 
 export default {
@@ -285,31 +287,13 @@ export default {
     /**
      * The colour tone of a timeline stage.
      *
-     * Stage statuses are prose milestones ("Waiting", "Funds Released", ...), not the
-     * stored proposal status codes the shared statusTone() helper maps. They keep their
-     * own semantic tone - a released stage stays green and a returned one amber - while
-     * still using the one shared palette from assets/status.css.
+     * The stages are prose milestones ("Waiting", "Funds Released", ...). The one shared
+     * helper normalizes them to the same keys as the stored status codes and paints them
+     * from the approved palette (assets/status.css), so a released stage, an approved
+     * stage and a returned one match the same words on every other page.
      */
     stageTone(status) {
-      switch (status) {
-        case 'Approved':
-        case 'Completed':
-        case 'Funds Released':
-          return 'is-approved';
-        case 'Returned for Revision':
-        case 'Ready for Release':
-          return 'is-returned';
-        case 'Rejected':
-          return 'is-rejected';
-        case 'Under Review':
-        case 'For Implementation':
-        case 'Ongoing':
-        case 'Submitted':
-          return 'is-pending';
-        case 'Waiting':
-        default:
-          return 'is-neutral';
-      }
+      return statusTone(status);
     },
 
     goBackToList() {

@@ -65,14 +65,24 @@ test('the statuses the workflow pages and the backend use are mapped', () => {
   assert.equal(proposalBucketOf('REJECTED'), 'returned')
 })
 
-test('both submission spellings count in the For Review bucket', () => {
+test('both submission spellings count in the For RPS Review bucket', () => {
   assert.deepEqual(
     proposalSummaryCounts([{ status: 'FOR REVIEW' }, { status: 'SUBMITTED' }]),
     { total: 2, draft: 0, submitted: 2, underReview: 0, approved: 0, returned: 0 },
   )
 
   const submittedCard = PROPOSAL_SUMMARY_BUCKETS.find((bucket) => bucket.id === 'submitted')
-  assert.equal(submittedCard.label, 'For Review')
+  assert.equal(submittedCard.label, 'For RPS Review')
+})
+
+test('OVCAF decision values are not proposal statuses and are never bucketed', () => {
+  // The decision is stored on OvcafValidation; the proposal itself is APPROVED/RETURNED.
+  assert.equal(proposalBucketOf('APPROVED_ENDORSED'), '')
+  assert.equal(proposalBucketOf('RETURNED_FOR_REVISION'), '')
+  assert.deepEqual(
+    proposalSummaryCounts([{ status: 'APPROVED_ENDORSED' }, { status: 'RETURNED_FOR_REVISION' }]),
+    { total: 2, draft: 0, submitted: 0, underReview: 0, approved: 0, returned: 0 },
+  )
 })
 
 test('a status is matched case-insensitively and an unknown one is never guessed', () => {

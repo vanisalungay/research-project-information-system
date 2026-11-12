@@ -27,6 +27,7 @@ import api from '@/utils/api'
 import { savePdfDocument } from '@/utils/documentExport'
 import { OFFICIAL_FORM_STYLES, renderOfficialProposalForm } from '@/utils/officialProposalForm'
 import { proposalStatusLabel } from '@/utils/proposalStatus'
+import { reviewDecisionLabel } from '@/utils/statusCatalog'
 import { isSoDraft, soDraftFileLabel } from '@/utils/soDraft'
 import { REVIEW_GROUPS, groupAverage, reviewWeightedScore } from '@/utils/reviewScores'
 
@@ -243,7 +244,7 @@ function reviewsHtml(reviews) {
   <table class="oc-review-head"><tbody><tr>
     <th>Reviewer</th><td>${val(reviewerName(review))}</td>
     <th>Role</th><td>${val(reviewerRole(review))}</td>
-    <th>Decision</th><td>${val(review.decision)}</td>
+    <th>Decision</th><td>${val(reviewDecisionLabel(review.decision) || review.decision)}</td>
     <th>Date</th><td>${dateVal(review.createdAt)}</td>
   </tr></tbody></table>
   <table class="oc-table oc-scores"><colgroup><col /><col class="oc-col-weight" /><col class="oc-col-score" /></colgroup>

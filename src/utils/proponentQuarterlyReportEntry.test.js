@@ -1,16 +1,18 @@
 /**
  * proponentQuarterlyReportEntry.test.js
  * ---------------------------------------------------------------------------
- * Guards for the placement and eligibility of the "Create Quarterly Report"
- * action.
+ * Guards for the placement, destination and eligibility of the "Create
+ * Quarterly Report" action.
  *
  * The action belongs to exactly two places in the proponent interface:
  *   - Project Details, beside Download;
  *   - Proposal Monitoring, beside View Details.
- * It must not appear on the My Projects dashboard. Both places open the
- * existing quarterly-report form through one shared launcher, which reads the
- * one eligibility rule (utils/quarterlyReport.js): approved for implementation
- * AND an issued Special Order. The backend validates the same rule again.
+ * It must not appear on the My Projects dashboard. Both places open the existing
+ * Quarterly Progress Reports overview through one shared launcher, which reads
+ * the one eligibility rule (utils/quarterlyReport.js): approved for
+ * implementation AND an issued Special Order. The overview page resolves the
+ * next required stage itself; only its Start Quarterly Report button opens the
+ * report form. The backend validates the same rule again.
  *
  * The pages are validated at the source level, the technique the other guard
  * tests use, because they import Vite `?inline` assets Node cannot resolve.
@@ -30,6 +32,7 @@ const MONITORING = read('../views/Proponent/ProponentProposalMonitoring.vue')
 const REPORTS = read('../views/Proponent/ProponentQuarterlyReports.vue')
 const FORM = read('../views/Proponent/ProponentQuarterlyReportForm.vue')
 const LAUNCHER = read('../composables/useQuarterlyReportLauncher.js')
+const ROUTER = read('../router/index.js')
 
 const indexOf = (source, needle) => {
   const index = source.indexOf(needle)
@@ -79,16 +82,45 @@ test('Proposal Monitoring places Create Quarterly Report beside View Details', (
   )
 })
 
-test('both locations open the workflow through the one shared launcher', () => {
+test('both locations open the overview through the one shared launcher', () => {
   for (const [name, source] of Object.entries({ DETAILS, MONITORING })) {
     assert.ok(source.includes('useQuarterlyReportLauncher'), `${name} uses the shared launcher`)
   }
   assert.ok(LAUNCHER.includes('isQuarterlyReportEligible'), 'one eligibility rule')
-  assert.ok(LAUNCHER.includes('nextQuarterlyReportPath('), 'one route builder')
   assert.ok(
-    LAUNCHER.includes('/api/quarterly-reports/next-stage/'),
-    'the existing next-stage endpoint resolves the report',
+    LAUNCHER.includes("name: 'ProponentQuarterlyReports'"),
+    'the existing overview route is the one destination',
   )
+  assert.ok(
+    LAUNCHER.includes('params: { proposalId: proposal.id }'),
+    'the overview receives the correct proposal id',
+  )
+  assert.ok(
+    !LAUNCHER.includes('/new'),
+    'the launcher no longer opens the report form directly',
+  )
+})
+
+test('the overview page owns the next-stage resolution and the report form action', () => {
+  assert.ok(
+    ROUTER.includes("path: 'quarterly-reports/:proposalId'") &&
+      ROUTER.includes("name: 'ProponentQuarterlyReports'") &&
+      ROUTER.includes('component: ProponentQuarterlyReports'),
+    'the existing overview route is reused',
+  )
+  assert.ok(
+    ROUTER.includes("path: 'quarterly-reports/:proposalId/new'") &&
+      ROUTER.includes("name: 'ProponentQuarterlyReportNew'"),
+    'the existing report form route is preserved',
+  )
+  assert.ok(
+    REPORTS.includes('/api/quarterly-reports/next-stage/'),
+    'the next required stage comes from the existing endpoint',
+  )
+  assert.ok(REPORTS.includes('loadNextStage'), 'the overview resolves the stage itself')
+  assert.ok(REPORTS.includes('nextStageAction'), 'the Start button is labelled from that stage')
+  assert.ok(REPORTS.includes('function createNew'), 'Start opens the existing report form')
+  assert.ok(REPORTS.includes('ProponentQuarterlyReportNew'), 'the existing form route is reused')
 })
 
 test('the shared rule is not re-implemented inline anywhere', () => {
@@ -112,7 +144,11 @@ test('the shared rule is not re-implemented inline anywhere', () => {
 test('opening the action never creates a report itself', () => {
   assert.ok(!LAUNCHER.includes('api.post('), 'the form writes the report, not the launcher')
   assert.ok(
-    LAUNCHER.includes('All required reports for this project have already been submitted.'),
-    'a completed project is reported instead of opening an empty form',
+    !LAUNCHER.includes('/api/quarterly-reports/'),
+    'the launcher only navigates; the overview page fetches the reporting state',
+  )
+  assert.ok(
+    REPORTS.includes(':disabled="!canCreateReport || allStagesComplete"'),
+    'a completed project cannot start another stage from the overview',
   )
 })

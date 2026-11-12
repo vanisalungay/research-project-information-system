@@ -1,9 +1,11 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.model.Notification;
+import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
+import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -40,14 +44,16 @@ class NotificationServiceTest {
 
     private NotificationRepository notificationRepository;
     private UserRepository userRepository;
+    private ProposalRepository proposalRepository;
     private NotificationService service;
 
     @BeforeEach
     void setUp() {
         notificationRepository = mock(NotificationRepository.class);
         userRepository = mock(UserRepository.class);
+        proposalRepository = mock(ProposalRepository.class);
         service = new NotificationService(notificationRepository, userRepository,
-                mock(ProposalAnnouncementRepository.class));
+                mock(ProposalAnnouncementRepository.class), proposalRepository);
     }
 
     private User user(Long id, String role) {
@@ -65,6 +71,13 @@ class NotificationServiceTest {
         notification.setMessage("message " + id);
         notification.setIsRead(false);
         return notification;
+    }
+
+    private Proposal proposal(Long id, String documentId) {
+        Proposal proposal = new Proposal();
+        proposal.setId(id);
+        proposal.setDocumentId(documentId);
+        return proposal;
     }
 
     /** One unread notification of every proposal-workflow type, in a stable order. */
@@ -123,6 +136,37 @@ class NotificationServiceTest {
         // never slip past the rule.
         assertTrue(inboxOf(user(ADMIN_ID, "RPS_ADMIN"), List.of(notification(1L, "proposal_update")))
                 .isEmpty());
+    }
+
+    @Test
+    void theFormattedProposalIdComesFromTheProposalRecord() {
+        User staff = user(STAFF_ID, "RPS_STAFF");
+        Notification initial = notification(1L, "PROPOSAL_UPDATE");
+        initial.setProposalId(84L);
+        Notification revision = notification(2L, "REVISION");
+        revision.setProposalId(85L);
+        Notification endorsement = notification(3L, "ENDORSEMENT");
+        endorsement.setProposalId(84L); // an endorsement request id, not a proposal id
+        Notification missingProposal = notification(4L, "APPROVAL");
+        missingProposal.setProposalId(999L);
+        Notification noProposal = notification(5L, "APPROVAL");
+
+        when(proposalRepository.findAllById(any())).thenReturn(List.of(
+                proposal(84L, "MSUN-ORPS-DA-123-2026-REV00"),
+                proposal(85L, "MSUN-ORPS-DA-124-2026-REV02")));
+
+        inboxOf(staff, List.of(initial, revision, endorsement, missingProposal, noProposal));
+
+        assertEquals("MSUN-ORPS-DA-123-2026-REV00", initial.getProposalDocumentId(),
+                "the displayed id is the stored formatted id, not the database primary key");
+        assertEquals("MSUN-ORPS-DA-124-2026-REV02", revision.getProposalDocumentId(),
+                "the revision suffix is kept exactly as recorded");
+        assertNull(endorsement.getProposalDocumentId(),
+                "an endorsement's proposalId is an endorsement request id and must not be resolved");
+        assertNull(missingProposal.getProposalDocumentId(),
+                "a missing proposal yields no identifier rather than a wrong one");
+        assertNull(noProposal.getProposalDocumentId());
+        verify(proposalRepository).findAllById(Set.of(84L, 85L, 999L));
     }
 
     @Test

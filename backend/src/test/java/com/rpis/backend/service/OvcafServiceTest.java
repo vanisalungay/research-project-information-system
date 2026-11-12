@@ -164,7 +164,7 @@ class OvcafServiceTest {
     }
 
     @Test
-    void approvingForImplementationWithAnIssuedSoSucceeds() {
+    void approvingTheBudgetWithAnIssuedSoMovesTheProposalToReadyForRelease() {
         proposal.setSoNumber("SO-2026-117");
         when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
         when(validationRepository.save(any(OvcafValidation.class)))
@@ -175,7 +175,69 @@ class OvcafServiceTest {
         OvcafValidation validation = service.submitValidation(PROPOSAL_ID, decision("APPROVED_ENDORSED"));
 
         assertEquals("APPROVED_ENDORSED", validation.getDecision());
-        assertEquals("APPROVED", proposal.getStatus());
+        assertEquals("READY_FOR_RELEASE", proposal.getStatus(),
+                "budget approval alone is not implementation approval");
+        assertTrue(Boolean.TRUE.equals(validation.getBudgetEndorsed()),
+                "OVCAF's budget endorsement is recorded");
+    }
+
+    private OvcafValidation budgetApprovedValidation() {
+        OvcafValidation validation = new OvcafValidation();
+        validation.setProposal(proposal);
+        validation.setBudgetEndorsed(true);
+        return validation;
+    }
+
+    @Test
+    void releasingTheBudgetCompletesTheChainAndMarksTheProposalApprovedForImplementation() {
+        proposal.setStatus("READY_FOR_RELEASE");
+        OvcafValidation validation = budgetApprovedValidation();
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.findTopByProposalIdOrderByCreatedAtDesc(PROPOSAL_ID))
+                .thenReturn(Optional.of(validation));
+        when(validationRepository.save(any(OvcafValidation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(proposalRepository.save(any(Proposal.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Proposal saved = service.releaseFunds(PROPOSAL_ID, 5L);
+
+        assertEquals("APPROVED", saved.getStatus(),
+                "the release is the transition to Implementation Approved");
+        assertTrue(Boolean.TRUE.equals(validation.getFundsReleased()));
+        assertEquals(5L, validation.getReleasedBy());
+        assertTrue(validation.getFundsReleasedAt() != null, "the release is dated");
+    }
+
+    @Test
+    void releasingTheBudgetWithoutARecordedBudgetApprovalIsRefused() {
+        proposal.setStatus("READY_FOR_RELEASE");
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.findTopByProposalIdOrderByCreatedAtDesc(PROPOSAL_ID))
+                .thenReturn(Optional.empty());
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.releaseFunds(PROPOSAL_ID, 5L));
+
+        assertTrue(error.getMessage().contains("approve the budget"), error.getMessage());
+        assertEquals("READY_FOR_RELEASE", proposal.getStatus(),
+                "a refused release must not approve the proposal");
+    }
+
+    @Test
+    void releasingABudgetWhileItIsStillAwaitingOvcafApprovalIsRefused() {
+        // FOR_OVCAF_APPROVAL means OVCAF has not approved the budget yet, whatever a
+        // stale validation row says.
+        proposal.setStatus("FOR_OVCAF_APPROVAL");
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.findTopByProposalIdOrderByCreatedAtDesc(PROPOSAL_ID))
+                .thenReturn(Optional.of(budgetApprovedValidation()));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.releaseFunds(PROPOSAL_ID, 5L));
+
+        assertTrue(error.getMessage().contains("not awaiting fund release"), error.getMessage());
+        assertEquals("FOR_OVCAF_APPROVAL", proposal.getStatus());
     }
 
     @Test

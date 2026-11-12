@@ -16,6 +16,11 @@
  * Run the rules with: npm test
  */
 
+import {
+  averagePercentage,
+  percentageFormValue,
+} from './percentageInput.js'
+
 /** The 6Ps output types of section C, in the order the form shows them. */
 export const OUTPUT_TYPES = [
   'Publications',
@@ -40,6 +45,38 @@ function text(value) {
 
 function listOf(value) {
   return Array.isArray(value) ? value : []
+}
+
+/**
+ * The six project-identification fields of the report, read from the saved proposal.
+ * The quarter report keeps its own snapshot (see reportFormState), so a later change
+ * to the proposal never rewrites a report that was already filed.
+ */
+export function proposalProjectInfo(proposal) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {}
+  return {
+    projectTitle: text(p.projectTitle),
+    projectLeader: text(p.projectLeader),
+    leaderGender: text(p.projectLeaderSex),
+    projectDuration: text(p.duration),
+    projectStartDate: text(p.startDate),
+    projectEndDate: text(p.endDate),
+  }
+}
+
+/**
+ * Fills only the snapshot fields a report is missing, from its proposal. Saved report
+ * values always win, so opening a historical report never replaces what it recorded;
+ * a blank field on a legacy report still gets the proposal value instead of staying
+ * empty. Returns a new object and never modifies the proposal.
+ */
+export function withProposalProjectInfo(report, proposal) {
+  const info = proposalProjectInfo(proposal)
+  const result = { ...(report && typeof report === 'object' ? report : {}) }
+  for (const [key, value] of Object.entries(info)) {
+    if (text(result[key]).trim() === '' && value !== '') result[key] = value
+  }
+  return result
 }
 
 /** A blank objective row of section A (objectives, accomplishments, percentages). */
@@ -84,7 +121,13 @@ export function reportFormState(report) {
     catchUpPlan: text(r.catchUpPlan),
     problemsConcerns: text(r.problemsConcerns),
     suggestedSolutions: text(r.suggestedSolutions),
-    objectives: rows.map((row) => ({ ...emptyObjective(), ...row })),
+    objectives: rows.map((row) => ({
+      ...emptyObjective(),
+      ...row,
+      // A legacy "80%" becomes the numeric "80"; the sign is only displayed.
+      percentagePeriod: percentageFormValue(row?.percentagePeriod),
+      percentageCumulative: percentageFormValue(row?.percentageCumulative),
+    })),
     outputs: seedOutputs().map((seed) => {
       const found = listOf(r.outputs).find((row) => row?.outputType === seed.outputType)
       return { ...seed, ...(found || {}) }
@@ -113,7 +156,13 @@ export function reportPayload(form) {
     catchUpPlan: f.catchUpPlan,
     problemsConcerns: f.problemsConcerns,
     suggestedSolutions: f.suggestedSolutions,
-    objectives: listOf(f.objectives),
+    // Percentages are saved as numeric text. A legacy value that is not numeric is
+    // sent as it is, so the backend reports it instead of silently discarding it.
+    objectives: listOf(f.objectives).map((row) => ({
+      ...row,
+      percentagePeriod: percentageFormValue(row?.percentagePeriod),
+      percentageCumulative: percentageFormValue(row?.percentageCumulative),
+    })),
     outputs: listOf(f.outputs),
   }
 }
@@ -123,13 +172,21 @@ export function emptyWorkplanObjective() {
   return { objective: '', months: Array(WORKPLAN_MONTHS).fill(''), total: '' }
 }
 
-/** A saved workplan row with exactly twelve month cells and text values. */
+/**
+ * A saved workplan row with exactly twelve numeric month cells. The TOTAL is always
+ * recalculated from the month cells, so an outdated or manipulated stored total is
+ * never shown or sent back.
+ */
 export function normalizeWorkplanObjective(row) {
   const months = listOf(row?.months)
     .slice(0, WORKPLAN_MONTHS)
-    .map((month) => text(month))
+    .map((month) => percentageFormValue(month))
   while (months.length < WORKPLAN_MONTHS) months.push('')
-  return { objective: text(row?.objective), months, total: text(row?.total) }
+  return {
+    objective: text(row?.objective),
+    months,
+    total: averagePercentage(months),
+  }
 }
 
 /**
@@ -161,13 +218,18 @@ export function workplanPayload(workplan) {
     projectTitle: text(w.projectTitle),
     projectLeader: text(w.projectLeader),
     projectDuration: text(w.projectDuration),
-    objectives: listOf(w.objectives).map((row) => ({
-      objective: text(row?.objective),
-      months: listOf(row?.months)
+    objectives: listOf(w.objectives).map((row) => {
+      const months = listOf(row?.months)
         .slice(0, WORKPLAN_MONTHS)
-        .map((month) => text(month)),
-      total: text(row?.total),
-    })),
+        .map((month) => percentageFormValue(month))
+      while (months.length < WORKPLAN_MONTHS) months.push('')
+      return {
+        objective: text(row?.objective),
+        months,
+        // Derived here as well, so the saved total can never disagree with the months.
+        total: averagePercentage(months),
+      }
+    }),
     remarks: text(w.remarks),
   }
 }

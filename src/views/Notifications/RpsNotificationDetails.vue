@@ -80,7 +80,7 @@
           class="status"
           :class="statusTone(notification.status)"
         >
-          {{ statusLabel(notification.status) }}
+          {{ proposalStatusLabel(notification.status) }}
         </span>
 
       </div>
@@ -142,7 +142,7 @@
 <script>
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: "RpsNotificationDetails",
@@ -162,7 +162,7 @@ export default {
     methods: {
     statusTone,
 
-    statusLabel,
+    proposalStatusLabel,
 
     _showAlert(message, options = {}) {
       return new Promise((resolve) => {

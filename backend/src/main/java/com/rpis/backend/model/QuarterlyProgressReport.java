@@ -1,5 +1,6 @@
 package com.rpis.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -163,4 +164,16 @@ public class QuarterlyProgressReport {
     @Column(name = "terminal_report_json", columnDefinition = "TEXT")
     @Convert(converter = TerminalReportDataConverter.class)
     private TerminalReportData terminalReport;
+
+    /**
+     * The proposal's status after the request that returned this report was handled.
+     * A submission that finishes the required reporting returns {@code COMPLETED} here,
+     * so the client can show the completed project immediately instead of relying on a
+     * second read. It is not persisted: it is derived from the proposal on each
+     * submission response ({@code null} on every other response, and omitted from the
+     * JSON when null).
+     */
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String proposalStatus;
 }

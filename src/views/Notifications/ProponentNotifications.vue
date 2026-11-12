@@ -32,7 +32,7 @@
             <strong>{{ notification.sender }}</strong>
 
             <span class="status status-badge" :class="statusTone(notification.status)">
-              • {{ statusLabel(notification.status) }}
+              • {{ proposalStatusLabel(notification.status) }}
             </span>
 
             <p>
@@ -75,7 +75,7 @@
               <div class="thread-header">
                 {{ message.sender }}
                 •
-                {{ statusLabel(message.status) }}
+                {{ proposalStatusLabel(message.status) }}
               </div>
 
               <p class="thread-message">
@@ -116,7 +116,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { statusTone } from '@/utils/statusTone.js'
-import { statusLabel } from '@/utils/statusLabel.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 const loading = ref(false)
 

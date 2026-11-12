@@ -174,6 +174,7 @@ const proposal = ref({})
 const loading = ref(true)
 const error = ref(null)
 const notFound = ref(false)
+const proposalId = computed(() => proposal.value?.id ?? null)
 
 // Reviewer Accountability fields
 const reviewerName = ref('')
@@ -194,8 +195,8 @@ const fetchProposal = async () => {
   error.value = null
   notFound.value = false
 
-  const proposalId = route.params.id ?? route.query.id ?? null
-  if (!proposalId) {
+  const routeProposalId = route.params.id ?? route.query.id ?? null
+  if (!routeProposalId) {
     error.value = 'No proposal was selected. Open one from the budget list.'
     proposal.value = { id: null }
     loading.value = false
@@ -203,7 +204,7 @@ const fetchProposal = async () => {
   }
 
   try {
-    const res = await api.get(`/api/proposals/${proposalId}`)
+    const res = await api.get(`/api/proposals/${routeProposalId}`)
     const data = res.data || null
     if (!data || data.id === null || data.id === undefined) {
       proposal.value = { id: null }
@@ -227,8 +228,13 @@ const remarksError = ref('')
 const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
 
 const loadFieldRemarks = async () => {
+  if (!proposalId.value) {
+    remarksResponse.value = null
+    remarksError.value = ''
+    return
+  }
   try {
-    const res = await api.get(`/api/proposals/${proposalId}/field-remarks`)
+    const res = await api.get(`/api/proposals/${proposalId.value}/field-remarks`)
     remarksResponse.value = res.data || null
     remarksError.value = ''
   } catch (err) {
@@ -239,7 +245,7 @@ const loadFieldRemarks = async () => {
 }
 
 const onRemarkSaved = (item) => {
-  const current = { ...(remarksResponse.value || { proposalId, activeRound: 1, rounds: [] }) }
+  const current = { ...(remarksResponse.value || { proposalId: proposalId.value, activeRound: 1, rounds: [] }) }
   const rounds = Array.isArray(current.rounds) ? [...current.rounds] : []
   let activeIndex = rounds.findIndex((round) => round.active)
   if (activeIndex < 0) {

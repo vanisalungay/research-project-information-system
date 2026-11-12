@@ -568,8 +568,8 @@ onBeforeUnmount(() => {
   color: var(--status-neutral-text);
 }
 .state-pill--draft {
-  background: var(--status-returned-bg);
-  color: var(--status-returned-text);
+  background: var(--status-gray-bg);
+  color: var(--status-gray-text);
 }
 
 /* Preview of the saved signature / of the unsaved draft */

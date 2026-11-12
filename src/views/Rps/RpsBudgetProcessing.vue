@@ -91,6 +91,16 @@ import api from '@/utils/api'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
+// Filter chips are keyed by the canonical proposal label; the raw stored value is
+// still what the API and the comparison below use.
+const BUDGET_STATUS_MAP = {
+  [proposalStatusLabel('APPROVED')]: 'APPROVED',
+  [proposalStatusLabel('READY_FOR_RELEASE')]: 'READY_FOR_RELEASE',
+  [proposalStatusLabel('RELEASED')]: 'RELEASED',
+  [proposalStatusLabel('RETURNED')]: 'RETURNED',
+}
+const BUDGET_FILTERS = ['All', ...Object.keys(BUDGET_STATUS_MAP)]
+
 export default {
   name: "RpsBudgetProcessing",
 
@@ -101,13 +111,7 @@ export default {
       activeFilter: "All",
       loading: false,
       error: null,
-      filters: [
-        "All",
-        "Completed",
-        "Ready for Release",
-        "Released",
-        "Returned"
-      ],
+      filters: BUDGET_FILTERS,
     }
   },
 
@@ -125,13 +129,7 @@ export default {
       }
 
       if (this.activeFilter !== "All") {
-        const statusMap = {
-          "Completed": "APPROVED",
-          "Ready for Release": "READY_FOR_RELEASE",
-          "Released": "RELEASED",
-          "Returned": "RETURNED",
-        }
-        const backendStatus = statusMap[this.activeFilter]
+        const backendStatus = BUDGET_STATUS_MAP[this.activeFilter]
         if (backendStatus) {
           result = result.filter(p => p.status === backendStatus)
         }
