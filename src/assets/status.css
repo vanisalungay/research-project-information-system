@@ -1,0 +1,477 @@
+/**
+ * status.css
+ * ---------------------------------------------------------------------------
+ * The one status colour system of RPIS.
+ *
+ * Every badge that shows a workflow status uses the same approved palette, whichever role
+ * or module renders it. The variant of a stored status is decided in one place -
+ * src/utils/statusCatalog.js (statusVariant) and exposed by src/utils/statusTone.js - and
+ * the colours themselves are design tokens in assets/css/base.css.
+ *
+ *   is-gray      #64748B  Draft / Inactive / Revoked / Superseded / Closed
+ *   is-blue      #2563EB  Submitted / For RPS Review / Scheduled
+ *   is-purple    #7C3AED  Under Review
+ *   is-indigo    #4F46E5  Approved by REC
+ *   is-cyan      #0891B2  Endorsed to OVCRIGE / Approved by OVCRIGE
+ *   is-teal      #0F766E  Reserved palette entry (no current status maps to it)
+ *   is-released  #0D9488  Released
+ *   is-amber     #D97706  Pending / awaiting approval
+ *   is-orange    #EA580C  Ready for Fund Release / every returned status
+ *   is-approved  #15803D  Approved / Implementation Approved (green text on #DCFCE7)
+ *   is-completed #166534  Completed (white text on the dark forest green #14532D)
+ *   is-rejected  #DC2626  Rejected / Failed
+ *
+ * Only colours live here; the geometry (padding, radius, font) stays with the badge class
+ * that owns it, which is why a page can keep its own layout without overriding the palette.
+ *
+ * Imported globally by src/assets/main.css.
+ */
+
+/* The canonical badge. Pages that do not already have a badge class use this one. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* A badge with no tone class (or still being processed) keeps the blue "in the pipeline"
+   treatment, so it always has a defined look. */
+.status-badge,
+.end-badge,
+.rv-status,
+.rv-status-line {
+  background: var(--status-blue-bg);
+  color: var(--status-blue-text);
+}
+
+/* ===== The shared tones, applied to every badge family already in use ===== */
+
+.status-badge.is-gray,
+.end-badge.is-gray,
+.badge.is-gray,
+.status.is-gray,
+.status-pill.is-gray,
+.call-status.is-gray,
+.rv-status.is-gray,
+.rv-status-line.is-gray,
+.status-badge.is-neutral,
+.end-badge.is-neutral,
+.badge.is-neutral,
+.status.is-neutral,
+.status-pill.is-neutral,
+.call-status.is-neutral,
+.rv-status.is-neutral,
+.rv-status-line.is-neutral,
+.status-badge.is-draft,
+.end-badge.is-draft,
+.badge.is-draft,
+.status.is-draft,
+.status-pill.is-draft,
+.call-status.is-draft,
+.rv-status.is-draft,
+.rv-status-line.is-draft {
+  background: var(--status-gray-bg);
+  color: var(--status-gray-text);
+  border-color: var(--status-gray-border);
+}
+
+.status-badge.is-blue,
+.end-badge.is-blue,
+.badge.is-blue,
+.status.is-blue,
+.status-pill.is-blue,
+.call-status.is-blue,
+.rv-status.is-blue,
+.rv-status-line.is-blue,
+.status-badge.is-pending,
+.end-badge.is-pending,
+.badge.is-pending,
+.status.is-pending,
+.status-pill.is-pending,
+.call-status.is-pending,
+.rv-status.is-pending,
+.rv-status-line.is-pending,
+.status-badge.is-info,
+.end-badge.is-info,
+.badge.is-info,
+.status.is-info,
+.status-pill.is-info,
+.call-status.is-info,
+.rv-status.is-info,
+.rv-status-line.is-info,
+.status-badge.is-progress,
+.end-badge.is-progress,
+.badge.is-progress,
+.status.is-progress,
+.status-pill.is-progress,
+.call-status.is-progress,
+.rv-status.is-progress,
+.rv-status-line.is-progress {
+  background: var(--status-blue-bg);
+  color: var(--status-blue-text);
+  border-color: var(--status-blue-border);
+}
+
+.status-badge.is-purple,
+.end-badge.is-purple,
+.badge.is-purple,
+.status.is-purple,
+.status-pill.is-purple,
+.call-status.is-purple,
+.rv-status.is-purple,
+.rv-status-line.is-purple {
+  background: var(--status-purple-bg);
+  color: var(--status-purple-text);
+  border-color: var(--status-purple-border);
+}
+
+.status-badge.is-indigo,
+.end-badge.is-indigo,
+.badge.is-indigo,
+.status.is-indigo,
+.status-pill.is-indigo,
+.call-status.is-indigo,
+.rv-status.is-indigo,
+.rv-status-line.is-indigo {
+  background: var(--status-indigo-bg);
+  color: var(--status-indigo-text);
+  border-color: var(--status-indigo-border);
+}
+
+.status-badge.is-cyan,
+.end-badge.is-cyan,
+.badge.is-cyan,
+.status.is-cyan,
+.status-pill.is-cyan,
+.call-status.is-cyan,
+.rv-status.is-cyan,
+.rv-status-line.is-cyan {
+  background: var(--status-cyan-bg);
+  color: var(--status-cyan-text);
+  border-color: var(--status-cyan-border);
+}
+
+.status-badge.is-teal,
+.end-badge.is-teal,
+.badge.is-teal,
+.status.is-teal,
+.status-pill.is-teal,
+.call-status.is-teal,
+.rv-status.is-teal,
+.rv-status-line.is-teal {
+  background: var(--status-teal-bg);
+  color: var(--status-teal-text);
+  border-color: var(--status-teal-border);
+}
+
+.status-badge.is-released,
+.end-badge.is-released,
+.badge.is-released,
+.status.is-released,
+.status-pill.is-released,
+.call-status.is-released,
+.rv-status.is-released,
+.rv-status-line.is-released {
+  background: var(--status-released-bg);
+  color: var(--status-released-text);
+  border-color: var(--status-released-border);
+}
+
+.status-badge.is-amber,
+.end-badge.is-amber,
+.badge.is-amber,
+.status.is-amber,
+.status-pill.is-amber,
+.call-status.is-amber,
+.rv-status.is-amber,
+.rv-status-line.is-amber {
+  background: var(--status-amber-bg);
+  color: var(--status-amber-text);
+  border-color: var(--status-amber-border);
+}
+
+.status-badge.is-orange,
+.end-badge.is-orange,
+.badge.is-orange,
+.status.is-orange,
+.status-pill.is-orange,
+.call-status.is-orange,
+.rv-status.is-orange,
+.rv-status-line.is-orange,
+.status-badge.is-returned,
+.end-badge.is-returned,
+.badge.is-returned,
+.status.is-returned,
+.status-pill.is-returned,
+.call-status.is-returned,
+.rv-status.is-returned,
+.rv-status-line.is-returned {
+  background: var(--status-orange-bg);
+  color: var(--status-orange-text);
+  border-color: var(--status-orange-border);
+}
+
+.status-badge.is-approved,
+.end-badge.is-approved,
+.badge.is-approved,
+.status.is-approved,
+.status-pill.is-approved,
+.call-status.is-approved,
+.rv-status.is-approved,
+.rv-status-line.is-approved {
+  background: var(--status-approved-bg);
+  color: var(--status-approved-text);
+  border-color: var(--status-approved-border);
+}
+
+.status-badge.is-completed,
+.end-badge.is-completed,
+.badge.is-completed,
+.status.is-completed,
+.status-pill.is-completed,
+.call-status.is-completed,
+.rv-status.is-completed,
+.rv-status-line.is-completed {
+  background: var(--status-completed-bg);
+  color: var(--status-completed-text);
+  border-color: var(--status-completed-border);
+}
+
+.status-badge.is-rejected,
+.end-badge.is-rejected,
+.badge.is-rejected,
+.status.is-rejected,
+.status-pill.is-rejected,
+.call-status.is-rejected,
+.rv-status.is-rejected,
+.rv-status-line.is-rejected {
+  background: var(--status-rejected-bg);
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
+}
+
+/* The status is always spelled out inside the badge, so the colour is a reinforcement,
+   never the only way the state is communicated. */
+
+/* ===== Dark theme =====
+   base.css forces the text colour of every span/p/label with !important, and a badge is a
+   span. The dark tones therefore have to repeat with !important as well. */
+@media (prefers-color-scheme: dark) {
+  .status-badge,
+  .end-badge,
+  .rv-status,
+  .rv-status-line {
+    background: var(--status-blue-bg) !important;
+    color: var(--status-blue-text) !important;
+  }
+
+  .status-badge.is-gray,
+  .end-badge.is-gray,
+  .badge.is-gray,
+  .status.is-gray,
+  .status-pill.is-gray,
+  .call-status.is-gray,
+  .rv-status.is-gray,
+  .rv-status-line.is-gray,
+  .status-badge.is-neutral,
+  .end-badge.is-neutral,
+  .badge.is-neutral,
+  .status.is-neutral,
+  .status-pill.is-neutral,
+  .call-status.is-neutral,
+  .rv-status.is-neutral,
+  .rv-status-line.is-neutral,
+  .status-badge.is-draft,
+  .end-badge.is-draft,
+  .badge.is-draft,
+  .status.is-draft,
+  .status-pill.is-draft,
+  .call-status.is-draft,
+  .rv-status.is-draft,
+  .rv-status-line.is-draft {
+    background: var(--status-gray-bg) !important;
+    color: var(--status-gray-text) !important;
+  }
+
+  .status-badge.is-blue,
+  .end-badge.is-blue,
+  .badge.is-blue,
+  .status.is-blue,
+  .status-pill.is-blue,
+  .call-status.is-blue,
+  .rv-status.is-blue,
+  .rv-status-line.is-blue,
+  .status-badge.is-pending,
+  .end-badge.is-pending,
+  .badge.is-pending,
+  .status.is-pending,
+  .status-pill.is-pending,
+  .call-status.is-pending,
+  .rv-status.is-pending,
+  .rv-status-line.is-pending,
+  .status-badge.is-info,
+  .end-badge.is-info,
+  .badge.is-info,
+  .status.is-info,
+  .status-pill.is-info,
+  .call-status.is-info,
+  .rv-status.is-info,
+  .rv-status-line.is-info,
+  .status-badge.is-progress,
+  .end-badge.is-progress,
+  .badge.is-progress,
+  .status.is-progress,
+  .status-pill.is-progress,
+  .call-status.is-progress,
+  .rv-status.is-progress,
+  .rv-status-line.is-progress {
+    background: var(--status-blue-bg) !important;
+    color: var(--status-blue-text) !important;
+  }
+
+  .status-badge.is-purple,
+  .end-badge.is-purple,
+  .badge.is-purple,
+  .status.is-purple,
+  .status-pill.is-purple,
+  .call-status.is-purple,
+  .rv-status.is-purple,
+  .rv-status-line.is-purple {
+    background: var(--status-purple-bg) !important;
+    color: var(--status-purple-text) !important;
+  }
+
+  .status-badge.is-indigo,
+  .end-badge.is-indigo,
+  .badge.is-indigo,
+  .status.is-indigo,
+  .status-pill.is-indigo,
+  .call-status.is-indigo,
+  .rv-status.is-indigo,
+  .rv-status-line.is-indigo {
+    background: var(--status-indigo-bg) !important;
+    color: var(--status-indigo-text) !important;
+  }
+
+  .status-badge.is-cyan,
+  .end-badge.is-cyan,
+  .badge.is-cyan,
+  .status.is-cyan,
+  .status-pill.is-cyan,
+  .call-status.is-cyan,
+  .rv-status.is-cyan,
+  .rv-status-line.is-cyan {
+    background: var(--status-cyan-bg) !important;
+    color: var(--status-cyan-text) !important;
+  }
+
+  .status-badge.is-teal,
+  .end-badge.is-teal,
+  .badge.is-teal,
+  .status.is-teal,
+  .status-pill.is-teal,
+  .call-status.is-teal,
+  .rv-status.is-teal,
+  .rv-status-line.is-teal {
+    background: var(--status-teal-bg) !important;
+    color: var(--status-teal-text) !important;
+  }
+
+  .status-badge.is-released,
+  .end-badge.is-released,
+  .badge.is-released,
+  .status.is-released,
+  .status-pill.is-released,
+  .call-status.is-released,
+  .rv-status.is-released,
+  .rv-status-line.is-released {
+    background: var(--status-released-bg) !important;
+    color: var(--status-released-text) !important;
+  }
+
+  .status-badge.is-amber,
+  .end-badge.is-amber,
+  .badge.is-amber,
+  .status.is-amber,
+  .status-pill.is-amber,
+  .call-status.is-amber,
+  .rv-status.is-amber,
+  .rv-status-line.is-amber {
+    background: var(--status-amber-bg) !important;
+    color: var(--status-amber-text) !important;
+  }
+
+  .status-badge.is-orange,
+  .end-badge.is-orange,
+  .badge.is-orange,
+  .status.is-orange,
+  .status-pill.is-orange,
+  .call-status.is-orange,
+  .rv-status.is-orange,
+  .rv-status-line.is-orange,
+  .status-badge.is-returned,
+  .end-badge.is-returned,
+  .badge.is-returned,
+  .status.is-returned,
+  .status-pill.is-returned,
+  .call-status.is-returned,
+  .rv-status.is-returned,
+  .rv-status-line.is-returned {
+    background: var(--status-orange-bg) !important;
+    color: var(--status-orange-text) !important;
+  }
+
+  .status-badge.is-approved,
+  .end-badge.is-approved,
+  .badge.is-approved,
+  .status.is-approved,
+  .status-pill.is-approved,
+  .call-status.is-approved,
+  .rv-status.is-approved,
+  .rv-status-line.is-approved {
+    background: var(--status-approved-bg) !important;
+    color: var(--status-approved-text) !important;
+  }
+
+  .status-badge.is-completed,
+  .end-badge.is-completed,
+  .badge.is-completed,
+  .status.is-completed,
+  .status-pill.is-completed,
+  .call-status.is-completed,
+  .rv-status.is-completed,
+  .rv-status-line.is-completed {
+    background: var(--status-completed-bg) !important;
+    color: var(--status-completed-text) !important;
+  }
+
+  .status-badge.is-rejected,
+  .end-badge.is-rejected,
+  .badge.is-rejected,
+  .status.is-rejected,
+  .status-pill.is-rejected,
+  .call-status.is-rejected,
+  .rv-status.is-rejected,
+  .rv-status-line.is-rejected {
+    background: var(--status-rejected-bg) !important;
+    color: var(--status-rejected-text) !important;
+  }
+
+  /* Badges sometimes carry a nested label span; keep that text on the tone colour. */
+  .status-badge *,
+  .end-badge *,
+  .badge *,
+  .status *,
+  .status-pill *,
+  .call-status *,
+  .rv-status *,
+  .rv-status-line * {
+    color: inherit !important;
+  }
+}

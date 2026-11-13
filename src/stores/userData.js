@@ -1,12 +1,17 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import api from '@/utils/api'
 
 //
 export const UserRole = {
   PROPONENT: 'PROPONENT',
   RPS_ADMIN: 'RPS_ADMIN',
   RPS_STAFF: 'RPS_STAFF',
+  // Dean / Department Chair: an independent role, not part of RPS. It is created or
+  // assigned by an RPS administrator (Dean accounts) and authenticates through this
+  // same login. It is deliberately not a privileged role: a Dean only reaches the
+  // endorsement requests inside their authorized college.
+  DEAN: 'DEAN',
   OVCRIGE: 'OVCRIGE',
   OVCAF: 'OVCAF',
   REC: 'REC',
@@ -15,57 +20,23 @@ export const UserRole = {
 
 const STORAGE_KEY = 'user_data'
 
-// temp only
-const TEMPORARY_ACCOUNTS = {
-  [UserRole.PROPONENT]: {
-    id: 1,
-    name: 'Proponent User',
-    email: 'proponent@gmail.com',
-    role: UserRole.PROPONENT,
-    password: 'proponentpassword1234',
-  },
-  [UserRole.RPS_STAFF]: {
-    id: 2,
-    name: 'RPS Staff',
-    email: 'rps_staff@gmail.com',
-    role: UserRole.RPS_STAFF,
-    password: 'rpsstaffpassword1234',
-  },
-  [UserRole.OVCAF]: {
-    id: 3,
-    name: 'OVCAF User',
-    email: 'ovcaf@gmail.com',
-    role: UserRole.OVCAF,
-    password: 'ovcafpassword1234',
-  },
-  [UserRole.OVCRIGE]: {
-    id: 4,
-    name: 'OVCRIGE User',
-    email: 'ovcrige@gmail.com',
-    role: UserRole.OVCRIGE,
-    password: 'ovcrigepassword1234',
-  },
-  [UserRole.REC]: {
-    id: 5,
-    name: 'REC User',
-    email: 'rec@gmail.com',
-    role: UserRole.REC,
-    password: 'recpassword1234',
-  },
-  [UserRole.RPS_ADMIN]: {
-    id: 6,
-    name: 'RPS Admin User',
-    email: 'rps_admin@gmail.com',
-    role: UserRole.RPS_ADMIN,
-    password: 'rpsadminpassword1234',
-  },
-  [UserRole.OC]: {
-    id: 7,
-    name: 'OC User',
-    email: 'oc@gmail.com',
-    role: UserRole.OC,
-    password: 'ocpassword1234',
-  },
+/**
+ * Extracts the readable reason from an axios failure.
+ *
+ * The backend answers a refused login with a plain string (for example
+ * "Account is pending approval.") and other failures with an object carrying
+ * `message` or `error`. Passing the raw value to `new Error(...)` would show
+ * "[object Object]" to the user, so the reason is picked out explicitly. The
+ * previous behaviour for a string body is unchanged.
+ */
+function loginErrorMessage(error, fallback) {
+  const body = error?.response?.data
+  if (typeof body === 'string' && body.trim() !== '') return body
+  if (body && typeof body === 'object') {
+    if (typeof body.message === 'string' && body.message.trim() !== '') return body.message
+    if (typeof body.error === 'string' && body.error.trim() !== '') return body.error
+  }
+  return fallback
 }
 
 export const useUserDataStore = defineStore('userData', () => {
@@ -104,24 +75,25 @@ export const useUserDataStore = defineStore('userData', () => {
     persist(null)
   }
 
+  /**
+   * Authenticates against the backend.
+   *
+   * This is the only way in. The store previously fell back to a hardcoded table
+   * of accounts (with their passwords) and to a `offline_users` list kept in
+   * localStorage whenever the API could not be reached, so a wrong or unavailable
+   * backend still produced a "successful" login into a fabricated identity that
+   * never existed in the database. Those paths are gone: every account now comes
+   * from the backend, and an unreachable server is reported as such.
+   *
+   * @returns {Promise<boolean>} true when the backend accepted the credentials
+   * @throws {Error} with the reason the backend refused, or with the fact that the
+   *                 server could not be reached
+   */
   async function login(email, password, role) {
+    isLoading.value = true
     try {
-      isLoading.value = true
+      const response = await api.post('/api/users/login', { email, password, role })
 
-      console.log('EMAIL:', email)
-      console.log('PASSWORD:', password)
-      console.log('ROLE:', role)
-
-      const response = await axios.post(
-        'http://localhost:8081/api/users/login',
-        {
-          email,
-          password,
-          role,
-        }
-      )
-
-      console.log('LOGIN RESPONSE:', response.data)
       if (response.data) {
         setUser(response.data)
         return true
@@ -129,43 +101,16 @@ export const useUserDataStore = defineStore('userData', () => {
 
       return false
     } catch (error) {
-      console.warn("Backend login failed or server offline. Checking local mock and offline users database...")
+      // A response from the backend (401/403/...) carries the real reason.
+      if (error.response) {
+        throw new Error(loginErrorMessage(error, 'Invalid email, password, or role.'))
+      }
 
-      // 1. Check offline registered users in localStorage
-      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]')
-      const offlineUser = offlineUsers.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() &&
-          u.role.toUpperCase() === role.toUpperCase()
+      // No response at all: the server is unreachable. This is reported instead of
+      // being masked by a local fallback account.
+      throw new Error(
+        'Cannot reach the RPIS server. Please check your connection and try again.',
       )
-
-      if (offlineUser) {
-        if (offlineUser.password === password) {
-          if (offlineUser.status && offlineUser.status.toUpperCase() === 'PENDING') {
-            throw new Error('Your account is pending RPS ADMIN approval.')
-          } else if (offlineUser.status && offlineUser.status.toUpperCase() === 'REJECTED') {
-            throw new Error('Your account registration was rejected.')
-          } else if (offlineUser.status && offlineUser.status.toUpperCase() === 'APPROVED') {
-            console.log("Logged in using offline registered account.")
-            setUser(offlineUser)
-            return true
-          }
-        }
-      }
-
-      // 2. Check hardcoded TEMPORARY_ACCOUNTS
-      const tempUser = TEMPORARY_ACCOUNTS[role]
-      if (
-        tempUser &&
-        tempUser.email.toLowerCase() === email.toLowerCase() &&
-        tempUser.password === password
-      ) {
-        console.log("Logged in using local mock credentials.")
-        setUser(tempUser)
-        return true
-      }
-
-      console.error(error)
-      throw new Error(error.response?.data || 'Invalid email, password, or role.')
     } finally {
       isLoading.value = false
     }
@@ -174,8 +119,8 @@ export const useUserDataStore = defineStore('userData', () => {
   async function googleLogin(token, role) {
     try {
       isLoading.value = true
-      const response = await axios.post(
-        'http://localhost:8081/api/users/google-login',
+      const response = await api.post(
+        '/api/users/google-login',
         {
           token,
           role,
@@ -190,7 +135,7 @@ export const useUserDataStore = defineStore('userData', () => {
       return false
     } catch (error) {
       console.error(error)
-      throw new Error(error.response?.data || 'Google login failed.')
+      throw new Error(loginErrorMessage(error, 'Google login failed.'))
     } finally {
       isLoading.value = false
     }
@@ -213,3 +158,4 @@ export const useUserDataStore = defineStore('userData', () => {
     logout,
   }
 })
+

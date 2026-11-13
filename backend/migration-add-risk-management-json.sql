@@ -1,0 +1,31 @@
+-- Migration: Structured Risk Management Plan (section 21 of the Create Proposal form)
+-- ---------------------------------------------------------------------------
+-- The Risk Management Plan used to be one free-text column (`risks`) in which the
+-- proponent wrote the risks, their likelihood/impact and the mitigation measures as
+-- prose. The form now presents it as a table - one row per identified risk with its
+-- likelihood, its impact and its mitigation measure - and this migration adds the
+-- column that stores those rows:
+--
+--   risk_management_json  a JSON array of
+--                         {identifiedRisks, likelihood, impact, mitigationMeasure}.
+--                         The four fields are kept separate (never a concatenated
+--                         string), every entry belongs to its proposal through this
+--                         column, and the order the proponent entered is preserved.
+--                         Likelihood and impact only ever hold High / Medium / Low.
+--
+-- Nothing is dropped or rewritten here, so no existing record is touched:
+--
+--   * A proposal saved before the table existed has NULL in the new column. The form
+--     and every review page then show its `risks` text exactly as before (the old
+--     content is displayed, never discarded, and never parsed into rows that the
+--     proponent did not enter).
+--   * The legacy `risks` column is kept. From now on the backend also writes the
+--     readable rendering of the structured entries into it, so screens, printing and
+--     the exported proposal document that predate this change keep showing the plan.
+--
+-- Safe to run on existing databases: the change is additive and nullable, and it can
+-- be re-run (IF NOT EXISTS).
+ALTER TABLE proposals
+    ADD COLUMN IF NOT EXISTS risk_management_json TEXT;
+
+-- No index: the entries are only ever read together with their proposal.

@@ -1,5 +1,15 @@
 <template>
-  <div class="dashboard-layout">
+  <div class="end-page end-page--fluid dash-page">
+    <!-- ===================== HEADER ===================== -->
+    <section class="dash-banner">
+      <span class="dash-avatar" aria-hidden="true" v-html="icons.office"></span>
+      <div class="dash-banner-text">
+        <h2 class="dash-banner-title">OVCRIGE Dashboard</h2>
+        <p class="dash-banner-sub">
+          Office of the Vice Chancellor for Research, Innovation and Global Engagement
+        </p>
+      </div>
+    </section>
     <!-- SIDEBAR -->
     <!-- <aside class="sidebar">
       <h3 class="sidebar-title">Menu</h3>
@@ -12,151 +22,148 @@
       </ul>
     </aside> -->
 
-    <!-- MAIN CONTENT -->
-    <div class="main">
-      <!-- TOP BAR -->
-      <!-- <header class="topbar">
-        <h2>OVCRIGE Dashboard</h2>
-
-    
-      </header> -->
-
-      <!-- STATS -->
-      <div class="stats">
-        <div class="card">
-          <p>Total Submissions</p>
-          <h3>{{ stats.totalSubmissions }}</h3>
+    <!-- ===================== STATISTICS ===================== -->
+    <section class="dash-stats">
+      <div class="dash-stat dash-stat--blue">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.endorsed"></span>
+          <span class="dash-stat-label">Endorsed from RPS</span>
         </div>
-
-        <div class="card">
-          <p>Endorsed Proposals</p>
-          <h3>{{ stats.endorsed }}</h3>
-        </div>
-
-        <div class="card">
-          <p>Pending Review</p>
-          <h3>{{ stats.pending }}</h3>
-        </div>
-
-        <div class="card">
-          <p>For Revision</p>
-          <h3>{{ stats.revision }}</h3>
-        </div>
+        <div class="dash-stat-value">{{ stats.endorsed }}</div>
       </div>
 
-      <div class="content">
-        <section class="table-section">
-          <div class="table-header">
-            <h3>Latest Submitted Proposals</h3>
-            <button class="view-all" @click="goToSubmitted">View All</button>
-          </div>
+      <div class="dash-stat dash-stat--amber">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.clock"></span>
+          <span class="dash-stat-label">Under REC Review</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.underReview }}</div>
+      </div>
 
-          <table>
+      <div class="dash-stat dash-stat--green">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.check"></span>
+          <span class="dash-stat-label">REC Approved</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.recApproved }}</div>
+      </div>
+
+      <div class="dash-stat dash-stat--red">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.revision"></span>
+          <span class="dash-stat-label">For Revision</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.revision }}</div>
+      </div>
+    </section>
+
+    <!-- ===================== PROPOSALS + NOTIFICATIONS ===================== -->
+    <div class="dash-row dash-row--main">
+      <!-- Latest Endorsed Proposals -->
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.proposals"></span>
+          <h3 class="dash-section-title">Latest Endorsed Proposals</h3>
+          <div class="dash-section-actions">
+            <button class="section-link" @click="goToEndorsed">
+              <span>View All</span>
+              <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="end-table-scroll">
+          <table class="end-table ovc-table">
             <thead>
               <tr>
+                <th>Proposal ID</th>
                 <th>Title</th>
                 <th>Proponent</th>
                 <th>Submitted</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th class="text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-if="loading">
-                <td colspan="5" style="text-align:center">
+                <td colspan="6" class="ovc-empty">
                   Loading...
                 </td>
               </tr>
 
               <tr v-else-if="proposals.length === 0">
-                <td colspan="5" style="text-align:center">
+                <td colspan="6" class="ovc-empty">
                   No proposals found.
                 </td>
               </tr>
 
-              <tr
-                v-for="proposal in proposals.slice(0,5)"
-                :key="proposal.id"
-              >
-                <td>{{ proposal.projectTitle }}</td>
+              <tr v-for="proposal in proposals.slice(0, 5)" :key="proposal.id">
+                <td class="cell-id">
+                  {{ proposal.documentId || proposal.proposalCode || '—' }}
+                </td>
+                <td class="cell-title">{{ proposal.projectTitle }}</td>
                 <td>
-                  {{ proposal.proponent?.name || '-' }}
+                  {{ proposal.projectLeader || proposal.proponent?.name || '-' }}
+                </td>
+                <td class="cell-id">
+                  {{ proposal.createdAt?.substring(0, 10) }}
                 </td>
                 <td>
-                  {{ proposal.createdAt?.substring(0,10) }}
-                </td>
-                <td>
-                  <span
-                    class="badge"
-                    :class="proposal.status.toLowerCase()"
-                  >
-                    {{ proposal.status }}
+                  <span class="end-badge" :class="statusTone(proposal.status)">
+                    {{ proposalStatusLabel(proposal.status) }}
                   </span>
                 </td>
-                <td>
-                  <button
-                    class="review"
-                    @click="goToReview(proposal.id)"
-                  >
-                    Review
+                <td class="text-right">
+                  <button class="end-btn is-view row-btn" @click="goToReview(proposal.id)">
+                    REVIEW
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-        </section>
+        </div>
+      </section>
 
-       <aside class="notifications">
+      <!-- Notifications -->
+      <aside class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.bell"></span>
+          <h3 class="dash-section-title">Notifications</h3>
+        </header>
 
-<h3>Notifications</h3>
+        <ul class="dash-notes">
+          <li v-if="loading" class="dash-empty">
+            Loading...
+          </li>
 
-<ul>
+          <li v-else-if="notifications.length === 0" class="dash-empty">
+            No notifications.
+          </li>
 
-<li
-    v-if="loading"
->
-Loading...
-</li>
+          <li
+            v-for="notification in notifications.slice(0, 5)"
+            :key="notification.id"
+            class="dash-note dash-note--clickable"
+            @click="openNotification(notification)"
+          >
+            <span class="dash-note-icon" v-html="icons.bell"></span>
+            <div class="dash-note-body">
+              <p class="dash-note-text">{{ notification.message }}</p>
+              <div class="dash-note-foot">
+                <span class="dash-note-date">
+                  {{ notification.createdAt?.substring(0, 16) }}
+                </span>
+              </div>
+            </div>
+          </li>
+        </ul>
 
-<li
-    v-else-if="notifications.length===0"
->
-No notifications.
-</li>
-
-<li
-    v-for="notification in notifications.slice(0,5)"
-    :key="notification.id"
->
-
-<strong>
-
-{{ notification.message }}
-
-</strong>
-
-<small>
-
-{{ notification.createdAt?.substring(0,16) }}
-
-</small>
-
-</li>
-
-</ul>
-
-<button
-class="view-all"
-@click="goToNotifications"
->
-
-View All
-
-</button>
-
-</aside>
-      </div>
+        <button class="section-link notif-view-all" @click="goToNotifications">
+          <span>View All</span>
+          <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
+        </button>
+      </aside>
     </div>
   </div>
 </template>
@@ -164,15 +171,65 @@ View All
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/utils/api'
+import { UserRole } from '@/stores/userData'
+import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+
+// The shared design layer of the role dashboards: the welcome banner, the statistic cards,
+// the section cards, the grid and the pastel accents (dashboard.css) plus the buttons, the
+// status pills and the table (endorsement.css). Importing them changes how this page looks
+// and nothing else - every request, binding and action below is unchanged.
+import '@/assets/dashboard.css'
+import '@/assets/endorsement.css'
+
+/**
+ * The icons of the page. They are inline SVGs on purpose: the application ships no icon
+ * dependency, and one helper keeps every icon the same size, stroke and alignment. The map
+ * is presentation only - no statistic, proposal or notification depends on it.
+ */
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
+
+const icons = {
+  office: svg(
+    '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/>' +
+      '<path d="M9 21v-5h6v5"/><path d="M9 10h.01M15 10h.01M9 13h.01M15 13h.01"/>',
+  ),
+  endorsed: svg(
+    '<path d="M12 3l7 3v5c0 4.4-3 7.9-7 9-4-1.1-7-4.6-7-9V6z"/>' +
+      '<path d="m9 12 2 2 4-4.5"/>',
+  ),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/>'),
+  check: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
+  revision: svg(
+    '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/>' +
+      '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
+  ),
+  proposals: svg(
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+      '<path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  ),
+  bell: svg(
+    '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+      '<path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  ),
+}
+
+/**
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries.
+ */
 
 const router = useRouter()
 
 // Dashboard data (will come from backend)
 const stats = ref({
-  totalSubmissions: 0,
   endorsed: 0,
-  pending: 0,
+  underReview: 0,
+  recApproved: 0,
   revision: 0
 })
 
@@ -183,28 +240,39 @@ const loading = ref(true)
 
 const loadDashboard = async () => {
   try {
-    // Fetch proposals
-    const proposalResponse = await axios.get('http://localhost:8081/api/proposals')
+    // Fetch proposals relevant to OVCRIGE workflow
+    // Use proper params serialization for array parameters
+    const proposalResponse = await api.get('/api/proposals', {
+      params: {
+        statusIn: ['FOR REVIEW', 'SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+      },
+      paramsSerializer: {
+        indexes: null // array format: statusIn=a&statusIn=b&statusIn=c
+      }
+    })
 
     proposals.value = proposalResponse.data
 
-    stats.value.totalSubmissions = proposals.value.length
     stats.value.endorsed = proposals.value.filter(
       p => p.status === 'ENDORSED'
     ).length
 
-    stats.value.pending = proposals.value.filter(
-      p => p.status === 'SUBMITTED'
+    stats.value.underReview = proposals.value.filter(
+      p => p.status === 'UNDER_REVIEW'
+    ).length
+
+    stats.value.recApproved = proposals.value.filter(
+      p => p.status === 'REC_APPROVED' || p.status === 'OVC_APPROVED'
     ).length
 
     stats.value.revision = proposals.value.filter(
-      p => p.status === 'REVISION'
+      p => p.status === 'REVISION' || p.status === 'REC_REVISION'
     ).length
 
     // Notification endpoint
     // Replace userId later using logged in user
-    const notifResponse = await axios.get(
-      'http://localhost:8081/api/notifications?userId=4'
+    const notifResponse = await api.get(
+      '/api/notifications?userId=4'
     )
 
     notifications.value = notifResponse.data
@@ -224,7 +292,21 @@ const goToNotifications = () => {
   router.push('/notifications')
 }
 
-const goToSubmitted = () => {
+/**
+ * Where a notification opens: the exact proposal it carries, on this role's proposal page
+ * (/review-prop/:id). The id is the saved record reference - never the notification title -
+ * and a notification with no reference has no destination.
+ */
+const notificationDestination = (notification) =>
+  proposalNotificationDestination(notification, UserRole.OVCRIGE)
+
+/** Opens the proposal a notification is about. Navigation only - the read state is untouched. */
+const openNotification = (notification) => {
+  const destination = notificationDestination(notification)
+  if (destination) router.push(destination)
+}
+
+const goToEndorsed = () => {
   router.push('/submit-proposals')
 }
 
@@ -234,173 +316,113 @@ const goToReview = id => {
 </script>
 
 <style scoped>
-.dashboard-layout {
-  display: flex;
-  height: 100vh;
-  font-family: Poppins, sans-serif;
+/* ============================================================================
+   OVCRIGE dashboard presentation.
+
+   The page reuses the shared design layer: assets/dashboard.css provides the welcome
+   banner, the statistic cards, the section cards, the grid and the pastel accents, and
+   assets/endorsement.css provides the buttons, the status pills and the table. Only what
+   is specific to this screen is declared here, so nothing can leak into another page.
+   ============================================================================ */
+
+/* The banner avatar carries an icon injected with v-html, so it is reached through :deep(). */
+.dash-avatar :deep(svg) {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.8;
 }
 
-.sidebar {
-  width: 220px;
-  background: #ffdf00;
-  padding: 20px;
+/* ===== Section links (the "View All" controls) ===== */
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: transparent;
+  color: #315bff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.sidebar-title {
+.section-link:hover {
+  background: #eef1ff;
+  color: #1d40cc;
+}
+
+.section-link:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
+}
+
+.section-link-arrow {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+/* The notifications card keeps its action on its own row, at the start. */
+.notif-view-all {
+  align-self: flex-start;
+}
+
+/* ===== Status pills =====
+   Geometry and tone colours are shared: assets/status.css paints `.is-approved`,
+   `.is-returned`, `.is-rejected`, `.is-pending`, `.is-info`, `.is-progress` and `.is-neutral`
+   from the same tokens, so this page cannot drift from the rest of RPIS. */
+
+/* ===== Endorsed proposals table =====
+   The shared .end-table is used as it is; only the header band, the row alignment and the
+   compact row action are set here so the table lines up with the button beside it. */
+.ovc-table th {
+  background: #f6f7fd;
+  color: #1c1a3c;
   font-weight: 700;
-  margin-bottom: 20px;
+  white-space: nowrap;
 }
 
-.menu {
-  list-style: none;
-  padding: 0;
+.ovc-table td {
+  vertical-align: middle;
 }
 
-.menu li {
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-  cursor: pointer;
+.ovc-table tbody tr:hover td {
+  background: #fafbff;
 }
 
-.menu li.active,
-.menu li:hover {
-  background: #1f1a3d;
-  color: white;
-}
-
-.main {
-  flex: 1;
-  background: #f6f7fb;
-  padding: 20px;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.user {
+.ovc-table th.text-right,
+.ovc-table td.text-right {
   text-align: right;
-  font-size: 13px;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin: 20px 0;
+.cell-title {
+  font-weight: 600;
+  color: #1c1a3c;
 }
 
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
+.cell-id {
+  font-size: 0.8125rem;
+  color: #5b6484;
+  white-space: nowrap;
 }
 
-.content {
-  display: grid;
-  grid-template-columns: 3fr 1fr;
-  gap: 20px;
-}
-
-.table-section {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.badge {
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.pending {
-  background: #ffe082;
-}
-
-.revision {
-  background: #90caf9;
-}
-
-.review {
-  background: #2452ff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
-
-.notifications {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-}
-
-.notifications ul {
-  list-style: none;
-  padding: 0;
-}
-
-.notifications li {
-  margin-bottom: 12px;
-  font-size: 13px;
-}
-
-.notifications small {
-  display: block;
-  color: #777;
-}
-
-.view-all-notif {
-  margin-top: 10px;
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  background: none;
-}
-
-.approved {
-  background: #c8e6c9;
-}
-
-.endorsed {
-  background: #bbdefb;
-}
-
-.submitted {
-  background: #fff3cd;
-}
-
-.revision {
-  background: #ffccbc;
-}
-
-.rejected {
-  background: #ffcdd2;
-}
-
-.loading {
+.ovc-empty {
+  padding: 24px 12px;
   text-align: center;
+  color: #78809a;
+}
+
+/* A table row action is smaller than a page action. */
+.row-btn {
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+}
+
+/* ===== Small screens ===== */
+@media (max-width: 560px) {
+  .section-link {
+    margin-left: 0;
+  }
 }
 </style>

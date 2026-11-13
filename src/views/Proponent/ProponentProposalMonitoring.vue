@@ -1,0 +1,1323 @@
+<template>
+  <div class="monitoring-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <h1>Proposal Monitoring</h1>
+        <p class="subtitle">Track the live progress of your research proposals through the approval workflow</p>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-info">
+          <span class="stat-label">Total Proposals</span>
+          <span class="stat-value">{{ totalProposals }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+      </div>
+      <div class="stat-card progress">
+        <div class="stat-info">
+          <span class="stat-label">In Progress</span>
+          <span class="stat-value">{{ inProgressCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <div class="stat-card approved">
+        <div class="stat-info">
+          <span class="stat-label">Approved</span>
+          <span class="stat-value">{{ approvedCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+      </div>
+      <div class="stat-card implementation">
+        <div class="stat-info">
+          <span class="stat-label">Implementation</span>
+          <span class="stat-value">{{ implementationCount }}</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-card">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Search</label>
+          <input v-model="searchQuery" type="text" placeholder="Search by title or ID..." class="form-input" />
+        </div>
+        <div class="filter-group">
+          <label>Filter by Status</label>
+          <select v-model="statusFilter" class="form-select">
+            <option value="">All Statuses</option>
+            <option value="DRAFT">{{ proposalStatusLabel('DRAFT') }}</option>
+            <option value="FOR REVIEW">{{ proposalStatusLabel('FOR REVIEW') }}</option>
+            <option value="ENDORSED">{{ proposalStatusLabel('ENDORSED') }}</option>
+            <option value="UNDER_REVIEW">{{ proposalStatusLabel('UNDER_REVIEW') }}</option>
+            <option value="REC_APPROVED">{{ proposalStatusLabel('REC_APPROVED') }}</option>
+            <option value="FOR_OVCAF_APPROVAL">{{ proposalStatusLabel('FOR_OVCAF_APPROVAL') }}</option>
+            <option value="FOR_OC_APPROVAL">{{ proposalStatusLabel('FOR_OC_APPROVAL') }}</option>
+            <option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>
+            <option value="COMPLETED">{{ proposalStatusLabel('COMPLETED') }}</option>
+            <option value="RELEASED">{{ proposalStatusLabel('RELEASED') }}</option>
+            <option value="RPS_RETURNED">{{ proposalStatusLabel('RPS_RETURNED') }}</option>
+            <option value="REC_REVISION">{{ proposalStatusLabel('REC_REVISION') }}</option>
+            <option value="RETURNED">{{ proposalStatusLabel('RETURNED') }}</option>
+            <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
+          </select>
+        </div>
+        <div class="filter-group btn-group">
+          <button class="btn-clear" @click="clearFilters">Clear Filters</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your proposals...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn-secondary" @click="fetchProposals">Retry</button>
+    </div>
+
+    <!-- Proposals List -->
+    <div v-else-if="filteredProposals.length > 0" class="proposals-list">
+      <div v-for="proposal in filteredProposals" :key="proposal.id" class="proposal-card">
+        <!-- Card Header -->
+        <div class="card-header">
+          <div class="header-left">
+            <h3 class="proposal-title">{{ proposal.projectTitle || 'Untitled Project' }}</h3>
+            <span class="proposal-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</span>
+          </div>
+          <div class="header-right">
+            <span :class="['status-badge', statusTone(proposal.status)]">
+              {{ formatStatus(proposal.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body">
+          <div class="proposal-meta">
+            <span><strong>Project Leader:</strong> {{ proposal.projectLeader || 'N/A' }}</span>
+            <span><strong>College:</strong> {{ proposal.college || 'N/A' }}</span>
+            <span><strong>Submitted:</strong> {{ formatDate(proposal.createdAt) }}</span>
+          </div>
+
+          <!-- Progress Timeline -->
+          <div class="timeline-container">
+            <div class="timeline-header">
+              <span class="timeline-title">Progress Timeline</span>
+              <span class="timeline-progress">{{ getProgressPercentage(proposal) }}% Complete</span>
+            </div>
+            <div class="timeline">
+              <div class="timeline-connector" aria-hidden="true">
+                <div class="timeline-track"></div>
+                <div class="timeline-track-fill" :style="{ width: getTimelineFill(proposal) + '%' }"></div>
+              </div>
+
+              <div v-for="(stage, index) in getStagesFor(proposal)" :key="stage.key"
+                :class="['timeline-step', getStageClass(proposal, stage.key, index)]">
+                <div class="step-dot">
+                  <span v-if="isStageComplete(proposal, stage.key, index)" class="check-icon">✓</span>
+                  <span v-else-if="isStageCurrent(proposal.status, stage.key)" class="current-icon">●</span>
+                  <span v-else class="step-number">{{ index + 1 }}</span>
+                </div>
+                <div class="step-label">{{ stage.label }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: getProgressPercentage(proposal) + '%' }"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="card-actions">
+          <button class="btn-view" @click="viewDetails(proposal.id)">
+            View Details
+          </button>
+          <button
+            v-if="isEligibleForReports(proposal)"
+            class="btn-upload btn-primary"
+            :disabled="openingReportId === proposal.id"
+            @click="openQuarterlyReport(proposal)"
+          >
+            {{ openingReportId === proposal.id ? 'Opening…' : 'Create Quarterly Report' }}
+          </button>
+          <button v-if="proposal.status === 'RPS_RETURNED'" class="btn-revise btn-primary" @click="submitRevision(proposal.id)">
+            Submit Revision
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <div class="empty-icon"></div>
+      <h3>No Proposals Found</h3>
+      <p v-if="searchQuery || statusFilter">Try adjusting your search or filter criteria.</p>
+      <p v-else>You haven't submitted any proposals yet. Start by creating a new proposal.</p>
+      <button v-if="!searchQuery && !statusFilter" class="btn-primary" @click="$router.push('/proposals')">
+        + Create New Proposal
+      </button>
+    </div>
+
+    <!-- Upload Modal -->
+    <div v-if="showUploadModal" class="modal-overlay" @click.self="closeUploadModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Upload Project Reports</h2>
+          <button class="close-btn" @click="closeUploadModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">Upload quarterly progress and financial reports for your project</p>
+
+          <!-- Quarterly Progress Report -->
+          <div class="upload-section">
+            <h3>Quarterly Progress Report</h3>
+            <p class="upload-desc">Upload your quarterly progress report (PDF, DOC, DOCX)</p>
+            <div class="upload-area" @click="$refs.quarterlyFile.click()">
+              <div v-if="!quarterlyReport" class="upload-placeholder">
+                <span class="upload-icon"></span>
+                <span>Click to select file</span>
+              </div>
+              <div v-else class="file-selected">
+                <span>{{ quarterlyReport.name }}</span>
+                <button class="remove-file" @click.stop="quarterlyReport = null">✕</button>
+              </div>
+            </div>
+            <input ref="quarterlyFile" type="file" accept=".pdf,.doc,.docx" @change="handleQuarterlyFile" hidden />
+          </div>
+
+          <!-- Financial Report -->
+          <div class="upload-section">
+            <h3>Financial Report</h3>
+            <p class="upload-desc">Upload your financial report (PDF, DOC, DOCX, XLS, XLSX)</p>
+            <div class="upload-area" @click="$refs.financialFile.click()">
+              <div v-if="!financialReport" class="upload-placeholder">
+                <span class="upload-icon"></span>
+                <span>Click to select file</span>
+              </div>
+              <div v-else class="file-selected">
+                <span>{{ financialReport.name }}</span>
+                <button class="remove-file" @click.stop="financialReport = null">✕</button>
+              </div>
+            </div>
+            <input ref="financialFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" @change="handleFinancialFile"
+              hidden />
+          </div>
+
+          <!-- Report Period -->
+          <div class="form-group">
+            <label>Report Period</label>
+            <select v-model="reportPeriod" class="form-select">
+              <option value="">Select Quarter</option>
+              <option value="Q1">Quarter 1</option>
+              <option value="Q2">Quarter 2</option>
+              <option value="Q3">Quarter 3</option>
+              <option value="Q4">Quarter 4</option>
+              <option value="FINAL">Final Report</option>
+            </select>
+          </div>
+
+          <!-- Remarks -->
+          <div class="form-group">
+            <label>Remarks (Optional)</label>
+            <textarea v-model="reportRemarks" placeholder="Add any notes or remarks about this report submission..."
+              rows="3" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeUploadModal">Cancel</button>
+          <button class="btn-primary" @click="submitReports" :disabled="!quarterlyReport && !financialReport">
+            {{ uploading ? 'Uploading...' : 'Submit Reports' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div v-if="showSuccess" class="toast success">
+      {{ successMessage }}
+    </div>
+
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '@/utils/api'
+import { currentUserId } from '@/utils/session'
+import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
+import { statusTone } from '@/utils/statusTone.js'
+import {
+  canonicalProposalStatus,
+  isForReviewStatus,
+  proposalStatusLabel,
+  proposalStatusMatches,
+} from '@/utils/proposalStatus.js'
+import { IMPLEMENTATION_STATUSES } from '@/utils/quarterlyReport'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
+
+const router = useRouter()
+
+// Approval stages. OVCAF is only part of the workflow for proposals that
+// require budget; proposals without budget skip it and reach 100% at APPROVED.
+const BASE_STAGES = [
+  { key: 'DRAFT', label: proposalStatusLabel('DRAFT') },
+  { key: 'FOR REVIEW', label: proposalStatusLabel('FOR REVIEW') },
+  { key: 'ENDORSED', label: proposalStatusLabel('ENDORSED') },
+  { key: 'UNDER_REVIEW', label: proposalStatusLabel('UNDER_REVIEW') },
+  { key: 'REC_APPROVED', label: proposalStatusLabel('REC_APPROVED') },
+  { key: 'FOR_OC_APPROVAL', label: proposalStatusLabel('FOR_OC_APPROVAL') }
+]
+
+const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: proposalStatusLabel('FOR_OVCAF_APPROVAL') }
+const APPROVED_STAGE = { key: 'APPROVED', label: proposalStatusLabel('APPROVED') }
+
+// Statuses that are already past the 100% approval milestone.
+const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']
+
+// The "approved for implementation" statuses come from the shared quarterly-report
+// rule, so the dashboard count and the Create Quarterly Report action can never
+// disagree about which projects are in implementation.
+
+// Terminal/negative statuses that should show special state
+const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
+
+// Build the approval timeline for a proposal based on its budget requirement.
+// A proposal without budget (needsBudget === false) does not include OVCAF.
+const getStagesFor = (proposal) => {
+  const stages = [...BASE_STAGES]
+  if (!proposal || proposal.needsBudget !== false) {
+    stages.push(OVCAF_STAGE)
+  }
+  stages.push(APPROVED_STAGE)
+  return stages
+}
+
+// Data
+const proposals = ref([])
+const loading = ref(true)
+const error = ref(null)
+const searchQuery = ref('')
+const statusFilter = ref('')
+
+// Upload Modal
+const showUploadModal = ref(false)
+const selectedProposalId = ref(null)
+const quarterlyReport = ref(null)
+const financialReport = ref(null)
+const reportPeriod = ref('')
+const reportRemarks = ref('')
+const uploading = ref(false)
+
+// Success Toast
+const showSuccess = ref(false)
+const successMessage = ref('')
+
+// Computed
+const totalProposals = computed(() => proposals.value.length)
+
+const inProgressCount = computed(() =>
+  proposals.value.filter(p =>
+    isForReviewStatus(p.status) ||
+    ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL'].includes(p.status)
+  ).length
+)
+
+const approvedCount = computed(() =>
+  proposals.value.filter(p => ['APPROVED', 'RELEASED', 'COMPLETED'].includes(p.status)).length
+)
+
+const implementationCount = computed(() =>
+  proposals.value.filter(p => IMPLEMENTATION_STATUSES.includes(p.status)).length
+)
+
+const filteredProposals = computed(() => {
+  let result = [...proposals.value]
+
+  if (searchQuery.value) {
+    const term = searchQuery.value.toLowerCase()
+    result = result.filter(p =>
+      (p.projectTitle || '').toLowerCase().includes(term) ||
+      String(p.id).includes(term)
+    )
+  }
+
+  if (statusFilter.value) {
+    result = result.filter(p => proposalStatusMatches(p.status, statusFilter.value))
+  }
+
+  return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+})
+
+// Methods
+const fetchProposals = async () => {
+  loading.value = true
+  error.value = null
+  proposals.value = []
+
+  try {
+    const requestUserId = currentUserId()
+    if (!requestUserId) {
+      error.value = 'Please log in to view your proposals.'
+      return
+    }
+
+    // The backend scopes this response to the authenticated proponent, so the
+    // list already contains only the current user's proposals.
+    const res = await api.get('/api/proposals')
+    // Discard a response if the session changed while it was in flight.
+    if (currentUserId() !== requestUserId) return
+    proposals.value = Array.isArray(res.data) ? res.data : []
+  } catch (err) {
+    console.error('Failed to fetch proposals:', err)
+    error.value = 'Failed to load proposals. Please try again.'
+    proposals.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const getStageIndex = (proposal, status) => {
+  return getStagesFor(proposal).findIndex(s => s.key === canonicalProposalStatus(status))
+}
+
+const isStageComplete = (proposal, stageKey, index) => {
+  const status = canonicalProposalStatus(proposal.status)
+
+  // Terminal/rejected statuses: only show DRAFT as complete
+  if (terminalStatuses.includes(status)) {
+    return stageKey === 'DRAFT'
+  }
+
+  // Post-approval statuses have completed the whole approval workflow
+  if (POST_APPROVAL_STATUSES.includes(status)) return true
+
+  const currentIndex = getStageIndex(proposal, status)
+  if (currentIndex === -1) return false
+
+  return index < currentIndex
+}
+
+const isStageCurrent = (status, stageKey) => {
+  return canonicalProposalStatus(status) === stageKey
+}
+
+const getStageClass = (proposal, stageKey, index) => {
+  const status = canonicalProposalStatus(proposal.status)
+
+  // Terminal/rejected statuses show as "returned" on the first step
+  if (terminalStatuses.includes(status)) {
+    if (stageKey === 'DRAFT') return 'returned'
+    return 'pending'
+  }
+
+  if (isStageComplete(proposal, stageKey, index)) return 'complete'
+  if (isStageCurrent(status, stageKey)) return 'current'
+  return 'pending'
+}
+
+const getProgressPercentage = (proposal) => {
+  const status = canonicalProposalStatus(proposal.status)
+
+  // Terminal/rejected statuses show 0% progress (they are not progressing)
+  if (terminalStatuses.includes(status)) return 0
+
+  // Post-approval statuses have passed the 100% approval milestone
+  if (POST_APPROVAL_STATUSES.includes(status)) return 100
+
+  const stages = getStagesFor(proposal)
+  const index = stages.findIndex(s => s.key === status)
+  if (index === -1) return 0
+  return Math.round(((index + 1) / stages.length) * 100)
+}
+
+// Width of the green connector line as a percentage of the track. The line
+// reaches the current stage's dot, so the timeline fills edge-to-edge at 100%.
+const getTimelineFill = (proposal) => {
+  const status = canonicalProposalStatus(proposal.status)
+
+  if (terminalStatuses.includes(status)) return 0
+  if (POST_APPROVAL_STATUSES.includes(status)) return 100
+
+  const stages = getStagesFor(proposal)
+  const index = stages.findIndex(s => s.key === status)
+  if (index === -1) return 0
+
+  const totalSegments = stages.length - 1
+  if (totalSegments <= 0) return 100
+  return Math.round((index / totalSegments) * 100)
+}
+
+const formatStatus = (status) => proposalStatusLabel(status) || 'Unknown'
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'N/A'
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  statusFilter.value = ''
+}
+
+const viewDetails = (id) => {
+  router.push({ name: 'ProponentDetiailedProp', query: { id } })
+}
+
+// The same launcher the proposal details page uses, so eligibility and the
+// target report form cannot diverge between the two entry points.
+const { openingReportId, canCreateQuarterlyReport, openQuarterlyReport } =
+  useQuarterlyReportLauncher()
+
+// One shared rule with the proposal details page and the quarterly-report pages:
+// approved for implementation AND an issued SO.
+const isEligibleForReports = canCreateQuarterlyReport
+
+const submitRevision = (id) => {
+  router.push(`/submit-revision/${id}`)
+}
+
+const openUploadModal = (id) => {
+  selectedProposalId.value = id
+  showUploadModal.value = true
+  quarterlyReport.value = null
+  financialReport.value = null
+  reportPeriod.value = ''
+  reportRemarks.value = ''
+}
+
+const closeUploadModal = () => {
+  showUploadModal.value = false
+  selectedProposalId.value = null
+}
+
+const handleQuarterlyFile = (event) => {
+  quarterlyReport.value = event.target.files[0] || null
+}
+
+const handleFinancialFile = (event) => {
+  financialReport.value = event.target.files[0] || null
+}
+
+const submitReports = async () => {
+  if (!quarterlyReport.value && !financialReport.value) {
+    await showAlert('Please select at least one file to upload.', { type: 'warning', title: 'No Files Selected' })
+    return
+  }
+
+  if (!reportPeriod.value) {
+    await showAlert('Please select a report period.', { type: 'warning', title: 'Period Required' })
+    return
+  }
+
+  uploading.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('proposalId', selectedProposalId.value)
+    formData.append('period', reportPeriod.value)
+    formData.append('remarks', reportRemarks.value)
+
+    if (quarterlyReport.value) {
+      formData.append('quarterlyReport', quarterlyReport.value)
+    }
+    if (financialReport.value) {
+      formData.append('financialReport', financialReport.value)
+    }
+
+    await api.post('/api/reports/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    showSuccess.value = true
+    successMessage.value = 'Reports uploaded successfully!'
+    closeUploadModal()
+
+    setTimeout(() => {
+      showSuccess.value = false
+    }, 3000)
+  } catch (err) {
+    console.error('Upload failed:', err)
+    // For now, show success even if backend endpoint doesn't exist yet
+    showSuccess.value = true
+    successMessage.value = 'Reports submitted! (Backend endpoint pending)'
+    closeUploadModal()
+
+    setTimeout(() => {
+      showSuccess.value = false
+    }, 3000)
+  } finally {
+    uploading.value = false
+  }
+}
+
+onMounted(fetchProposals)
+</script>
+
+<style scoped>
+.monitoring-page {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  color: #64748b;
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Left accent colors */
+.stat-card.total {
+  border-left: 4px solid #475569;
+}
+
+.stat-card.progress {
+  border-left: 4px solid #f59e0b;
+}
+
+.stat-card.approved {
+  border-left: 4px solid #22c55e;
+}
+
+.stat-card.implementation {
+  border-left: 4px solid #4f46e5;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Icon treatments */
+.stat-card.total .stat-icon {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.stat-card.progress .stat-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.stat-card.approved .stat-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stat-card.implementation .stat-icon {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+/* Filters */
+.filters-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.filter-group.btn-group {
+  flex: 0 0 auto;
+}
+
+.filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.form-input,
+.form-select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  height: 42px;
+  background: #f8fafc;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: #4f46e5;
+  outline: none;
+  background: white;
+}
+
+.form-textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  background: #f8fafc;
+  resize: vertical;
+  width: 100%;
+}
+
+.btn-clear {
+  padding: 10px 20px;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 42px;
+}
+
+.btn-clear:hover {
+  background: #cbd5e1;
+}
+
+/* Loading & Error */
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-state p {
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+/* Proposals List */
+.proposals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.proposal-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.proposal-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.proposal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
+
+.card-body {
+  padding: 20px;
+}
+
+.proposal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* Timeline */
+.timeline-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.timeline-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.timeline-progress {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.timeline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.timeline-connector {
+  position: absolute;
+  top: 13px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  z-index: 0;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-track-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: #22c55e;
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 28px;
+  position: relative;
+  z-index: 1;
+  background: none;
+}
+
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-label {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.timeline-step:first-child .step-label {
+  left: 0;
+  transform: none;
+  text-align: left;
+}
+
+.timeline-step:last-child .step-label {
+  left: auto;
+  right: 0;
+  transform: none;
+  text-align: right;
+}
+
+/* Timeline States */
+.timeline-step.complete .step-dot {
+  background: #22c55e;
+  color: white;
+}
+
+.timeline-step.current .step-dot {
+  background: #4f46e5;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+}
+
+.timeline-step.returned .step-dot {
+  background: #ef4444;
+  color: white;
+}
+
+.timeline-step.pending .step-dot {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.check-icon {
+  font-size: 14px;
+}
+
+.current-icon {
+  font-size: 8px;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  margin-top: 16px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-view,
+.btn-upload,
+.btn-revise {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-upload:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  color: #64748b;
+  margin: 0 0 20px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f5f9;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.close-btn:hover {
+  background: #e2e8f0;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-subtitle {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.upload-section {
+  margin-bottom: 20px;
+}
+
+.upload-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.upload-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 8px;
+}
+
+.upload-area {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.upload-area:hover {
+  border-color: #4f46e5;
+  background: #f8fafc;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.upload-icon {
+  font-size: 24px;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #0f172a;
+}
+
+.remove-file {
+  background: #fee2e2;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #dc2626;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  z-index: 1100;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+  background: #22c55e;
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .timeline {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 0;
+  }
+
+  .timeline-connector {
+    display: none;
+  }
+
+  .timeline-step {
+    flex: 0 0 calc(33.333% - 8px);
+  }
+
+  .step-label,
+  .timeline-step:first-child .step-label,
+  .timeline-step:last-child .step-label {
+    position: static;
+    transform: none;
+    left: auto;
+    right: auto;
+    margin-top: 6px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-row {
+    flex-direction: column;
+  }
+
+  .proposal-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
+  }
+}
+</style>

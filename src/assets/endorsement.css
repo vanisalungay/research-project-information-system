@@ -1,0 +1,696 @@
+/**
+ * endorsement.css
+ * ---------------------------------------------------------------------------
+ * The shared look of the Dean endorsement workflow screens (Proponent request,
+ * Dean review, Certifications). Every class is prefixed with "end-" so it cannot
+ * collide with the styles of the existing pages, and the palette matches the rest
+ * of the application (navy #1e293b headings, blue #2452ff primary action).
+ *
+ * Imported by the endorsement pages only.
+ */
+.end-page {
+  max-width: 1040px;
+}
+
+/* Pages whose main content is a wide table use the whole area between the sidebar and the
+   right edge of the screen. The shell (layouts/DefaultLayout.vue) already provides the
+   gutter through .app-content, so no second width cap is applied here - that cap was what
+   left the large blank area on the right of the My Endorsements page. It is the same
+   convention the My Projects page uses (.proposals-content has padding only). */
+.end-page--fluid {
+  max-width: none;
+}
+
+/* A table wider than the screen scrolls inside its own card instead of stretching the
+   page. The minimum width keeps the columns readable instead of crushing them; the
+   My Endorsements page raises it further (see .end-page--fluid below). */
+.end-table-scroll {
+  overflow-x: auto;
+}
+
+.end-table-scroll .end-table {
+  min-width: 560px;
+}
+
+.end-page--fluid .end-table {
+  min-width: 720px;
+}
+
+/* The header labels stay on one line, so the columns are distributed evenly instead of
+   breaking "Project title" and "Call for Proposal" onto two lines. */
+.end-page--fluid .end-table th {
+  white-space: nowrap;
+}
+
+/* The Call for Proposals card of the Proponent dashboard shows the call's own name above
+   its details: larger than a field value, smaller than the page title. */
+.end-call-name {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-page-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  color: #1e293b;
+}
+
+.end-subtitle {
+  margin: 0 0 24px;
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.end-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.end-card + .end-card {
+  margin-top: 18px;
+}
+
+.end-card.is-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.end-card.is-empty {
+  text-align: center;
+  color: #64748b;
+}
+
+.end-section-title {
+  margin: 0 0 14px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.end-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.end-field label,
+.end-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.end-value {
+  font-size: 0.9375rem;
+  color: #1f2937;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.end-req {
+  color: #dc2626;
+}
+
+.end-input,
+.end-select,
+.end-textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.end-textarea {
+  resize: vertical;
+}
+
+.end-input:focus,
+.end-select:focus,
+.end-textarea:focus {
+  outline: none;
+  border-color: #2452ff;
+  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.15);
+}
+
+.end-field-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+/* Program Title and Project Title: two separate fields side by side, exactly as the
+   Create Proposal form lays them out. On a narrow screen the row collapses to a single
+   column so neither field is squeezed. */
+.end-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+/* The inline "create a new program title" flow, shown under the field once the proponent
+   chooses "Create New Program Title" (or double clicks the control). */
+.end-program-title-new-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.end-program-title-new-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.end-program-title-new-cancel {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.end-program-title-new-cancel:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.end-program-title-new-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* An explanatory line under a field (why the list is empty, or why it could not be
+   loaded). It is only a warning, never an error, unless it says so. */
+.end-field-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.end-field-hint.is-error {
+  color: #b45309;
+}
+
+@media (max-width: 640px) {
+  .end-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+.end-note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.end-note.is-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.end-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.end-banner.is-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.end-banner.is-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.end-banner.is-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.end-banner-link {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+/* The badge's tone colours are global: assets/status.css paints every `.is-*` tone from the
+   shared status tokens, so the endorsement screens cannot drift from the rest of RPIS. */
+.end-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.end-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* The button geometry and every action colour are global: assets/actions.css owns
+   `.end-btn` (and its `.is-primary` / `.is-approve` / `.is-danger` / `.is-return` /
+   `.is-view` / `.is-edit` / `.is-cancel` / `.is-link` modifiers), so one action has one
+   colour on every page. */
+
+.end-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+/* The RPIS table head is the blue band painted behind every table head (see main.css), so
+   the label has to be light: the old #64748b grey sat at ~2.2:1 on that band and was
+   unreadable. A page that lightens the band sets its own darker label (see the dashboards'
+   .*-table th rules). */
+.end-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+}
+
+.end-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1f2937;
+  vertical-align: top;
+}
+
+.end-table tr:last-child td {
+  border-bottom: none;
+}
+
+.end-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.end-toolbar .end-select {
+  width: auto;
+  min-width: 190px;
+}
+
+/* The request count sits at the far end of the toolbar, so the row lines up with the table
+   below it instead of leaving the right end empty. Only the alignment is set here: the
+   muted colour still comes from .end-muted, so nothing about the look changes. */
+.end-toolbar-count {
+  margin-left: auto;
+}
+
+/* ===== Sections of the consolidated My Endorsements page =====
+   The three parts of the endorsement workflow (the requests, the request form and the
+   issued letters) are tabs of one page. The pill follows the hub pattern already used
+   elsewhere in the application: white by default, navy with the yellow label when
+   active. */
+.end-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.end-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e3e6ef;
+  background: #ffffff;
+  color: #25245b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.end-tab:hover {
+  border-color: #25245b;
+}
+
+.end-tab:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
+}
+
+.end-tab.active {
+  background: #25245b;
+  border-color: #25245b;
+  color: #ffd400;
+  font-weight: 600;
+}
+
+/* How many requests the tracking section holds, so the count is visible without
+   switching to it. */
+.end-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #25245b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.end-tab.active .end-tab-count {
+  background: #ffd400;
+  color: #25245b;
+}
+
+@media (max-width: 640px) {
+  /* The tabs stay on one scrollable line instead of stacking into a tall block. */
+  .end-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .end-tab {
+    flex-shrink: 0;
+  }
+}
+
+.end-muted {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+}
+
+.end-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.end-timeline li {
+  position: relative;
+  padding: 0 0 16px 20px;
+  border-left: 2px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.end-timeline li:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.end-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2452ff;
+}
+
+.end-timeline-title {
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+}
+
+.end-preview {
+  width: 100%;
+  height: 560px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.end-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.end-stat {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.end-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.end-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-stat.is-pending .end-stat-value {
+  color: var(--status-amber-solid);
+}
+
+.end-stat.is-approved .end-stat-value {
+  color: var(--status-approved-solid);
+}
+
+.end-stat.is-rejected .end-stat-value {
+  color: var(--status-rejected-solid);
+}
+
+/* ===== Dean dashboard and Dean endorsement requests =====
+   The two Dean screens (views/Dashboard/DeanDashboard.vue and
+   views/Dean/DeanEndorsementRequests.vue) carry .end-page--dean. Everything below is
+   scoped to that modifier, so the other endorsement screens - the Proponent's My
+   Endorsements, the request form and the issued letters - keep exactly the look they had.
+
+   Both pages also carry .end-page--fluid, so their content uses the whole area between the
+   sidebar and the right edge of the screen: .end-page on its own caps a page at 1040px,
+   and that cap is what left the large blank area on the right of these two pages. */
+
+/* --- Page frame ---
+   One rhythm for the header, the statistics and the cards, so the sections line up
+   instead of each one spacing itself. */
+.end-page--dean .end-page-header {
+  margin-bottom: 22px;
+}
+
+.end-page--dean .end-page-header h2 {
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+/* Secondary text is a shade darker than the shared grey: #64748b is only 4.4:1 on the
+   lavender content background, under the 4.5:1 WCAG AA floor, where #475569 is 7:1. */
+.end-page--dean .end-subtitle {
+  margin-bottom: 0;
+  color: #475569;
+}
+
+/* --- Cards ---
+   One padding, radius, border and shadow for every card on both pages, the same section
+   shell the role dashboards already use. */
+.end-page--dean .end-card {
+  padding: 24px;
+  border-radius: 14px;
+  border-color: #e6e8f4;
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+}
+
+.end-page--dean .end-card + .end-card {
+  margin-top: 20px;
+}
+
+.end-page--dean .end-section-title {
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+/* A section title that shares its row with an action takes no bottom gap: the toolbar
+   under it carries the spacing. */
+.end-page--dean .end-toolbar .end-section-title {
+  margin-bottom: 0;
+}
+
+/* --- Statistic cards ---
+   Three equal cards that fill the row; the value keeps the tone colour it already had. */
+.end-page--dean .end-stats {
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.end-page--dean .end-stat {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border-color: #e6e8f4;
+  box-shadow: 0 1px 2px rgba(38, 35, 66, 0.04);
+}
+
+.end-page--dean .end-stat-label {
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+.end-page--dean .end-stat-value {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Filter toolbar --- */
+.end-page--dean .end-toolbar {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.end-page--dean .end-toolbar .end-select {
+  min-width: 200px;
+}
+
+/* The action of a toolbar (See all requests) sits at the far end of its row, so the
+   toolbar lines up with the table under it instead of leaving the right end empty. */
+.end-page--dean .end-toolbar > .end-btn {
+  margin-left: auto;
+}
+
+/* --- Table ---
+   The header keeps the blue band the application already paints behind every table head;
+   only the label colour is corrected. The shared grey sat at 2.2:1 on that blue and was
+   hard to read, white is 10.3:1. The blue is written out here as well, so the header
+   cannot lose its band if that other rule ever changes. */
+.end-page--dean .end-table thead th {
+  background: #3c3b6e;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 12px;
+  border-bottom: none;
+}
+
+.end-page--dean .end-table tbody td {
+  padding: 14px 12px;
+}
+
+/* The second line of a cell (program title, e-mail, funding program) is metadata: a shade
+   darker than the shared #94a3b8, which is only 2.6:1 on white. */
+.end-page--dean .end-muted {
+  color: #64748b;
+}
+
+/* The row under the pointer is the one being read. */
+.end-page--dean .end-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* The row action is a text link: give it a hover surface and a focus target instead of a
+   bare word. */
+.end-page--dean .end-btn.is-link {
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.end-page--dean .end-btn.is-link:hover {
+  background: var(--btn-link-hover-bg);
+  color: var(--btn-link-text);
+}
+
+/* --- Small screens ---
+   The table keeps its readable minimum width and scrolls inside its own card
+   (.end-table-scroll), so a wide table never widens the page itself. */
+@media (max-width: 720px) {
+  .end-page--dean .end-card {
+    padding: 18px;
+  }
+
+  .end-page--dean .end-stat {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .end-page--dean .end-page-header h2 {
+    font-size: 1.35rem;
+  }
+
+  /* One card per row: two cards would leave the third one alone underneath. */
+  .end-page--dean .end-stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* The filter takes its own row and the count follows it, instead of both being
+     squeezed onto one line. */
+  .end-page--dean .end-toolbar .end-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .end-page--dean .end-toolbar-count,
+  .end-page--dean .end-toolbar > .end-btn {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,1899 @@
+<template>
+  <div class="proposal-detail-page">
+    <!-- HEADER -->
+    <header class="page-header">
+      <div class="header-left">
+        <button class="back-btn" @click="$router.go(-1)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
+        <div class="header-info">
+          <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
+          <div class="header-meta">
+            <span class="document-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</span>
+            <span v-if="proposal.revisionNumber !== undefined" class="revision-badge">
+              REV{{ String(proposal.revisionNumber).padStart(2, '0') }}
+            </span>
+            <span class="status-badge" :class="statusTone(proposal.status)">
+              {{ proposalStatusLabel(proposal.status) || 'Draft' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button v-if="proposal.status === 'DRAFT'" class="btn-edit-draft btn-edit" @click="editDraft">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Edit Draft
+        </button>
+        <button class="btn-download" @click="printProposal">DOWNLOAD</button>
+        <!-- Beside Download, and only for projects approved for implementation
+             whose Special Order has been issued (the same rule the backend
+             enforces). -->
+        <button
+          v-if="canCreateQuarterlyReport(proposal)"
+          class="btn-primary"
+          :disabled="openingReportId === proposal.id"
+          @click="openQuarterlyReport(proposal)"
+        >
+          {{ openingReportId === proposal.id ? 'Opening…' : 'Create Quarterly Report' }}
+        </button>
+      </div>
+    </header>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading proposal details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn-secondary" @click="$router.go(-1)">Go Back</button>
+    </div>
+
+    <!-- Content -->
+    <template v-else-if="proposal.id">
+      <!-- Make a Copy: above the details and visually separate from them, so it is
+           never read as part of the proposal record. It is offered for a proposal in
+           any status (see utils/proposalStatus.js) because the copy is a brand-new
+           draft that inherits no workflow state. -->
+      <section v-if="isDuplicable(proposal.status)" class="copy-action-bar">
+        <div class="copy-action-text">
+          <h2>Make a Copy</h2>
+          <p>
+            Reuse this proposal's details as a new draft. The original proposal is not changed and
+            the copy is not submitted — you choose the call for proposal it belongs to, then review
+            and edit it first.
+          </p>
+        </div>
+        <button class="btn-duplicate btn-primary" :disabled="duplicating || showCallPicker" @click="startProposalCopy">
+          {{ duplicating ? 'Copying...' : 'Make a Copy' }}
+        </button>
+      </section>
+
+      <div class="content-grid">
+        <!-- LEFT COLUMN: Main Info -->
+        <div class="main-content">
+          <!-- Project Profile Card -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">01</span>
+              <h2>Project Profile</h2>
+            </div>
+            <div class="card-body">
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Program Title</label>
+                  <p>{{ proposal.programTitle || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'programTitle'" field-label="Program Title" :remarks="remarksForField('programTitle')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>Project Title</label>
+                  <p>{{ proposal.projectTitle || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectTitle'" field-label="Project Title" :remarks="remarksForField('projectTitle')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>Project Leader</label>
+                  <p>{{ proposal.projectLeader || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectLeader'" field-label="Project Leader" :remarks="remarksForField('projectLeader')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>Sex</label>
+                  <p>{{ proposal.projectLeaderSex || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'projectLeaderSex'" field-label="Sex" :remarks="remarksForField('projectLeaderSex')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>Duration</label>
+                  <p>{{ proposal.duration || 'Not provided' }} months</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'duration'" field-label="Duration (months)" :remarks="remarksForField('duration')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>Start Date</label>
+                  <p>{{ proposal.startDate || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'startDate'" field-label="Start Date" :remarks="remarksForField('startDate')" readonly />
+                </div>
+                <div class="info-item">
+                  <label>End Date</label>
+                  <p>{{ proposal.endDate || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'endDate'" field-label="End Date" :remarks="remarksForField('endDate')" readonly />
+                </div>
+                <div class="info-item full-width">
+                  <label>Implementing College / Department</label>
+                  <p>{{ proposal.college || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'college'" field-label="Implementing College / Department" :remarks="remarksForField('college')" readonly />
+                </div>
+                <div class="info-item full-width">
+                  <label>Address / Contact</label>
+                  <p>{{ proposal.address || 'Not provided' }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'01'" :field-key="'address'" field-label="Address / Contact" :remarks="remarksForField('address')" readonly />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Cooperating Agencies -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">02</span>
+              <h2>Cooperating Agencies</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.cooperatingAgencies || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'02'" :field-key="'cooperatingAgencies'" field-label="Cooperating Agencies" :remarks="remarksForField('cooperatingAgencies')" readonly />
+            </div>
+          </section>
+
+          <!-- Sites of Implementation -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">03</span>
+              <h2>Sites of Implementation</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.sites && proposal.sites.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Country</th>
+                      <th>Region</th>
+                      <th>Province</th>
+                      <th>District</th>
+                      <th>Municipality</th>
+                      <th>Barangay</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(site, index) in proposal.sites" :key="index">
+                      <td>{{ index + 1 }}</td>
+                      <td>{{ site.country }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].country`" field-label="Country" :remarks="remarksForField(`sites[${index}].country`)" readonly /></td>
+                      <td>{{ site.region }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].region`" field-label="Region" :remarks="remarksForField(`sites[${index}].region`)" readonly /></td>
+                      <td>{{ site.province }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].province`" field-label="Province" :remarks="remarksForField(`sites[${index}].province`)" readonly /></td>
+                      <td>{{ site.district }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].district`" field-label="District" :remarks="remarksForField(`sites[${index}].district`)" readonly /></td>
+                      <td>{{ site.municipality }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].municipality`" field-label="Municipality" :remarks="remarksForField(`sites[${index}].municipality`)" readonly /></td>
+                      <td>{{ site.barangay }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'03'" :field-key="`sites[${index}].barangay`" field-label="Barangay" :remarks="remarksForField(`sites[${index}].barangay`)" readonly /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No implementation sites available.</p>
+            </div>
+          </section>
+
+          <!-- Research Type & Priority Agenda -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">04</span>
+              <h2>Type of Research</h2>
+            </div>
+            <div class="card-body">
+              <span class="type-badge" :class="(proposal.researchType || '').toLowerCase()">
+                {{ proposal.researchType || 'Not specified' }}
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'04'" :field-key="'researchType'" field-label="Type of Research" :remarks="remarksForField('researchType')" readonly />
+              </span>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">05</span>
+              <h2>Priority Agenda</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="hasPriorityAgendas" class="agenda-list">
+                <div v-for="agenda in proposal.priorityAgendas" :key="agenda.agendaKey" class="agenda-item">
+                  <template v-if="agenda.selected">
+                    <strong>{{ agenda.agendaKey.toUpperCase() }}:</strong> {{ agenda.value }}
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'05'" :field-key="`priorityAgenda.${agenda.agendaKey}.value`" :field-label="`Priority Agenda — ${agenda.agendaKey}`" :remarks="remarksForField(`priorityAgenda.${agenda.agendaKey}.value`)" readonly />
+                  </template>
+                </div>
+              </div>
+              <p v-else class="empty-text">No priority agenda selected.</p>
+            </div>
+          </section>
+
+          <!-- Text Sections -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">06</span>
+              <h2>Innovation Goals</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.innovationGoals || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'06'" :field-key="'innovationGoals'" field-label="Innovation Goals" :remarks="remarksForField('innovationGoals')" readonly />
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">07</span>
+              <h2>Sector Relevance</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sectorRelevance || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'07'" :field-key="'sectorRelevance'" field-label="Sector Relevance" :remarks="remarksForField('sectorRelevance')" readonly />
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">08</span>
+              <h2>Sustainable Development Goals</h2>
+            </div>
+            <div class="card-body">
+              <SdgChecklist :value="proposal.sdg" />
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'08'" :field-key="'sdg'" field-label="Selected SDGs" :remarks="remarksForField('sdg')" readonly />
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">09</span>
+              <h2>Executive Summary</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.executiveSummary || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'09'" :field-key="'executiveSummary'" field-label="Executive Summary" :remarks="remarksForField('executiveSummary')" readonly />
+            </div>
+          </section>
+
+          <!-- Introduction -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">10</span>
+              <h2>Introduction</h2>
+            </div>
+            <div class="card-body">
+              <div class="subsection">
+                <h3>10.1 Rationale / Significance</h3>
+                <p class="text-content">{{ proposal.rationale || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'rationale'" field-label="Rationale / Significance" :remarks="remarksForField('rationale')" readonly />
+              </div>
+              <div class="subsection">
+                <h3>10.2 Scientific Basis / Theoretical Framework</h3>
+                <p class="text-content">{{ proposal.framework || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'framework'" field-label="Scientific Basis / Theoretical Framework" :remarks="remarksForField('framework')" readonly />
+              </div>
+              <div class="subsection">
+                <h3>10.3 Objectives</h3>
+                <div class="objectives">
+                  <div>
+                    <strong>General Objective:</strong>
+                    <p>{{ proposal.objectivesGeneral || 'Not provided' }}</p>
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesGeneral'" field-label="General Objective" :remarks="remarksForField('objectivesGeneral')" readonly />
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesGeneral'" field-label="General Objective" :remarks="remarksForField('objectivesGeneral')" readonly />
+                  </div>
+                  <div>
+                    <strong>Specific Objectives:</strong>
+                    <p>{{ proposal.objectivesSpecific || 'Not provided' }}</p>
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesSpecific'" field-label="Specific Objectives" :remarks="remarksForField('objectivesSpecific')" readonly />
+                    <FieldRemarkControl :proposal-id="proposal.id" :section-key="'10'" :field-key="'objectivesSpecific'" field-label="Specific Objectives" :remarks="remarksForField('objectivesSpecific')" readonly />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Documents Section -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">11</span>
+              <h2>Review of Literature</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.review || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'11'" :field-key="'review'" field-label="Review of Related Literature" :remarks="remarksForField('review')" readonly />
+              <!-- The legacy document is only shown when one was actually uploaded: the
+                   literature is a text section now, so a missing document is not an error. -->
+              <div v-if="proposal.reviewFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.reviewFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'11'" :field-key="'reviewFileName'" field-label="Review of Literature (document)" :remarks="remarksForField('reviewFileName')" readonly />
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">12</span>
+              <h2>Methodology</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.methodology || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'12'" :field-key="'methodology'" field-label="Methodology" :remarks="remarksForField('methodology')" readonly />
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">13</span>
+              <h2>Technology Roadmap</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.roadmapFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.roadmapFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'13'" :field-key="'roadmapFileName'" field-label="Technology Roadmap (document)" :remarks="remarksForField('roadmapFileName')" readonly />
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
+              </div>
+              <p v-else class="empty-text">No file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 14. Expected Outputs -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">14</span>
+              <h2>Expected Outputs (6Ps)</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outputs || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'14'" :field-key="'outputs'" field-label="Expected Outputs (6Ps)" :remarks="remarksForField('outputs')" readonly />
+            </div>
+          </section>
+
+          <!-- 15. Potential Outcomes -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">15</span>
+              <h2>Potential Outcomes</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.outcomes || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'15'" :field-key="'outcomes'" field-label="Potential Outcomes" :remarks="remarksForField('outcomes')" readonly />
+            </div>
+          </section>
+
+          <!-- 16. Potential Impacts -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">16</span>
+              <h2>Potential Impacts (2Is)</h2>
+            </div>
+            <div class="card-body">
+              <div class="subsection">
+                <h3>a. Economic Impact</h3>
+                <p class="text-content">{{ proposal.impactEconomic || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'16'" :field-key="'impactEconomic'" field-label="Economic Impact" :remarks="remarksForField('impactEconomic')" readonly />
+              </div>
+              <div class="subsection">
+                <h3>b. Social / Ethical Impact</h3>
+                <p class="text-content">{{ proposal.impactSocial || 'Not provided' }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'16'" :field-key="'impactSocial'" field-label="Social / Ethical Impact" :remarks="remarksForField('impactSocial')" readonly />
+              </div>
+            </div>
+          </section>
+
+          <!-- 17. Target Beneficiaries -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">17</span>
+              <h2>Target Beneficiaries</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.beneficiaries || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'17'" :field-key="'beneficiaries'" field-label="Target Beneficiaries" :remarks="remarksForField('beneficiaries')" readonly />
+            </div>
+          </section>
+
+          <!-- 18. Sustainability Plan -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">18</span>
+              <h2>Sustainability Plan</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.sustainability || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'18'" :field-key="'sustainability'" field-label="Sustainability Plan" :remarks="remarksForField('sustainability')" readonly />
+            </div>
+          </section>
+
+          <!-- 19. GAD Score -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">19</span>
+              <h2>Gender and Development (GAD) Score</h2>
+            </div>
+            <div class="card-body">
+              <GadChecklist
+                v-if="proposal.gadChecklist"
+                :model-value="proposal.gadChecklist"
+                readonly
+              />
+              <div v-if="proposal.gadFileName" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ proposal.gadFileName }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'19'" :field-key="'gadFileName'" field-label="GAD Score (document)" :remarks="remarksForField('gadFileName')" readonly />
+                  <p class="file-type">PDF Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
+              </div>
+              <p v-if="!proposal.gadChecklist && !proposal.gadFileName" class="empty-text">
+                No GAD checklist or document on record.
+              </p>
+            </div>
+          </section>
+
+          <!-- 20. Limitations -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">20</span>
+              <h2>Limitations of the Project</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.limitationsText || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="'limitationsText'" field-label="Limitations of the Project" :remarks="remarksForField('limitationsText')" readonly />
+              <div v-if="proposal.limitations && proposal.limitations.length" class="table-wrapper" style="margin-top:8px;">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>#</th><th>Limitation</th><th>Remarks</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.limitations" :key="row.id ?? index">
+                      <td>{{ index + 1 }}</td>
+                      <td>
+                        {{ row.limitation || '-' }}
+                        <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].limitation`" :field-label="`Limitation #${index + 1}`" :remarks="remarksForField(`limitations[${index}].limitation`)" readonly />
+                      </td>
+                      <td>
+                        {{ row.remarks || '-' }}
+                        <FieldRemarkControl :proposal-id="proposal.id" :section-key="'20'" :field-key="`limitations[${index}].remarks`" :field-label="`Limitation #${index + 1} — Remarks`" :remarks="remarksForField(`limitations[${index}].remarks`)" readonly />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- 21. Risk Management Plan -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">21</span>
+              <h2>Risk Management Plan</h2>
+            </div>
+            <div class="card-body">
+              <!-- The structured plan (every saved entry, in order). A proposal that predates
+                   the table carries no rows and its single-text plan is shown instead. -->
+              <div v-if="proposal.riskManagement && proposal.riskManagement.length" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Identified Risks</th>
+                      <th>Likelihood</th>
+                      <th>Impact</th>
+                      <th>Mitigation Measure</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.riskManagement" :key="index">
+                      <td>{{ index + 1 }}</td>
+                      <td>{{ row.identifiedRisks || '-' }}</td>
+                      <td>{{ row.likelihood || '-' }}</td>
+                      <td>{{ row.impact || '-' }}</td>
+                      <td>{{ row.mitigationMeasure || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="text-content">{{ proposal.risks || 'Not provided' }}</p>
+              <FieldRemarkControl :proposal-id="proposal.id" :section-key="'21'" :field-key="'risks'" field-label="Risk Management Plan" :remarks="remarksForField('risks')" readonly />
+            </div>
+          </section>
+
+          <!-- 22. Logical Framework -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">22</span>
+              <h2>Logical Framework</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.logFrames && proposal.logFrames.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Outcome Indicators</th>
+                      <th>Output Indicators / Physical Target</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.logFrames" :key="index">
+                      <td>{{ row.outcome || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'22'" :field-key="`logFrames[${index}].outcome`" field-label="Outcome Indicator" :remarks="remarksForField(`logFrames[${index}].outcome`)" readonly /></td>
+                      <td>{{ row.output || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'22'" :field-key="`logFrames[${index}].output`" field-label="Output Indicator" :remarks="remarksForField(`logFrames[${index}].output`)" readonly /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No logical framework data.</p>
+            </div>
+          </section>
+
+          <!-- 23. Literature Cited -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">23</span>
+              <h2>Literature Cited</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">{{ proposal.referencesText || 'Not provided' }}</p>
+            </div>
+          </section>
+
+          <!-- 24. Personnel Requirement -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">24</span>
+              <h2>Personnel Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.personnel && proposal.personnel.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Position</th>
+                      <th>% Time Devoted</th>
+                      <th>Responsibilities</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.personnel" :key="index">
+                      <td>{{ row.position || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].position`" field-label="Position" :remarks="remarksForField(`personnel[${index}].position`)" readonly /></td>
+                      <td>{{ formatTimeDevoted(row.timeDevoted) || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].timeDevoted`" field-label="% Time Devoted" :remarks="remarksForField(`personnel[${index}].timeDevoted`)" readonly /></td>
+                      <td>{{ row.responsibilities || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'24'" :field-key="`personnel[${index}].responsibilities`" field-label="Responsibilities" :remarks="remarksForField(`personnel[${index}].responsibilities`)" readonly /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No personnel data.</p>
+            </div>
+          </section>
+
+          <!-- 25. Line-Item Budget -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">25</span>
+              <h2>Line-Item Budget Requirement</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <p class="file-name">{{ budgetDocumentName(proposal) }}</p>
+                  <FieldRemarkControl :proposal-id="proposal.id" :section-key="'25'" :field-key="'beneficiariesFileName'" field-label="Line-Item Budget (document)" :remarks="remarksForField('beneficiariesFileName')" readonly />
+                  <p class="file-type">Budget Document</p>
+                </div>
+                <button class="btn-download" @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
+              </div>
+              <p v-else class="empty-text">No budget file uploaded.</p>
+            </div>
+          </section>
+
+          <!-- 26. Other Ongoing Projects -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">26</span>
+              <h2>Other Ongoing Projects</h2>
+            </div>
+            <div class="card-body">
+              <p v-if="proposal.otherProjectsNumber" class="text-content" style="margin-bottom: 12px;">
+                <strong>Number of other projects:</strong> {{ proposal.otherProjectsNumber }}
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="'otherProjectsNumber'" field-label="Number of other projects" :remarks="remarksForField('otherProjectsNumber')" readonly />
+              </p>
+              <div v-if="proposal.otherProjects && proposal.otherProjects.length > 0" class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Funding Agency</th>
+                      <th>Involvement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in proposal.otherProjects" :key="index">
+                      <td>{{ row.title || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].title`" field-label="Title" :remarks="remarksForField(`otherProjects[${index}].title`)" readonly /></td>
+                      <td>{{ row.agency || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].agency`" field-label="Funding Agency" :remarks="remarksForField(`otherProjects[${index}].agency`)" readonly /></td>
+                      <td>{{ row.involvement || '-' }}<FieldRemarkControl :proposal-id="proposal.id" :section-key="'26'" :field-key="`otherProjects[${index}].involvement`" field-label="Involvement" :remarks="remarksForField(`otherProjects[${index}].involvement`)" readonly /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="empty-text">No other projects.</p>
+            </div>
+          </section>
+
+          <!-- 27. Other Supporting Documents -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">27</span>
+              <h2>Other Supporting Documents</h2>
+            </div>
+            <div class="card-body">
+              <p class="text-content">Please refer to the attached documents for additional necessary documents.</p>
+            </div>
+          </section>
+
+          <!-- 28. Certification & Endorsement -->
+          <section
+            v-if="hasCertificationData"
+            class="content-card"
+          >
+            <div class="card-header">
+              <span class="card-number">28</span>
+              <h2>Certification &amp; Endorsement</h2>
+            </div>
+            <div class="card-body">
+              <!-- Submitted By: entered by the proponent in the Certification step. -->
+              <div v-if="hasSubmittedByData" class="certification-block">
+                <h3 class="subsection-title">Submitted By</h3>
+                <p class="text-content">
+                  <strong>{{ proposal.submittedByName || 'Not provided' }}</strong>
+                  <span v-if="proposal.submittedByDesignation"> — {{ proposal.submittedByDesignation }}</span>
+                </p>
+                <p v-if="proposal.submittedByDate" class="text-content">Date: {{ proposal.submittedByDate }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'submittedByName'" field-label="Submitted By (name)" :remarks="remarksForField('submittedByName')" readonly />
+                <div v-if="proposal.submittedByFileName || proposal.submittedByFilePath" class="file-attachment">
+                  <div class="file-icon">📄</div>
+                  <div class="file-info">
+                    <p class="file-name">{{ proposal.submittedByFileName || 'Signature' }}</p>
+                    <p class="file-type">Signature</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.submittedByFilePath || proposal.submittedByFileName)">DOWNLOAD</button>
+                </div>
+              </div>
+
+              <!-- Endorsed By: the office that endorsed the proposal (PDF only). -->
+              <div v-if="hasEndorsedByData" class="certification-block">
+                <h3 class="subsection-title">Endorsed By</h3>
+                <p class="text-content">
+                  <strong>{{ proposal.endorsedByName || 'Not provided' }}</strong>
+                  <span v-if="proposal.endorsedByDesignation"> — {{ proposal.endorsedByDesignation }}</span>
+                </p>
+                <p v-if="proposal.endorsedByDate" class="text-content">Date: {{ proposal.endorsedByDate }}</p>
+                <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'endorsedByName'" field-label="Endorsed By (name)" :remarks="remarksForField('endorsedByName')" readonly />
+                <div v-if="proposal.endorsementFileName || proposal.endorsementFilePath" class="file-attachment">
+                  <div class="file-icon">📄</div>
+                  <div class="file-info">
+                    <p class="file-name">{{ proposal.endorsementFileName || 'Endorsement Document' }}</p>
+                    <p class="file-type">PDF Document</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.endorsementFilePath || proposal.endorsementFileName)">DOWNLOAD</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- RIGHT COLUMN: Sidebar -->
+        <aside class="sidebar">
+          <!-- Status Card -->
+          <div class="sidebar-card status-card">
+            <h3>Proposal Status</h3>
+            <div class="status-indicator status-badge" :class="statusTone(proposal.status)">
+              <span class="status-dot"></span>
+              <span class="status-text">{{ proposalStatusLabel(proposal.status) || 'Draft' }}</span>
+            </div>
+            <div class="status-meta">
+              <p><strong>Created:</strong> {{ formatDate(proposal.createdAt) }}</p>
+              <p><strong>Last Updated:</strong> {{ formatDate(proposal.updatedAt) }}</p>
+            </div>
+          </div>
+
+          <!-- Quick Info Card -->
+          <div class="sidebar-card">
+            <h3>Quick Information</h3>
+            <div class="quick-info-list">
+              <div class="quick-info-item">
+                <span class="info-label">Project Leader</span>
+                <span class="info-value">{{ proposal.projectLeader || 'N/A' }}</span>
+              </div>
+              <div class="quick-info-item">
+                <span class="info-label">College</span>
+                <span class="info-value">{{ proposal.college || 'N/A' }}</span>
+              </div>
+              <div class="quick-info-item">
+                <span class="info-label">Duration</span>
+                <span class="info-value">{{ proposal.duration ? proposal.duration + ' months' : 'N/A' }}</span>
+              </div>
+              <div class="quick-info-item">
+                <span class="info-label">Research Type</span>
+                <span class="info-value">{{ proposal.researchType || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review Information Card (shows who reviewed the proposal) -->
+          <div v-if="proposal.reviewedBy" class="sidebar-card review-info-card">
+            <h3>Review Information</h3>
+            <div class="review-info-list">
+              <div class="review-info-item">
+                <span class="review-info-label">Reviewed By:</span>
+                <span class="review-info-value">{{ proposal.reviewedBy }}</span>
+              </div>
+              <div class="review-info-item">
+                <span class="review-info-label">Position:</span>
+                <span class="review-info-value reviewer-position-badge">
+                  {{ formatReviewerPosition(proposal.reviewedByPosition) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents Card -->
+          <div class="sidebar-card">
+            <h3>Documents</h3>
+            <div class="document-list">
+              <div v-if="proposal.reviewFileName" class="doc-item">
+                <span>📄 Review of Literature</span>
+                <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
+              </div>
+              <div v-if="proposal.roadmapFileName" class="doc-item">
+                <span>📄 Technology Roadmap</span>
+                <button class="btn-download" @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
+              </div>
+              <div v-if="proposal.gadFileName" class="doc-item">
+                <span>📄 GAD Score</span>
+                <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
+              </div>
+              <div v-if="proposal.beneficiariesFileName || proposal.beneficiariesFilePath" class="doc-item">
+                <span>📄 Line-Item Budget</span>
+                <button class="btn-download" @click="downloadFile(proposal.beneficiariesFilePath || proposal.beneficiariesFileName)">DOWNLOAD</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
+    </template>
+
+    <!-- Step 1 of "Make a Copy": the same Call for Proposal step the Create Proposal
+         workflow uses. No draft is created until an open call is selected here; closing
+         it cancels the copy. -->
+    <ProponentCallForProposal v-if="showCallPicker" @select="createProposalCopy"
+      @close="cancelProposalCopy" />
+
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/utils/api'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
+import { budgetDocumentName } from '@/utils/budgetDocument'
+import { downloadUploadedFile } from '@/utils/fileDownload'
+import SubmissionHistory from '@/components/SubmissionHistory.vue'
+import ProponentCallForProposal from './ProponentCallForProposal.vue'
+import SdgChecklist from '@/components/SdgChecklist.vue'
+import GadChecklist from '@/components/GadChecklist.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
+import { useDialog } from '@/composables/useDialog'
+import { isDuplicable, proposalStatusLabel } from '@/utils/proposalStatus'
+import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
+import { buildFieldRemarkIndex } from '@/utils/proposalFields'
+import { statusTone } from '@/utils/statusTone.js'
+// Section 24: "% Time Devoted" is stored as a plain number and always displayed as a
+// percentage ("50" -> "50%"), including the value of an older record saved as "50%".
+import { formatTimeDevoted } from '@/utils/personnelTime'
+
+const route = useRoute()
+const router = useRouter()
+const proposal = ref({})
+const loading = ref(true)
+const error = ref(null)
+
+// Reviewer remarks of the active revision round, shown beside the matching field.
+const remarksResponse = ref(null)
+const remarksByKey = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+const remarksForField = (key) => remarksByKey.value[key] || []
+
+const fetchFieldRemarks = async (proposalId) => {
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}/field-remarks`)
+    remarksResponse.value = res.data || null
+  } catch (err) {
+    // Remarks are informational here: never block the proposal view.
+    console.error(err)
+    remarksResponse.value = null
+  }
+}
+
+const { dialogState, showAlert } = useDialog()
+const duplicating = ref(false)
+/** True while the Call for Proposal picker of "Make a Copy" is open. */
+const showCallPicker = ref(false)
+
+/**
+ * "Make a Copy" - step 1: the proponent picks the Call for Proposal the copy belongs
+ * to. Nothing is created yet: the same Call for Proposal step the Create Proposal
+ * workflow uses is shown, and the draft is only created once an open call is selected.
+ * A second click while the picker is open (or while a copy is being created) never
+ * starts a second copy.
+ */
+const startProposalCopy = () => {
+  if (duplicating.value || showCallPicker.value) return
+  showCallPicker.value = true
+}
+
+/** Closing the picker cancels the copy: no draft is created. */
+const cancelProposalCopy = () => {
+  showCallPicker.value = false
+}
+
+/**
+ * "Make a Copy" - step 2: a valid open call was selected, so the draft is created under
+ * it. The backend re-validates the call (it must still be open) and copies only the
+ * reusable content - a new draft with its own identifier, never a submission - and the
+ * original proposal is not modified. The copy is opened in the proposal form so the
+ * proponent can review it, edit it and upload the required attachments.
+ */
+const createProposalCopy = async (call) => {
+  showCallPicker.value = false
+  if (!call?.id) {
+    await showAlert('Please select an open call for proposal before making a copy.', {
+      type: 'warning',
+      title: 'Select a Call for Proposal'
+    })
+    return
+  }
+  if (duplicating.value) return
+
+  duplicating.value = true
+  try {
+    const res = await api.post(`/api/proposals/${proposal.value.id}/duplicate`, {
+      proposalAnnouncementId: call.id
+    })
+    const created = res.data || {}
+    await showAlert(
+      `A new draft was created from this proposal under "${call.name}" (${created.documentId || created.proposalCode || 'new draft'}). Review the prefilled fields, then upload the required attachments again (technology roadmap, GAD score, line-item budget and signatures) before submitting.`,
+      { type: 'success', title: 'Copy Created' }
+    )
+    if (created.id) {
+      router.push({ path: '/proposals', query: { edit: created.id } })
+    }
+  } catch (err) {
+    console.error(err)
+    const body = err.response?.data
+    const message =
+      (body && typeof body === 'object' ? body.error : body) ||
+      'Failed to create a copy of the proposal. Please try again.'
+    await showAlert(String(message), { type: 'error', title: 'Copy Failed' })
+  } finally {
+    duplicating.value = false
+  }
+}
+
+/**
+ * Section 28 only exists once the proponent actually entered certification data. Older
+ * proposals (and drafts still at an earlier step) have none, and showing an empty card
+ * with "Not provided" everywhere would imply a requirement that never existed for them.
+ */
+const hasSubmittedByData = computed(() => Boolean(
+  proposal.value.submittedByName
+  || proposal.value.submittedByDesignation
+  || proposal.value.submittedByDate
+  || proposal.value.submittedByFileName
+  || proposal.value.submittedByFilePath
+))
+
+const hasEndorsedByData = computed(() => Boolean(
+  proposal.value.endorsedByName
+  || proposal.value.endorsedByDesignation
+  || proposal.value.endorsedByDate
+  || proposal.value.endorsementFileName
+  || proposal.value.endorsementFilePath
+))
+
+const hasCertificationData = computed(
+  () => hasSubmittedByData.value || hasEndorsedByData.value
+)
+
+const hasPriorityAgendas = computed(() => {
+  if (!proposal.value.priorityAgendas) return false
+  return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
+})
+
+const fetchProposal = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const proposalId = route.query.id
+    if (!proposalId) {
+      error.value = 'No proposal ID provided.'
+      return
+    }
+    const res = await api.get(`/api/proposals/${proposalId}`)
+    proposal.value = res.data
+    await fetchFieldRemarks(proposalId)
+  } catch (err) {
+    console.error(err)
+    error.value = 'Failed to load proposal details.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchProposal)
+
+/**
+ * The route is the single source of truth. Vue Router reuses this component when only the id
+ * changes (/detailed-proposal?id=52 -> ?id=36, or Back/Forward between two proposals), so
+ * without this watcher the previous proposal's data stayed on screen under the new id. Every
+ * id now reloads its own record and its own field remarks.
+ */
+watch(
+  () => route.query.id,
+  () => fetchProposal(),
+)
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const downloadFile = async (fileName) => {
+  // A stored reference that the file route cannot serve (the bytes were moved or lost)
+  // must be reported, never silently ignored: the document is listed as attached, so a
+  // failed download is a retrieval problem the proponent needs to know about.
+  try {
+    await downloadUploadedFile(fileName)
+  } catch (err) {
+    const status = err?.response?.status
+    const detail = status === 404
+      ? 'The stored file could not be found on the server.'
+      : err?.message || 'The file could not be downloaded.'
+    await showAlert(detail, { type: 'error', title: 'File Not Retrieved' })
+  }
+}
+
+const printProposal = async () => {
+  try {
+    // Re-read by id so the printed proposal matches the saved record, then print the
+    // same shared document every reviewing office downloads.
+    await downloadProposalRecord({ proposalId: proposal.value?.id, proposal: proposal.value })
+  } catch (err) {
+    console.error('Preparing the proposal document failed:', err)
+    await showAlert('The proposal document could not be prepared. Please try again.', {
+      type: 'error',
+      title: 'Download Failed',
+    })
+  }
+}
+
+const editDraft = () => {
+  router.push({ path: '/proposals', query: { edit: proposal.value.id } })
+}
+
+// Quarterly reporting is opened through the same composable Proposal Monitoring
+// uses, so both entry points share one eligibility rule and one route builder.
+const { openingReportId, canCreateQuarterlyReport, openQuarterlyReport } =
+  useQuarterlyReportLauncher()
+
+const formatReviewerPosition = (position) => {
+  if (!position) return 'N/A'
+  const positionMap = {
+    'RPS_STAFF': 'RPS Staff',
+    'RPS_DIRECTOR': 'RPS Director'
+  }
+  return positionMap[position] || position
+}
+</script>
+
+<style scoped>
+.proposal-detail-page {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+  /* The page only ever scrolls vertically: the containers below can shrink and
+     long values wrap (see the overflow safety rules at the end of this block). */
+}
+
+/* HEADER */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  /* Wide enough for the back button and title; below that the action buttons
+     wrap onto their own line instead of squeezing the title. */
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-info h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.proposal-id {
+  font-size: 13px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.document-id {
+  font-size: 13px;
+  color: #4b3f72;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.revision-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Geometry only; the `.is-*` tone colours come from assets/status.css. */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Layout only; the action colours come from assets/actions.css. */
+.btn-secondary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* Layout only; the action colours come from assets/actions.css. */
+.btn-duplicate {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-duplicate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* MAKE A COPY — sits above the details, visually separate from the record below. */
+.copy-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.copy-action-text h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.copy-action-text p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.copy-action-bar .btn-duplicate {
+  flex-shrink: 0;
+}
+
+/* Layout only; the action colours come from assets/actions.css. */
+.btn-edit-draft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* Layout only; the action colours come from assets/actions.css. */
+.btn-primary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* LOADING & ERROR */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-state p {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+/* CONTENT GRID */
+.content-grid {
+  display: grid;
+  /* minmax(0, …) lets the main column shrink below the natural width of its
+     content, so a long value or a wide table can never widen the whole page. */
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* CONTENT CARD */
+.content-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.card-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* INFO GRID */
+.info-grid {
+  display: grid;
+  /* minmax(0, …) keeps both columns inside the card: long values wrap inside
+     their field instead of widening the grid. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  /* Keep each field at its natural height so a remark on one field can never
+     stretch its row partner and misalign the neighbouring column. */
+  align-items: start;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-item p {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* TEXT CONTENT */
+.text-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* SUBSECTION */
+.subsection {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.subsection:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.subsection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.objectives {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* CERTIFICATION & ENDORSEMENT (section 28) */
+.certification-block {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.certification-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.certification-block .subsection-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.certification-block .text-content + .text-content {
+  margin-top: 4px;
+}
+
+.certification-block .file-attachment {
+  margin-top: 12px;
+}
+
+.objectives div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.objectives strong {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.objectives p {
+  font-size: 14px;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* TYPE BADGE */
+.type-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.type-badge.basic {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.type-badge.applied {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* AGENDA LIST */
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agenda-item {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #4f46e5;
+}
+
+.agenda-item strong {
+  color: #4f46e5;
+  font-size: 13px;
+}
+
+.agenda-item span {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+/* TABLES */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead {
+  background: #f8fafc;
+}
+
+.data-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+/* FILE ATTACHMENT */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.file-type {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-download {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* SIDEBAR */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.sidebar-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.sidebar-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* STATUS CARD */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The `.is-*` tone colours come from the shared status system (assets/status.css). */
+
+.status-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.status-meta p {
+  margin: 0;
+}
+
+.status-meta strong {
+  color: #475569;
+}
+
+/* QUICK INFO */
+.quick-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* DOCUMENT LIST */
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.doc-item button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  transition: transform 0.15s;
+}
+
+.doc-item button:hover {
+  transform: scale(1.2);
+}
+
+/* EMPTY TEXT */
+.empty-text {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* REVIEW INFO CARD */
+.review-info-card {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.review-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.review-info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.reviewer-position-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* OVERFLOW SAFETY
+   Project details are free text (titles, descriptions, names, identifiers,
+   remarks) and can contain very long unbroken values. They wrap inside their own
+   container instead of widening the card or the page. */
+.header-info h1,
+.document-id,
+.info-item p,
+.text-content,
+.agenda-item strong,
+.agenda-item span,
+.file-name,
+.file-type,
+.info-value,
+.review-info-value,
+.status-text {
+  overflow-wrap: anywhere;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* The copy action stacks so the button stays a comfortable tap target. */
+  .copy-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .copy-action-bar .btn-duplicate {
+    width: 100%;
+  }
+}
+/* ===== Review design layer =====================================================
+   The same design the approved review-prop page uses, applied to this page's own rules, so
+   that every proposal - whatever its id, sections, optional fields or documents - renders the
+   same way. Nothing in the markup changed: no field, badge, document or action can be lost by
+   these rules. */
+.proposal-detail-page {
+  width: 100%;
+}
+
+.content-card {
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.05);
+}
+
+/* The navy section band from the approved design. */
+.card-header {
+  padding: 14px 20px;
+  background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
+  border-bottom: none;
+}
+
+.card-number {
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--rpis-accent, #ffd000);
+  border-radius: 8px;
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.card-header h2 {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #ffffff;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* Header card: the same shape as the shared review header. */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: 0 6px 18px rgba(38, 35, 66, 0.06);
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.header-info h1 {
+  margin: 0 0 6px;
+  font-size: var(--fs-xl, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #1c1a3c;
+  overflow-wrap: anywhere;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-id {
+  font-size: var(--fs-sm, 0.875rem);
+  color: #5b5b7a;
+  overflow-wrap: anywhere;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Summary cards in the aside, when the page shows them. */
+.sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e4e4f2;
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 4px 14px rgba(38, 35, 66, 0.05);
+}
+
+.sidebar-card h3 {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #1c1a3c;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .page-header,
+  .header-left {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    margin-left: 0;
+  }
+
+  .info-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-body {
+    padding: 14px;
+  }
+}
+</style>

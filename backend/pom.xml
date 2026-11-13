@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -9,7 +9,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.5</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <groupId>com.rpis</groupId>
@@ -38,6 +38,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Actuator: exposes the health/metrics endpoints a load balancer and an
+             operator need. /api/health and /api/health/ready are served by
+             HealthController; the actuator endpoints provide the JVM, thread-pool and
+             connection-pool view used while load testing. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <dependency>
@@ -73,33 +82,66 @@
             <version>2.4.1</version>
         </dependency>
 
+        <!-- OpenPDF: server-side generation of the official endorsement letter PDF.
+             The RPIS had no PDF engine of its own (every existing "Download PDF" was the
+             browser's print dialog), so the endorsement workflow needs one on the server
+             to store the issued letter, serve it from an authorized endpoint and make the
+             previewed document identical to the downloaded one. -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
+        <!-- openhtmltopdf: server-side rendering of the shared proposal document.
+             Chrome always prints its own header (date + document title) and footer
+             (URL + page number) when the user's print dialog has "Headers and
+             footers" enabled, regardless of the @page margin size, so a browser
+             print can never guarantee a clean downloaded proposal. The frontend
+             builds the same single HTML template as before and posts it here;
+             this renderer turns it into the PDF, including the document's own
+             bottom-right "Page n of N" margin box. -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+        <!-- The shared document is authored as HTML5 (entities such as &mdash;, the
+             HTML5 doctype). openhtmltopdf parses XML, so jsoup normalises the markup
+             into a W3C DOM before rendering; without it any HTML-only entity fails. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.3</version>
+        </dependency>
+
     </dependencies>
 
-   <build>
-    <plugins>
+    <build>
+        <plugins>
 
-        <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-        </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
 
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.11.0</version>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
 
-            <configuration>
-                <annotationProcessorPaths>
-                    <path>
-                        <groupId>org.projectlombok</groupId>
-                        <artifactId>lombok</artifactId>
-                        <version>1.18.32</version>
-                    </path>
-                </annotationProcessorPaths>
-            </configuration>
-        </plugin>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.42</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
 
-    </plugins>
-</build>
+        </plugins>
+    </build>
 
 </project>

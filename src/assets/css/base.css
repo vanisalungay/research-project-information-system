@@ -31,10 +31,219 @@
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
+  --color-text-soft: #64748b;
+  --color-text-muted: #94a3b8;
+
+  /* Semantic color tokens */
+  --color-primary: #2452ff;
+  --color-primary-hover: #1d40cc;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  /* ===== Status tones =====
+     One approved semantic palette for every workflow status, in every role and module.
+     A badge consumes --status-<variant>-bg / -text / -border; see assets/status.css.
+     The variant of each stored status is decided in one place - src/utils/statusCatalog.js
+     (statusVariant). Each family keeps a light badge background and darker text of the same
+     hue, so the semantic colour is preserved with readable contrast. */
+  /* Approved: green text on a light green surface (soft badge). */
+  --status-approved-bg: #dcfce7;
+  --status-approved-text: #15803d;
+  --status-approved-border: #a7f3d0;
+  /* Completed: white text on the dark forest green surface, clearly darker than Approved. */
+  --status-completed-bg: #14532d;
+  --status-completed-text: #ffffff;
+  --status-completed-border: #14532d;
+  --status-blue-bg: #dbeafe; /* submitted / for review / scheduled */
+  --status-blue-text: #1e40af;
+  --status-blue-border: #bfdbfe;
+  --status-purple-bg: #ede9fe; /* under review */
+  --status-purple-text: #5b21b6;
+  --status-purple-border: #ddd6fe;
+  --status-indigo-bg: #e0e7ff; /* REC approval */
+  --status-indigo-text: #3730a3;
+  --status-indigo-border: #c7d2fe;
+  --status-cyan-bg: #cffafe; /* OVCRIGE approval */
+  --status-cyan-text: #155e75;
+  --status-cyan-border: #a5f3fc;
+  --status-teal-bg: #ccfbf1; /* Dean endorsement */
+  --status-teal-text: #115e59;
+  --status-teal-border: #99f6e4;
+  --status-released-bg: #ccfbf1; /* funds released (distinct teal) */
+  --status-released-text: #115e59;
+  --status-released-border: #5eead4;
+  --status-amber-bg: #fef3c7; /* pending / awaiting approval */
+  --status-amber-text: #92400e;
+  --status-amber-border: #fde68a;
+  --status-orange-bg: #ffedd5; /* ready for release / every returned status */
+  --status-orange-text: #9a3412;
+  --status-orange-border: #fed7aa;
+  --status-rejected-bg: #fee2e2; /* rejected / failed */
+  --status-rejected-text: #991b1b;
+  --status-rejected-border: #fecaca;
+  --status-gray-bg: #f1f5f9; /* draft / inactive / revoked / superseded / closed */
+  --status-gray-text: #475569;
+  --status-gray-border: #cbd5e1;
+
+  /* Legacy tone names kept as aliases: unrelated screens already reference them. */
+  --status-returned-bg: var(--status-orange-bg);
+  --status-returned-text: var(--status-orange-text);
+  --status-returned-border: var(--status-orange-border);
+  --status-pending-bg: var(--status-blue-bg);
+  --status-pending-text: var(--status-blue-text);
+  --status-pending-border: var(--status-blue-border);
+  --status-neutral-bg: var(--status-gray-bg);
+  --status-neutral-text: var(--status-gray-text);
+  --status-neutral-border: var(--status-gray-border);
+  --status-draft-bg: var(--status-gray-bg);
+  --status-draft-text: var(--status-gray-text);
+  --status-draft-border: var(--status-gray-border);
+
+  /* Solid accents for progress fills and statistic card edges. */
+  --status-approved-solid: #15803d;
+  --status-completed-solid: #166534;
+  --status-blue-solid: #2563eb;
+  --status-purple-solid: #7c3aed;
+  --status-indigo-solid: #4f46e5;
+  --status-cyan-solid: #0891b2;
+  --status-teal-solid: #0f766e;
+  --status-released-solid: #0d9488;
+  --status-amber-solid: #d97706;
+  --status-orange-solid: #ea580c;
+  --status-rejected-solid: #dc2626;
+  --status-gray-solid: #64748b;
+  --status-returned-solid: var(--status-orange-solid);
+  --status-pending-solid: var(--status-blue-solid);
+  --status-neutral-solid: var(--status-gray-solid);
+
+  /* Compatibility aliases: these names are referenced by a few reports pages but were
+     never declared, so the status colours there resolved to nothing. */
+  --color-approved: var(--status-approved-solid);
+  --color-approved-bg: var(--status-approved-bg);
+  --color-approved-text: var(--status-approved-text);
+  --color-returned: var(--status-returned-solid);
+  --color-returned-bg: var(--status-returned-bg);
+  --color-returned-text: var(--status-returned-text);
+  --color-rejected: var(--status-rejected-solid);
+  --color-rejected-bg: var(--status-rejected-bg);
+  --color-rejected-text: var(--status-rejected-text);
+  /* "Pending" in these reports is a status (awaiting a decision), so it follows the
+     approved amber status family rather than the blue informational tone. */
+  --color-pending: var(--status-amber-solid);
+  --color-pending-bg: var(--status-amber-bg);
+  --color-pending-text: var(--status-amber-text);
+  --color-info-bg: var(--status-blue-bg);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-soft);
+  --text-muted: var(--color-text-muted);
+
+  /* ===== Action button tones =====
+     Semantic action colors: the same action looks the same everywhere.
+     A button consumes --btn-<meaning>-bg / -hover-bg / -text / -border;
+     see assets/actions.css. */
+  --btn-primary-bg: #2452ff;
+  --btn-primary-hover-bg: #1d40cc;
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #2452ff;
+  --btn-approve-bg: #047857;
+  --btn-approve-hover-bg: #065f46;
+  --btn-approve-text: #ffffff;
+  --btn-approve-border: #047857;
+  --btn-reject-bg: #b91c1c;
+  --btn-reject-hover-bg: #991b1b;
+  --btn-reject-text: #ffffff;
+  --btn-reject-border: #b91c1c;
+  --btn-return-bg: #b45309;
+  --btn-return-hover-bg: #92400e;
+  --btn-return-text: #ffffff;
+  --btn-return-border: #b45309;
+  --btn-view-bg: #e9efff;
+  --btn-view-hover-bg: #dbe4ff;
+  --btn-view-text: #1d40cc;
+  --btn-view-border: #c7d2fe;
+  --btn-edit-bg: #eef2ff;
+  --btn-edit-hover-bg: #dbe4ff;
+  --btn-edit-text: #3730a3;
+  --btn-edit-border: #c7d2fe;
+  --btn-download-bg: #ffffff;
+  --btn-download-hover-bg: #f1f5f9;
+  --btn-download-text: #1e40af;
+  --btn-download-border: #cbd5e1;
+  --btn-neutral-bg: #ffffff;
+  --btn-neutral-hover-bg: #f1f5f9;
+  --btn-neutral-text: #475569;
+  --btn-neutral-border: #cbd5e1;
+  --btn-link-text: #2452ff;
+  --btn-link-hover-bg: #eef1ff;
+  --btn-focus-outline: #2452ff;
+  --btn-focus-ring: rgba(36, 82, 255, 0.35);
+  --btn-disabled-bg: #e5e7eb;
+  --btn-disabled-text: #94a3b8;
+  --btn-disabled-border: #d1d5db;
+  --btn-disabled-opacity: 0.55;
+
+  /* Brand palette */
+  --color-brand-navy: #262342;
+  --color-brand-yellow: #ffd803;
+
+  /* ===== Application shell (header + sidebar) =====
+     The reference design of the RPIS shell: a dark navy header with a continuous
+     yellow bottom border, a dark indigo sidebar and a light lavender content area.
+     Kept as tokens so the header, the sidebar and the layout share one definition. */
+  --rpis-header-bg: #262342;
+  --rpis-header-height: 67px;
+  --rpis-header-border: #ffd000;
+  --rpis-header-border-height: 3px;
+  --rpis-sidebar-bg: #1c1a3c;
+  --rpis-sidebar-width: 261px;
+  --rpis-sidebar-collapsed-width: 84px;
+  --rpis-accent: #ffd000;
+  --rpis-accent-hover: #ffc400;
+  --rpis-on-dark: #ffffff;
+  --rpis-on-dark-soft: #c8c8e8;
+  --rpis-on-dark-muted: #9999c4;
+  --rpis-icon: #d8d8ef;
+  --rpis-surface-control: #302d59;
+  --rpis-surface-control-hover: #3a3668;
+  --rpis-separator: #464260;
+  --rpis-divider: #383553;
+  --rpis-help-bg: #2d2a5b;
+  --rpis-help-border: #403b75;
+  --rpis-badge: #315bff;
+  --rpis-content-bg: #f5f5fc;
+
+  /* Card surface */
+  --color-card-background: #ffffff;
+
+  /* Type scale */
+  --fs-xs: 0.75rem;   /* 12px — labels, metadata */
+  --fs-sm: 0.875rem;  /* 14px — body small, table cells */
+  --fs-base: 1rem;    /* 16px — body text */
+  --fs-lg: 1.125rem;  /* 18px — subheadings */
+  --fs-xl: 1.5rem;    /* 24px — page titles */
+  --fs-2xl: 2rem;     /* 32px — hero text */
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
 
   --section-gap: 160px;
+  color-scheme: light dark;
 }
-
 
 *,
 *::before,
@@ -52,9 +261,301 @@ body {
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family: Poppins, sans-serif;
-  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* SYSTEM ADAPTIVE DARK MODE OVERRIDES */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0f172a;
+    --color-background-soft: #1e293b;
+    --color-background-mute: #0f172a;
+    --color-card-background: #1e293b;
+    
+    --color-border: #334155;
+    --color-border-hover: #475569;
+    
+    --color-text: #f1f5f9;
+    --color-text-soft: #94a3b8;
+    --color-heading: #f8fafc;
+    --color-primary: #3b82f6;
+
+    /* Status tones on a dark surface: the hue is kept, the surface is darkened so the
+       badge never turns into a white block. */
+    /* Implementation Approved and Completed keep their fixed badge colours in both
+       themes: green on light green, and white on dark forest green. */
+    --status-approved-bg: #dcfce7;
+    --status-approved-text: #15803d;
+    --status-approved-border: #a7f3d0;
+    --status-completed-bg: #14532d;
+    --status-completed-text: #ffffff;
+    --status-completed-border: #14532d;
+    --status-blue-bg: #1f2f55;
+    --status-blue-text: #93b4ff;
+    --status-blue-border: #2b3f6e;
+    --status-purple-bg: #2e2352;
+    --status-purple-text: #c4b5fd;
+    --status-purple-border: #42367a;
+    --status-indigo-bg: #262650;
+    --status-indigo-text: #a5b4fc;
+    --status-indigo-border: #373c78;
+    --status-cyan-bg: #0e3a44;
+    --status-cyan-text: #67e8f9;
+    --status-cyan-border: #155e75;
+    --status-teal-bg: #0e3a35;
+    --status-teal-text: #5eead4;
+    --status-teal-border: #115e59;
+    --status-released-bg: #0b3a35;
+    --status-released-text: #5eead4;
+    --status-released-border: #0f766e;
+    --status-amber-bg: #4a3a17;
+    --status-amber-text: #fcd34d;
+    --status-amber-border: #6b551f;
+    --status-orange-bg: #4a2a12;
+    --status-orange-text: #fdba74;
+    --status-orange-border: #7c3d12;
+    --status-rejected-bg: #4a2222;
+    --status-rejected-text: #fca5a5;
+    --status-rejected-border: #6b2a2a;
+    --status-gray-bg: #22304d;
+    --status-gray-text: #cbd5e1;
+    --status-gray-border: #334155;
+
+    /* Action buttons: solid actions brighten slightly; surface actions go dark. */
+    --btn-primary-bg: #315bff;
+    --btn-primary-border: #315bff;
+    --btn-primary-hover-bg: #4b6bff;
+    --btn-approve-bg: #059669;
+    --btn-approve-border: #059669;
+    --btn-approve-hover-bg: #10b981;
+    --btn-reject-bg: #dc2626;
+    --btn-reject-border: #dc2626;
+    --btn-reject-hover-bg: #ef4444;
+    --btn-return-bg: #f59e0b;
+    --btn-return-border: #f59e0b;
+    --btn-return-hover-bg: #fbbf24;
+    --btn-return-text: #1f2937;
+    --btn-view-bg: #22304d;
+    --btn-view-hover-bg: #2b3b5e;
+    --btn-view-text: #93b4ff;
+    --btn-view-border: #334155;
+    --btn-edit-bg: #22304d;
+    --btn-edit-hover-bg: #2b3b5e;
+    --btn-edit-text: #93b4ff;
+    --btn-edit-border: #334155;
+    --btn-download-bg: #1e293b;
+    --btn-download-hover-bg: #273449;
+    --btn-download-text: #93b4ff;
+    --btn-download-border: #334155;
+    --btn-neutral-bg: #1e293b;
+    --btn-neutral-hover-bg: #273449;
+    --btn-neutral-text: #e2e8f0;
+    --btn-neutral-border: #334155;
+    --btn-link-text: #8ab4ff;
+    --btn-link-hover-bg: #22304d;
+    --btn-focus-outline: #8ab4ff;
+    --btn-focus-ring: rgba(138, 180, 255, 0.35);
+    --btn-disabled-bg: #334155;
+    --btn-disabled-text: #64748b;
+    --btn-disabled-border: #334155;
+  }
+
+  body {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+  }
+
+  /* Structural layout, content regions, panels, tables, cards, and modals */
+  main.content,
+  div[class*="content"],
+  div[class*="wrapper"],
+  div[class*="container"],
+  div[class*="panel"],
+  div[class*="card"],
+  div[class*="modal"],
+  div[class*="box"],
+  div[class*="form"],
+  div[class*="dialog"],
+  div[class*="popup"],
+  div[class*="login-container"],
+  div[class*="register-container"],
+  section,
+  aside:not(.sidebar):not(.app-sidebar), /* Maintain signature brand sidebar */
+  main,
+  table,
+  tr,
+  td,
+  th {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: #334155 !important;
+  }
+
+  /* Layout container backing canvas dark style */
+  div[class*="content-wrapper"],
+  div[class*="app-layout"],
+  div.app-layout,
+  main.content,
+  .content {
+    background-color: #0f172a !important;
+  }
+
+  /* Text & Typography Contrast */
+  h1, h2, h3, h4, h5, h6,
+  p, span, label, li, td, th, strong, b, i, em {
+    color: #f1f5f9 !important;
+  }
+
+  /* Muted metadata and sub-details */
+  small, 
+  span[class*="id"], 
+  span[class*="muted"], 
+  div[class*="muted"],
+  p[class*="muted"],
+  [class*="subtitle"],
+  [class*="description"],
+  td.proposal-id {
+    color: #94a3b8 !important;
+  }
+
+  /* Anchors and Links */
+  a {
+    color: #60a5fa !important;
+  }
+  a:hover {
+    color: #93c5fd !important;
+  }
+
+  /* Form Elements: Inputs, Selects, and Textareas */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748b !important;
+  }
+
+  /* Table Customizations */
+  th {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-bottom: 2px solid #334155 !important;
+  }
+
+  tr:hover td {
+    background-color: #0f172a !important;
+  }
+
+  /* The brand-yellow buttons need dark text. The blue primary buttons do NOT: they are
+     #2452ff / #315bff and their labels must stay white, so "primary", "submit" and
+     "create-btn" are no longer forced to black (that painted black on blue). */
+  button[class*="yellow"] {
+    color: #000000 !important;
+  }
+
+/* ============================================================
+   Application shell in dark mode
+
+   The reference shell is already a dark navy header with a dark indigo sidebar and a
+   yellow accent, so it keeps that exact palette whatever the system theme is - the
+   automatic dark overrides above are meant for page content, not for the shell. Page
+   content keeps the dark-mode behaviour it already had.
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: var(--rpis-header-bg) !important;
+    border-bottom-color: var(--rpis-header-border) !important;
+  }
+
+  .app-sidebar {
+    background-color: var(--rpis-sidebar-bg) !important;
+  }
+
+  /* Sidebar rows stay transparent; only the yellow Profile Settings control is filled. */
+  .app-sidebar li,
+  .app-sidebar .nav-list li:hover {
+    background-color: transparent !important;
+  }
+
+  .app-sidebar li.active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .app-sidebar .nav-link {
+    color: var(--rpis-icon) !important;
+  }
+
+  .app-sidebar li.active .nav-link,
+  .app-sidebar .nav-link:hover {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-sidebar .menu-label {
+    color: var(--rpis-on-dark-muted) !important;
+  }
+
+  .app-sidebar .help-card {
+    background-color: var(--rpis-help-bg) !important;
+    border-color: var(--rpis-help-border) !important;
+  }
+
+  .app-sidebar .help-title {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-sidebar .help-text {
+    color: var(--rpis-on-dark-soft) !important;
+  }
+
+  .app-sidebar .profile-item {
+    background-color: var(--rpis-accent) !important;
+  }
+
+  .app-sidebar .profile-item:hover,
+  .app-sidebar .profile-item.active {
+    background-color: var(--rpis-accent-hover) !important;
+  }
+
+  .app-sidebar .profile-link,
+  .app-sidebar .profile-link .nav-text {
+    color: #1c1a3c !important;
+  }
+
+  .app-sidebar .nav-badge {
+    background-color: var(--rpis-badge) !important;
+    color: #ffffff !important;
+  }
+
+  /* Header text keeps the two-tone brand and the yellow role line. */
+  .app-header .brand-research,
+  .app-header .user-name {
+    color: var(--rpis-on-dark) !important;
+  }
+
+  .app-header .brand-project,
+  .app-header .user-role {
+    color: var(--rpis-accent) !important;
+  }
+
+  .app-header .brand-subtitle {
+    color: var(--rpis-on-dark-soft) !important;
+  }
+}
+
 }

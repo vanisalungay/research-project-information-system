@@ -1,0 +1,193 @@
+package com.rpis.backend.controller;
+
+import com.rpis.backend.model.Proposal;
+import com.rpis.backend.model.ProjectReport;
+import com.rpis.backend.repository.ProposalRepository;
+import com.rpis.backend.repository.ProjectReportRepository;
+import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.storage.UploadStorage;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/reports")
+@RequiredArgsConstructor
+public class ReportController {
+
+    private final ProjectReportRepository reportRepository;
+    private final UserRepository userRepository;
+    private final ProposalRepository proposalRepository;
+    private final CurrentUser currentUser;
+    private final UploadStorage uploadStorage;
+
+    /**
+     * Ensures the caller may access reports for the given proposal. A Proponent is
+     * restricted to their own proposals; staff/reviewing roles keep full access.
+     */
+    private void requireProposalAccess(Long proposalId) {
+        if (!currentUser.isProponent()) {
+            return;
+        }
+        Proposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
+        currentUser.requireAccessTo(proposal);
+    }
+
+    /** Rejects Proponents from RPS/reviewer-only report endpoints. */
+    private void requireStaff() {
+        if (currentUser.isProponent()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to access this resource.");
+        }
+    }
+
+    /**
+     * Upload project reports (Quarterly Progress and/or Financial)
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadReports(
+            @RequestParam("proposalId") Long proposalId,
+            @RequestParam("period") String period,
+            @RequestParam(value = "remarks", required = false) String remarks,
+            @RequestParam(value = "quarterlyReport", required = false) MultipartFile quarterlyReport,
+            @RequestParam(value = "financialReport", required = false) MultipartFile financialReport) {
+
+        requireProposalAccess(proposalId);
+        try {
+            // The storage layer creates its directory on first write.
+            Map<String, Object> response = new HashMap<>();
+
+            // Save Quarterly Progress Report
+            if (quarterlyReport != null && !quarterlyReport.isEmpty()) {
+                ProjectReport quarterly = saveReport(proposalId, "QUARTERLY_PROGRESS", period,
+                        quarterlyReport, remarks);
+                response.put("quarterlyReportId", quarterly.getId());
+            }
+
+            // Save Financial Report
+            if (financialReport != null && !financialReport.isEmpty()) {
+                ProjectReport financial = saveReport(proposalId, "FINANCIAL", period,
+                        financialReport, remarks);
+                response.put("financialReportId", financial.getId());
+            }
+
+            response.put("message", "Reports uploaded successfully");
+            response.put("proposalId", proposalId);
+            response.put("period", period);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to upload reports: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get all reports for a proposal
+     */
+    @GetMapping("/proposal/{proposalId}")
+    public ResponseEntity<List<ProjectReport>> getReportsByProposal(@PathVariable Long proposalId) {
+        requireProposalAccess(proposalId);
+        return ResponseEntity.ok(reportRepository.findByProposalId(proposalId));
+    }
+
+    /**
+     * Get reports by type for a proposal
+     */
+    @GetMapping("/proposal/{proposalId}/type/{reportType}")
+    public ResponseEntity<List<ProjectReport>> getReportsByType(
+            @PathVariable Long proposalId,
+            @PathVariable String reportType) {
+        requireProposalAccess(proposalId);
+        return ResponseEntity.ok(reportRepository.findByProposalIdAndReportType(proposalId, reportType));
+    }
+
+    /**
+     * Get all pending reports (for RPS review)
+     */
+    @GetMapping("/pending")
+    public ResponseEntity<List<ProjectReport>> getPendingReports() {
+        requireStaff();
+        return ResponseEntity.ok(reportRepository.findByReviewStatus("PENDING"));
+    }
+
+    /**
+     * Review a report (for RPS)
+     */
+    @PutMapping("/{reportId}/review")
+    public ResponseEntity<ProjectReport> reviewReport(
+            @PathVariable Long reportId,
+            @RequestParam Long reviewerId,
+            @RequestParam String status, // APPROVED or RETURNED
+            @RequestParam(required = false) String comments) {
+
+        requireStaff();
+        // NORM-01: reject a reviewer id that does not resolve to an existing user.
+        if (!userRepository.existsById(reviewerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unknown reviewer id: " + reviewerId);
+        }
+        return reportRepository.findById(reportId)
+                .map(report -> {
+                    report.setReviewedBy(reviewerId);
+                    report.setReviewedAt(LocalDateTime.now());
+                    report.setReviewStatus(status);
+                    report.setReviewComments(comments);
+                    return ResponseEntity.ok(reportRepository.save(report));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Delete a report
+     */
+    @DeleteMapping("/{reportId}")
+    public ResponseEntity<Void> deleteReport(@PathVariable Long reportId) {
+        requireStaff();
+        if (reportRepository.existsById(reportId)) {
+            reportRepository.deleteById(reportId);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Helper method to save a report
+     */
+    private ProjectReport saveReport(Long proposalId, String reportType, String period,
+            MultipartFile file, String remarks) throws IOException {
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : "";
+        String storedPath = uploadStorage.store(file.getBytes(), "reports",
+                reportType.toLowerCase() + "-" + originalFilename);
+
+        // The bytes are written by the storage layer above.
+
+        // Create report record
+        ProjectReport report = new ProjectReport();
+        report.setProposalId(proposalId);
+        report.setReportType(reportType);
+        report.setPeriod(period);
+        report.setFileName(originalFilename);
+        report.setFilePath(storedPath);
+        report.setRemarks(remarks);
+
+        return reportRepository.save(report);
+    }
+}

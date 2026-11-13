@@ -1,0 +1,902 @@
+<template>
+  <div class="qpr-page">
+    <div class="page-header">
+      <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
+      <div>
+        <h1>Quarterly Progress Reports</h1>
+        <p class="subtitle">{{ project?.projectTitle || 'Project' }}</p>
+      </div>
+      <button class="btn-primary" :disabled="!canCreateReport || allStagesComplete" @click="createNew">
+        {{ nextStageAction }}
+      </button>
+    </div>
+
+    <p v-if="actionError" class="action-error">{{ actionError }}</p>
+
+    <div v-if="loading" class="state">Loading reports...</div>
+    <div v-else-if="error" class="state error">{{ error }}</div>
+    <div v-else-if="!reportingAvailable" class="state notice">
+      Quarterly progress reports are only available for projects that are approved for implementation
+      and have an issued Special Order (SO).
+    </div>
+    <template v-else>
+      <!-- Reporting stage tracker: stages 1-3 (QPR + Project Workplan) then the
+           Terminal Report stage. -->
+      <div class="stages-card">
+        <div class="stages-header">
+          <span class="stages-title">Reporting Progress</span>
+          <span v-if="allStagesComplete" class="stages-done">All required reports submitted</span>
+          <span v-else class="stages-next">
+            Next required stage: <strong>{{ nextStageLabel }}</strong>
+          </span>
+        </div>
+        <div class="stage-chips">
+          <span v-for="s in stageSummary" :key="s.key" class="stage-chip" :class="s.state">
+            {{ s.label }}
+          </span>
+        </div>
+      </div>
+
+      <div v-if="reports.length === 0" class="state">
+        No reports submitted yet. Click the button above to start the first reporting stage.
+      </div>
+      <table v-else class="report-table">
+        <thead>
+          <tr>
+            <th scope="col" class="cell-report">Report</th>
+            <th scope="col" class="cell-date">Date Submitted</th>
+            <th scope="col" class="cell-status">Status</th>
+            <th scope="col" class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in reports" :key="r.id">
+            <td class="cell-report">
+              <div class="report-info">
+                <span class="report-title">{{ reportTypeLabel(r) }}</span>
+                <span v-if="periodLabel(r)" class="report-period">{{ periodLabel(r) }}</span>
+              </div>
+            </td>
+            <td class="cell-date">
+              <span class="report-date">{{ formatDate(r.submittedAt) || '—' }}</span>
+            </td>
+            <td class="cell-status">
+              <div class="report-status">
+                <span class="status-badge" :class="statusTone(r.status)">{{ reportStatusLabel(r.status) }}</span>
+              </div>
+            </td>
+            <td class="cell-actions">
+              <div class="report-actions">
+                <template v-if="isTerminal(r)">
+                  <!-- The Terminal Report is now completed in RPIS, so it is read as a
+                       document. A legacy report that only holds an uploaded file keeps
+                       the existing file preview. -->
+                  <button v-if="hasStructuredTerminal(r)" class="btn-view" @click="openTerminalDocument(r)">
+                    View Terminal Report
+                  </button>
+                  <button
+                    v-else-if="r.terminalReportFileName"
+                    class="btn-view"
+                    @click="openTerminalReport(r)"
+                  >
+                    View
+                  </button>
+                  <button
+                    v-if="r.terminalReportFileName"
+                    class="btn-download"
+                    @click="downloadDoc(r, 'terminal')"
+                  >
+                    DOWNLOAD
+                  </button>
+                  <span v-if="!hasStructuredTerminal(r) && !r.terminalReportFileName" class="report-meta">
+                    No terminal report content
+                  </span>
+                </template>
+                <template v-else>
+                  <button class="btn-view" @click="view(r)">View</button>
+                  <!-- A legacy uploaded workplan file (from before the interactive
+                       workplan form) stays downloadable. -->
+                  <button v-if="r.workplanFileName" class="btn-download" @click="downloadDoc(r, 'workplan')">DOWNLOAD</button>
+                </template>
+                <button v-if="r.status === 'DRAFT'" class="btn-edit" @click="edit(r)">Edit</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </template>
+
+    <!-- Read-only view modal: the report content scrolls inside the modal while
+         its header and the page navigation footer stay in place. -->
+    <div v-if="viewing" class="modal-overlay" @click.self="viewing = null">
+      <div class="modal modal--viewer">
+        <div class="modal-header">
+          <h2>Quarterly Progress Report</h2>
+          <button class="close-btn" @click="viewing = null">✕</button>
+        </div>
+        <div class="modal-body">
+          <QuarterlyReportViewer
+            :report="viewing"
+            :can-create-copy="canCopyReport"
+            :copying="copying"
+            @close="viewing = null"
+            @create-copy="createCopyFrom(viewing)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Report document viewer: the submitted report rendered as a document,
+         with a print / save-as-PDF action. The viewer never edits or changes the report. -->
+    <div v-if="terminalDoc" class="modal-overlay" @click.self="terminalDoc = null">
+      <div class="modal modal--viewer modal--terminal-doc">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2 id="terminal-doc-title">Terminal Report</h2>
+            <p class="modal-header-sub">{{ project?.projectTitle || '' }}</p>
+          </div>
+          <div class="modal-header-actions">
+            <button class="btn-secondary" @click="printTerminalDocument">DOWNLOAD</button>
+            <button class="close-btn" aria-label="Close" @click="terminalDoc = null">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <TerminalReportForm ref="terminalDocRef" :model-value="terminalDoc.terminalReport" readonly>
+            <template #attachment>
+              <p v-if="terminalDoc.terminalReportFileName" class="tr-note">
+                Attachment: {{ terminalDoc.terminalReportFileName }}
+              </p>
+            </template>
+          </TerminalReportForm>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Report preview modal (shared component): shows the actual
+         uploaded file through the existing authorized document endpoint, with a
+         Download action. Opening it never downloads, changes or deletes the
+         report. -->
+    <TerminalReportPreviewModal
+      v-if="terminalModal"
+      :report-id="terminalModal.reportId"
+      :file-name="terminalModal.fileName"
+      :period-label="terminalModal.periodLabel"
+      @close="closeTerminalModal"
+    />
+
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/utils/api'
+import { resetScrollPosition } from '@/utils/scrollReset'
+import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
+import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
+import TerminalReportForm from '@/components/TerminalReportForm.vue'
+import { downloadReportDocument } from '@/utils/fileDownload'
+import { printTerminalReport } from '@/utils/terminalReportPrint'
+import { statusTone } from '@/utils/statusTone.js'
+import { reportStatusLabel } from '@/utils/statusCatalog.js'
+import { hasAnyTerminalContent, hasTerminalReportContent } from '@/utils/terminalReport'
+import { isQuarterlyReportEligible, isReportableProject } from '@/utils/quarterlyReport'
+
+const route = useRoute()
+const router = useRouter()
+const proposalId = computed(() => route.params.proposalId)
+
+const project = ref(null)
+const reports = ref([])
+const nextStage = ref(null)
+const loading = ref(true)
+const error = ref('')
+const actionError = ref('')
+const viewing = ref(null)
+const terminalModal = ref(null)
+// The submitted Terminal Report opened as a document (structured reports).
+const terminalDoc = ref(null)
+const terminalDocRef = ref(null)
+// True while the Create a Copy action is opening the existing report workflow.
+const copying = ref(false)
+
+// Quarterly reporting is only available to approved, SO-issued projects - the
+// same rule the backend enforces (utils/quarterlyReport.js). A COMPLETED project
+// keeps its reports visible but can no longer start a new stage.
+const reportingAvailable = computed(() => isReportableProject(project.value))
+const canCreateReport = computed(() => isQuarterlyReportEligible(project.value))
+
+const allStagesComplete = computed(() => !!nextStage.value?.allStagesComplete)
+
+const nextStageLabel = computed(() => {
+  if (!nextStage.value || nextStage.value.allStagesComplete) return ''
+  return nextStage.value.reportType === 'TERMINAL_REPORT'
+    ? 'Terminal Report'
+    : `Quarterly Report ${nextStage.value.period} + Project Workplan`
+})
+
+const nextStageAction = computed(() => {
+  if (allStagesComplete.value) return 'All Reports Submitted'
+  const label = nextStage.value?.reportType === 'TERMINAL_REPORT'
+    ? 'Terminal Report'
+    : `Quarterly Report ${nextStage.value?.period || ''}`
+  return nextStage.value?.draftReportId ? `Continue ${label}` : `+ Start ${label}`
+})
+
+// Stages 1-3 (QPR + Project Workplan) then the Terminal Report stage.
+const stageSummary = computed(() => {
+  const defs = [
+    { key: 'Q1', label: 'Q1 · QPR + Workplan', period: 'Q1', type: 'QUARTERLY_PROGRESS' },
+    { key: 'Q2', label: 'Q2 · QPR + Workplan', period: 'Q2', type: 'QUARTERLY_PROGRESS' },
+    { key: 'Q3', label: 'Q3 · QPR + Workplan', period: 'Q3', type: 'QUARTERLY_PROGRESS' },
+    { key: 'TERMINAL', label: 'Terminal Report', period: 'TERMINAL', type: 'TERMINAL_REPORT' },
+  ]
+  return defs.map((def) => {
+    const match = reports.value.find(
+      (r) => (r.reportType || 'QUARTERLY_PROGRESS') === def.type &&
+        (r.period || '').toUpperCase() === def.period,
+    )
+    let state = 'pending'
+    if (match && match.status === 'SUBMITTED') state = 'done'
+    else if (match && match.status === 'DRAFT') state = 'draft'
+    else if (!allStagesComplete.value && nextStage.value?.period === def.period) state = 'current'
+    return { key: def.key, label: def.label, state }
+  })
+})
+
+function isTerminal(r) {
+  return r?.reportType === 'TERMINAL_REPORT'
+}
+
+function reportTypeLabel(r) {
+  return isTerminal(r) ? 'Terminal Report' : 'Quarterly Progress Report'
+}
+// The Terminal Report closes the project's reporting cycle, so it is labelled
+// with the quarter of the last quarterly reporting stage recorded for this
+// project (its own stored reporting year is used for the year). No quarter or
+// year is hardcoded.
+const lastQuarterlyReport = computed(() => {
+  const order = ['Q1', 'Q2', 'Q3', 'Q4']
+  let best = null
+  let bestIndex = -1
+  for (const r of reports.value) {
+    if ((r.reportType || 'QUARTERLY_PROGRESS') !== 'QUARTERLY_PROGRESS') continue
+    const index = order.indexOf((r.period || '').toUpperCase())
+    if (index > bestIndex) {
+      bestIndex = index
+      best = r
+    }
+  }
+  return best
+})
+
+function periodLabel(r) {
+  if (isTerminal(r)) {
+    const quarter = (lastQuarterlyReport.value?.period || '').toUpperCase()
+    const year = r?.year || lastQuarterlyReport.value?.year || new Date().getFullYear()
+    return quarter ? `${quarter} ${year}` : `${year}`
+  }
+  return `${r.period || ''} ${r.year || ''}`.trim()
+}
+
+async function fetchAll() {
+  loading.value = true
+  error.value = ''
+  try {
+    const [p, r] = await Promise.all([
+      api.get(`/api/proposals/${proposalId.value}`),
+      api.get(`/api/quarterly-reports/proposal/${proposalId.value}`),
+    ])
+    project.value = p.data
+    reports.value = r.data || []
+    if (reportingAvailable.value) {
+      await loadNextStage()
+    }
+  } catch (e) {
+    error.value = e.response?.data?.error || 'Failed to load reports.'
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * Reads the next required reporting stage for this project. The backend derives it from
+ * the project's own submitted reports (Q1 -> Q2 -> Q3 -> Terminal Report), so the same
+ * call is used when the page opens and again right before a copy is started - the
+ * reporting state may have changed while the report was being viewed.
+ */
+async function loadNextStage() {
+  if (!reportingAvailable.value) {
+    nextStage.value = null
+    return null
+  }
+  try {
+    const n = await api.get(`/api/quarterly-reports/next-stage/${proposalId.value}`)
+    nextStage.value = n.data
+  } catch (e) {
+    nextStage.value = null
+  }
+  return nextStage.value
+}
+
+// "Create a Copy" is offered only when this proponent may start the next reporting
+// period for this project: the project is eligible for quarterly reporting (approved
+// with an issued SO), a stage is still required, and that stage is a quarterly progress
+// report - the Terminal Report stage is submitted as an uploaded document and has no
+// report content to copy. The backend re-validates everything when the copy is saved.
+const canCopyReport = computed(
+  () =>
+    canCreateReport.value &&
+    !allStagesComplete.value &&
+    nextStage.value?.reportType === 'QUARTERLY_PROGRESS',
+)
+
+/**
+ * Opens the existing Create Quarterly Report workflow for the next required reporting
+ * period, starting from the report being viewed.
+ *
+ * The next stage is re-read first, so the copy always targets the stage the backend
+ * currently requires and continues that stage's draft when one already exists (the
+ * existing no-duplicate rule) instead of creating a second record for the same period.
+ * Nothing is created, saved or submitted from here: the report form still owns the
+ * Save Draft / Submit Report actions, and the previous report is never modified.
+ */
+async function createCopyFrom(report) {
+  if (!report?.id || copying.value) return
+  actionError.value = ''
+  copying.value = true
+  try {
+    const stage = await loadNextStage()
+    // The modal is closed on every outcome, so a message is never hidden behind it.
+    viewing.value = null
+    if (!canCreateReport.value) {
+      actionError.value =
+        'Quarterly progress reports are only available for projects that are approved for implementation and have an issued Special Order (SO).'
+      return
+    }
+    if (!stage || stage.allStagesComplete) {
+      actionError.value =
+        'All required reporting stages for this project have already been submitted, so there is no next reporting period to create.'
+      return
+    }
+    if (stage.reportType !== 'QUARTERLY_PROGRESS') {
+      actionError.value = `The next required reporting stage for this project is the ${nextStageLabel.value.replace(' + Project Workplan', '')}, which is submitted as an uploaded document and cannot be copied from a quarterly progress report.`
+      return
+    }
+    const query = { copyFrom: String(report.id) }
+    if (stage.draftReportId) {
+      router.push({
+        name: 'ProponentQuarterlyReportEdit',
+        params: { proposalId: proposalId.value, reportId: stage.draftReportId },
+        query,
+      })
+    } else {
+      router.push({
+        name: 'ProponentQuarterlyReportNew',
+        params: { proposalId: proposalId.value },
+        query,
+      })
+    }
+  } finally {
+    copying.value = false
+  }
+}
+
+function createNew() {
+  const draftId = nextStage.value?.draftReportId
+  if (draftId) {
+    router.push(`/quarterly-reports/${proposalId.value}/edit/${draftId}`)
+  } else {
+    router.push(`/quarterly-reports/${proposalId.value}/new`)
+  }
+}
+function edit(r) {
+  router.push(`/quarterly-reports/${proposalId.value}/edit/${r.id}`)
+}
+function view(r) {
+  viewing.value = r
+}
+function formatDate(d) {
+  return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+}
+
+async function downloadDoc(r, docType) {
+  try {
+    actionError.value = ''
+    const fileName = docType === 'workplan' ? r.workplanFileName : r.terminalReportFileName
+    await downloadReportDocument(r.id, docType, fileName)
+  } catch (e) {
+    actionError.value = 'Failed to download the document.'
+  }
+}
+
+// Opens the read-only Terminal Report preview modal. The shared modal component
+// loads the file through the existing authorized endpoint itself; nothing is
+// downloaded here and the report's status / saved data are left untouched.
+function openTerminalReport(r) {
+  terminalModal.value = {
+    reportId: r.id,
+    fileName: r.terminalReportFileName || '',
+    periodLabel: periodLabel(r),
+  }
+}
+
+/**
+ * True when the report holds a Terminal Report completed in RPIS (the structured
+ * document). Those reports are read as a document; a legacy report that only holds an
+ * uploaded file keeps the existing file preview.
+ */
+function hasStructuredTerminal(r) {
+  // The core content rule (report title, abstract, introduction, results and discussion) is
+  // what a submitted structured report always satisfies; anything else the proponent has
+  // entered is shown to them as well.
+  return hasTerminalReportContent(r?.terminalReport) || hasAnyTerminalContent(r?.terminalReport)
+}
+
+function openTerminalDocument(r) {
+  terminalDoc.value = r
+}
+
+/** Prints the open Terminal Report document, or saves it as PDF. */
+function printTerminalDocument() {
+  const element = terminalDocRef.value?.$el || terminalDocRef.value
+  return printTerminalReport({
+    title: `Terminal Report - ${project.value?.projectTitle || ''}`,
+    element,
+  })
+}
+
+function closeTerminalModal() {
+  terminalModal.value = null
+}
+
+// The app shell scrolls its <main class="content"> region (not the window), and
+// that region keeps the scroll position of the previous page. Arriving here from
+// Proposal Monitoring (after scrolling its proposal list) used to land half-way
+// down this page, hiding its title and the reporting progress. Resetting the
+// real scroll container after the DOM updates puts the top back in view, while
+// normal downward scrolling still works when the page is taller than the screen.
+async function scrollPageToTop() {
+  await nextTick()
+  resetScrollPosition()
+}
+
+onMounted(async () => {
+  // Reset before and after the reports load, because the loaded page is taller
+  // than the loading state.
+  await scrollPageToTop()
+  await fetchAll()
+  await scrollPageToTop()
+})
+</script>
+
+<style scoped>
+.qpr-page {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.page-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+/* Layout only; the action colours come from assets/actions.css. */
+.back-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.stages-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.stages-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stages-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+.stages-next {
+  color: #92400e;
+  font-size: 13px;
+}
+.stages-done {
+  color: #166534;
+  font-weight: 700;
+  font-size: 13px;
+}
+.stage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stage-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--status-neutral-border);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
+}
+.stage-chip.done {
+  background: var(--status-approved-bg);
+  border-color: var(--status-approved-border);
+  color: var(--status-approved-text);
+}
+.stage-chip.draft {
+  background: var(--status-draft-bg);
+  border-color: var(--status-neutral-border);
+  color: var(--status-draft-text);
+}
+.stage-chip.current {
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
+}
+/* Layout only; the action colours come from assets/actions.css. */
+.btn-primary {
+  margin-left: auto;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.state {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  border-radius: 8px;
+  text-align: center;
+  color: #64748b;
+}
+.state.error {
+  color: #dc2626;
+}
+.action-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.state.notice {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+/* Report list rendered as a table so the Report / Status / Actions headers line
+   up with every row. Each row keeps the previous card look (white, rounded, 1px
+   border, 12px gaps) via border-spacing plus per-cell borders. */
+.report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+.report-table thead th {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: #4b3f72;
+  text-align: center;
+}
+.report-table thead th.cell-report {
+  padding-left: 20px;
+  text-align: left;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.report-table thead th.cell-actions {
+  padding-right: 20px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+.report-table tbody td {
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 16px;
+  vertical-align: middle;
+}
+.report-table tbody td.cell-report {
+  padding-left: 20px;
+}
+.report-table tbody td.cell-date,
+.report-table tbody td.cell-status,
+.report-table tbody td.cell-actions {
+  white-space: nowrap;
+  text-align: center;
+}
+.report-table tbody td.cell-actions {
+  padding-right: 20px;
+}
+.report-table tbody td:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.report-table tbody td:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+/* Left section: report title, then the quarter/year. */
+.report-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+.report-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1c2145;
+}
+.report-period {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+.report-date {
+  font-size: 13px;
+  color: #1c2145;
+}
+/* Status badge gets its own column so it lines up on every card. */
+.report-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.report-meta {
+  color: #64748b;
+  font-size: 13px;
+}
+/* Right section: the action button(s). */
+.report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-view,
+.btn-edit,
+.btn-download {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+/* Read-only status label: no pill/background/rounded styling so it cannot be
+   mistaken for a clickable button. */
+.status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  /* Read-only label: the tone colour comes from assets/status.css, but the badge
+     keeps no pill background so it cannot be mistaken for a button. */
+  background: transparent;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 200;
+  padding: 24px;
+  overflow-y: auto;
+}
+.modal {
+  background: #fff;
+  width: 100%;
+  max-width: 1000px;
+  border-radius: 12px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+.modal-body {
+  padding: 16px 20px 24px;
+}
+/* The report viewer modal uses a column layout, so the modal header keeps its
+   place while the viewer owns the scrolling. Scoped to the modifier, so the
+   list modals are unaffected. */
+.modal.modal--viewer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* the modal itself never scrolls */
+}
+.modal--viewer .modal-header {
+  flex-shrink: 0;
+}
+.modal--viewer .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* The viewer owns the report and footer padding, so the scrollable area and
+     the footer can span the full modal width. */
+  padding: 0;
+}
+/* ---------- Terminal Report document viewer ----------
+   The submitted Terminal Report is rendered as a document. The modal keeps its
+   header (title, print action, close) in place while the document scrolls. */
+.modal.modal--terminal-doc {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 1180px;
+}
+.modal--terminal-doc .modal-header {
+  flex-shrink: 0;
+  gap: 12px;
+}
+.modal-header-text {
+  min-width: 0;
+}
+.modal-header-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.modal-header-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal--terminal-doc .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  background: #f8fafc;
+}
+
+/* The report is authored for a printed Letter page (terminalReportDocument.css: 8.5in wide
+   with 9-10pt Times text), so it is presented at a comfortable reading size here. Print
+   output and the print/PDF export keep the printed sizes. */
+@media screen {
+  .modal--terminal-doc :deep(.tr-sheet) {
+    width: 100%;
+    min-width: 820px;
+    min-height: 0;
+  }
+  .modal--terminal-doc :deep(.tr-cover-title) {
+    font-size: 22pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-team) {
+    font-size: 11pt;
+  }
+  .modal--terminal-doc :deep(.tr-cover-report) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-front-heading),
+  .modal--terminal-doc :deep(.tr-section-heading) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-subsection-heading) {
+    font-size: 13pt;
+  }
+  .modal--terminal-doc :deep(.tr-body-title) {
+    font-size: 14pt;
+  }
+  .modal--terminal-doc :deep(.tr-paragraph),
+  .modal--terminal-doc :deep(.tr-reference),
+  .modal--terminal-doc :deep(.tr-keywords) {
+    font-size: 11.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-table-caption),
+  .modal--terminal-doc :deep(.tr-list-entry) {
+    font-size: 12pt;
+  }
+  .modal--terminal-doc :deep(.tr-grid) {
+    font-size: 10.5pt;
+  }
+  .modal--terminal-doc :deep(.tr-page-number) {
+    font-size: 12pt;
+  }
+}
+
+/* Small screens: hide the column headers and stack each report as a card. */
+@media (max-width: 640px) {
+  .report-table {
+    border-spacing: 0;
+  }
+  .report-table thead {
+    display: none;
+  }
+  .report-table,
+  .report-table tbody,
+  .report-table tr,
+  .report-table td {
+    display: block;
+    width: 100%;
+  }
+  .report-table tbody tr {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .report-table tbody td,
+  .report-table tbody td:first-child,
+  .report-table tbody td:last-child {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  .report-table tbody td.cell-report {
+    margin-bottom: 4px;
+  }
+  .report-table tbody td.cell-date {
+    margin-bottom: 12px;
+  }
+  .report-status,
+  .report-actions {
+    justify-content: center;
+  }
+  .report-actions {
+    flex-wrap: wrap;
+  }
+}
+</style>

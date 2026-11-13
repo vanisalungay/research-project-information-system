@@ -1,0 +1,821 @@
+/**
+ * documentExport.js
+ * Shared utilities for generating a standalone, print-ready document from the
+ * on-screen form data so users can save a properly formatted PDF (via the
+ * browser's "Save as PDF") that mirrors the structure/layout of the form.
+ */
+
+import { SDG_OPTIONS, sdgToSet } from '@/utils/sdg'
+import api from '@/utils/api'
+// Section 21: the structured Risk Management Plan (one row per identified risk with its
+// likelihood, impact and mitigation measure). A proposal saved before the table existed
+// has no rows and keeps showing its single text.
+import { riskRowsFrom } from '@/utils/riskManagement'
+// Section 24: "% Time Devoted" is stored as a plain number and printed as a percentage.
+import { formatTimeDevoted } from '@/utils/personnelTime'
+// Section 25: the uploaded Line-Item Budget document (never a rebuilt amount table).
+import { budgetDocumentName } from '@/utils/budgetDocument'
+
+/** Escape a value so it can be safely embedded in generated HTML. */
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** Convert plain text (possibly multi-line) to safe HTML with <br> line breaks. */
+export function formatText(value, fallback = 'Not provided') {
+  const text = value == null ? '' : String(value).trim()
+  if (!text) return `<span class="empty">${escapeHtml(fallback)}</span>`
+  return escapeHtml(text).replace(/\r?\n/g, '<br/>')
+}
+
+/** Read an uploaded File/Blob as a base64 data URL (used for signature images). */
+export function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null)
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+/** Render a labelled field (label + value). */
+export function field(label, value, options = {}) {
+  const { inline = false } = options
+  const cls = inline ? 'field inline' : 'field'
+  return `<div class="${cls}">
+    <span class="label">${escapeHtml(label)}</span>
+    <span class="value">${formatText(value)}</span>
+  </div>`
+}
+
+/** Render a multi-line text block (label above a paragraph). */
+export function textBlock(label, value) {
+  return `<div class="field full">
+    <span class="label">${escapeHtml(label)}</span>
+    <div class="text">${formatText(value)}</div>
+  </div>`
+}
+
+/** Render a file-upload field using the uploaded file's name (File object or string). */
+export function fileField(label, file) {
+  const name =
+    file && typeof file === 'object' && file.name
+      ? file.name
+      : typeof file === 'string'
+        ? file
+        : null
+  return field(label, name || '', { inline: true })
+}
+
+/** Render a table from headers + rows (rows is an array of arrays). */
+export function tableBlock(headers, rows) {
+  const head = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')
+  const body = rows
+    .map((row) => `<tr>${row.map((c) => `<td>${formatText(c)}</td>`).join('')}</tr>`)
+    .join('')
+  return `<div class="table-wrap">
+    <table>
+      <thead><tr>${head}</tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>`
+}
+
+/** Render a numbered form section (number badge + title + body). */
+export function section({ number, title, sub = '', body }) {
+  return `<section class="doc-section">
+    <div class="section-head">
+      <span class="section-num">${escapeHtml(number)}</span>
+      <div class="section-titles">
+        <h2>${escapeHtml(title)}</h2>
+        ${sub ? `<span class="section-sub">${escapeHtml(sub)}</span>` : ''}
+      </div>
+    </div>
+    <div class="section-body">${body}</div>
+  </section>`
+}
+
+/** Render a signature block with name, designation, date and optional image. */
+export function signatureBlock({ label, name, designation, date, imageUrl }) {
+  const hasImage = Boolean(imageUrl)
+  return `<div class="signature-block">
+    <div class="signature-line">
+      ${hasImage
+        ? `<img class="signature-img" src="${imageUrl}" alt="${escapeHtml(name || 'Signature')}" />`
+        : `<span class="signature-placeholder">Signed</span>`}
+    </div>
+    <div class="signature-name">${formatText(name)}</div>
+    <div class="signature-meta">${formatText(designation)}</div>
+    <div class="signature-meta">${formatText(date)}</div>
+    <div class="signature-caption">${escapeHtml(label)}</div>
+  </div>`
+}
+
+const PRINT_STYLES = `
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b;
+    background: #fff;
+    font-size: 12.5px;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .doc-page { padding: 6px 4px; }
+
+  .doc-header {
+    border-bottom: 3px solid #4b3f72;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+  }
+  .doc-header .org {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+  }
+  .doc-header h1 {
+    margin: 4px 0 2px;
+    font-size: 22px;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+  .doc-header .subtitle { color: #475569; font-size: 13px; }
+
+  .doc-section {
+    break-inside: avoid;
+    margin-bottom: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 14px;
+  }
+  .section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: #4b3f72;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+  .section-titles h2 {
+    margin: 0;
+    font-size: 15px;
+    color: #0f172a;
+  }
+  .section-sub {
+    display: block;
+    font-size: 11.5px;
+    color: #64748b;
+    margin-top: 1px;
+  }
+  .section-body { padding: 14px; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .field.full { grid-column: 1 / -1; }
+  .field .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+  }
+  .field .value { font-weight: 500; color: #0f172a; }
+  .field .text { color: #1e293b; white-space: normal; }
+  .field .empty { color: #94a3b8; font-style: italic; font-weight: 400; }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .row .field:last-child { border-bottom: none; }
+
+  .sub-heading {
+    margin: 12px 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #4b3f72;
+  }
+
+  .table-wrap { margin: 8px 0; overflow-x: visible; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th, td {
+    border: 1px solid #e2e8f0;
+    padding: 7px 9px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #eef2f7; color: #334155; font-weight: 700; }
+  td { color: #1e293b; }
+
+  .file-list { margin: 6px 0 0; padding-left: 18px; color: #1e293b; }
+  .file-list li { margin: 2px 0; }
+
+  .sdg-print-list {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 18px;
+  }
+  .sdg-print-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #475569;
+    break-inside: avoid;
+  }
+  .sdg-print-list .check {
+    flex: 0 0 16px;
+    text-align: center;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+  .sdg-print-list li.selected { color: #0f172a; font-weight: 600; }
+  .sdg-print-list li.selected .check { color: #16a34a; }
+
+  .signature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 8px;
+  }
+  .signature-block {
+    break-inside: avoid;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fbfdff;
+  }
+  .signature-line {
+    min-height: 78px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid #94a3b8;
+    margin-bottom: 8px;
+  }
+  .signature-img {
+    max-height: 74px;
+    max-width: 220px;
+    object-fit: contain;
+  }
+  .signature-placeholder {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-style: italic;
+  }
+  .signature-name {
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    min-height: 16px;
+  }
+  .signature-meta {
+    text-align: center;
+    color: #475569;
+    font-size: 11.5px;
+    min-height: 15px;
+  }
+  .signature-caption {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  @page {
+    size: A4;
+    /* Browser print chrome cannot be controlled from CSS: Chrome draws its own
+       automatic header (date + document title) and footer (URL + page number)
+       whenever "Headers and footers" is enabled, regardless of this margin. The
+       proposal download therefore no longer uses the print dialog - it is
+       rendered to a PDF by the server (DocumentPdfService), which has no browser
+       chrome. This stylesheet remains for the in-app reports that still print. */
+    margin: 8mm 15mm;
+  }
+
+  body {
+    padding: 8mm 0;
+  }
+`
+
+/** Wrap body content into a full standalone HTML document ready for printing. */
+export function buildStandaloneHtml({ title, subtitle = '', body }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>${PRINT_STYLES}</style>
+</head>
+<body>
+  <div class="doc-page">
+    <header class="doc-header">
+      <div class="org">MSU at Naawan &middot; Research Project Information System</div>
+      <h1>${escapeHtml(title)}</h1>
+      ${subtitle ? `<div class="subtitle">${escapeHtml(subtitle)}</div>` : ''}
+    </header>
+    ${body}
+  </div>
+</body>
+</html>`
+}
+
+/**
+ * Render the generated HTML in a hidden iframe and open the browser's print
+ * dialog so the user can save it as a PDF with full formatting preserved.
+ */
+export function printDocument({ title, html }) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    Object.assign(iframe.style, {
+      position: 'fixed',
+      right: '0',
+      bottom: '0',
+      width: '0',
+      height: '0',
+      border: '0',
+      visibility: 'hidden'
+    })
+    document.body.appendChild(iframe)
+
+    const win = iframe.contentWindow
+    const doc = win.document
+    doc.open()
+    doc.write(html)
+    doc.close()
+    // The title names the printed document (and the tab). It is not printed as running text.
+    // Note that Chrome's own print header/footer cannot be disabled from the page: when the
+    // dialog's "Headers and footers" option is on it prints the date, title and URL regardless
+    // of the @page margin. Proposal downloads therefore use savePdfDocument() below, which has
+    // no browser chrome at all; this helper remains for the in-app reports.
+    if (title) {
+      try {
+        doc.title = title
+      } catch (e) {
+        /* a title is a nicety; printing must still work without it */
+      }
+    }
+
+    let cleanedUp = false
+    const cleanup = (error) => {
+      if (cleanedUp) return
+      cleanedUp = true
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+        if (error) reject(error)
+        else resolve()
+      }, 300)
+    }
+
+    const trigger = () => {
+      try {
+        win.addEventListener('afterprint', () => cleanup(), { once: true })
+      } catch (e) {
+        /* older browsers fall back to the timer below */
+      }
+      try {
+        win.focus()
+        win.print()
+      } catch (error) {
+        // The dialog never opened (blocked, no print service, iframe destroyed). Report it
+        // instead of resolving - a caller must never show "downloaded" for a failed print.
+        cleanup(error instanceof Error ? error : new Error('The print dialog could not be opened.'))
+        return
+      }
+      // Safety fallback in case afterprint is not fired.
+      setTimeout(() => cleanup(), 120000)
+    }
+
+    // Wait until the fonts and the images (the seal, signatures) are actually ready: printing
+    // before they load is what produced blank images and shifted/reflowed text in the PDF.
+    const waitForAssets = async () => {
+      try {
+        if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
+          await doc.fonts.ready
+        }
+      } catch (e) {
+        /* fonts.ready is best effort */
+      }
+      await Promise.all(
+        Array.from(doc.images || []).map((img) => {
+          if (typeof img.decode === 'function') {
+            return img.decode().catch(() => {})
+          }
+          return img.complete
+            ? Promise.resolve()
+            : new Promise((r) => {
+                img.onload = r
+                img.onerror = r
+              })
+        })
+      )
+    }
+
+    waitForAssets()
+      .catch(() => {})
+      .then(() => {
+        // One frame plus a short settle delay, so the layout has settled after the assets
+        // above (a decoded image can still change the row heights it sits in).
+        if (typeof win.requestAnimationFrame === 'function') {
+          win.requestAnimationFrame(() => setTimeout(trigger, 60))
+        } else {
+          setTimeout(trigger, 150)
+        }
+      })
+  })
+}
+
+/** A safe, readable file name for a generated document. */
+export function documentFileName(title, fallback = 'Proposal Details') {
+  const base = String(title ?? '')
+    .replace(/[\\/:*?"<>|\r\n]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 90)
+  return `${base || fallback}.pdf`
+}
+
+/**
+ * Render a standalone document to a PDF and save it as a file.
+ *
+ * The PDF is produced by the backend {@code POST /api/documents/pdf} endpoint
+ * (DocumentPdfService), not by the browser's print dialog. That is deliberate:
+ * Chrome prints its own automatic header (date + document title) and footer
+ * (URL + page number) whenever the dialog's "Headers and footers" option is on,
+ * and no CSS margin can prevent it. A server-rendered file has no browser chrome,
+ * so no date, timestamp, localhost URL or browser title can reach the download.
+ * The document's own bottom-right "Page n of N" margin box is part of the render.
+ *
+ * The file is written through a Blob + download link, so no print preview is
+ * opened and the PDF is the file the user gets.
+ *
+ * @param {{title?: string, html: string, filename?: string}} input
+ * @returns {Promise<void>} resolves once the browser has been handed the file;
+ *   rejects with the server's message when the document cannot be generated.
+ */
+export async function savePdfDocument({ title, html, filename } = {}) {
+  let response
+  try {
+    response = await api.post(
+      '/api/documents/pdf',
+      { html },
+      { responseType: 'blob', timeout: 120000 },
+    )
+  } catch (error) {
+    // With responseType 'blob' the JSON error body also arrives as a Blob, so the
+    // callers' usual `error.response.data.message` would be unreadable. Decode it
+    // here and keep the normal error shape.
+    const data = error?.response?.data
+    if (data && typeof data.text === 'function') {
+      try {
+        const text = await data.text()
+        try {
+          error.response.data = JSON.parse(text)
+        } catch (parseError) {
+          error.response.data = { message: text }
+        }
+      } catch (readError) {
+        /* the status/message fallback in the caller is still used */
+      }
+    }
+    throw error
+  }
+
+  const blob = response.data instanceof Blob
+    ? response.data
+    : new Blob([response.data], { type: 'application/pdf' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  // Both an explicit file name and the title can contain characters Windows and
+  // macOS reject in a file name (proposal titles may contain "/" or ":"), so the
+  // final name is always sanitised.
+  link.download = documentFileName(filename ? String(filename).replace(/\.pdf$/i, '') : title)
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Revoking immediately can cancel the download in some browsers; one second is
+  // enough for the browser to take the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// ===== Proposal document builder (backend `Proposal` DTO shape) =====
+
+/**
+ * The label of one agenda row. The display name comes from the caller's
+ * `agendaLabels` map ({ agendaKey: { name, subLabel } }), which is resolved from the
+ * Priority Agenda master data - so a framework an administrator configured later, and
+ * an agenda that has since been deactivated, both print correctly. Without the map the
+ * stable key is used; no program name or coverage period is ever hard-coded here.
+ */
+function agendaLabelFor(agendaLabels, agendaKey) {
+  const meta = (agendaLabels && agendaLabels[agendaKey]) || {}
+  const name = meta.name || String(agendaKey || 'Priority Agenda')
+  return meta.subLabel ? `${name} (${meta.subLabel})` : name
+}
+
+/** Normalize a value that may be an array or a plain object into an array. */
+function asList(value) {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === 'object') return Object.values(value)
+  return []
+}
+
+/** Convert a serialized "Label: value" multi-line string into labelled fields. */
+function parseLabeledLines(text) {
+  const raw = text == null ? '' : String(text).trim()
+  if (!raw) return ''
+  return raw
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const idx = line.indexOf(':')
+      if (idx === -1) return field('', line.trim())
+      return field(line.slice(0, idx).trim(), line.slice(idx + 1).trim())
+    })
+    .join('')
+}
+
+/**
+ * Build the full proposal document body from a backend `Proposal` object
+ * (camelCase fields and nested entity lists). Returns HTML for the form
+ * sections so the downloaded/printed file mirrors the on-screen form.
+ */
+/**
+ * Render the SDG section as a full 17-item checklist with only the selected
+ * goals checked. Accepts an array (new format) or a legacy free-form string.
+ */
+export function sdgChecklistHtml(value) {
+  const selected = sdgToSet(value)
+  const items = SDG_OPTIONS.map(
+    (goal) =>
+      `<li class="${selected.has(goal) ? 'selected' : ''}">` +
+      `<span class="check">${selected.has(goal) ? '☑' : '☐'}</span>` +
+      `<span>${escapeHtml(goal)}</span></li>`
+  ).join('')
+  return `<div class="field full">
+    <span class="label">Sustainable Development Goals</span>
+    <ul class="sdg-print-list">${items}</ul>
+  </div>`
+}
+
+export function buildProposalDocument(p = {}) {
+  const researchTypeLabel =
+    p.researchType === 'Basic'
+      ? 'Basic Research'
+      : p.researchType === 'Applied'
+        ? 'Applied Research'
+        : p.researchType
+
+  const agendaBody = asList(p.priorityAgendas)
+    .filter((a) => a && a.selected)
+    .map((a) => field(agendaLabelFor(p.agendaLabels, a.agendaKey || a.agenda), a.value || ''))
+    .join('')
+
+  const sitesRows = asList(p.sites).map((s) => [
+    s.country,
+    s.region,
+    s.province,
+    s.district,
+    s.municipality,
+    s.barangay
+  ])
+  const logFrameRows = asList(p.logFrames).map((r) => [r.outcome, r.output])
+  const personnelRows = asList(p.personnel).map((r) => [r.position, formatTimeDevoted(r.timeDevoted), r.responsibilities])
+  // The line-item budget is an uploaded PDF/DOCX document, so the document names the
+  // attachment instead of rebuilding a table from legacy budget rows (which are empty for
+  // every proposal created since the upload design). Amounts are never invented.
+  const budgetFileName = budgetDocumentName(p)
+  const otherProjectsRows = asList(p.otherProjects).map((o) => [o.title, o.agency, o.involvement])
+  const limitationRows = asList(p.limitations).map((l) => [l.limitation, l.remarks])
+  // Section 21: the Risk Management Plan as a table (identified risk, likelihood, impact,
+  // mitigation measure). Empty for a proposal that predates the table, which then prints
+  // its single-text plan instead.
+  const riskRows = riskRowsFrom(p).map((row) => [
+    row.identifiedRisks,
+    row.likelihood,
+    row.impact,
+    row.mitigationMeasure
+  ])
+
+  const sections = [
+    section({
+      number: '01',
+      title: 'Project Profile',
+      body: `<div class="row">
+          ${field('Program Title', p.programTitle)}
+          ${field('Project Title', p.projectTitle)}
+          ${field('Project Leader', p.projectLeader)}
+          ${field('Duration (months)', p.duration)}
+          ${field('Start Date', p.startDate)}
+          ${field('End Date', p.endDate)}
+          ${field('Implementing College / Department', p.college)}
+        </div>
+        ${textBlock('Address / Contact', p.address)}`
+    }),
+    section({
+      number: '02',
+      title: 'Cooperating Agencies',
+      body: textBlock('Cooperating Agencies', p.cooperatingAgencies)
+    }),
+    section({
+      number: '03',
+      title: 'Sites of Implementation',
+      body: tableBlock(
+        ['Country', 'Region', 'Province', 'District', 'Municipality', 'Barangay'],
+        sitesRows
+      )
+    }),
+    section({
+      number: '04',
+      title: 'Type of Research',
+      body: field('Type of Research', researchTypeLabel)
+    }),
+    section({
+      number: '05',
+      title: 'Priority Agenda',
+      sub: p.agendaFrameworkLabel || '',
+      body: agendaBody || textBlock('Priority Agenda', '')
+    }),
+    section({
+      number: '06',
+      title: 'Innovation Goals',
+      body: textBlock('Innovation Goals', p.innovationGoals)
+    }),
+    section({
+      number: '07',
+      title: 'Sector Relevance',
+      body: textBlock('Sector Relevance', p.sectorRelevance)
+    }),
+    section({
+      number: '08',
+      title: 'Sustainable Development Goals (SDG)',
+      body: sdgChecklistHtml(p.sdg)
+    }),
+    section({
+      number: '09',
+      title: 'Executive Summary',
+      body: textBlock('Executive Summary', p.executiveSummary)
+    }),
+    section({
+      number: '10',
+      title: 'Introduction',
+      body: `${textBlock('10.1 Rationale / Significance', p.rationale)}
+        ${textBlock('10.2 Scientific Basis / Theoretical Framework', p.framework)}
+        ${textBlock('10.3 General Objective', p.objectivesGeneral)}
+        ${textBlock('10.4 Specific Objectives', p.objectivesSpecific)}`
+    }),
+    section({
+      number: '11',
+      title: 'Review of Literature',
+      body: `${textBlock('Review of Literature', p.review)}
+        ${p.reviewFileName ? fileField('Review of Literature (file)', p.reviewFileName) : ''}`
+    }),
+    section({
+      number: '12',
+      title: 'Methodology',
+      body: textBlock('Methodology', p.methodology)
+    }),
+    section({
+      number: '13',
+      title: 'Technology Roadmap',
+      body: `${p.technologyTrl ? field('Technology Readiness Level (TRL)', p.technologyTrl) : ''}
+        ${p.roadmapFileName ? fileField('Technology Roadmap (file)', p.roadmapFileName) : ''}`
+    }),
+    section({
+      number: '14',
+      title: 'Expected Outputs (6Ps)',
+      body: parseLabeledLines(p.outputs) || textBlock('Expected Outputs', '')
+    }),
+    section({
+      number: '15',
+      title: 'Potential Outcomes',
+      body: textBlock('Potential Outcomes', p.outcomes)
+    }),
+    section({
+      number: '16',
+      title: 'Potential Impacts (2Is)',
+      body: `${textBlock('a. Economic Impact', p.impactEconomic)}
+        ${textBlock('b. Social / Ethical Impact', p.impactSocial)}`
+    }),
+    section({
+      number: '17',
+      title: 'Target Beneficiaries',
+      // The stored beneficiaries_* file is the Line-Item Budget document (section 25),
+      // not a target-beneficiaries attachment, so it is not repeated here.
+      body: textBlock('Target Beneficiaries', p.beneficiaries)
+    }),
+    section({
+      number: '18',
+      title: 'Sustainability Plan',
+      body: textBlock('Sustainability Plan', p.sustainability)
+    }),
+    section({
+      number: '19',
+      title: 'Gender and Development (GAD) Score',
+      body: `${p.gadScore != null ? field('GAD Score', p.gadScore) : ''}
+        ${p.gadFileName ? fileField('GAD Score Document', p.gadFileName) : ''}`
+    }),
+    section({
+      number: '20',
+      title: 'Limitations of the Project',
+      body: limitationRows.length
+        ? tableBlock(['Limitation', 'Remarks'], limitationRows)
+        : textBlock('Limitations', '')
+    }),
+    section({
+      number: '21',
+      title: 'Risk Management Plan',
+      body: riskRows.length
+        ? tableBlock(['Identified Risks', 'Likelihood', 'Impact', 'Mitigation Measure'], riskRows)
+        : textBlock('Risk Management Plan', p.risks)
+    }),
+    section({
+      number: '22',
+      title: 'Logical Framework',
+      sub: 'Outcome and Output Indicators',
+      body: tableBlock(['Outcome Indicators', 'Output Indicators / Physical Target'], logFrameRows)
+    }),
+    section({
+      number: '23',
+      title: 'Literature Cited',
+      body: textBlock('Literature Cited', p.referencesText)
+    }),
+    section({
+      number: '24',
+      title: 'Personnel Requirement',
+      body: tableBlock(['Position', '% Time Devoted', 'Responsibilities'], personnelRows)
+    }),
+    section({
+      number: '25',
+      title: 'Line-Item Budget Requirement',
+      body: budgetFileName
+        ? fileField('Attached Budget Document', budgetFileName)
+        : textBlock('Line-Item Budget', 'No budget document uploaded.')
+    }),
+    section({
+      number: '26',
+      title: 'Other Ongoing Projects',
+      sub: 'Being handled by the Project Leader',
+      body: `${field('Number of other projects', p.otherProjectsNumber)}
+        ${tableBlock(['Title', 'Funding Agency', 'Involvement'], otherProjectsRows)}`
+    })
+  ]
+
+  return sections.join('')
+}
+
+/**
+ * One-call helper: build + print/download a proposal as a clean A4 document.
+ * Used by every read-only view's "Print" / "Download Proposal" action so the
+ * behavior is identical across all roles and pages.
+ */
+export function downloadProposalDocument(proposal) {
+  const p = proposal || {}
+  const html = buildStandaloneHtml({
+    title: 'Research Proposal Form',
+    subtitle: p.projectTitle || p.programTitle || 'Project Proposal',
+    body: buildProposalDocument(p)
+  })
+  return printDocument({ title: 'Research Proposal Form', html })
+}

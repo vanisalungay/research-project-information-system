@@ -1,449 +1,322 @@
 <template>
-  <div class="ovcaf-shell">
-    <!-- ── Main Area ── -->
-    <div class="ovcaf-main">
-      <!-- Topbar -->
-      <header class="ovcaf-topbar">
-        <div class="ovcaf-topbar-left">
-          <div>
-            <div class="ovcaf-breadcrumbs"><span>OVCAF</span></div>
-            <h2 class="ovcaf-page-title">Dashboard</h2>
-          </div>
+  <!--
+    The OVCAF (Office of the Vice Chancellor for Admin and Finance) dashboard.
+
+    Only the presentation changed: the three counts and the two proposal lists are the same
+    records, filtered from the same endpoint by the same statuses and bound to the same
+    fields. The page reuses the shared design layer (assets/dashboard.css and
+    assets/endorsement.css) - the same banner, cards, tables and pills the other role
+    dashboards use - so every dashboard belongs to one design system.
+  -->
+  <div class="end-page end-page--fluid dash-page">
+    <!-- ===================== HEADER ===================== -->
+    <section class="dash-banner">
+      <span class="dash-avatar" aria-hidden="true" v-html="icons.office"></span>
+      <div class="dash-banner-text">
+        <h2 class="dash-banner-title">OVCAF DASHBOARD</h2>
+        <p class="dash-banner-sub">Office of the Vice Chancellor for Admin and Finance</p>
+      </div>
+    </section>
+
+    <!-- ===================== STATISTICS ===================== -->
+    <section class="dash-stats">
+      <div class="dash-stat dash-stat--amber">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.clock"></span>
+          <span class="dash-stat-label">Proposals for Review</span>
         </div>
+        <div class="dash-stat-value">{{ stats.forReview }}</div>
+      </div>
+
+      <div class="dash-stat dash-stat--blue">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.send"></span>
+          <span class="dash-stat-label">Endorsed to OC</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.endorsedToOc }}</div>
+      </div>
+
+      <div class="dash-stat dash-stat--green">
+        <div class="dash-stat-head">
+          <span class="dash-stat-icon" v-html="icons.check"></span>
+          <span class="dash-stat-label">Approved / Released</span>
+        </div>
+        <div class="dash-stat-value">{{ stats.completed }}</div>
+      </div>
+    </section>
+
+    <!-- ===================== PROPOSALS AWAITING OVCAF REVIEW ===================== -->
+    <section class="dash-section">
+      <header class="dash-section-head">
+        <span class="dash-section-icon" v-html="icons.proposals"></span>
+        <h3 class="dash-section-title">PROPOSALS AWAITING OVCAF REVIEW</h3>
       </header>
 
-      <!-- ── Page Content ── -->
-      <main class="ovcaf-body">
-        <!-- Stat Cards -->
-        <div class="stats-grid">
-          <div class="card card-hover stat-card stat-pending">
-            <p class="stat-label">PENDING</p>
-            <h3 class="stat-val">{{ stats.pending }}</h3>
-            <p class="stat-sub">Awaiting review</p>
-          </div>
-          <div class="card card-hover stat-card stat-total">
-            <p class="stat-label">TOTAL REVIEWED</p>
-            <h3 class="stat-val">{{ stats.totalReviewed }}</h3>
-            <p class="stat-sub">Processed by OVCAF</p>
-          </div>
-          <div class="card card-hover stat-card stat-approved">
-            <p class="stat-label">APPROVED</p>
-            <h3 class="stat-val">{{ stats.approved }}</h3>
-            <p class="stat-sub">Passed validation</p>
-          </div>
-        </div>
+      <div v-if="isLoading" class="loading-state">
+        <span class="loading-spinner"></span>
+        <span>Loading proposals...</span>
+      </div>
 
-        <div class="db-grid">
-          <!-- Recent Pending Table -->
-          <div class="card">
-            <div class="flex-between mb-4">
-              <h4 class="card-title" style="margin-bottom:0">Recent Pending Proposals</h4>
-              <router-link to="/ovcaf/inbox" class="btn btn-secondary btn-sm">View All</router-link>
-            </div>
-            <div v-if="loading" class="loading-msg">Loading...</div>
-            <div v-else-if="pendingProposals.length === 0" class="empty-box">
-              <p>No pending proposals. All caught up!</p>
-              <router-link to="/ovcaf/inbox" class="btn btn-primary btn-sm" style="margin-top:.75rem">Go to
-                Inbox</router-link>
-            </div>
-            <div v-else class="table-container">
-              <table class="custom-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Proponent</th>
-                    <th>Budget</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="p in pendingProposals.slice(0, 4)" :key="p.id">
-                    <td class="mono semibold">{{ p.id }}</td>
-                    <td>
-                      <div class="truncate-cell" :title="p.title">{{ p.title }}</div>
-                    </td>
-                    <td>{{ p.proponent }}</td>
-                    <td class="mono">{{ fmt(p.budget) }}</td>
-                    <td><router-link :to="`/ovcaf/validate/${p.id}`"
-                        class="btn btn-primary btn-sm">Validate</router-link></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+      <div v-else-if="forReview.length > 0" class="end-table-scroll">
+        <table class="end-table ovcaf-table">
+          <thead>
+            <tr>
+              <th>Proposal Title</th>
+              <th>Project Leader</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="proposal in forReview" :key="proposal.id">
+              <td class="cell-title">{{ proposal.title }}</td>
+              <td>{{ proposal.proponent }}</td>
+              <td>
+                <span class="end-badge" :class="statusTone(proposal.status)">
+                  {{ proposalStatusLabel(proposal.status) }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
+                  Review
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-          <!-- Activity Feed -->
-          <div class="card">
-            <h4 class="card-title">Recent Activity</h4>
-            <div v-if="loading" class="loading-msg">Loading...</div>
-            <div v-else-if="recentActivity.length === 0" class="empty-box">
-              <p>No activity yet.</p>
-            </div>
-            <div v-else class="activity-list">
-              <div v-for="act in recentActivity" :key="act.id" class="act-item">
-                <div class="act-dot" :class="dotClass(act.action)"></div>
-                <div class="act-body">
-                  <div class="act-meta"><span class="mono semibold small">{{ act.proposalId }}</span><span
-                      class="muted small">{{ relDate(act.date) }}</span></div>
-                  <p class="act-desc">{{ act.action }} — <router-link :to="`/ovcaf/proposals/${act.proposalId}`"
-                      class="act-link">{{ act.title }}</router-link></p>
-                  <p class="muted small">By {{ act.user }}</p>
-                  <p v-if="act.notes" class="act-note">"{{ act.notes }}"</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+      <p v-else class="dash-empty">No proposals awaiting OVCAF review.</p>
+    </section>
+
+    <!-- ===================== APPROVED PROPOSALS REQUESTING FUNDS ===================== -->
+    <section class="dash-section">
+      <header class="dash-section-head">
+        <span class="dash-section-icon" v-html="icons.funds"></span>
+        <h3 class="dash-section-title">APPROVED PROPOSALS REQUESTING FUNDS</h3>
+      </header>
+
+      <div v-if="completed.length > 0" class="end-table-scroll">
+        <table class="end-table ovcaf-table">
+          <thead>
+            <tr>
+              <th>Proposal Title</th>
+              <th>Project Leader</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="proposal in completed" :key="proposal.id">
+              <td class="cell-title">{{ proposal.title }}</td>
+              <td>{{ proposal.proponent }}</td>
+              <td>
+                <span class="end-badge" :class="statusTone(proposal.status)">
+                  {{ proposalStatusLabel(proposal.status) }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
+                  {{ proposalActionLabel(proposal.status) }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p v-else class="dash-empty">No approved proposals requesting funding.</p>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue'
+import '@/assets/dashboard.css'
+import '@/assets/endorsement.css'
+import api from '@/utils/api'
+import { statusTone } from '@/utils/statusTone.js'
+import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
-// ── Shell State ───────────────────────────────────
-const sidebarOpen = ref(false);
-const dropdownOpen = ref(false);
-const dropdownRef = ref(null);
+/**
+ * The icons of the page. They are inline SVGs on purpose: the application ships no icon
+ * dependency, and one helper keeps every icon the same size, stroke and alignment. The map
+ * is presentation only - no count or proposal depends on it.
+ */
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
 
+const icons = {
+  office: svg(
+    '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/>' +
+      '<path d="M9 21v-5h6v5"/><path d="M9 10h.01M15 10h.01M9 13h.01M15 13h.01"/>',
+  ),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/>'),
+  send: svg('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
+  check: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
+  proposals: svg(
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+      '<path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  ),
+  funds: svg(
+    '<circle cx="12" cy="12" r="9"/><path d="M12 7v10"/>' +
+      '<path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-2h-1a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-1a2.5 2.5 0 0 1-2.5-2"/>',
+  ),
+}
 
-// ── Page State ────────────────────────────────────
-const loading = ref(true);
-const proposals = ref([]);
-const recentActivity = ref([]);
-const stats = ref({ pending: 0, approved: 0, totalReviewed: 0 });
-const unreadCount = ref(0);
+/**
+ * The status pill tone comes from the one shared mapping (utils/statusTone.js); the status
+ * text shown stays exactly what the record carries.
+ */
 
-const pendingProposals = computed(() =>
-  proposals.value.filter(p => p.status === 'Pending Validation' || p.status === 'Under Validation')
-);
+const forReview = ref([])
+const completed = ref([])
+const stats = ref({
+  forReview: 0,
+  endorsedToOc: 0,
+  completed: 0
+})
+const isLoading = ref(true)
 
-// ── Mock Data ─────────────────────────────────────
-// TODO: Replace mock data with backend API
-const MOCK_PROPOSALS = [];
+/**
+ * A proposal is OVCAF's only after the Office of the Chancellor recorded its final
+ * approval and the issued Special Order. The status alone is not evidence (a record
+ * can carry an APPROVED-looking status without any OC decision); the SO number and
+ * the time it was recorded are written together by the OC final-approval
+ * transaction, and the backend applies the same rule to the /api/ovcaf endpoints.
+ */
+const hasOcApproval = (proposal) =>
+  typeof proposal?.soNumber === 'string' &&
+  proposal.soNumber.trim() !== '' &&
+  proposal.soUploadedAt != null
 
-
-// ── localStorage helpers ──────────────────────────
-const PROPOSAL_KEY = 'ovcaf_proposals';
-const NOTIF_KEY = 'ovcaf_notifications';
-
-const getAllProposals = () => {
-  const s = localStorage.getItem(PROPOSAL_KEY);
-  if (!s) { localStorage.setItem(PROPOSAL_KEY, JSON.stringify(MOCK_PROPOSALS)); return MOCK_PROPOSALS; }
-  return JSON.parse(s);
-};
-
-const getAllNotifications = () => {
-  const s = localStorage.getItem(NOTIF_KEY);
-  if (!s) { localStorage.setItem(NOTIF_KEY, JSON.stringify(MOCK_NOTIFICATIONS)); return MOCK_NOTIFICATIONS; }
-  return JSON.parse(s);
-};
-
-// ── Load Page Data ────────────────────────────────
-// TODO: Replace with backend API calls
 const loadDashboard = async () => {
-  loading.value = true;
-  await new Promise(r => setTimeout(r, 300));
-  const all = getAllProposals();
-  proposals.value = all;
+  try {
+    isLoading.value = true
+    const response = await api.get('/api/proposals')
+    const data = (response.data || []).filter(hasOcApproval)
 
-  const s = { pending: 0, approved: 0, totalReviewed: 0 };
-  all.forEach(p => {
-    if (p.status === 'Pending Validation' || p.status === 'Under Validation') s.pending++;
-    else if (p.status === 'Approved & Endorsed') { s.approved++; s.totalReviewed++; }
-  });
-  stats.value = s;
+    // Proposals awaiting OVCAF budget evaluation (OC has approved and forwarded them).
+    stats.value.forReview = data.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
 
-  const acts = [];
-  all.forEach(p => {
-    p.history.forEach(h => {
-      if (h.stage === 'OVCAF') acts.push({ id: `${p.id}-${h.date}`, proposalId: p.id, title: p.title, action: h.action, user: h.user, date: h.date, notes: h.notes });
-    });
-  });
-  acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  recentActivity.value = acts.slice(0, 5);
+    // Proposals OVCAF has returned to OC / are awaiting the Chancellor's next step.
+    stats.value.endorsedToOc = data.filter(p => p.status === 'FOR_OC_APPROVAL').length
 
-  const notifs = getAllNotifications();
-  unreadCount.value = notifs.filter(n => !n.read).length;
-  loading.value = false;
-};
+    // Completed (approved, released)
+    stats.value.completed = data.filter(
+      p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED'
+    ).length
 
-// ── Lifecycle ─────────────────────────────────────
-onMounted(() => {
-  loadDashboard();
-  document.addEventListener('click', handleOutsideClick);
-});
-onUnmounted(() => document.removeEventListener('click', handleOutsideClick));
+    // Only proposals with a completed OC approval + SO that still await OVCAF's
+    // budget decision can be reviewed. Earlier-stage records (REC_APPROVED,
+    // FOR_OC_APPROVAL) are not yet OVCAF's to act on.
+    forReview.value = data
+      .filter(p => p.status === 'FOR_OVCAF_APPROVAL')
+      .map(p => ({
+        id: p.id,
+        title: p.projectTitle || 'Untitled Project',
+        proponent: p.projectLeader || 'Unknown Proponent',
+        status: p.status
+      }))
 
-const handleOutsideClick = (e) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) dropdownOpen.value = false;
-};
+    // Approved/funding proposals
+    completed.value = data
+      .filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
+      .map(p => ({
+        id: p.id,
+        title: p.projectTitle || 'Untitled Project',
+        proponent: p.projectLeader || 'Unknown Proponent',
+        status: p.status
+      }))
 
-// ── Helpers ───────────────────────────────────────
-const fmt = v => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v);
-const dotClass = a => { const l = (a || '').toLowerCase(); if (l.includes('approve') || l.includes('endorse')) return 'dot-approved'; };
-const relDate = d => { if (!d) return ''; try { const dt = new Date(d.replace(/-/g, '/')); const diff = Math.floor((Date.now() - dt) / 60000); if (diff < 1) return 'Just now'; if (diff < 60) return `${diff}m ago`; const dh = Math.floor(diff / 60); if (dh < 24) return `${dh}h ago`; const dd = Math.floor(dh / 24); if (dd === 1) return 'Yesterday'; return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch { return d; } };
+  } catch (error) {
+    console.error('Failed to load OVCAF metrics:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(loadDashboard)
 </script>
 
 <style scoped>
-body {
-  background: #f5f7fb;
+/* ============================================================================
+   OVCAF dashboard presentation.
+
+   The page reuses the shared design layer: assets/dashboard.css provides the welcome
+   banner, the statistic cards and the section cards, and assets/endorsement.css provides
+   the table, the status pills and the buttons. Only what is specific to this screen is
+   declared here, so nothing can leak into another page.
+   ============================================================================ */
+
+/* The banner avatar carries an icon injected with v-html, so it is reached through :deep(). */
+.dash-avatar :deep(svg) {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.8;
 }
 
-.ovcaf-main{
-  width:136%;
-}
+/* ===== Status pills =====
+   The tone colours are shared (assets/status.css); this page adds no palette of its own. */
 
-.ovcaf-body{
-  padding:24px;
-  background:#f5f7fb;
-  min-height:100vh;
-}
-
-.ovcaf-topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:25px 30px;
-  background:#fff;
-  border-bottom:1px solid #e5e7eb;
-}
-
-.custom-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-.custom-table th{
-    background:#f8fafc;
-    color:#6b7280;
-    font-size:.82rem;
-    text-transform:uppercase;
-    letter-spacing:.03rem;
-    padding:12px;
-    text-align:left;
-}
-
-.custom-table td{
-    padding:14px 12px;
-    border-bottom:1px solid #f1f5f9;
-}
-
-.custom-table tbody tr:hover{
-    background:#fafafa;
-}
-
-.ovcaf-page-title{
-  font-size:28px;
-  font-weight:700;
-  color:#1f2937;
-}
-
-.ovcaf-breadcrumbs{
-  color:#6b7280;
-  font-size:14px;
-}
-
-.stats-grid{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(250px,1fr));
-    gap:24px;
-    margin-bottom:24px;
-}
-
-@media (max-width: 1280px) {
-  .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.btn-sm{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-
-    width:auto;
-    min-width:unset;
-    height:34px;
-
-    padding:6px 14px;
-
-    flex:none;
-}
-
-.btn-secondary{
-    background:#fff;
-    border:1px solid #d1d5db;
-    color:#374151;
-    text-decoration:none;
-    font-weight:600;
-}
-
-.btn-secondary:hover{
-    background:#f9fafb;
-}
-
-.btn-primary{
-    background:#7f1d1d;
-    color:white;
-    border:none;
-    padding:7px 14px;
-    border-radius:8px;
-    font-size:.82rem;
-    font-weight:600;
-    text-decoration:none;
-}
-
-.btn-primary:hover{
-    background:#991b1b;
-}
-
-.card-title{
-    font-size:1rem;
-    font-weight:700;
-    color:#374151;
-}
-
-.act-desc{
-    color:#374151;
-    font-weight:600;
-}
-
-.act-link{
-    color:#7f1d1d;
-    text-decoration:none;
-}
-
-.act-link:hover{
-    text-decoration:underline;
-}
-
-.stat-card{
-  min-height:120px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-}
-.stat-val{
-    font-size:2.2rem;
-    margin:4px 0;
-}
-
-.stat-label{
-    margin-bottom:6px;
-}
-
-.stat-sub{
-    margin-top:4px;
-}
-
-.stat-pending{
-  border-left:5px solid #f59e0b;
-}
-.stat-total{
-  border-left:5px solid #3b82f6;
-}
-.stat-approved{
-  border-left:5px solid #10b981;
-}
-
-
-.stat-pending .stat-val{
-  color:#d97706;
-}
-.stat-total .stat-val{
-  color:#2563eb;
-}
-.stat-approved .stat-val{
-  color:#059669;
-}
-
-
-.stat-sub {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-}
-
-/* Quick Actions */
-.qa-row {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.qa-badge {
-  background-color: var(--color-accent);
-  color: white;
-  font-size: 0.7rem;
+/* ===== Tables =====
+   The shared .end-table is used as it is; only the header band, the row alignment and the
+   compact row action are set here so the table lines up with the button beside it. */
+.ovcaf-table th {
+  background: #f6f7fd;
+  color: #1c1a3c;
   font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 9999px;
-  margin-left: 0.25rem;
-}
-
-/* Dashboard grid */
-.db-grid {
-  display: grid;
-  grid-template-columns: 1.8fr 1.2fr;
-  gap: 1.5rem;
-  align-items:start;
-}
-
-@media (max-width: 1100px) {
-  .db-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.flex-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.truncate-cell {
-  max-width: 240px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-  color: var(--text-primary);
 }
 
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+.ovcaf-table td {
+  vertical-align: middle;
 }
 
-.semibold {
+.ovcaf-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.ovcaf-table th.text-right,
+.ovcaf-table td.text-right {
+  text-align: right;
+}
+
+.cell-title {
   font-weight: 600;
+  color: #1c1a3c;
 }
 
-.small {
-  font-size: 0.75rem;
+/* A table row action is smaller than a page action. */
+.row-btn {
+  padding: 7px 14px;
+  font-size: 0.8125rem;
 }
 
-.muted {
-  color: var(--text-muted);
+/* ===== Loading ===== */
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 4px;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
-.loading-msg {
-  padding: 1.5rem;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(49, 91, 255, 0.25);
+  border-top-color: #315bff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-box {

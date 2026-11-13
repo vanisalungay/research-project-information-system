@@ -1,0 +1,21 @@
+-- Migration: Funding program (call type) on a Proposal Announcement
+-- ---------------------------------------------------------------------------
+-- The official Dean endorsement letter is worded specifically for an Internally
+-- Funded Project Proposal (IFP), so the endorsement workflow has to know which
+-- funding program a Call for Proposal belongs to before it may issue that letter.
+--
+-- funding_program holds the stable program key (currently 'IFP'). It is NOT NULL
+-- with the default 'IFP' so every Call for Proposal that already exists - and any
+-- call created by a client that does not send the field - keeps working and is
+-- treated as an Internally Funded Project call. An administrator can change it.
+--
+-- No CHECK constraint lists the allowed values: the set of programs is defined by
+-- the letter-template registry in the application
+-- (EndorsementLetterTemplates), and a program that has no official template yet
+-- is refused at approval time with an explicit message instead of being silently
+-- rendered with the IFP wording.
+--
+-- Safe to run on existing databases: the change is additive and every existing row
+-- receives the documented default. No record is modified, deleted or renumbered.
+ALTER TABLE proposal_announcements
+    ADD COLUMN IF NOT EXISTS funding_program VARCHAR(40) NOT NULL DEFAULT 'IFP';

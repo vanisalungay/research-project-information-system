@@ -1,640 +1,580 @@
 <template>
-  <div class="content-wrapper">
-    <section class="welcome-section">
-      <div class="welcome-left">
-        <h1>
-          Welcome,
-          {{ user.first_name && user.last_name
-              ? `${user.first_name} ${user.last_name}`
-              : 'Proponent' }}!
-        </h1>
-        <p>Track your research proposals and manage submissions</p>
+  <!--
+    The Proponent's summary dashboard.
 
-        <div class="stats-row">
-          <div class="stat-box">
-            <span class="stat-label">Active Proposals</span>
-            <span class="stat-value">
-              {{ statistics.activeProposals }}
-            </span>
-          </div>
+    Everything shown here is a summary of records the Proponent already owns, read from the
+    endpoints the workflow pages use (proposals, Calls for Proposal, endorsement requests
+    and the shared notification store). The full lists, forms and histories stay on their
+    own pages: this screen answers "what needs my attention?" and links to them.
 
-          <div class="stat-box pending">
-            <span class="stat-label">Pending Revisions</span>
-            <span class="stat-value">
-              {{ statistics.pendingRevisions }}
-            </span>
-          </div>
-
-          <div class="stat-box approved">
-            <span class="stat-label">Approved</span>
-            <span class="stat-value">
-              {{ statistics.approvedProposals }}
-            </span>
-          </div>
-        </div>
+    The page fills the whole content area beside the sidebar (.end-page--fluid), and its
+    sections pair up into columns only when there is real room for them (see
+    assets/dashboard.css).
+  -->
+  <div class="end-page end-page--fluid dash-page">
+    <!-- ===================== WELCOME ===================== -->
+    <section class="dash-banner">
+      <span class="dash-avatar" aria-hidden="true">{{ initials }}</span>
+      <div class="dash-banner-text">
+        <h2 class="dash-banner-title">Welcome back, {{ displayName }}!</h2>
+        <p class="dash-banner-sub">
+          Track your proposals, monitor progress, and manage your endorsement requests in
+          one place.
+        </p>
       </div>
     </section>
 
-    <!-- SEARCH -->
-    <div class="search-container">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search your proposals by title, ID, or status..."
-      />
+    <!-- ===================== FEATURED CALL + QUICK ACTIONS ===================== -->
+    <div class="dash-row dash-row--main">
+      <section class="dash-section dash-call">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.megaphone"></span>
+          <h3 class="dash-section-title">Call for Proposals</h3>
+          <span v-if="activeCall" class="end-badge" :class="activeCallTone">
+            {{ activeCallStatus }}
+          </span>
+        </header>
+
+        <template v-if="callsLoading">
+          <span class="dash-skeleton dash-skeleton--title"></span>
+          <span class="dash-skeleton dash-skeleton--line"></span>
+          <span class="dash-skeleton dash-skeleton--line" style="width: 68%"></span>
+        </template>
+
+        <p v-else-if="callsError" class="end-field-error">{{ callsError }}</p>
+        <p v-else-if="!activeCall" class="dash-empty">{{ NO_AVAILABLE_CALLS_MESSAGE }}</p>
+
+        <template v-else>
+          <h4 class="dash-call-title">{{ activeCall.name }}</h4>
+          <p v-if="activeCall.additionalAnnouncement" class="dash-call-desc">
+            {{ activeCall.additionalAnnouncement }}
+          </p>
+
+          <div class="dash-meta">
+            <div class="dash-meta-item">
+              <span class="dash-meta-icon" v-html="icons.calendar"></span>
+              <span class="dash-meta-body">
+                <span class="dash-meta-label">Opening date</span>
+                <span class="dash-meta-value">{{ callOpeningLabel(activeCall) }}</span>
+              </span>
+            </div>
+            <div class="dash-meta-item">
+              <span class="dash-meta-icon" v-html="icons.clock"></span>
+              <span class="dash-meta-body">
+                <span class="dash-meta-label">Deadline</span>
+                <span class="dash-meta-value">{{ callDeadlineLabel(activeCall) }}</span>
+              </span>
+            </div>
+            <div class="dash-meta-item">
+              <span class="dash-meta-icon" v-html="icons.window"></span>
+              <span class="dash-meta-body">
+                <span class="dash-meta-label">Submission period</span>
+                <span class="dash-meta-value">{{ callWindowLabel(activeCall) }}</span>
+              </span>
+            </div>
+            <div class="dash-meta-item">
+              <span class="dash-meta-icon" v-html="icons.fund"></span>
+              <span class="dash-meta-body">
+                <span class="dash-meta-label">Funding program</span>
+                <span class="dash-meta-value">{{ fundingProgramLabel(activeCall) }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Only shown when the deadline is genuinely near, and always from the saved date. -->
+          <p v-if="deadlineSoon" class="dash-deadline">
+            <span v-html="icons.clock"></span>
+            {{ callDaysLeft === 0 ? 'Closes today' : `Closes in ${callDaysLeft} day${callDaysLeft === 1 ? '' : 's'}` }}
+          </p>
+
+          <div class="dash-call-actions">
+            <router-link
+              class="end-btn is-view"
+              :to="`/proponent-announcement/${activeCall.id}`"
+            >
+              View Call Details
+            </router-link>
+            <router-link class="end-btn is-primary" to="/proposals">Start a Proposal</router-link>
+          </div>
+        </template>
+      </section>
+
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.bolt"></span>
+          <h3 class="dash-section-title">Quick actions</h3>
+        </header>
+
+        <nav class="dash-actions" aria-label="Quick actions">
+          <router-link class="dash-action dash-action--primary" to="/proposals">
+            <span class="dash-action-icon" v-html="icons.proposals"></span>
+            <span class="dash-action-text">
+              <span>View My Projects</span>
+              <span class="dash-action-hint">All your proposals</span>
+            </span>
+          </router-link>
+          <router-link class="dash-action" to="/proponent-proposal-monitoring">
+            <span class="dash-action-icon" v-html="icons.history"></span>
+            <span class="dash-action-text">
+              <span>View History</span>
+              <span class="dash-action-hint">Progress tracking</span>
+            </span>
+          </router-link>
+          <router-link class="dash-action" to="/endorsements">
+            <span class="dash-action-icon" v-html="icons.endorse"></span>
+            <span class="dash-action-text">
+              <span>My Endorsements</span>
+              <span class="dash-action-hint">Requests &amp; letters</span>
+            </span>
+          </router-link>
+          <router-link class="dash-action" to="/notifications">
+            <span class="dash-action-icon" v-html="icons.bell"></span>
+            <span class="dash-action-text">
+              <span>View All Notifications</span>
+              <span class="dash-action-hint">
+                {{ unreadCount > 0 ? `${unreadBadgeLabel(unreadCount)} unread` : 'Nothing unread' }}
+              </span>
+            </span>
+          </router-link>
+        </nav>
+      </section>
     </div>
 
-    <!-- REVISION DEADLINE -->
-    <section
-      v-if="revisionDeadline"
-      class="deadline-card"
-    >
-      <div class="deadline-left">
-        <div class="deadline-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2" />
-            <path d="M12 6v6l4 2" stroke="#000" stroke-width="2" />
-          </svg>
+    <!-- ===================== MY PROPOSALS ===================== -->
+    <section class="dash-section">
+      <header class="dash-section-head">
+        <span class="dash-section-icon" v-html="icons.proposals"></span>
+        <h3 class="dash-section-title">My proposals</h3>
+        <div class="dash-section-actions">
+          <router-link class="end-btn is-link" to="/proposals">View Proposals</router-link>
+          <router-link class="end-btn is-link" to="/proponent-proposal-monitoring">
+            View History
+          </router-link>
         </div>
+      </header>
 
-        <div>
-          <div class="deadline-title">
-            Revision Deadlines
-            <span class="pill">
-              {{ revisionDeadline.pendingCount }} Pending
+      <template v-if="proposalsLoading">
+        <div class="dash-stats">
+          <span v-for="n in 6" :key="n" class="dash-skeleton dash-skeleton--stat"></span>
+        </div>
+      </template>
+
+      <p v-else-if="proposalsError" class="end-field-error">{{ proposalsError }}</p>
+
+      <template v-else>
+        <!-- Summary only: the cards are not links, because a bucket groups several stored
+             statuses and the My Projects filter accepts one exact status. The two actions
+             above open the full list and the tracking view. -->
+        <div class="dash-stats dash-stats--six">
+          <div
+            v-for="card in proposalCards"
+            :key="card.id"
+            class="dash-stat"
+            :class="`dash-stat--${card.accent}`"
+          >
+            <span class="dash-stat-head">
+              <span class="dash-stat-icon" v-html="icons[card.icon]"></span>
+              <span class="dash-stat-label">{{ card.label }}</span>
             </span>
-          </div>
-
-          <div class="proposal-name">
-            {{ revisionDeadline.title }}
-          </div>
-
-          <div class="proposal-id">
-            {{ revisionDeadline.proposalId }}
+            <span class="dash-stat-value">{{ card.value }}</span>
           </div>
         </div>
-      </div>
 
-      <div class="deadline-right">
-        <div class="deadline-info">
-          <span>Deadline</span>
-          <strong>{{ revisionDeadline.daysLeft }} days left</strong>
+        <div v-if="revisionDeadline" class="end-note is-warning">
+          <strong>Revision deadline:</strong>
+          {{ revisionDeadline.title }}
+          <template v-if="revisionDeadline.proposalId">
+            ({{ revisionDeadline.proposalId }})
+          </template>
+          — {{ revisionDaysLeftLabel(revisionDeadline.daysLeft) }}.
+          <router-link class="end-btn is-link" to="/revisions">Submit Revision</router-link>
         </div>
-
-        <button
-          class="submit-btn"
-          @click="goToRevision"
-        >
-          Submit Revision
-        </button>
-      </div>
+        <p v-else class="dash-empty">
+          {{
+            pendingRevisions > 0
+              ? `${pendingRevisions} revision(s) still to resubmit.`
+              : 'No pending revisions — you are all caught up.'
+          }}
+        </p>
+      </template>
     </section>
 
-    <!-- EMPTY STATE -->
-    <section
-      v-else
-      class="deadline-card"
-    >
-      <div class="deadline-left">
-        <div class="deadline-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2" />
-            <path d="M12 6v6l4 2" stroke="#000" stroke-width="2" />
-          </svg>
-        </div>
 
-        <div>
-          <div class="deadline-title">
-            Revision Deadlines
+    <!-- ===================== ENDORSEMENTS + NOTIFICATIONS ===================== -->
+    <div class="dash-row dash-row--half">
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.endorse"></span>
+          <h3 class="dash-section-title">My endorsement requests</h3>
+          <div class="dash-section-actions">
+            <router-link class="end-btn is-link" to="/endorsements">View all</router-link>
           </div>
+        </header>
 
-          <div class="proposal-name">
-            No pending revisions.
+        <template v-if="endorsementsLoading">
+          <div class="dash-stats">
+            <span v-for="n in 4" :key="n" class="dash-skeleton dash-skeleton--stat"></span>
           </div>
+        </template>
 
-          <div class="proposal-id">
-            You're all caught up!
-          </div>
-        </div>
-      </div>
-    </section>
+        <p v-else-if="endorsementsError" class="end-field-error">{{ endorsementsError }}</p>
 
-    <!-- RECENTLY SUBMITTED -->
-    <section class="grid">
-      <div class="panel">
-        <div class="panel-header">
-          <div>
-            Recently Submitted Proposals
-            <span class="count-badge">
-              {{ recentProposals.length }}
-            </span>
-          </div>
-
-          <a
-            @click="goToProposals"
-            style="cursor: pointer"
-          >
-            View All
-          </a>
-        </div>
-
-        <!-- No Proposals -->
-        <div
-          v-if="recentProposals.length === 0"
-          class="panel-item"
-        >
-          <div>
-            <div class="item-title">No submitted proposals yet.</div>
-            <div class="item-meta">
-              Your submitted proposals will appear here.
-            </div>
-          </div>
-        </div>
-
-        <!-- Proposal List -->
-        <div
-          v-for="proposal in recentProposals"
-          :key="proposal.id"
-          class="panel-item"
-        >
-          <div>
-            <div class="item-title">
-              {{ proposal.title }}
-            </div>
-
-            <div class="item-meta">
-              {{ proposal.proposalId }} • {{ proposal.dateSubmitted }}
+        <template v-else>
+          <div class="dash-stats">
+            <div
+              v-for="card in endorsementCards"
+              :key="card.id"
+              class="dash-stat"
+              :class="`dash-stat--${card.accent}`"
+            >
+              <span class="dash-stat-head">
+                <span class="dash-stat-icon" v-html="icons[card.icon]"></span>
+                <span class="dash-stat-label">{{ card.label }}</span>
+              </span>
+              <span class="dash-stat-value">{{ card.value }}</span>
             </div>
           </div>
 
-          <span
-            class="status"
-            :class="proposal.statusClass"
-          >
-            {{ proposal.status }}
+          <p v-if="recentEndorsements.length === 0" class="dash-empty">
+            You have not raised an endorsement request yet. Raise one before you start a new
+            proposal — a request only becomes an issued document once your Dean approves it.
+          </p>
+
+          <div v-else class="end-table-scroll">
+            <table class="end-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Project title</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="request in recentEndorsements" :key="request.id">
+                  <td>{{ request.referenceNumber }}</td>
+                  <td>
+                    {{ request.projectTitle }}
+                    <div v-if="request.programTitle" class="end-muted">
+                      {{ request.programTitle }}
+                    </div>
+                  </td>
+                  <td>{{ formatEndorsementTimestamp(request.createdAt) }}</td>
+                  <td>
+                    <span class="end-badge" :class="endorsementStatusTone(request.status)">
+                      {{ endorsementStatusLabel(request.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <router-link class="end-btn is-link" :to="`/endorsements/${request.id}`">
+                      View
+                    </router-link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="dash-call-actions">
+            <router-link class="end-btn is-view" to="/endorsements">My Endorsements</router-link>
+            <router-link class="end-btn is-view" to="/endorsements?tab=certifications">
+              Issued Certificates
+            </router-link>
+          </div>
+        </template>
+      </section>
+
+      <section class="dash-section">
+        <header class="dash-section-head">
+          <span class="dash-section-icon" v-html="icons.bell"></span>
+          <h3 class="dash-section-title">Recent notifications</h3>
+          <span v-if="unreadCount > 0" class="end-badge is-pending">
+            {{ unreadBadgeLabel(unreadCount) }} unread
           </span>
-        </div>
-      </div>
-    </section>
-
-    <!-- REVIEWER FEEDBACK -->
-    <section class="grid">
-      <div class="panel">
-        <div class="panel-header">
-          <div>
-            Reviewer Feedback
-            <span class="count-badge yellow">
-              {{ feedbacks.length }}
-            </span>
+          <div class="dash-section-actions">
+            <router-link class="end-btn is-link" to="/notifications">View all</router-link>
           </div>
+        </header>
 
-          <a
-            @click="goToFeedback"
-            style="cursor: pointer"
+        <template v-if="notificationsLoading">
+          <span v-for="n in 3" :key="n" class="dash-skeleton dash-skeleton--row"></span>
+        </template>
+
+        <p v-else-if="recentNotificationsList.length === 0" class="dash-empty">
+          You have no notifications yet. Calls for Proposal, review decisions and deadline
+          reminders will appear here.
+        </p>
+
+        <ul v-else class="dash-notes">
+          <li
+            v-for="notification in recentNotificationsList"
+            :key="notification.id"
+            class="dash-note"
+            :class="{ 'dash-note--unread': isUnreadNotification(notification) }"
           >
-            View All
-          </a>
-        </div>
-
-        <!-- Empty State -->
-        <div
-          v-if="feedbacks.length === 0"
-          class="feedback-item"
-        >
-          <div>
-            <div>No reviewer feedback yet.</div>
-            <small>Feedback from reviewers will appear here.</small>
-          </div>
-        </div>
-
-        <!-- Feedback List -->
-        <div
-          v-for="feedback in feedbacks"
-          :key="feedback.id"
-          class="feedback-item"
-        >
-          <span
-            class="dot"
-            :class="getFeedbackColor(feedback.type)"
-          ></span>
-
-          <div>
-            <div>{{ feedback.message }}</div>
-            <small>{{ feedback.time }}</small>
-          </div>
-        </div>
-      </div>
-    </section>
+            <span class="dash-note-icon" v-html="icons.bell"></span>
+            <span class="dash-note-body">
+              <span class="dash-note-title">{{ notification.title }}</span>
+              <p class="dash-note-text">{{ notification.message }}</p>
+              <span class="dash-note-foot">
+                <span class="dash-note-date">{{ formatTimestamp(notification.createdAt) }}</span>
+                <span v-if="isUnreadNotification(notification)" class="end-badge is-pending">
+                  Unread
+                </span>
+              </span>
+            </span>
+            <router-link
+              class="end-btn is-link dash-note-action"
+              to="/notifications"
+              :aria-label="`Open the notifications page for: ${notification.title}`"
+            >
+              Open
+            </router-link>
+          </li>
+        </ul>
+      </section>
+    </div>
   </div>
 </template>
 
+
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import '@/assets/dashboard.css'
+import '@/assets/endorsement.css'
+import api from '@/utils/api'
+import { useNotificationStore } from '@/stores/notifications'
+import { useUserDataStore } from '@/stores/userData'
+import { announcementStatus } from '@/utils/announcementStatus'
+import {
+  AVAILABLE_CALLS_ENDPOINT,
+  NO_AVAILABLE_CALLS_MESSAGE,
+  callDeadlineLabel,
+  callOpeningLabel,
+  callWindowLabel,
+  isCallOpen,
+  sortCallsForDisplay,
+} from '@/utils/callForProposal.js'
+import {
+  endorsementStatusLabel,
+  endorsementStatusTone,
+  endorsementSummaryCounts,
+  fetchEndorsementRequests,
+  formatEndorsementTimestamp,
+  fundingProgramLabel,
+  issuedLetterCount,
+} from '@/utils/endorsement.js'
+import { isUnreadNotification, unreadBadgeLabel } from '@/utils/notifications.js'
+import { PROPOSAL_SUMMARY_BUCKETS, proposalSummaryCounts } from '@/utils/proposalSummary.js'
+import { statusTone } from '@/utils/statusTone.js'
+import {
+  PENDING_REVISION_STATUSES,
+  countPendingRevisions,
+  isRevisionDeadlinePassed,
+  revisionDaysLeft,
+  revisionDaysLeftLabel,
+} from '@/utils/revisionDeadline.js'
+import { formatTimestamp } from '@/utils/timestamps.js'
 
-const router = useRouter()
+/**
+ * The icons of the page. They are inline SVGs on purpose: the application ships no icon
+ * dependency, and one helper keeps every icon the same size, stroke and alignment.
+ */
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
 
-// Logged-in user
-const user = ref({
-  first_name: '',
-  last_name: ''
+const icons = {
+  megaphone: svg(
+    '<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8.5a4 4 0 0 1 0 7"/><path d="M18 6a8 8 0 0 1 0 12"/>',
+  ),
+  calendar: svg(
+    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/>',
+  ),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/>'),
+  window: svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 11h18M8 15h5"/>'),
+  fund: svg('<path d="M12 3v18"/><path d="M16 7H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7"/>'),
+  bolt: svg('<path d="M13 2 4 14h6l-1 8 9-12h-6z"/>'),
+  proposals: svg(
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  ),
+  history: svg('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/>'),
+  endorse: svg('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/>'),
+  bell: svg(
+    '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  ),
+  stack: svg(
+    '<rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="5" rx="1"/><rect x="3" y="18" width="11" height="3" rx="1"/>',
+  ),
+  draft: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  sent: svg('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
+  review: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>'),
+  approved: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
+  returned: svg(
+    '<path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.6-8.3"/><path d="M12 8.5v4"/><path d="M12 16h.01"/>',
+  ),
+  letter: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
+}
+
+const userStore = useUserDataStore()
+const notificationStore = useNotificationStore()
+
+const displayName = computed(() => userStore.user?.name || 'Proponent')
+
+/** The avatar carries the initials of the signed-in name - no image is uploaded anywhere. */
+const initials = computed(() => {
+  const parts = String(userStore.user?.name || 'Proponent')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length === 0) return 'P'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 })
 
-// Dashboard statistics
-const statistics = ref({
-  activeProposals: 0,
-  pendingRevisions: 0,
-  approvedProposals: 0
+// ===== Calls for Proposal =====
+const calls = ref([])
+const callsLoading = ref(true)
+const callsError = ref('')
+
+// ===== Proposals =====
+const proposals = ref([])
+const proposalsLoading = ref(true)
+const proposalsError = ref('')
+
+// ===== Endorsement requests =====
+const endorsements = ref([])
+const endorsementsLoading = ref(true)
+const endorsementsError = ref('')
+
+
+/**
+ * The call to show: the open one, or - when nothing is open yet - the next scheduled one.
+ * The order is the same rule the Create Proposal workflow uses, and the list itself is the
+ * backend's (`/available` never returns a draft, closed or expired call).
+ */
+const activeCall = computed(() => sortCallsForDisplay(calls.value)[0] ?? null)
+const activeCallStatus = computed(() => announcementStatus(activeCall.value))
+
+/** The call's badge tone, from the one shared status mapping. */
+const activeCallTone = computed(() => statusTone(activeCallStatus.value))
+
+/** Whole days until the featured call closes (0 when it is missing or already past). */
+const callDaysLeft = computed(() => revisionDaysLeft(activeCall.value?.endDate))
+
+/** Only a call that is genuinely open and genuinely close to its deadline is flagged. */
+const deadlineSoon = computed(
+  () => Boolean(activeCall.value) && isCallOpen(activeCall.value) && callDaysLeft.value <= 14,
+)
+
+/** The proposal cards, carrying the counts of the records the backend returned. */
+const proposalCounts = computed(() => proposalSummaryCounts(proposals.value))
+const proposalCards = computed(() =>
+  PROPOSAL_SUMMARY_BUCKETS.map((bucket) => ({ ...bucket, value: proposalCounts.value[bucket.id] })),
+)
+
+/** Revisions the Proponent can still resubmit (the backend's own deadline rule). */
+const pendingRevisions = computed(() => countPendingRevisions(proposals.value))
+
+/** The revision whose deadline comes first and has not passed, or null. */
+const revisionDeadline = computed(() => {
+  const upcoming = proposals.value
+    .filter(
+      (proposal) =>
+        PENDING_REVISION_STATUSES.includes(proposal.status) &&
+        !isRevisionDeadlinePassed(proposal.revisionDeadline),
+    )
+    .sort((a, b) => new Date(a.revisionDeadline) - new Date(b.revisionDeadline))
+  const nearest = upcoming[0]
+  if (!nearest) return null
+  return {
+    title: nearest.projectTitle || 'Project Revision Required',
+    proposalId: nearest.documentId || nearest.proposalCode || '—',
+    daysLeft: revisionDaysLeft(nearest.revisionDeadline),
+  }
 })
 
-// Search
-const search = ref('')
+const endorsementCounts = computed(() => endorsementSummaryCounts(endorsements.value))
 
-// Revision deadline
-const revisionDeadline = ref(null)
+/** Issued letters: only an approved request carries one (1:1 with its certification). */
+const issuedLetters = computed(() => issuedLetterCount(endorsements.value))
 
-// Recently submitted proposals
-const recentProposals = ref([])
+/** The endorsement cards, in the order the workflow moves through them. */
+const endorsementCards = computed(() => [
+  { id: 'pending', label: 'Pending', value: endorsementCounts.value.pending, accent: 'amber', icon: 'clock' },
+  { id: 'approved', label: 'Approved', value: endorsementCounts.value.approved, accent: 'green', icon: 'approved' },
+  { id: 'rejected', label: 'Rejected', value: endorsementCounts.value.rejected, accent: 'red', icon: 'returned' },
+  { id: 'letters', label: 'Issued letters', value: issuedLetters.value, accent: 'indigo', icon: 'letter' },
+])
 
-// Reviewer feedback
-const feedbacks = ref([])
+/** The latest endorsement activity; the API returns the list newest first. */
+const recentEndorsements = computed(() => endorsements.value.slice(0, 3))
 
-// Loading
-const loading = ref(false)
+/**
+ * Notifications come from the shared store: the shell already reads them for the bell and
+ * the sidebar badge, so the dashboard shows the same records without a second request.
+ */
+const recentNotificationsList = computed(() => notificationStore.recent)
+const unreadCount = computed(() => notificationStore.unreadCount)
+const notificationsLoading = computed(() => notificationStore.loading)
 
-// Fetch dashboard data
-async function fetchDashboard() {
-  loading.value = true
+/** The readable reason a request failed, or the fallback sentence. */
+const failureMessage = (reason, fallback) => reason?.response?.data?.error || fallback
 
-  try {
-    // API will be connected here later
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loading.value = false
+/**
+ * Loads the three lists the summary is built from. They are requested together but handled
+ * separately, so one unavailable endpoint leaves the rest of the dashboard usable.
+ */
+async function load() {
+  callsLoading.value = true
+  proposalsLoading.value = true
+  endorsementsLoading.value = true
+  callsError.value = ''
+  proposalsError.value = ''
+  endorsementsError.value = ''
+
+  const [proposalsResult, callsResult, endorsementsResult] = await Promise.allSettled([
+    api.get('/api/proposals'),
+    api.get(AVAILABLE_CALLS_ENDPOINT),
+    fetchEndorsementRequests(),
+  ])
+
+  if (proposalsResult.status === 'fulfilled') {
+    proposals.value = Array.isArray(proposalsResult.value.data) ? proposalsResult.value.data : []
+  } else {
+    proposals.value = []
+    proposalsError.value = failureMessage(
+      proposalsResult.reason,
+      'Your proposals could not be loaded.',
+    )
   }
-}
 
-onMounted(() => {
-  fetchDashboard()
-})
-
-function goToRevision() {
-  router.push('/revisions')
-}
-
-function goToProposals() {
-  router.push('/proposals')
-}
-
-function goToFeedback() {
-  router.push('/proponent-feedback')
-}
-
-function getFeedbackColor(type) {
-  switch (type) {
-    case 'revision':
-      return 'yellow'
-
-    case 'approved':
-      return 'green'
-
-    default:
-      return 'yellow'
+  if (callsResult.status === 'fulfilled') {
+    calls.value = Array.isArray(callsResult.value.data) ? callsResult.value.data : []
+  } else {
+    calls.value = []
+    callsError.value = failureMessage(
+      callsResult.reason,
+      'The Calls for Proposal could not be loaded.',
+    )
   }
-}
 
-function getStatusClass(status) {
-  switch (status) {
-    case 'Under Review':
-      return 'under-review'
-
-    case 'Approved':
-      return 'approved'
-
-    case 'Revision Required':
-      return 'revision'
-
-    default:
-      return ''
+  if (endorsementsResult.status === 'fulfilled') {
+    endorsements.value = Array.isArray(endorsementsResult.value) ? endorsementsResult.value : []
+  } else {
+    endorsements.value = []
+    endorsementsError.value = failureMessage(
+      endorsementsResult.reason,
+      'Your endorsement requests could not be loaded.',
+    )
   }
+
+  callsLoading.value = false
+  proposalsLoading.value = false
+  endorsementsLoading.value = false
 }
+
+onMounted(load)
 </script>
 
-<style scoped>
-:root {
-  --bg-color: #f8f8f8;
-  --card-bg: #ffffff;
-  --text-color: #1f1a3d;
-  --muted-text: #6b7280;
-  --primary: #2452ff;
-  --border: #ddd;
-}
-
-/* DARK MODE OVERRIDE */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #0f172a;
-    --card-bg: #1e293b;
-    --text-color: #f1f5f9;
-    --muted-text: #94a3b8;
-    --primary: #3b82f6;
-    --border: #334155;
-  }
-}
-
-/* BASE */
-.content-wrapper {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-
-  padding: 2rem;
-  background: #f3f4f6;
-  min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-}
-
-.welcome-section,
-.search-container,
-.deadline-card,
-.grid {
-  width: 100%;
-}
-
-/* WELCOME */
-.welcome-section {
-  background: linear-gradient(90deg, #2b294a 0%, #3a375f 100%);
-  border-radius: 0.875rem;
-  padding: 2rem;
-  color: #fff;
-}
-
-.welcome-left h1 {
-  margin: 0;
-  font-size: 1.375rem;
-  font-weight: 600;
-}
-
-.welcome-left p {
-  margin: 0.375rem 0 1rem;
-  font-size: 0.875rem;
-  opacity: 0.85;
-}
-
-.stats-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.stat-box {
-  background: rgba(255, 255, 255, 0.12);
-  padding: 0.875rem 1.25rem;
-  border-radius: 0.75rem;
-  flex: 1 1 200px;
-  min-width: 200px;
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 0.8125rem;
-  opacity: 0.9;
-}
-
-.stat-value {
-  display: block;
-  margin-top: 0.375rem;
-  font-size: 1.375rem;
-  font-weight: 700;
-}
-
-.stat-box.pending {
-  background: rgba(255, 193, 7, 0.25);
-  color: white;
-}
-
-.stat-box.approved {
-  background: rgba(40, 167, 69, 0.25);
-}
-
-/* SEARCH */
-.search-container {
-  margin: 1.25rem 0;
-}
-
-.search-container input {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  font-size: 0.875rem;
-}
-
-/* DEADLINE */
-.deadline-card {
-  background: #fffbe6;
-  border: 2px solid #ffd200;
-  border-radius: 0.875rem;
-  padding: 1rem 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.deadline-left {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex: 1 1 250px;
-}
-
-.deadline-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: #ffd200;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.deadline-icon svg {
-  width: 50%;
-  height: 50%;
-}
-
-.deadline-info {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
-}
-
-.deadline-title {
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.pill {
-  background: #ffd200;
-  padding: 0.125rem 0.625rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  margin-left: 0.375rem;
-}
-
-.proposal-name {
-  font-size: 0.875rem;
-  margin-top: 0.375rem;
-}
-
-.proposal-id {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.deadline-right {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex: 1 1 150px;
-  justify-content: flex-end;
-}
-
-.deadline-info span {
-  display: block;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.submit-btn {
-  background: #ffd200;
-  border: none;
-  padding: 0.625rem 1.125rem;
-  border-radius: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* GRID */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.25rem;
-  margin-top: 1.375rem;
-}
-
-/* PANELS */
-.panel {
-  background: #fff;
-  border-radius: 0.875rem;
-  padding: 1rem;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-  font-size: 0.875rem;
-  margin-bottom: 0.625rem;
-}
-
-.panel-header a {
-  font-size: 0.75rem;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.count-badge {
-  background: #e5e7eb;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.75rem;
-  font-size: 0.75rem;
-  margin-left: 0.375rem;
-}
-
-.count-badge.yellow {
-  background: #ffd200;
-}
-
-/* ITEMS */
-.panel-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.panel-item:last-child {
-  border-bottom: none;
-}
-
-.item-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.item-meta {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-/* STATUS */
-.status {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 1rem;
-}
-
-.status.under-review {
-  background: #e5e7eb;
-  color: black;
-  font-weight: lighter;
-}
-
-.status.approved {
-  background: #d1fae5;
-  color: black;
-  font-weight: lighter;
-}
-
-.status.revision {
-  background: #fef3c7;
-  color: black;
-  font-weight: lighter;
-}
-
-/* FEEDBACK */
-.feedback-item {
-  display: flex;
-  gap: 0.625rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.feedback-item:last-child {
-  border-bottom: none;
-}
-
-.dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  margin-top: 0.375rem;
-}
-
-.dot.yellow {
-  background: #ffd200;
-}
-
-.dot.green {
-  background: #22c55e;
-}
-</style>

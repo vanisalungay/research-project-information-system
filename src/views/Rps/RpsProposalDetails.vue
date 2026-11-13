@@ -1,0 +1,1047 @@
+<template>
+  <div class="proposal-detail-page rv-page">
+    <!-- HEADER: the shared review header - Back, title, id, status and DOWNLOAD. The
+         handlers stay this page's own; only the chrome is shared. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      @back="goBack"
+      @download="downloadProposal"
+    />
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading proposal details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn-primary" @click="goBack">Go Back</button>
+    </div>
+
+    <!-- Not found: the id was given but no such proposal is readable by this account -->
+    <div v-else-if="notFound" class="error-state">
+      <p>This proposal could not be found, or it is not available to your account.</p>
+      <button class="btn-primary" @click="goBack">Back to Budget Processing</button>
+    </div>
+
+    <!-- Content -->
+    <template v-else-if="proposal.id">
+      <div class="rv-body">
+        <!-- LEFT COLUMN: Main Content -->
+        <div class="rv-main">
+          <!-- Every reviewable field, rendered from the shared field registry
+               (src/utils/proposalFields.js) so each field has its own remark control and
+               the correct entity/DTO key. Sections 01-27 are covered exhaustively. -->
+          <ProposalFieldSection
+            v-for="section in PROPOSAL_FIELD_SECTIONS"
+            :key="section.key"
+            :section="section"
+            :proposal="proposal"
+            :proposal-id="proposal.id"
+            :remark-index="remarkIndex"
+            :editable="true"
+            @download="downloadFile"
+            @remark-saved="onRemarkSaved"
+            @remark-removed="onRemarkRemoved"
+          />
+
+          <!-- Documents -->
+          <section class="content-card">
+            <div class="card-header">
+              <span class="card-number">28</span>
+              <h2>Documents & Attachments</h2>
+            </div>
+            <div class="card-body">
+              <div class="documents-grid">
+                <div v-if="proposal.reviewFileName" class="doc-item">
+                  <div class="doc-icon">📄</div>
+                  <div class="doc-info">
+                    <h4>Review of Literature</h4>
+                    <p>{{ proposal.reviewFileName }}</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.reviewFileName)">DOWNLOAD</button>
+                </div>
+                <div v-if="proposal.roadmapFileName" class="doc-item">
+                  <div class="doc-icon">📄</div>
+                  <div class="doc-info">
+                    <h4>Technology Roadmap</h4>
+                    <p>{{ proposal.roadmapFileName }}</p>
+                  </div>
+                  <button class="btn-download"
+                    @click="downloadFile(proposal.roadmapFilePath || proposal.roadmapFileName)">DOWNLOAD</button>
+                </div>
+                <div v-if="proposal.gadFileName" class="doc-item">
+                  <div class="doc-icon">📄</div>
+                  <div class="doc-info">
+                    <h4>GAD Score</h4>
+                    <p>{{ proposal.gadFileName }}</p>
+                  </div>
+                  <button class="btn-download" @click="downloadFile(proposal.gadFileName)">DOWNLOAD</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- RIGHT COLUMN: Sidebar -->
+        <aside class="rv-aside">
+          <!-- Proposal Status, Quick Information and Review Information: the shared summary
+               cards, fed with the values this page already loaded. -->
+          <ProposalReviewSidebar
+            :status="proposal.status"
+            :created-at="proposal.createdAt"
+            :updated-at="proposal.updatedAt"
+            :quick="quickRows"
+            :review="reviewRows"
+          />
+
+          <!-- Reviewer Accountability (Input - for new reviewers) -->
+          <div v-if="!proposal.reviewedBy" class="sidebar-card accountability-card">
+            <h3>Reviewer Accountability</h3>
+            <div class="reviewer-info">
+              <div class="info-item">
+                <label>Reviewer Name</label>
+                <input type="text" v-model="reviewerName" class="reviewer-input" placeholder="Enter your full name" />
+              </div>
+              <div class="info-item">
+                <label>Position</label>
+                <select v-model="reviewerPosition" class="position-select">
+                  <option value="">-- Select Position --</option>
+                  <option value="RPS_STAFF">RPS Staff</option>
+                  <option value="RPS_DIRECTOR">RPS Director</option>
+                </select>
+              </div>
+            </div>
+            <div class="certify-section">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="isCertified" />
+                <span>I certify that I am the assigned reviewer.</span>
+              </label>
+            </div>
+            <button class="btn-action btn-primary" @click="beginReview" :disabled="!canBeginReview">
+              Begin Review
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="sidebar-card action-card">
+            <h3>Actions</h3>
+            <button class="btn-action btn-secondary" @click="downloadProposal">
+              DOWNLOAD
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <SubmissionHistory v-if="proposal.id" :proposal-id="proposal.id" />
+    </template>
+
+    <!-- Fallback: the content area is never silently empty -->
+    <div v-else class="error-state">
+      <p>No proposal details to show.</p>
+      <button class="btn-primary" @click="load">Retry</button>
+      <button class="back-btn" @click="goBack">Go Back</button>
+    </div>
+
+    <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel" @close="dialogState.show = false" />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/utils/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SubmissionHistory from '@/components/SubmissionHistory.vue'
+import { useDialog } from '@/composables/useDialog'
+import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
+import { downloadUploadedFile } from '@/utils/fileDownload'
+import SdgChecklist from '@/components/SdgChecklist.vue'
+import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
+import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
+import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+
+const { dialogState, showAlert, showConfirm } = useDialog()
+
+const route = useRoute()
+const router = useRouter()
+const proposal = ref({})
+const loading = ref(true)
+const error = ref(null)
+const notFound = ref(false)
+const proposalId = computed(() => proposal.value?.id ?? null)
+
+// Reviewer Accountability fields
+const reviewerName = ref('')
+const reviewerPosition = ref('')
+const isCertified = ref(false)
+
+const hasPriorityAgendas = computed(() => {
+  if (!proposal.value.priorityAgendas) return false
+  return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
+})
+
+const canBeginReview = computed(() => {
+  return reviewerName.value && reviewerPosition.value && isCertified.value
+})
+
+const fetchProposal = async () => {
+  loading.value = true
+  error.value = null
+  notFound.value = false
+
+  const routeProposalId = route.params.id ?? route.query.id ?? null
+  if (!routeProposalId) {
+    error.value = 'No proposal was selected. Open one from the budget list.'
+    proposal.value = { id: null }
+    loading.value = false
+    return
+  }
+
+  try {
+    const res = await api.get(`/api/proposals/${routeProposalId}`)
+    const data = res.data || null
+    if (!data || data.id === null || data.id === undefined) {
+      proposal.value = { id: null }
+      notFound.value = true
+      return
+    }
+    proposal.value = data
+  } catch (err) {
+    console.error(err)
+    proposal.value = { id: null }
+    if (err?.response?.status === 404) notFound.value = true
+    else error.value = 'Failed to load proposal details.'
+  } finally {
+    loading.value = false
+  }
+}
+// ===== Field-level remarks (active revision round) =====
+
+const remarksResponse = ref(null)
+const remarksError = ref('')
+const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+
+const loadFieldRemarks = async () => {
+  if (!proposalId.value) {
+    remarksResponse.value = null
+    remarksError.value = ''
+    return
+  }
+  try {
+    const res = await api.get(`/api/proposals/${proposalId.value}/field-remarks`)
+    remarksResponse.value = res.data || null
+    remarksError.value = ''
+  } catch (err) {
+    console.error(err)
+    remarksResponse.value = null
+    remarksError.value = 'Unable to load the existing remarks.'
+  }
+}
+
+const onRemarkSaved = (item) => {
+  const current = { ...(remarksResponse.value || { proposalId: proposalId.value, activeRound: 1, rounds: [] }) }
+  const rounds = Array.isArray(current.rounds) ? [...current.rounds] : []
+  let activeIndex = rounds.findIndex((round) => round.active)
+  if (activeIndex < 0) {
+    rounds.unshift({ round: current.activeRound || 1, active: true, remarks: [] })
+    activeIndex = 0
+    current.activeRound = rounds[0].round
+  }
+  const remarks = [...(rounds[activeIndex].remarks || [])]
+  const existing = remarks.findIndex((row) => row.id === item.id || row.fieldKey === item.fieldKey)
+  if (existing >= 0) remarks[existing] = item
+  else remarks.push(item)
+  rounds[activeIndex] = { ...rounds[activeIndex], remarks }
+  remarksResponse.value = { ...current, rounds }
+}
+
+const onRemarkRemoved = (remarkId) => {
+  if (!remarksResponse.value) return
+  const rounds = (remarksResponse.value.rounds || []).map((round) => ({
+    ...round,
+    remarks: (round.remarks || []).filter((row) => row.id !== remarkId),
+  }))
+  remarksResponse.value = { ...remarksResponse.value, rounds }
+}
+
+const saveReviewerInfo = async () => {
+  try {
+    await api.put(`/api/proposals/${proposal.value.id}/reviewer-info`, null, {
+      params: {
+        reviewedBy: reviewerName.value,
+        reviewedByPosition: reviewerPosition.value
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+const beginReview = async () => {
+  await saveReviewerInfo()
+  router.push(`/proposal/${proposal.value.id}/review`)
+}
+
+/**
+ * The one load: the proposal the route points at and the remarks that go with it. Called on
+ * mount and again whenever the route id changes, so a refresh, a direct link, Back/Forward
+ * and moving between proposals all reload the right record - nothing is kept from the table
+ * that linked here.
+ */
+const load = async () => {
+  await fetchProposal()
+  await loadFieldRemarks()
+}
+
+onMounted(load)
+
+watch(() => route.params.id ?? route.query.id ?? null, () => load())
+
+
+/** Back returns to the previous page, and falls back to the budget list when there is none. */
+const goBack = () => {
+  if (typeof window !== 'undefined' && window.history.length > 1) {
+    window.history.back()
+    return
+  }
+  router.push('/budget-processing')
+}
+
+/** The summary rows the shared sidebar shows, from the values this page already loaded. */
+const quickRows = computed(() => [
+  { label: 'Project Leader', value: proposal.value.projectLeader || 'N/A' },
+  { label: 'College', value: proposal.value.college || 'N/A' },
+  { label: 'Duration', value: proposal.value.duration ? proposal.value.duration + ' months' : 'N/A' },
+  { label: 'Research Type', value: proposal.value.researchType || 'N/A' },
+])
+
+const reviewRows = computed(() => [
+  { label: 'Reviewed By', value: proposal.value.reviewedBy || '' },
+  { label: 'Position', value: formatReviewerPosition(proposal.value.reviewedByPosition) || '' },
+])
+
+const downloadProposal = async () => {
+  if (!proposal.value?.id) {
+    await showAlert('The proposal is still loading. Please try again in a moment.', {
+      type: 'warning',
+      title: 'Proposal Not Ready',
+    })
+    return
+  }
+  try {
+    await downloadProposalRecord({ proposalId: proposal.value.id, proposal: proposal.value })
+  } catch (err) {
+    console.error('Preparing the proposal document failed:', err)
+    await showAlert('The proposal document could not be prepared. Please try again.', {
+      type: 'error',
+      title: 'Download Failed',
+    })
+  }
+}
+
+const downloadFile = (fileName) => {
+  downloadUploadedFile(fileName)
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const formatReviewerPosition = (position) => {
+  if (!position) return 'N/A'
+  const positionMap = {
+    'RPS_STAFF': 'RPS Staff',
+    'RPS_DIRECTOR': 'RPS Director'
+  }
+  return positionMap[position] || position
+}
+</script>
+
+<style scoped>
+.proposal-detail-page {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-info h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.header-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.proposal-id {
+  font-size: 13px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+/* STATUS BADGES
+   Geometry only; the `.is-*` colours come from assets/status.css. */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* LOADING & ERROR */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-state p {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+/* CONTENT GRID */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* CONTENT CARD */
+.content-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.card-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* INFO GRID */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  /* Keep each field at its natural height so a remark on one field can never
+     stretch its row partner and misalign the neighbouring column. */
+  align-items: start;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-item p {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* TEXT CONTENT */
+.text-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* SUBSECTION */
+.subsection {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.subsection:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.subsection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.objectives {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.objectives div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.objectives strong {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.objectives p {
+  font-size: 14px;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* FILE ATTACHMENT */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.file-type {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* TYPE BADGE */
+.type-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.type-badge.basic {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.type-badge.applied {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* AGENDA LIST */
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agenda-item {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #4f46e5;
+}
+
+.agenda-item strong {
+  color: #4f46e5;
+  font-size: 13px;
+}
+
+.agenda-item span {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+/* TABLES */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead {
+  background: #f8fafc;
+}
+
+.data-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+/* DOCUMENTS */
+.documents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.doc-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.doc-info {
+  flex: 1;
+}
+
+.doc-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.doc-info p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Layout only; the action colours are global (assets/actions.css). */
+.btn-download {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* SIDEBAR */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.sidebar-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* STATUS CARD */
+
+.status-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.status-meta p {
+  margin: 0;
+}
+
+.status-meta strong {
+  color: #475569;
+}
+
+/* QUICK INFO */
+.quick-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* REVIEWER ACCOUNTABILITY */
+.accountability-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accountability-card .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.accountability-card label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.reviewer-input,
+.position-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.reviewer-input {
+  font-size: 14px;
+}
+
+.reviewer-input::placeholder {
+  color: #9ca3af;
+}
+
+.certify-section {
+  margin-top: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ACTION CARD */
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-action {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-action.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-action.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* EMPTY TEXT */
+.empty-text {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* REVIEW INFO CARD */
+.review-info-card {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.review-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.review-info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.reviewer-position {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+  width: fit-content;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>

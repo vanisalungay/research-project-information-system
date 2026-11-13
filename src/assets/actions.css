@@ -1,0 +1,394 @@
+/**
+ * actions.css
+ * ---------------------------------------------------------------------------
+ * The one action-button colour system of RPIS.
+ *
+ * A button's colour comes from what it does, not from the page it sits on:
+ *
+ *   is-primary / is-save / is-submit   RPIS blue   Save, Submit, Forward, Endorse
+ *   is-approve                         green       Approve
+ *   is-reject / is-danger              red         Reject
+ *   is-return                          amber       Return for revision / send back
+ *   is-view                            blue tonal  View / Review
+ *   is-download                        neutral     Download
+ *   is-cancel / is-neutral             grey        Cancel / Close
+ *   is-edit / is-secondary             blue tonal  Edit
+ *   is-link                            blue text   inline action
+ *
+ * Both the `.end-btn is-*` vocabulary that the endorsement screens already use and the
+ * plain `.btn-*` names that the other modules already use resolve to the same tokens, so
+ * a page can be migrated without changing its markup structure. Only colours live here;
+ * a page keeps its own padding/flex rules.
+ *
+ * Imported globally by src/assets/main.css.
+ */
+
+/* ===== Base geometry ===== */
+.end-btn,
+.btn-primary,
+.btn-approve,
+.btn-reject,
+.btn-return,
+.btn-view,
+.btn-download,
+.btn-cancel,
+.btn-secondary,
+.btn-edit,
+.btn-success,
+.btn-warning,
+.btn-danger,
+.btn-error,
+.login-btn,
+.submit-btn,
+.btn-submit,
+.create-btn,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--btn-neutral-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--btn-neutral-bg);
+  color: var(--btn-neutral-text);
+  font-family: inherit;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.end-btn:disabled,
+.btn-primary:disabled,
+.btn-approve:disabled,
+.btn-reject:disabled,
+.btn-return:disabled,
+.btn-view:disabled,
+.btn-download:disabled,
+.btn-cancel:disabled,
+.btn-secondary:disabled,
+.btn-edit:disabled,
+.btn-success:disabled,
+.btn-warning:disabled,
+.btn-danger:disabled,
+.btn-error:disabled,
+.login-btn:disabled,
+.submit-btn:disabled,
+.btn-submit:disabled,
+.create-btn:disabled,
+.btn-outline:disabled {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.end-btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-approve:focus-visible,
+.btn-reject:focus-visible,
+.btn-return:focus-visible,
+.btn-view:focus-visible,
+.btn-download:focus-visible,
+.btn-cancel:focus-visible,
+.btn-secondary:focus-visible,
+.btn-edit:focus-visible,
+.btn-submit:focus-visible,
+.btn-outline:focus-visible {
+  outline: 2px solid var(--btn-focus-outline);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--btn-focus-ring);
+}
+
+/* `.btn-outline` is the neutral outline button; a semantic `.btn-view` / `.btn-download`
+   class beside it overrides this hover with its own action colour. */
+.btn-outline:hover:not(:disabled) {
+  background: var(--btn-neutral-hover-bg);
+  border-color: var(--btn-neutral-border);
+}
+
+/* ===== Primary — Save / Submit / Forward / Endorse ===== */
+.end-btn.is-primary,
+.end-btn.is-save,
+.end-btn.is-submit,
+.btn-primary,
+.btn-info,
+.login-btn,
+.submit-btn,
+.btn-submit,
+.create-btn {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-border);
+  color: var(--btn-primary-text);
+}
+
+.end-btn.is-primary:hover:not(:disabled),
+.end-btn.is-save:hover:not(:disabled),
+.end-btn.is-submit:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-info:hover:not(:disabled),
+.login-btn:hover:not(:disabled),
+.submit-btn:hover:not(:disabled),
+.btn-submit:hover:not(:disabled),
+.create-btn:hover:not(:disabled) {
+  background: var(--btn-primary-hover-bg);
+  border-color: var(--btn-primary-hover-bg);
+}
+
+/* ===== Approve — green ===== */
+.end-btn.is-approve,
+.btn-approve,
+.btn-success {
+  background: var(--btn-approve-bg);
+  border-color: var(--btn-approve-border);
+  color: var(--btn-approve-text);
+}
+
+.end-btn.is-approve:hover:not(:disabled),
+.btn-approve:hover:not(:disabled),
+.btn-success:hover:not(:disabled) {
+  background: var(--btn-approve-hover-bg);
+  border-color: var(--btn-approve-hover-bg);
+}
+
+/* ===== Reject — red ===== */
+.end-btn.is-reject,
+.end-btn.is-danger,
+.btn-reject,
+.btn-danger,
+.btn-error {
+  background: var(--btn-reject-bg);
+  border-color: var(--btn-reject-border);
+  color: var(--btn-reject-text);
+}
+
+.end-btn.is-reject:hover:not(:disabled),
+.end-btn.is-danger:hover:not(:disabled),
+.btn-reject:hover:not(:disabled),
+.btn-danger:hover:not(:disabled),
+.btn-error:hover:not(:disabled) {
+  background: var(--btn-reject-hover-bg);
+  border-color: var(--btn-reject-hover-bg);
+}
+
+/* ===== Return for revision — amber ===== */
+.end-btn.is-return,
+.btn-return,
+.btn-warning {
+  background: var(--btn-return-bg);
+  border-color: var(--btn-return-border);
+  color: var(--btn-return-text);
+}
+
+.end-btn.is-return:hover:not(:disabled),
+.btn-return:hover:not(:disabled),
+.btn-warning:hover:not(:disabled) {
+  background: var(--btn-return-hover-bg);
+  border-color: var(--btn-return-hover-bg);
+}
+
+/* ===== View / Review — blue tonal ===== */
+.end-btn.is-view,
+.btn-view {
+  background: var(--btn-view-bg);
+  border-color: var(--btn-view-border);
+  color: var(--btn-view-text);
+}
+
+.end-btn.is-view:hover:not(:disabled),
+.btn-view:hover:not(:disabled) {
+  background: var(--btn-view-hover-bg);
+  border-color: var(--btn-view-border);
+}
+
+/* ===== Download — neutral surface, blue label ===== */
+.end-btn.is-download,
+.btn-download {
+  background: var(--btn-download-bg);
+  border-color: var(--btn-download-border);
+  color: var(--btn-download-text);
+}
+
+.end-btn.is-download:hover:not(:disabled),
+.btn-download:hover:not(:disabled) {
+  background: var(--btn-download-hover-bg);
+  border-color: var(--btn-download-border);
+}
+
+/* ===== Cancel / Close — neutral ===== */
+.end-btn.is-cancel,
+.end-btn.is-neutral,
+.btn-cancel,
+.btn-secondary,
+.btn-ghost {
+  background: var(--btn-neutral-bg);
+  border-color: var(--btn-neutral-border);
+  color: var(--btn-neutral-text);
+}
+
+.end-btn.is-cancel:hover:not(:disabled),
+.end-btn.is-neutral:hover:not(:disabled),
+.btn-cancel:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled) {
+  background: var(--btn-neutral-hover-bg);
+  border-color: var(--btn-neutral-border);
+}
+
+/* ===== Edit — secondary blue tonal ===== */
+.end-btn.is-edit,
+.end-btn.is-secondary,
+.btn-edit {
+  background: var(--btn-edit-bg);
+  border-color: var(--btn-edit-border);
+  color: var(--btn-edit-text);
+}
+
+.end-btn.is-edit:hover:not(:disabled),
+.end-btn.is-secondary:hover:not(:disabled),
+.btn-edit:hover:not(:disabled) {
+  background: var(--btn-edit-hover-bg);
+  border-color: var(--btn-edit-border);
+}
+
+/* ===== Inline link action ===== */
+.end-btn.is-link {
+  padding: 6px 8px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--btn-link-text);
+}
+
+.end-btn.is-link:hover:not(:disabled) {
+  background: var(--btn-link-hover-bg);
+}
+
+/* ===== Dark theme =====
+   base.css forces every span's colour with !important; the buttons' own labels (and the
+   spans/icons they contain) must keep the action colour instead. */
+@media (prefers-color-scheme: dark) {
+  .end-btn,
+  .btn-primary,
+  .btn-approve,
+  .btn-reject,
+  .btn-return,
+  .btn-view,
+  .btn-download,
+  .btn-cancel,
+  .btn-edit,
+  .btn-success,
+  .btn-warning,
+  .btn-danger,
+  .btn-error,
+  .login-btn,
+  .submit-btn,
+  .create-btn,
+  .btn-outline {
+    background: var(--btn-neutral-bg) !important;
+    border-color: var(--btn-neutral-border) !important;
+    color: var(--btn-neutral-text) !important;
+  }
+
+  .end-btn.is-primary,
+  .end-btn.is-save,
+  .end-btn.is-submit,
+  .btn-primary,
+  .btn-info,
+  .login-btn,
+  .submit-btn,
+  .create-btn {
+    background: var(--btn-primary-bg) !important;
+    border-color: var(--btn-primary-border) !important;
+    color: var(--btn-primary-text) !important;
+  }
+
+  .end-btn.is-approve,
+  .btn-approve,
+  .btn-success {
+    background: var(--btn-approve-bg) !important;
+    border-color: var(--btn-approve-border) !important;
+    color: var(--btn-approve-text) !important;
+  }
+
+  .end-btn.is-reject,
+  .end-btn.is-danger,
+  .btn-reject,
+  .btn-danger,
+  .btn-error {
+    background: var(--btn-reject-bg) !important;
+    border-color: var(--btn-reject-border) !important;
+    color: var(--btn-reject-text) !important;
+  }
+
+  .end-btn.is-return,
+  .btn-return,
+  .btn-warning {
+    background: var(--btn-return-bg) !important;
+    border-color: var(--btn-return-border) !important;
+    color: var(--btn-return-text) !important;
+  }
+
+  .end-btn.is-view,
+  .btn-view {
+    background: var(--btn-view-bg) !important;
+    border-color: var(--btn-view-border) !important;
+    color: var(--btn-view-text) !important;
+  }
+
+  .end-btn.is-download,
+  .btn-download {
+    background: var(--btn-download-bg) !important;
+    border-color: var(--btn-download-border) !important;
+    color: var(--btn-download-text) !important;
+  }
+
+  .end-btn.is-cancel,
+  .end-btn.is-neutral,
+  .btn-cancel,
+  .btn-secondary,
+  .btn-ghost {
+    background: var(--btn-neutral-bg) !important;
+    border-color: var(--btn-neutral-border) !important;
+    color: var(--btn-neutral-text) !important;
+  }
+
+  .end-btn.is-edit,
+  .end-btn.is-secondary,
+  .btn-edit {
+    background: var(--btn-edit-bg) !important;
+    border-color: var(--btn-edit-border) !important;
+    color: var(--btn-edit-text) !important;
+  }
+
+  .end-btn.is-link {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--btn-link-text) !important;
+  }
+
+  /* A label or icon nested inside a button inherits the button's action colour. */
+  .end-btn *,
+  .btn-primary *,
+  .btn-approve *,
+  .btn-reject *,
+  .btn-return *,
+  .btn-view *,
+  .btn-download *,
+  .btn-cancel *,
+  .btn-edit *,
+  .btn-success *,
+  .btn-warning *,
+  .btn-danger *,
+  .btn-error *,
+  .login-btn *,
+  .submit-btn *,
+  .btn-submit *,
+  .create-btn *,
+  .btn-outline * {
+    color: inherit !important;
+  }
+}

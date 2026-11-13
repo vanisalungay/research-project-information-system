@@ -68,11 +68,24 @@ public class ProposalReviewService {
         String decision = reviewInput.getDecision().toUpperCase();
         String role = reviewer.getRole().toUpperCase();
         String targetStatus = proposal.getStatus();
+        boolean returnedForRevision = false;
 
         if ("REJECTED".equals(decision)) {
             targetStatus = "REJECTED";
         } else if ("REVISION_REQUIRED".equals(decision) || "REVISION".equals(decision)) {
-            targetStatus = "PENDING_REVISION";
+            // A return for revision always goes to RPS first, never directly to the Proponent.
+            returnedForRevision = true;
+            targetStatus = "RETURNED_TO_RPS";
+            proposal.setReturnRemarks(reviewInput.getOverallComments());
+            proposal.setReturnedByOffice(role);
+            proposal.setReturnedByUserId(reviewer.getId());
+            proposal.setReturnedByName(reviewer.getName());
+            proposal.setReturnedAt(java.time.LocalDateTime.now());
+            proposal.setRevisionDeadline(null);
+            proposal.setRevisionForwardedAt(null);
+            proposal.setRevisionForwardedByName(null);
+            proposal.setRevisionForwardedByUserId(null);
+            proposal.setRevisionNotes(null);
         } else if ("APPROVED".equals(decision)) {
             if ("REC".equals(role)) {
                 targetStatus = "REC_APPROVED";
@@ -86,10 +99,13 @@ public class ProposalReviewService {
         }
 
         proposal.setStatus(targetStatus);
+        if (returnedForRevision) {
+            proposal.setRemarks(reviewInput.getOverallComments());
+        }
         proposalRepository.save(proposal);
 
-        // Notify Proponent
-        if (proposal.getProponent() != null) {
+        // Notify Proponent (returns are routed to RPS instead)
+        if (!returnedForRevision && proposal.getProponent() != null) {
             notificationService.createNotification(
                     proposal.getProponent().getId(),
                     "A review decision has been submitted on your proposal \"" + proposal.getProjectTitle() +
@@ -102,6 +118,10 @@ public class ProposalReviewService {
             notifyRole("OVCRIGE", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by REC and is ready for OVC review.");
         } else if ("OVC_APPROVED".equals(targetStatus)) {
             notifyRole("OC", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by OVC and is ready for OC final approval.");
+        } else if (returnedForRevision) {
+            String msg = "Proposal \"" + proposal.getProjectTitle() + "\" was returned for revision by " + role + " and awaits RPS review.";
+            notifyRole("RPS_ADMIN", msg);
+            notifyRole("RPS_STAFF", msg);
         }
 
         return review;

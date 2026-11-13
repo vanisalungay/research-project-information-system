@@ -1,0 +1,1642 @@
+<template>
+  <teleport to="body">
+    <div v-if="open" class="modal-backdrop">
+      <div class="modal-container">
+        <!-- HEADER -->
+        <header class="modal-header">
+          <div class="header-left">
+            <h2>Certification & Endorsement</h2>
+            <span class="header-badge">Step 3 of 4</span>
+          </div>
+          <div class="header-actions">
+            <button class="btn-download" @click="downloadForm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              DOWNLOAD
+            </button>
+            <button class="close-btn" @click="close">✕</button>
+          </div>
+        </header>
+
+        <!-- PROGRESS BAR -->
+        <div class="progress-bar">
+          <div class="progress-step completed" @click="$emit('goToStep', 1)">
+            <span class="step-number">✓</span>
+            <span class="step-label">Call for Proposal</span>
+          </div>
+          <div class="progress-line filled"></div>
+          <div class="progress-step completed" @click="$emit('goToStep', 2)">
+            <span class="step-number">✓</span>
+            <span class="step-label">Proposal Details</span>
+          </div>
+          <div class="progress-line filled"></div>
+          <div class="progress-step active">
+            <span class="step-number">3</span>
+            <span class="step-label">Certification</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" @click="$emit('goToStep', 4)">
+            <span class="step-number">4</span>
+            <span class="step-label">Review & Submit</span>
+          </div>
+        </div>
+
+        <!-- VALIDATION ERROR BANNER -->
+        <div v-if="showValidation && errorList.length > 0" class="validation-banner" ref="errorBannerRef">
+          <div class="banner-icon">⚠</div>
+          <div class="banner-content">
+            <strong>Please complete all required certification fields.</strong>
+            <ul>
+              <li v-for="(err, i) in errorList" :key="i">{{ err }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="modal-body" ref="modalBodyRef">
+          <!-- Certification Statement -->
+          <section class="form-section">
+            <div class="section-header">
+              <span class="section-number">01</span>
+              <h3>Certification Statement</h3>
+            </div>
+            <div class="cert-card">
+              <div class="cert-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4" />
+                  <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
+                </svg>
+              </div>
+              <p class="cert-text">
+                I hereby certify that the foregoing statements are true and accurate, and that I have no
+                outstanding financial or technical obligations to the Office of the Vice Chancellor for
+                Research, Innovation, and Global Engagement or MSU at Naawan. Furthermore, I certify that
+                the programs and projects under my supervision comply with the prescribed limits set
+                forth in the IRIDE Agenda Guidelines. I understand that any intentional omission or
+                false statement will be grounds for disapproval and cancellation of the project.
+              </p>
+            </div>
+          </section>
+
+          <!-- Submitted By -->
+          <section class="form-section">
+            <div class="section-header">
+              <span class="section-number">02</span>
+              <h3>Submitted By</h3>
+            </div>
+            <div class="section-card">
+              <div class="form-row">
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_name }">
+                  <label>Full Name <span class="req">*</span></label>
+                  <input type="text" v-model="certification.submitted_name"
+                    placeholder="Enter full name of proponent" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_name">{{
+                    errors.submitted_name }}</span>
+                </div>
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_designation }">
+                  <label>Designation / Title <span class="req">*</span></label>
+                  <input type="text" v-model="certification.submitted_designation"
+                    placeholder="e.g. Faculty, College of Engineering" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_designation">{{
+                    errors.submitted_designation }}</span>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_date }">
+                  <label>Date <span class="req">*</span></label>
+                  <input type="date" v-model="certification.submitted_date" />
+                  <span class="field-error" v-if="showValidation && errors.submitted_date">{{
+                    errors.submitted_date }}</span>
+                </div>
+              </div>
+              <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_signature }">
+                <label>Signature <span class="req">*</span></label>
+
+                <!-- The signature saved on the proponent's account is offered here
+                     automatically, so the same image is not uploaded for every
+                     proposal. It can be changed, removed or replaced for this
+                     proposal only - nothing in this form writes to the account. -->
+                <p v-if="signatureLoading" class="signature-state" role="status">
+                  Loading your saved signature…
+                </p>
+
+                <div v-if="selectedSignature" class="signature-selected">
+                  <img class="signature-preview" :src="selectedSignature.previewUrl" alt="Selected signature" />
+                  <p class="signature-note">{{ selectedSignatureLabel }}</p>
+                  <div class="signature-actions">
+                    <button type="button" class="btn-outline" :aria-expanded="signaturePickerOpen"
+                      aria-controls="signature-picker" @click="toggleSignaturePicker">
+                      Change Signature
+                    </button>
+                    <button type="button" class="btn-outline btn-outline-danger" @click="removeSignature">
+                      Remove Signature
+                    </button>
+                  </div>
+                </div>
+
+                <template v-else>
+                  <div class="upload-area" @click="triggerUpload('submitted')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>{{ uploadedFiles.submitted ? uploadedFiles.submitted.name : 'Upload signature image'
+                    }}</span>
+                  </div>
+                  <button v-if="defaultSignature" type="button" class="btn-outline signature-use-saved"
+                    @click="useSavedSignature(defaultSignature)">
+                    Use my saved signature
+                  </button>
+                </template>
+
+                <input type="file" ref="submittedFile" @change="handleFile('submitted', $event)" hidden
+                  accept="image/*,.pdf" />
+
+                <p v-if="signatureError" class="signature-error" role="alert">
+                  {{ signatureError }}
+                  <button type="button" class="signature-retry" @click="loadSavedSignatures">Retry</button>
+                </p>
+
+                <!-- The saved signatures, shown as previews so the right one can be
+                     identified; choosing one updates the field immediately. -->
+                <div v-if="signaturePickerOpen" id="signature-picker" class="signature-picker" role="group"
+                  aria-label="Your saved signatures">
+                  <p v-if="accountSignatures.length === 0" class="signature-note">
+                    You have no saved signature yet. Upload an image here, or save one in Manage Profile →
+                    Electronic Signature to reuse it in your next proposals.
+                  </p>
+                  <button v-for="signature in accountSignatures" :key="signatureKey(signature)" type="button"
+                    class="signature-option"
+                    :class="{ 'is-selected': isSameSignature(signature, selectedSignature) }"
+                    :aria-pressed="isSameSignature(signature, selectedSignature)" @click="selectSignature(signature)">
+                    <img class="signature-option-image" :src="signature.previewUrl"
+                      :alt="`Saved signature ${signature.fileName}`" />
+                    <span class="signature-option-name">{{ signature.fileName }}</span>
+                    <span v-if="isSameSignature(signature, selectedSignature)" class="signature-option-badge">
+                      Currently selected
+                    </span>
+                  </button>
+                  <div class="signature-picker-actions">
+                    <button type="button" class="btn-outline" @click="triggerUpload('submitted')">
+                      Upload signature image
+                    </button>
+                    <button type="button" class="btn-outline" @click="cancelSignaturePicker">Cancel</button>
+                  </div>
+                </div>
+
+                <span class="field-error" v-if="showValidation && errors.submitted_signature">{{
+                  errors.submitted_signature }}</span>
+              </div>
+              <div v-if="uploadedFiles.submitted" class="file-info">
+                <span>📄 {{ uploadedFiles.submitted.name }}</span>
+                <button class="btn-remove-file" aria-label="Remove the selected signature"
+                  @click="removeSignature">✕</button>
+              </div>
+              <!-- The signature already stored on a reopened draft. It stays with the
+                   proposal until the proponent explicitly replaces it. -->
+              <div v-else-if="hasSavedSubmittedSignature" class="file-info">
+                <span>📄 {{ savedSubmittedSignatureName }}</span>
+                <button type="button" class="btn-outline"
+                  @click="previewUploadedFile(submittedSignaturePath)">View</button>
+                <button type="button" class="btn-outline"
+                  @click="downloadUploadedFile(submittedSignaturePath)">Download</button>
+                <button type="button" class="btn-outline" @click="triggerUpload('submitted')">
+                  Replace
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Endorsed By -->
+          <section class="form-section">
+            <div class="section-header">
+              <span class="section-number">03</span>
+              <h3>Endorsed By</h3>
+              <span class="section-sub">(Department Chair / Dean)</span>
+            </div>
+            <div class="section-card">
+              <!-- When the proposal is continued from an approved Dean endorsement the
+                   section is filled from that record and locked: the endorser, the
+                   designation and the date belong to the issued official letter, and
+                   the Proponent may not change them or upload a signature. -->
+              <div v-if="endorsedFromRecord" class="endorsed-record">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Full Name of Endorser</label>
+                    <input type="text" :value="certification.endorsed_name" readonly disabled />
+                  </div>
+                  <div class="form-group">
+                    <label>Designation / Title</label>
+                    <input
+                      type="text"
+                      :value="certification.endorsed_designation"
+                      readonly
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" :value="certification.endorsed_date" readonly disabled />
+                  </div>
+                </div>
+                <p class="endorsed-note">
+                  These details come from the official endorsement letter issued by the
+                  Dean and cannot be edited here. The signed letter is filed in your
+                  <router-link to="/endorsements?tab=certifications">My Endorsements</router-link>.
+                </p>
+              </div>
+
+              <template v-else>
+                <div class="form-row">
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_name }">
+                    <label>Full Name of Endorser <span class="req">*</span></label>
+                    <input type="text" v-model="certification.endorsed_name"
+                      placeholder="Enter name of department chair or dean" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_name">{{
+                      errors.endorsed_name }}</span>
+                  </div>
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_designation }">
+                    <label>Designation / Title <span class="req">*</span></label>
+                    <input type="text" v-model="certification.endorsed_designation" placeholder="e.g. Department Chair" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_designation">{{
+                      errors.endorsed_designation }}</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_date }">
+                    <label>Date <span class="req">*</span></label>
+                    <input type="date" v-model="certification.endorsed_date" />
+                    <span class="field-error" v-if="showValidation && errors.endorsed_date">{{
+                      errors.endorsed_date }}</span>
+                  </div>
+                </div>
+                <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_document }">
+                  <label>{{ ENDORSEMENT_DOCUMENT_LABEL }} <span class="req">*</span></label>
+                  <div class="upload-area" @click="triggerUpload('endorsed')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    <span>
+                      {{ uploadedFiles.endorsed
+                        ? uploadedFiles.endorsed.name
+                        : (hasSavedEndorsement && !endorsedDocumentError
+                          ? savedEndorsementName
+                          : ENDORSEMENT_DOCUMENT_INSTRUCTION) }}
+                    </span>
+                  </div>
+                  <!-- The file dialog only offers PDF files, and the choice is validated
+                       (size, extension, declared type and the real bytes) before it is kept. -->
+                  <input type="file" ref="endorsedFile" @change="handleFile('endorsed', $event)" hidden
+                    :accept="ENDORSEMENT_DOCUMENT_ACCEPT" />
+                  <p class="upload-helper">
+                    {{ ENDORSEMENT_DOCUMENT_HELPER }} · {{ ENDORSEMENT_DOCUMENT_SIZE_LABEL }}
+                    {{ ENDORSEMENT_DOCUMENT_SIZE_VALUE }}
+                  </p>
+                  <span class="field-error" v-if="showValidation && errors.endorsed_document">{{
+                    errors.endorsed_document }}</span>
+                  <span class="field-error" v-else-if="endorsedDocumentError">{{ endorsedDocumentError }}</span>
+                </div>
+                <!-- The PDF is stored with this proposal, so it stays available after saving,
+                     submitting and reopening (the same file the reviewers can read). -->
+                <div v-if="uploadedFiles.endorsed" class="file-info">
+                  <span>📄 {{ uploadedFiles.endorsed.name }}</span>
+                  <button class="btn-remove-file" @click="removeEndorsementDocument">✕</button>
+                </div>
+                <div v-else-if="hasSavedEndorsement" class="file-info">
+                  <span>📄 {{ savedEndorsementName }}</span>
+                  <button type="button" class="btn-outline btn-view" @click="viewEndorsementDocument">View</button>
+                  <button type="button" class="btn-outline btn-download" @click="downloadEndorsementDocument">Download</button>
+                </div>
+              </template>
+            </div>
+          </section>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="modal-footer">
+          <button class="btn-secondary" @click="goBack">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+          <div class="footer-right">
+            <button class="btn-outline" @click="saveDraft">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Save Draft
+            </button>
+            <button class="btn-outline" @click="viewCriteria">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              View Criteria
+            </button>
+            <button class="btn-primary" @click="submitForm">
+              Submit Proposal
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </teleport>
+</template>
+
+<script setup>
+import { reactive, ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
+import {
+  buildStandaloneHtml,
+  printDocument,
+  formatText,
+  section,
+  signatureBlock,
+  textBlock,
+  readFileAsDataUrl
+} from '@/utils/documentExport'
+import {
+  SIGNATURE_SOURCES,
+  isSameSignature,
+  loadAccountSignatures,
+  normalizeSignatureRecord,
+  pickDefaultSignature,
+  signatureAsFile,
+  signatureKey,
+  signatureLabel
+} from '@/utils/proposalSignature'
+// The "Endorsed By" upload accepts the endorsement document as a PDF only. The rules
+// (size, extension, declared type, real bytes) and the upload live in this module, so the
+// browser and the backend enforce exactly the same thing.
+import {
+  ENDORSEMENT_DOCUMENT_ACCEPT,
+  ENDORSEMENT_DOCUMENT_HELPER,
+  ENDORSEMENT_DOCUMENT_INSTRUCTION,
+  ENDORSEMENT_DOCUMENT_LABEL,
+  ENDORSEMENT_DOCUMENT_REQUIRED_ERROR,
+  ENDORSEMENT_DOCUMENT_SIZE_LABEL,
+  ENDORSEMENT_DOCUMENT_SIZE_VALUE,
+  nextEndorsementDocumentSelection,
+  verifyEndorsementDocument
+} from '@/utils/endorsementDocument'
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+
+const props = defineProps({
+  open: Boolean,
+  modalId: String,
+  /**
+   * The signature already chosen for this proposal. It is kept by the parent while
+   * the steps are navigated, so going back to this step keeps the selection (an
+   * uploaded replacement included) instead of starting over from the account.
+   */
+  savedSignature: { type: Object, default: null },
+  /**
+   * The approved Dean endorsement this proposal is being continued from, or null.
+   *
+   * When it is present the "Endorsed By" section is filled from that record and
+   * becomes read-only: the endorser's identity, designation and date belong to the
+   * issued official endorsement letter, and the Proponent must never be able to
+   * alter them or upload/substitute the Dean's signature. When it is absent the
+   * section behaves exactly as before (a different endorsement authority, e.g. a
+   * Department Chair for a project that does not go through the Dean workflow).
+   */
+  endorsement: { type: Object, default: null },
+  /**
+   * The endorsement document already stored on this proposal (its display name and the
+   * verified file name the authorized download route serves), or null/'' when none was
+   * uploaded yet. A saved document satisfies the required field, so reopening a draft
+   * never demands the PDF again, and it can be viewed or downloaded from here.
+   */
+  savedEndorsementFileName: { type: String, default: '' },
+  savedEndorsementFilePath: { type: String, default: '' },
+  /**
+   * The certification already stored on this proposal (submittedByName/Designation/Date
+   * and endorsedByName/Designation/Date), or null for a new proposal. Reopening a draft
+   * restores exactly what was typed instead of starting over.
+   */
+  savedCertification: { type: Object, default: null },
+  /**
+   * The signature already stored on this proposal (display name + stored path), or ''.
+   * A stored signature satisfies the required field, so a reopened draft does not demand
+   * it again, and it is offered for View / Download / Replace here.
+   */
+  savedSubmittedSignatureFileName: { type: String, default: '' },
+  savedSubmittedSignatureFilePath: { type: String, default: '' }
+})
+const emit = defineEmits([
+  'close',
+  'openPrevious',
+  'openCriteria',
+  'submitProposal',
+  'savedraft',
+  'goToStep',
+  'update:signature'
+])
+
+const isBlank = (val) => !val || (typeof val === 'string' && val.trim() === '')
+
+const modalBodyRef = ref(null)
+const errorBannerRef = ref(null)
+const showValidation = ref(false)
+const errors = reactive({})
+
+const certification = reactive({
+  submitted_name: '',
+  submitted_designation: '',
+  submitted_date: '',
+  endorsed_name: '',
+  endorsed_designation: '',
+  endorsed_date: ''
+})
+
+/**
+ * True when the "Endorsed By" section is filled from an approved Dean endorsement
+ * instead of being typed in by the Proponent. The values then come from the record
+ * the official endorsement letter was issued from.
+ */
+const endorsedFromRecord = computed(() => Boolean(props.endorsement))
+
+/** A date value as YYYY-MM-DD, the format the date input and the form use. */
+const toDateInputValue = (value) => {
+  const text = String(value ?? '').trim()
+  if (!text) return ''
+  return text.length > 10 ? text.slice(0, 10) : text
+}
+
+/**
+ * Copies the approved endorsement into the section and keeps it in step if the
+ * endorsement is (re)loaded. The Proponent cannot edit the copied values - the
+ * inputs are disabled while an endorsement is present.
+ */
+watch(
+  () => props.endorsement,
+  (endorsement) => {
+    if (!endorsement) return
+    certification.endorsed_name = endorsement.decidedByName || ''
+    certification.endorsed_designation = endorsement.decidedByDesignation || ''
+    certification.endorsed_date = toDateInputValue(endorsement.endorsementDate)
+  },
+  { immediate: true },
+)
+
+const close = () => emit('close')
+
+const downloadForm = async () => {
+  const submittedSignature = await readFileAsDataUrl(uploadedFiles.submitted)
+  // The endorsement document is a PDF. It is named in the printed certification page
+  // rather than drawn into it, because a PDF is not a signature image - a legacy file
+  // that is an image (an older proposal) keeps the original image rendering.
+  const endorsedDocument = uploadedFiles.endorsed
+  const endorsedIsImage = Boolean(
+    endorsedDocument && String(endorsedDocument.type || '').startsWith('image/'),
+  )
+  const endorsedSignature = endorsedIsImage ? await readFileAsDataUrl(endorsedDocument) : null
+  const endorsementDocumentLabel = endorsedDocument
+    ? endorsedDocument.name
+    : hasSavedEndorsement.value
+      ? savedEndorsementName.value
+      : ''
+
+  const certStatement =
+    'I hereby certify that the foregoing statements are true and accurate, and that I have no ' +
+    'outstanding financial or technical obligations to the Office of the Vice Chancellor for ' +
+    'Research, Innovation, and Global Engagement or MSU at Naawan. Furthermore, I certify that ' +
+    'the programs and projects under my supervision comply with the prescribed limits set ' +
+    'forth in the IRIDE Agenda Guidelines. I understand that any intentional omission or ' +
+    'false statement will be grounds for disapproval and cancellation of the project.'
+
+  const body = [
+    section({
+      number: '01',
+      title: 'Certification Statement',
+      body: `<div class="text">${formatText(certStatement)}</div>`
+    }),
+    section({
+      number: '02',
+      title: 'Submitted By',
+      body: signatureBlock({
+        label: 'Proponent Signature',
+        name: certification.submitted_name,
+        designation: certification.submitted_designation,
+        date: certification.submitted_date,
+        imageUrl: submittedSignature
+      })
+    }),
+    section({
+      number: '03',
+      title: 'Endorsed By',
+      sub: '(Department Chair / Dean)',
+      body: `${signatureBlock({
+        label: 'Endorser Signature',
+        name: certification.endorsed_name,
+        designation: certification.endorsed_designation,
+        date: certification.endorsed_date,
+        imageUrl: endorsedSignature
+      })}
+        ${textBlock('Endorsement Document (PDF)', endorsementDocumentLabel)}`
+    })
+  ].join('')
+
+  const html = buildStandaloneHtml({
+    title: 'Certification & Endorsement',
+    subtitle: 'Research Project Proposal',
+    body
+  })
+
+  printDocument({ title: 'Certification & Endorsement', html })
+}
+
+const uploadedFiles = reactive({ submitted: null, endorsed: null })
+const submittedFile = ref(null)
+const endorsedFile = ref(null)
+
+const triggerUpload = (type) => {
+  if (type === 'submitted') submittedFile.value.click()
+  else if (type === 'endorsed') endorsedFile.value.click()
+}
+
+const handleFile = (type, event) => {
+  const file = event.target.files[0]
+  // Allow choosing the same file again after a replace.
+  event.target.value = ''
+  if (!file) return
+  if (type === 'submitted') {
+    // A replacement uploaded here is used for this proposal only: it is never added
+    // to - or saved over - the signature on the proponent's account.
+    setSignature({
+      source: SIGNATURE_SOURCES.upload,
+      id: null,
+      fileName: file.name,
+      blob: file,
+      createdAt: null
+    })
+    signaturePickerOpen.value = false
+    return
+  }
+  // "Endorsed By": the endorsement document. Only a real PDF is accepted - the size, the
+  // extension, the declared type and the first bytes of the file are all checked, so a
+  // PNG/JPG/DOCX - or an image renamed to ".pdf" - is reported and never kept. The promise
+  // is returned so a very fast "Continue" cannot validate before the bytes are checked.
+  return setEndorsementDocument(file)
+}
+
+/* ===== ENDORSED BY: ENDORSEMENT DOCUMENT (PDF only) =====
+   The chosen document is validated here and (again, on its bytes) by the backend when
+   the proposal is saved; the stored PDF stays with the proposal and can be viewed or
+   downloaded again, so a reopened draft never asks for it twice. */
+const endorsedDocumentError = ref('')
+
+/**
+ * True when this proposal already has an endorsement document stored on the server.
+ * The stored path is the normal case; the file name counts too, because an older
+ * proposal may only carry the name. Either one satisfies the requirement on a draft.
+ */
+const hasSavedEndorsement = computed(() => Boolean(
+  String(props.savedEndorsementFilePath || '').trim()
+  || String(props.savedEndorsementFileName || '').trim()
+))
+
+const savedEndorsementName = computed(
+  () => props.savedEndorsementFileName || 'endorsement-document.pdf',
+)
+
+const endorsementDocumentPath = computed(
+  () => props.savedEndorsementFilePath || props.savedEndorsementFileName,
+)
+
+/** Validates a chosen file and keeps it only when it passes. */
+const setEndorsementDocument = async (file) => {
+  if (!file) return
+  const verification = await verifyEndorsementDocument(file)
+  const next = nextEndorsementDocumentSelection(uploadedFiles.endorsed, verification, file)
+  uploadedFiles.endorsed = next.file
+  endorsedDocumentError.value = next.error
+}
+
+/** Removes the chosen document (a replacement for the stored one is not uploaded). */
+const removeEndorsementDocument = () => {
+  uploadedFiles.endorsed = null
+  endorsedDocumentError.value = ''
+}
+
+const viewEndorsementDocument = () => {
+  if (endorsementDocumentPath.value) previewUploadedFile(endorsementDocumentPath.value)
+}
+
+const downloadEndorsementDocument = () => {
+  if (endorsementDocumentPath.value) downloadUploadedFile(endorsementDocumentPath.value)
+}
+
+// ===== SUBMITTED BY - SIGNATURE =====
+// The signature saved on the proponent's account is offered as the default, so it
+// does not have to be uploaded for every proposal. The selection is mirrored into
+// the form's signature slot (uploadedFiles.submitted), which is what the
+// required-field check, the file row and the printed certification form read - so
+// the rest of the step is unchanged.
+const accountSignatures = ref([])
+const signatureLoading = ref(false)
+const signatureError = ref('')
+const selectedSignature = ref(null)
+const signaturePickerOpen = ref(false)
+
+/** The signature the proponent created first: the default of a new proposal. */
+const defaultSignature = computed(() => pickDefaultSignature(accountSignatures.value))
+const selectedSignatureLabel = computed(() => signatureLabel(selectedSignature.value))
+
+/** A record with its own object URL, so the preview never depends on a temp file. */
+const withPreviewUrl = (signature) =>
+  signature?.blob ? { ...signature, previewUrl: URL.createObjectURL(signature.blob) } : signature
+
+const releaseSignatureUrls = (signatures) => {
+  ;(Array.isArray(signatures) ? signatures : [signatures]).forEach((signature) => {
+    if (signature?.previewUrl) URL.revokeObjectURL(signature.previewUrl)
+  })
+}
+
+/** What the parent keeps while the steps are navigated (no temporary URL). */
+const selectionPayload = (signature) =>
+  signature
+    ? {
+        source: signature.source,
+        id: signature.id,
+        fileName: signature.fileName,
+        blob: signature.blob,
+        createdAt: signature.createdAt
+      }
+    : null
+
+/** Applies a selection (or clears it) and mirrors it into the form's slot. */
+const setSignature = (signature) => {
+  releaseSignatureUrls(selectedSignature.value)
+  selectedSignature.value = signature ? withPreviewUrl(normalizeSignatureRecord(signature)) : null
+  uploadedFiles.submitted = selectedSignature.value ? signatureAsFile(selectedSignature.value) : null
+  if (signature) signatureError.value = ''
+  emit('update:signature', selectionPayload(selectedSignature.value))
+}
+
+/**
+ * True when this proposal already has a signature stored on the server. As with the
+ * endorsement document, the path is the normal case but the stored file name counts
+ * too (older records), so a reopened draft never reports a false missing signature.
+ */
+const hasSavedSubmittedSignature = computed(() => Boolean(
+  String(props.savedSubmittedSignatureFilePath || '').trim()
+  || String(props.savedSubmittedSignatureFileName || '').trim()
+))
+
+const savedSubmittedSignatureName = computed(
+  () => props.savedSubmittedSignatureFileName || 'signature',
+)
+
+const submittedSignaturePath = computed(
+  () => props.savedSubmittedSignatureFilePath || props.savedSubmittedSignatureFileName,
+)
+
+/**
+ * Restores the certification typed into an earlier save of this draft. A field the
+ * proponent has already filled in this session wins, so navigating between steps never
+ * overwrites what is on screen; only a blank field is hydrated.
+ */
+const applySavedCertification = () => {
+  const saved = props.savedCertification
+  if (!saved) return
+  const fill = (key, value) => {
+    if (isBlank(certification[key]) && !isBlank(value)) certification[key] = value
+  }
+  fill('submitted_name', saved.submittedByName)
+  fill('submitted_designation', saved.submittedByDesignation)
+  // The parent hands back `submittedByDate` (the same key the save payload uses). Reading
+  // a different key here left the date blank every time a draft was reopened.
+  fill('submitted_date', saved.submittedByDate || saved.submittedDate)
+  // An approved Dean endorsement owns the "Endorsed By" section, so a stored value can
+  // never replace what the issued official letter says.
+  if (!endorsedFromRecord.value) {
+    fill('endorsed_name', saved.endorsedByName)
+    fill('endorsed_designation', saved.endorsedByDesignation)
+    fill('endorsed_date', saved.endorsedByDate)
+  }
+}
+
+/**
+ * Loads the proponent's own saved signature(s). The first-created one is selected by
+ * default for a new proposal; a draft that already stores a signature passes
+ * `autoSelect: false`, so the account default is only offered - never silently chosen in
+ * place of the signature the proposal already has.
+ */
+const loadSavedSignatures = async ({ autoSelect = true } = {}) => {
+  signatureLoading.value = true
+  signatureError.value = ''
+  try {
+    releaseSignatureUrls(accountSignatures.value)
+    const loaded = await loadAccountSignatures()
+    accountSignatures.value = loaded.map(withPreviewUrl)
+    const fallback = pickDefaultSignature(accountSignatures.value)
+    if (autoSelect && fallback) setSignature({ ...fallback, source: SIGNATURE_SOURCES.account })
+  } catch (error) {
+    console.error(
+      'Failed to load the saved signature:',
+      error?.response?.status,
+      error?.response?.data || error?.message
+    )
+    accountSignatures.value = []
+    signatureError.value =
+      'Your saved signature could not be loaded. You can still upload a signature image below.'
+  } finally {
+    signatureLoading.value = false
+  }
+}
+
+/** A signature already chosen for this proposal wins over the account default. */
+const restoreSavedSelection = () => {
+  if (!props.savedSignature?.blob) return false
+  setSignature({ ...props.savedSignature })
+  return true
+}
+
+const initialiseSignature = async () => {
+  signaturePickerOpen.value = false
+  // Restore the typed certification of a reopened draft before touching the signature.
+  applySavedCertification()
+  if (restoreSavedSelection()) return
+  setSignature(null)
+  // A stored signature belongs to the proposal: the account default is offered but not
+  // auto-selected, so plain navigation can never replace the file already saved.
+  await loadSavedSignatures({ autoSelect: !hasSavedSubmittedSignature.value })
+}
+
+// The parent may set the saved certification after the step is already mounted (a draft
+// loaded through the Edit action). Blank fields are filled in; typed values are kept.
+watch(() => props.savedCertification, applySavedCertification)
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) initialiseSignature()
+  },
+  { immediate: true }
+)
+
+/** Selecting one of the saved signatures updates the field immediately. */
+const selectSignature = (signature) => {
+  setSignature({ ...signature, source: SIGNATURE_SOURCES.account })
+  signaturePickerOpen.value = false
+}
+
+const useSavedSignature = (signature) => selectSignature(signature)
+
+const toggleSignaturePicker = () => {
+  signaturePickerOpen.value = !signaturePickerOpen.value
+}
+
+/** Closes the picker without touching the current selection. */
+const cancelSignaturePicker = () => {
+  signaturePickerOpen.value = false
+}
+
+/**
+ * Clears the signature of this proposal only. The signature saved on the account is
+ * never deleted or replaced from here, and the field stays required until another
+ * saved signature is selected or a replacement is uploaded.
+ */
+const removeSignature = () => {
+  setSignature(null)
+  signaturePickerOpen.value = false
+}
+
+onBeforeUnmount(() => {
+  releaseSignatureUrls(accountSignatures.value)
+  releaseSignatureUrls(selectedSignature.value)
+})
+
+const resetForm = () => {
+  setSignature(null)
+  releaseSignatureUrls(accountSignatures.value)
+  accountSignatures.value = []
+  signatureError.value = ''
+  signatureLoading.value = false
+  signaturePickerOpen.value = false
+  uploadedFiles.submitted = null
+  uploadedFiles.endorsed = null
+  endorsedDocumentError.value = ''
+  certification.submitted_name = ''
+  certification.submitted_designation = ''
+  certification.submitted_date = ''
+  certification.endorsed_name = ''
+  certification.endorsed_designation = ''
+  certification.endorsed_date = ''
+  showValidation.value = false
+  Object.keys(errors).forEach(key => delete errors[key])
+}
+
+/**
+ * Everything this step contributes to the proposal: the typed certification, the two
+ * chosen files (to be uploaded) and the in-session signature selection. Both "Submit
+ * Proposal" and "Save Draft" send exactly this shape, so one save path serves them.
+ */
+const getCertificationData = () => ({
+  certification: { ...certification },
+  signatureFiles: {
+    submitted: uploadedFiles.submitted,
+    endorsed: uploadedFiles.endorsed
+  },
+  certificationSignature: selectionPayload(selectedSignature.value)
+})
+
+defineExpose({ resetForm, getCertificationData })
+
+// ===== VALIDATION =====
+const validateStep2 = () => {
+  Object.keys(errors).forEach(key => delete errors[key])
+
+  // Submitted By
+  if (isBlank(certification.submitted_name)) errors.submitted_name = 'Full Name (Submitted By) is required.'
+  if (isBlank(certification.submitted_designation)) errors.submitted_designation = 'Designation (Submitted By) is required.'
+  if (isBlank(certification.submitted_date)) errors.submitted_date = 'Date (Submitted By) is required.'
+  // A signature already stored on this proposal satisfies the field, so reopening a
+  // draft never demands it again.
+  if (!uploadedFiles.submitted && !hasSavedSubmittedSignature.value) {
+    errors.submitted_signature = 'Signature file (Submitted By) is required.'
+  }
+
+  // Endorsed By. When the proposal is continued from an approved Dean endorsement the
+  // section is filled from that record and locked, so there is nothing for the
+  // Proponent to complete (and no signature for them to upload - the Dean's signature
+  // belongs to the issued official letter).
+  if (!endorsedFromRecord.value) {
+    if (isBlank(certification.endorsed_name)) errors.endorsed_name = 'Full Name (Endorsed By) is required.'
+    if (isBlank(certification.endorsed_designation)) errors.endorsed_designation = 'Designation (Endorsed By) is required.'
+    if (isBlank(certification.endorsed_date)) errors.endorsed_date = 'Date (Endorsed By) is required.'
+    // The endorsement document is a PDF (validated on choice and again by the backend).
+    // A document already stored on this proposal satisfies the field, so reopening a
+    // draft never asks for it again.
+    if (!uploadedFiles.endorsed && !hasSavedEndorsement.value) {
+      errors.endorsed_document = ENDORSEMENT_DOCUMENT_REQUIRED_ERROR
+    } else if (endorsedDocumentError.value) {
+      errors.endorsed_document = endorsedDocumentError.value
+    }
+  }
+
+  return Object.keys(errors).length === 0
+}
+
+const errorList = computed(() => {
+  return Object.values(errors)
+})
+
+const goBack = () => emit('openPrevious', modalId)
+
+/**
+ * "Save Draft" goes through the workflow's one save path (Review & Submit), so the
+ * certification typed here - and the signature / endorsement PDF chosen here - are
+ * stored with the proposal instead of being lost when the step closes.
+ */
+const saveDraft = () => emit('savedraft', getCertificationData())
+
+const submitForm = async () => {
+  showValidation.value = true
+  const isValid = validateStep2()
+  if (!isValid) {
+    await nextTick()
+    if (errorBannerRef.value) {
+      errorBannerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (modalBodyRef.value) {
+      const firstError = modalBodyRef.value.querySelector('.has-error')
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+    return
+  }
+  // The signature chosen in this step travels with the proposal, so returning to this
+  // step keeps it (the parent hands it back as `savedSignature`).
+  emit('submitProposal', getCertificationData())
+}
+
+const viewCriteria = () => emit('openCriteria')
+</script>
+
+<style scoped>
+/* ===== BACKDROP ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* ===== CONTAINER ===== */
+.modal-container {
+  background: #f8fafc;
+  width: 100%;
+  max-width: 800px;
+  max-height: 92vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-left h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.header-badge {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Layout only; the download colour comes from assets/actions.css. */
+.btn-download {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.close-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.close-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 20px 28px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #94a3b8;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.progress-step.active .step-number {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.progress-step.completed .step-number {
+  background: #10b981;
+  color: #fff;
+  font-size: 12px;
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.progress-step.active .step-label {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.progress-step.completed .step-label {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.progress-line {
+  width: 60px;
+  height: 2px;
+  background: #e2e8f0;
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+.progress-line.filled {
+  background: #10b981;
+}
+
+/* ===== VALIDATION BANNER ===== */
+.validation-banner {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.banner-icon {
+  font-size: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-content strong {
+  display: block;
+  font-size: 14px;
+  color: #991b1b;
+  margin-bottom: 6px;
+}
+
+.banner-content ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.banner-content li {
+  font-size: 12px;
+  color: #b91c1c;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+/* ===== BODY ===== */
+.modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ===== FORM SECTIONS ===== */
+.form-section {
+  margin-bottom: 28px;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.section-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #4f46e5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ===== CERTIFICATION CARD ===== */
+.cert-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.cert-icon {
+  width: 48px;
+  height: 48px;
+  background: #ecfdf5;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.cert-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+  margin: 0;
+}
+
+/* ===== SECTION CARD ===== */
+.section-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  transition: box-shadow 0.15s;
+}
+
+.section-card:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== VALIDATION ERROR STYLES ===== */
+.req {
+  color: #dc2626;
+  font-weight: 400;
+}
+
+.has-error input,
+.has-error select,
+.has-error textarea {
+  border-color: #dc2626 !important;
+  background: #fef2f2;
+}
+
+.has-error input:focus,
+.has-error select:focus,
+.has-error textarea:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  border-color: #dc2626 !important;
+}
+
+.field-error {
+  display: block;
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ===== FORM ELEMENTS ===== */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+input[type="date"] {
+  cursor: pointer;
+}
+
+/* ===== UPLOAD AREA ===== */
+.upload-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.upload-area:hover {
+  border-color: #4f46e5;
+  background: #f8faff;
+  color: #4f46e5;
+}
+/* The rule line of an upload field ("Accepted file format: PDF (.pdf)") and the size. */
+.upload-helper {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+
+.file-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.btn-remove-file {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+}
+
+.btn-remove-file:hover {
+  color: #dc2626;
+}
+
+/* ===== SUBMITTED BY - SIGNATURE ===== */
+/* The saved signature is shown as a preview with its own controls; the upload
+   area above stays the same dashed control the step already used. */
+.signature-state {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.signature-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.signature-preview {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: 140px;
+  object-fit: contain;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.signature-note {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.signature-actions,
+.signature-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.signature-use-saved {
+  margin-top: 8px;
+}
+
+.signature-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.signature-retry {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signature-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.signature-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.signature-option:hover {
+  border-color: #4f46e5;
+  background: #f8faff;
+}
+
+.signature-option.is-selected {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.signature-option-image {
+  flex-shrink: 0;
+  width: 120px;
+  max-height: 56px;
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.signature-option-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signature-option-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4338ca;
+  background: #e0e7ff;
+  white-space: nowrap;
+}
+
+/* Destructive secondary action; the tone comes from the shared status tokens. */
+.btn-outline-danger {
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
+}
+
+.btn-outline-danger:hover {
+  color: var(--status-rejected-text);
+  border-color: var(--status-rejected-border);
+  background: var(--status-rejected-bg);
+}
+
+/* The controls stack on a phone so every button stays a comfortable tap target. */
+@media (max-width: 640px) {
+  .signature-actions,
+  .signature-picker-actions {
+    flex-direction: column;
+  }
+
+  .signature-actions .btn-outline,
+  .signature-picker-actions .btn-outline,
+  .signature-use-saved {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .signature-option {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .signature-preview {
+    max-width: 100%;
+  }
+}
+
+/* ===== FOOTER ===== */
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 28px;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.footer-right {
+  display: flex;
+  gap: 10px;
+}
+
+/* Layout only; the colours come from assets/actions.css. */
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-outline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== SCROLLBAR ===== */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+/* ===== Endorsed By filled from an approved Dean endorsement =====
+   The section is read-only: the endorser's identity, designation and date belong to
+   the issued official endorsement letter, so the inputs are disabled and the note
+   points at the letter itself. */
+.endorsed-record input:disabled {
+  background: #f1f5f9;
+  color: #334155;
+  cursor: not-allowed;
+}
+
+.endorsed-note {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #475569;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.endorsed-note a {
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* The global .btn-outline dark rule sets a neutral tone; this modifier keeps the
+   destructive action readable as red in dark mode too. */
+@media (prefers-color-scheme: dark) {
+  .btn-outline-danger {
+    color: var(--status-rejected-text) !important;
+    border-color: var(--status-rejected-border) !important;
+    background: var(--status-rejected-bg) !important;
+  }
+}
+</style>
