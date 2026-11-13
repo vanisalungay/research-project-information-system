@@ -898,7 +898,7 @@ const errorList = computed(() => {
   return Object.values(errors)
 })
 
-const goBack = () => emit('openPrevious', modalId)
+const goBack = () => emit('openPrevious', props.modalId)
 
 /**
  * "Save Draft" goes through the workflow's one save path (Review & Submit), so the

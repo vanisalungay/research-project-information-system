@@ -95,7 +95,6 @@
             </tbody>
           </table>
         </div>
-      </div>
 
         <p v-else class="dash-empty">No proposals currently awaiting final executive sign-off.</p>
       </section>
@@ -135,7 +134,6 @@
             </tbody>
           </table>
         </div>
-      </div>
 
         <p v-else class="dash-empty">
           Approved proposals and those forwarded to Finance/OVCAF for budget processing will appear here.
