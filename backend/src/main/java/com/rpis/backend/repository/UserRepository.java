@@ -2,7 +2,9 @@ package com.rpis.backend.repository;
 
 import com.rpis.backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -40,6 +42,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * {@code idx_users_role} (see migration-add-performance-indexes.sql).
      */
     List<User> findByRoleIn(List<String> roles);
+
+    /**
+     * Invalidates every bearer token issued to one account so far.
+     *
+     * <p>The increment is performed by the database in a single statement, so two
+     * simultaneous sign-outs cannot both read the old value and write the same "new"
+     * one - either way every issued token would be rejected, but an atomic update
+     * makes the stored counter reflect how many times the account signed out.
+     *
+     * <p>{@code clearAutomatically} matters for the sign-out request itself and for
+     * tests that share one persistence context: without it a {@code User} already
+     * loaded in that context would keep the old version.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE User u SET u.tokenVersion = u.tokenVersion + 1 WHERE u.id = :id")
+    int incrementTokenVersion(@Param("id") Long id);
 
     /**
      * Counts the accounts whose stored password is still plain text.

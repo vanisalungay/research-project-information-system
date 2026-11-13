@@ -68,7 +68,7 @@ test('the backend is the authority for the address and the password', () => {
 })
 
 test('the restriction is enforced on the server, not only in the browser', () => {
-  assert.ok(FILTER.includes('requiresPasswordChange'), 'the filter checks the flag')
+  assert.ok(FILTER.includes('getMustChangePassword'), 'the filter checks the flag')
   assert.ok(FILTER.includes('isAllowedWhileChangingPassword'), 'and allows only what it must')
   assert.ok(FILTER.includes('SC_FORBIDDEN'), 'refusing everything else')
   assert.ok(FILTER.includes('"/api/users/change-password"'), 'the change endpoint stays reachable')

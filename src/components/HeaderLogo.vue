@@ -146,6 +146,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
+import { useDeanAttentionStore } from '@/stores/deanAttention'
 
 defineProps({
   /** True while the sidebar is collapsed (the hamburger reflects it). */
@@ -156,6 +157,7 @@ defineEmits(['toggle-sidebar'])
 const router = useRouter()
 const userStore = useUserDataStore()
 const notificationStore = useNotificationStore()
+const deanAttentionStore = useDeanAttentionStore()
 
 const email = ref('')
 const password = ref('')
@@ -213,8 +215,10 @@ const closeLoginDialog = () => {
 }
 
 const logout = () => {
+  // The store discards the local session at once and revokes the token on the server.
   userStore.logout()
   notificationStore.reset()
+  deanAttentionStore.reset()
   router.push('/login')
 }
 

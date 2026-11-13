@@ -141,8 +141,34 @@ export const useUserDataStore = defineStore('userData', () => {
     }
   }
 
+  /**
+   * Signs out.
+   *
+   * The local session is discarded immediately, so the UI signs out without waiting
+   * for the network. The token is captured first and sent explicitly to the server,
+   * which increments the account's token version and invalidates it everywhere -
+   * deleting it from localStorage alone would leave a copy that still authenticated
+   * until it expired. A failed revocation is logged and ignored: the local sign-out
+   * has already happened, and the server-side token expires on its own.
+   *
+   * @returns {Promise<void>} resolves when the revocation attempt has settled
+   */
   function logout() {
+    const token = user.value?.token
     clearUser()
+    if (!token) {
+      return Promise.resolve()
+    }
+    return api.post('/api/users/logout', null, {
+      // The stored session is gone, so the API client has nothing to attach; send
+      // the captured token explicitly.
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch((error) => {
+      console.error(
+        'Could not revoke the session on the server:',
+        error?.response?.status ?? error?.message,
+      )
+    })
   }
 
   return {

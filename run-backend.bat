@@ -208,6 +208,7 @@ for %%F in (
     migration-add-workplan-json.sql
     migration-rename-dean-role.sql
     migration-add-must-change-password.sql
+    migration-add-token-version.sql
     migration-add-dean-assignments.sql
     migration-add-gad-checklist.sql
     migration-add-activity-logs.sql
@@ -220,6 +221,7 @@ for %%F in (
     migration-norm-01-relational-integrity.sql
     migration-norm-02-relational-observability.sql
     migration-norm-03-fk-consolidation.sql
+    migration-norm-04-proposal-status-fks.sql
 ) do (
     if not exist "%%F" (
         echo Migration file missing: %%F

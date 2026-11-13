@@ -14,23 +14,32 @@ import java.util.Base64;
 /**
  * Stateless bearer-token service.
  *
- * <p>A token is {@code base64(userId:role:issuedAtMillis:hmacSha256)}. Nothing is
- * stored in memory, so the same token is accepted by every instance behind the
- * load balancer and a restart or a redeploy does not log anybody out. The only
- * shared requirement is the signing key, which is read from configuration
- * ({@code rpis.security.token-secret}) so all instances can be given the same
- * value.
+ * <p>A token is {@code base64(userId:role:issuedAtMillis:tokenVersion:hmacSha256)}.
+ * Nothing is stored in memory, so the same token is accepted by every instance
+ * behind the load balancer and a restart or a redeploy does not log anybody out. The
+ * only shared requirements are the signing key, which is read from configuration
+ * ({@code rpis.security.token-secret}) so all instances can be given the same value,
+ * and the account's {@code tokenVersion}, which is stored in the shared database and
+ * compared on every request. Signing out increments that column
+ * ({@link com.rpis.backend.service.UserService#revokeTokens(Long)}), so every token
+ * issued before the sign-out stops authenticating - on every instance - without
+ * keeping the tokens themselves anywhere.
  *
  * <p>The signing key and the lifetime used to be compile-time constants. They are
  * now injected, with the previous values as defaults, so an existing deployment
- * keeps validating the tokens it has already handed out.
+ * keeps validating the tokens it has already handed out. A token issued before the
+ * version field existed is still accepted as version 0, which is the value existing
+ * accounts are migrated to; such a token is invalidated by the account's first
+ * sign-out.
  */
 @Service
 public class TokenService {
 
     private static final String ALGORITHM = "HmacSHA256";
     private static final String TOKEN_SEPARATOR = ":";
-    private static final int TOKEN_PARTS = 4;
+    private static final int TOKEN_PARTS = 5;
+    /** Tokens issued before the version field existed: userId:role:issuedAt:signature. */
+    private static final int LEGACY_TOKEN_PARTS = 4;
 
     private final byte[] signingKey;
     private final long expirationTimeMs;
@@ -46,13 +55,33 @@ public class TokenService {
      * The decoded contents of a token. Parsing once per request replaces the
      * previous three separate base64 decodes (validate + user id + role), which
      * ran on every single authenticated request.
+     *
+     * @param tokenVersion the account's token generation this token was issued for
+     * @param versioned    whether the token actually carried a version; a legacy
+     *                     token without one is treated as version 0
      */
-    public record ParsedToken(Long userId, String role, long issuedAtMillis, String signature) {
+    public record ParsedToken(Long userId, String role, long issuedAtMillis,
+                              int tokenVersion, boolean versioned, String signature) {
     }
 
+    /**
+     * Issues a version-0 token. Kept for callers that do not track a version (tests);
+     * sign-in uses {@link #generateToken(Long, String, int)} with the account's
+     * current version, so signing out invalidates the token.
+     */
     public String generateToken(Long userId, String role) {
+        return generateToken(userId, role, 0);
+    }
+
+    /**
+     * Issues a token for an explicit token version. Sign-in passes the version read
+     * from the account; every other caller (tests included) may keep using the
+     * two-argument overload, which means version 0.
+     */
+    public String generateToken(Long userId, String role, int tokenVersion) {
         long timestamp = System.currentTimeMillis();
-        String data = userId + TOKEN_SEPARATOR + role + TOKEN_SEPARATOR + timestamp;
+        String data = userId + TOKEN_SEPARATOR + role + TOKEN_SEPARATOR + timestamp
+                + TOKEN_SEPARATOR + tokenVersion;
         String signature = hmacSha256(data);
         String rawToken = data + TOKEN_SEPARATOR + signature;
         return Base64.getEncoder().encodeToString(rawToken.getBytes(StandardCharsets.UTF_8));
@@ -70,6 +99,16 @@ public class TokenService {
         try {
             String decoded = new String(Base64.getDecoder().decode(tokenStr), StandardCharsets.UTF_8);
             String[] parts = decoded.split(TOKEN_SEPARATOR);
+            if (parts.length == LEGACY_TOKEN_PARTS) {
+                // A token issued before token versioning: it belongs to generation 0.
+                return new ParsedToken(
+                        Long.parseLong(parts[0]),
+                        parts[1],
+                        Long.parseLong(parts[2]),
+                        0,
+                        false,
+                        parts[3]);
+            }
             if (parts.length != TOKEN_PARTS) {
                 return null;
             }
@@ -77,7 +116,9 @@ public class TokenService {
                     Long.parseLong(parts[0]),
                     parts[1],
                     Long.parseLong(parts[2]),
-                    parts[3]);
+                    Integer.parseInt(parts[3]),
+                    true,
+                    parts[4]);
         } catch (Exception e) {
             // A malformed token is an expected condition (expired client storage,
             // hand-edited header), not an error worth a stack trace.
@@ -99,8 +140,11 @@ public class TokenService {
         if (System.currentTimeMillis() - parsed.issuedAtMillis() > expirationTimeMs) {
             return null;
         }
+        // The signed payload of a legacy token has no version segment; rebuilding it
+        // with one would reject every token issued before this change.
         String data = parsed.userId() + TOKEN_SEPARATOR + parsed.role() + TOKEN_SEPARATOR
-                + parsed.issuedAtMillis();
+                + parsed.issuedAtMillis()
+                + (parsed.versioned() ? TOKEN_SEPARATOR + parsed.tokenVersion() : "");
         String expected = hmacSha256(data);
         // Constant-time comparison: a byte-by-byte early exit leaks how much of a
         // forged signature was correct.

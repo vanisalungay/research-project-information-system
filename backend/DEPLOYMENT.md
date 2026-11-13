@@ -116,12 +116,13 @@ an earlier one created. The four ordering rules, each of which the previous list
    `migration-add-field-level-remarks.sql`, which adds columns to it.
 3. `migration-add-quarterly-progress-reports.sql` runs **before**
    `migration-add-performance-indexes.sql`, which indexes `quarterly_progress_reports`.
-4. The audit (`migration-01/02/03`) and normalization (`migration-norm-01/02/03`) scripts
-   run **last**, after every table and column they constrain exists.
-   `migration-norm-03-fk-consolidation.sql` is the final step: it converges each
-   relationship to exactly one foreign key (any anonymous `<table>_<column>_fkey`
-   left by a feature migration is renamed or replaced) and adds the
-   `notifications.proposal_announcement_id` foreign key.
+4. The audit (`migration-01/02/03`) and normalization (`migration-norm-01/02/03/04`)
+   scripts run **last**, after every table and column they constrain exists.
+   `migration-norm-03-fk-consolidation.sql` converges each relationship to exactly one
+   foreign key (any anonymous `<table>_<column>_fkey` left by a feature migration is
+   renamed or replaced) and adds the `notifications.proposal_announcement_id` foreign
+   key. `migration-norm-04-proposal-status-fks.sql` is the final step: it adds the three
+   proposal-status foreign keys, their child indexes and the `FOR REVIEW` lookup row.
 
 This order was verified end-to-end: it was applied to a clone of a pre-migration `rpis_db`
 and the application then started with `ddl-auto=validate` without a single missing
@@ -160,12 +161,16 @@ for f in \
   migration-add-quarterly-report-documents.sql \
   migration-add-references-json.sql \
   migration-add-revision-request-fields.sql \
+  migration-add-risk-management-json.sql \
+  migration-add-proposal-endorsement-document.sql \
+  migration-add-proposal-certification.sql \
   migration-add-technology-map-path.sql \
   migration-add-terminal-report-content.sql \
   migration-add-user-signature.sql \
   migration-add-workplan-json.sql \
   migration-rename-dean-role.sql \
   migration-add-must-change-password.sql \
+  migration-add-token-version.sql \
   migration-add-dean-assignments.sql \
   migration-add-gad-checklist.sql \
   migration-add-activity-logs.sql \
@@ -178,7 +183,7 @@ for f in \
   migration-norm-01-relational-integrity.sql \
   migration-norm-02-relational-observability.sql \
   migration-norm-03-fk-consolidation.sql \
-  migration-add-proposal-certification.sql
+  migration-norm-04-proposal-status-fks.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"
@@ -186,6 +191,11 @@ done
 ```
 
 `migration-add-performance-indexes.sql` is the slowest step, because it builds indexes.
+
+`migration-complete-finished-projects.sql` is **not** part of the schema order above: it
+is a one-off data correction that moves projects whose Q1-Q3 and Terminal Report were
+already submitted to `COMPLETED`. It is idempotent and leaves every other row untouched;
+run it once after the schema is current if the deployment needs that correction.
 
 ### Windows development launcher
 

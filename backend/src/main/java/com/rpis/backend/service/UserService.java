@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -61,6 +62,28 @@ public class UserService {
 
     public java.util.Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Signs an account out of every session by invalidating the tokens it holds.
+     *
+     * <p>Tokens are self-contained, so the server cannot delete one; instead the
+     * account's token version is incremented, and the authentication filter accepts a
+     * token only while its embedded version equals the stored one. The counter lives
+     * in the database, so the next request is rejected by every instance - not only
+     * the one that served the sign-out.
+     *
+     * <p>Signing out is account-wide: every device signed in with this account signs
+     * out too. That is deliberate - the safe assumption is that a sign-out means
+     * "this account should no longer be usable with credentials already handed out".
+     * A per-session logout would require storing every issued token, which brings
+     * back the token table this design avoids.
+     */
+    @Transactional
+    public void revokeTokens(Long userId) {
+        if (userId != null) {
+            userRepository.incrementTokenVersion(userId);
+        }
     }
 
     public List<User> getPendingUsers() {

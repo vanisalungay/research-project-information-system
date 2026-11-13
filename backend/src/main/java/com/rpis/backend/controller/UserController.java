@@ -122,14 +122,34 @@ public class UserController {
                     .body("Invalid email, password, or role.");
         }
 
-        // Generate and set token
-        String token = tokenService.generateToken(user.getId(), user.getRole());
+        // Generate and set token. The account's current version is embedded so a
+        // later sign-out (which increments it) invalidates this token everywhere.
+        String token = tokenService.generateToken(
+                user.getId(), user.getRole(), user.getTokenVersion());
         user.setToken(token);
 
         // Never serialize the stored hash.
         user.setPassword(null);
 
         return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Ends the current session.
+     *
+     * <p>The bearer token itself stays valid until it expires; what changes is the
+     * account's token version, which every instance reads from the shared database.
+     * Incrementing it makes the presented token - and every other token already
+     * issued to this account - stop authenticating, so it cannot be replayed after
+     * logout.
+     *
+     * <p>The response has no body: the client discards its stored session whether or
+     * not this call succeeded, and repeating it is harmless.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        userService.revokeTokens(currentUser.requireUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/google-login")
@@ -169,8 +189,9 @@ public class UserController {
 
                     existingUser.setPassword(null);
                     
-                    // Generate and set token
-                    String token = tokenService.generateToken(existingUser.getId(), existingUser.getRole());
+                    // Generate and set token, bound to the account's current version.
+                    String token = tokenService.generateToken(existingUser.getId(),
+                            existingUser.getRole(), existingUser.getTokenVersion());
                     existingUser.setToken(token);
                     
                     return ResponseEntity.ok(existingUser);

@@ -60,7 +60,11 @@ CREATE TABLE users (
     -- RPS_ADMIN, RPS_STAFF, DEAN, OVCRIGE, OVCAF, REC, OC. The Dean / Department Chair
     -- is an independent role, not an RPS sub-role, so its value is DEAN and never
     -- RPS_DEAN (see migration-rename-dean-role.sql).
-    role VARCHAR(50) NOT NULL
+    role VARCHAR(50) NOT NULL,
+    -- Generation of bearer tokens valid for the account. Signing out increments it,
+    -- which invalidates every token issued before the sign-out (see
+    -- migration-add-token-version.sql and TokenAuthenticationFilter).
+    token_version INTEGER NOT NULL DEFAULT 0
 );
 
 -- 2. Proposals Table

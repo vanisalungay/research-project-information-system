@@ -39,6 +39,22 @@ public class User {
     @Transient
     private String token;
 
+    /**
+     * The generation of bearer tokens that are currently valid for this account.
+     *
+     * <p>A token carries the version it was issued with. Signing out increments this
+     * column, so every token issued before the sign-out no longer matches and is
+     * rejected by the authentication filter. Storing the counter in the shared
+     * database (rather than in memory) is what makes the invalidation visible to every
+     * instance behind the load balancer, and it keeps the token itself stateless.
+     *
+     * <p>Tokens issued before this column existed carry no version and are treated as
+     * version 0, which is the value existing rows are migrated to - so upgrading does
+     * not sign anybody out.
+     */
+    @Column(nullable = false)
+    private int tokenVersion = 0;
+
     // NEW FIELD
     private String departmentOffice;
 
