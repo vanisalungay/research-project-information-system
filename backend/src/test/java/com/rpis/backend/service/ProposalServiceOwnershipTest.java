@@ -50,7 +50,7 @@ class ProposalServiceOwnershipTest {
         NotificationService notificationService = mock(NotificationService.class);
         announcementService = mock(ProposalAnnouncementService.class);
         ProposalVersionService versionService = mock(ProposalVersionService.class);
-        service = new ProposalService(proposalRepository, userRepository, notificationService,
+        service = new ProposalService(proposalRepository, userRepository, notificationService, new ProposalNotificationPolicy(notificationService),
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 

@@ -1,11 +1,17 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.config.NotificationEmitterRegistry;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.NotificationService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -15,6 +21,7 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationEmitterRegistry emitterRegistry;
     private final CurrentUser currentUser;
 
     @GetMapping
@@ -31,10 +38,27 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotificationsForUser(userId));
     }
 
+    /**
+     * The live notification stream. The client authenticates with the ordinary Bearer
+     * token (it reads the stream through fetch, because the browser's EventSource cannot
+     * set an Authorization header).
+     */
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(HttpServletResponse response) {
+        if (!emitterRegistry.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Real-time notifications are disabled.");
+        }
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no");
+        return emitterRegistry.register(currentUser.requireUserId());
+    }
+
     @PutMapping("/{id}/read")
     public ResponseEntity<Notification> markAsRead(@PathVariable Long id) {
         return ResponseEntity.ok(notificationService.markAsReadForCurrentUser(
-                id, currentUser.requireUserId(), currentUser.isProponent()));
+                id, currentUser.requireUserId()));
     }
 
     @PutMapping("/read-all")

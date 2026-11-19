@@ -85,7 +85,7 @@ class ProposalDraftPersistenceServiceTest {
         ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
         versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService, versionService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService, versionService,
                 mock(ProposalSectionRemarkService.class), new CurrentUser(),
                 mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class),
                 new LocalUploadStorage("uploads"));

@@ -187,6 +187,9 @@ for %%F in (
     migration-add-field-level-remarks.sql
     migration-add-notification-fields.sql
     migration-add-notification-preferences.sql
+    migration-add-notification-preferences-configured.sql
+    migration-add-notification-dedupe-key.sql
+    migration-add-revision-deadline-index.sql
     migration-add-priority-agendas.sql
     migration-add-proposal-address-contact.sql
     migration-add-proposal-announcement-link.sql

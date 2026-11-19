@@ -1,5 +1,8 @@
 package com.rpis.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.rpis.backend.util.NotificationTimestampSerializer;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,7 +12,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", uniqueConstraints = @UniqueConstraint(
+        name = "ux_notifications_user_dedupe", columnNames = {"user_id", "dedupe_key"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -81,7 +85,17 @@ public class Notification {
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    /**
+     * Idempotency key for generated notifications (currently the revision deadline
+     * reminder). Ordinary notifications leave this null; PostgreSQL allows many nulls
+     * in the unique (user_id, dedupe_key) index.
+     */
+    @JsonIgnore
+    @Column(name = "dedupe_key", length = 200)
+    private String dedupeKey;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
+    @JsonSerialize(using = NotificationTimestampSerializer.class)
     private LocalDateTime createdAt;
 }

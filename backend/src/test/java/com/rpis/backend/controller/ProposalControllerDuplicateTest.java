@@ -9,6 +9,7 @@ import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
+import com.rpis.backend.service.ProposalNotificationPolicy;
 import com.rpis.backend.service.PriorityAgendaService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
@@ -66,7 +67,7 @@ class ProposalControllerDuplicateTest {
         sectionRemarkService = mock(ProposalSectionRemarkService.class);
         announcementService = mock(ProposalAnnouncementService.class);
         ProposalService service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService,
                 mock(ProposalVersionService.class), sectionRemarkService, new CurrentUser(),
                 mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(service,

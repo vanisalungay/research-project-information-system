@@ -66,7 +66,7 @@ class ProposalBudgetFileServiceTest {
         service = new ProposalService(
                 proposalRepository,
                 mock(UserRepository.class),
-                mock(NotificationService.class),
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class),
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),

@@ -126,44 +126,13 @@
       </section>
 
       <!-- Notifications -->
-      <aside class="dash-section">
-        <header class="dash-section-head">
-          <span class="dash-section-icon" v-html="icons.bell"></span>
-          <h3 class="dash-section-title">Notifications</h3>
-        </header>
-
-        <ul class="dash-notes">
-          <li v-if="loading" class="dash-empty">
-            Loading...
-          </li>
-
-          <li v-else-if="notifications.length === 0" class="dash-empty">
-            No notifications.
-          </li>
-
-          <li
-            v-for="notification in notifications.slice(0, 5)"
-            :key="notification.id"
-            class="dash-note dash-note--clickable"
-            @click="openNotification(notification)"
-          >
-            <span class="dash-note-icon" v-html="icons.bell"></span>
-            <div class="dash-note-body">
-              <p class="dash-note-text">{{ notification.message }}</p>
-              <div class="dash-note-foot">
-                <span class="dash-note-date">
-                  {{ notification.createdAt?.substring(0, 16) }}
-                </span>
-              </div>
-            </div>
-          </li>
-        </ul>
-
-        <button class="section-link notif-view-all" @click="goToNotifications">
-          <span>View All</span>
-          <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
-        </button>
-      </aside>
+      <NotificationPreview
+        class="dash-section"
+        title="Notifications"
+        :limit="5"
+        view-all-to="/notifications"
+        empty-text="No notifications."
+      />
     </div>
   </div>
 </template>
@@ -172,8 +141,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { UserRole } from '@/stores/userData'
-import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
@@ -234,7 +202,6 @@ const stats = ref({
 })
 
 const proposals = ref([])
-const notifications = ref([])
 
 const loading = ref(true)
 
@@ -269,14 +236,6 @@ const loadDashboard = async () => {
       p => p.status === 'REVISION' || p.status === 'REC_REVISION'
     ).length
 
-    // Notification endpoint
-    // Replace userId later using logged in user
-    const notifResponse = await api.get(
-      '/api/notifications?userId=4'
-    )
-
-    notifications.value = notifResponse.data
-
   } catch (error) {
     console.log(error)
   } finally {
@@ -287,24 +246,6 @@ const loadDashboard = async () => {
 onMounted(() => {
   loadDashboard()
 })
-
-const goToNotifications = () => {
-  router.push('/notifications')
-}
-
-/**
- * Where a notification opens: the exact proposal it carries, on this role's proposal page
- * (/review-prop/:id). The id is the saved record reference - never the notification title -
- * and a notification with no reference has no destination.
- */
-const notificationDestination = (notification) =>
-  proposalNotificationDestination(notification, UserRole.OVCRIGE)
-
-/** Opens the proposal a notification is about. Navigation only - the read state is untouched. */
-const openNotification = (notification) => {
-  const destination = notificationDestination(notification)
-  if (destination) router.push(destination)
-}
 
 const goToEndorsed = () => {
   router.push('/submit-proposals')

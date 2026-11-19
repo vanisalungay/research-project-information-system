@@ -127,6 +127,13 @@
 
       <p v-else class="dash-empty">No approved proposals requesting funding.</p>
     </section>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/ovcaf-notification"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
@@ -135,6 +142,7 @@ import { ref, onMounted } from 'vue'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 

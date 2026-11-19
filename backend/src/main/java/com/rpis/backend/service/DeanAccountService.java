@@ -11,6 +11,7 @@ import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.DeanAssignmentRepository;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,7 @@ public class DeanAccountService {
     private final DeanAssignmentRepository deanAssignmentRepository;
     private final PasswordService passwordService;
     private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
 
     /** Every Dean account, by name. */
     public List<User> listDeans() {
@@ -199,6 +201,7 @@ public class DeanAccountService {
 
         // 2. Demote the outgoing Deans that no longer hold any active appointment. The
         //    account is kept: only the Dean role and the Dean scope are removed.
+        List<User> demoted = new ArrayList<>();
         for (Long outgoingId : outgoingIds) {
             if (outgoingId.equals(replacement.getId())) {
                 continue;
@@ -214,6 +217,7 @@ public class DeanAccountService {
             outgoing.setAssignedCollege(null);
             outgoing.setDesignation(null);
             userRepository.save(outgoing);
+            demoted.add(outgoing);
             audit(actor, EndorsementRequestEvent.TYPE_DEAN_ROLE_REVOKED,
                     "Dean role revoked from " + outgoing.getName() + " (" + outgoing.getEmail()
                             + ") when " + replacement.getName() + " was appointed"
@@ -248,6 +252,13 @@ public class DeanAccountService {
                 "Dean of " + (college == null ? "the institution (no college assigned)" : college)
                         + " replaced: " + savedReplacement.getName() + " now holds the appointment as "
                         + (designation == null ? "Dean" : designation) + ".");
+        notifyDeanAssignment(savedReplacement, "Dean Role Assigned",
+                "You have been appointed as Dean" + scopeNote(savedReplacement) + ".");
+        for (User outgoing : demoted) {
+            notifyDeanAssignment(outgoing, "Dean Role Revoked",
+                    "Your Dean role has been revoked following a change of leadership. "
+                            + "Your account now works as a Faculty Proponent.");
+        }
         return DeanAssignmentResponse.of(savedAssignment);
     }
 
@@ -305,6 +316,8 @@ public class DeanAccountService {
         audit(actor, EndorsementRequestEvent.TYPE_DEAN_ROLE_ASSIGNED,
                 (created ? "Dean account created for " : "Dean role assigned to existing account ")
                         + saved.getName() + " (" + saved.getEmail() + ")" + scopeNote(saved) + ".");
+        notifyDeanAssignment(saved, "Dean Role Assigned",
+                "Your account now holds the Dean role" + scopeNote(saved) + ".");
         if (!Objects.equals(previousCollege, saved.getAssignedCollege())
                 || !Objects.equals(previousDesignation, saved.getDesignation())) {
             audit(actor, EndorsementRequestEvent.TYPE_DEAN_SCOPE_CHANGED,
@@ -342,6 +355,8 @@ public class DeanAccountService {
                 "Dean role revoked from " + saved.getName() + " (" + saved.getEmail() + ")"
                         + (previous == null || previous.isBlank() ? "" : "; former scope: " + previous)
                         + ". The account keeps working as a Faculty Proponent.");
+        notifyDeanAssignment(saved, "Dean Role Revoked",
+                "Your Dean role has been revoked. Your account now works as a Faculty Proponent.");
         return saved;
     }
 
@@ -480,6 +495,20 @@ public class DeanAccountService {
         }
         event.setDetail(detail);
         eventRepository.save(event);
+    }
+
+    /**
+     * Tells the affected account about a Dean-role change. The notification has no
+     * proposal reference: it opens the account's profile, where the role and scope are
+     * shown. It is written in the same transaction as the account change, so a failed
+     * assignment never leaves a misleading message behind.
+     */
+    private void notifyDeanAssignment(User dean, String title, String message) {
+        if (dean == null || dean.getId() == null) {
+            return;
+        }
+        notificationService.notifyUsers(List.of(dean), message, title,
+                NotificationTypes.DEAN_ASSIGNMENT, null);
     }
 
     private static String scopeNote(User dean) {

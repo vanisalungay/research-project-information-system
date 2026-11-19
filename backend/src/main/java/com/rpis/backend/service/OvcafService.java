@@ -7,10 +7,13 @@ import com.rpis.backend.model.OvcafValidation;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalBudget;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
+import com.rpis.backend.util.NotificationEvent;
+import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -220,13 +223,13 @@ public class OvcafService {
                             + "\" has been approved by OVCAF and is awaiting fund release. "
                             + "The project becomes approved for implementation once the release is recorded.",
                     "Budget Approved",
-                    "APPROVAL",
-                    saved.getId());
+                    NotificationTypes.APPROVAL,
+                    saved.getId(), null, NotificationEvent.STATUS_UPDATED);
         }
-        // Notify RPS for monitoring
-        notifyRole("RPS_ADMIN", saved,
+        // Notify ORPS (both staff and administrator) for monitoring.
+        notifyRps(saved,
                 "Budget approved by OVCAF; awaiting fund release: \"" + saved.getProjectTitle() + "\"",
-                "Budget Approved", "PROPOSAL_UPDATE");
+                "Budget Approved", NotificationTypes.PROPOSAL_UPDATE);
 
         return saved;
     }
@@ -255,9 +258,11 @@ public class OvcafService {
         proposal.setStatus("READY_FOR_RELEASE");
         Proposal saved = proposalRepository.save(proposal);
 
-        // Notify finance office
-        notifyRole("OVCAF", saved, "Budget authorized. Ready for fund release: \"" + saved.getProjectTitle() + "\"",
-                "Budget Authorized", "FUNDING");
+        // Notify the finance office.
+        notificationService.notifyRoles(List.of(UserRoles.OVCAF),
+                "Budget authorized. Ready for fund release: \"" + saved.getProjectTitle() + "\"",
+                "Budget Authorized", NotificationTypes.FUNDING, saved.getId(),
+                NotificationEvent.STATUS_UPDATED);
 
         return saved;
     }
@@ -321,12 +326,12 @@ public class OvcafService {
                     saved.getProponent().getId(),
                     "Funds have been released for your project: \"" + saved.getProjectTitle() + "\"",
                     "Funds Released",
-                    "FUNDING",
-                    saved.getId());
+                    NotificationTypes.FUNDING,
+                    saved.getId(), null, NotificationEvent.STATUS_UPDATED);
         }
-        notifyRole("RPS_ADMIN", saved,
+        notifyRps(saved,
                 "Funds released. Ready for implementation monitoring: \"" + saved.getProjectTitle() + "\"",
-                "Implementation Monitoring", "PROPOSAL_UPDATE");
+                "Implementation Monitoring", NotificationTypes.PROPOSAL_UPDATE);
 
         return saved;
     }
@@ -587,54 +592,53 @@ public class OvcafService {
             case "APPROVED_ENDORSED":
                 // The budget is approved; implementation approval follows the release.
                 if (proposal.getProponent() != null) {
-                    notificationService.createNotification(
-                            proposal.getProponent().getId(),
+                    notificationService.notifyUsers(List.of(proposal.getProponent()),
                             "The budget for your proposal \"" + proposal.getProjectTitle()
                                     + "\" has been approved by OVCAF and is awaiting fund release. "
                                     + "The project becomes approved for implementation once the release is recorded.",
-                            "Budget Approved",
-                            "APPROVAL",
-                            proposal.getId());
+                            "Budget Approved", NotificationTypes.APPROVAL, proposal.getId(),
+                            NotificationEvent.STATUS_UPDATED);
                 }
-                // Notify RPS that the budget cleared and the release is awaited.
-                notifyRole("RPS_ADMIN", proposal,
+                // Notify ORPS that the budget cleared and the release is awaited.
+                notifyRps(proposal,
                         "Budget approved by OVCAF; awaiting fund release: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Approved", "PROPOSAL_UPDATE");
+                        "Budget Approved", NotificationTypes.PROPOSAL_UPDATE);
                 break;
             case "RETURNED_FOR_REVISION":
                 if (proposal.getProponent() != null) {
-                    notificationService.createNotification(
-                            proposal.getProponent().getId(),
+                    notificationService.notifyUsers(List.of(proposal.getProponent()),
                             "Your proposal \"" + proposal.getProjectTitle()
                                     + "\" has been returned by OVCAF for revision.",
-                            "Budget Revision Required",
-                            "REVISION",
-                            proposal.getId());
+                            "Budget Revision Required", NotificationTypes.REVISION, proposal.getId(),
+                            NotificationEvent.STATUS_UPDATED);
                 }
-                notifyRole("RPS_ADMIN", proposal,
+                notifyRps(proposal,
                         "Budget release was returned by OVCAF for proposal: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Request Returned", "REVISION");
+                        "Budget Request Returned", NotificationTypes.REVISION);
                 break;
             case "REJECTED":
                 if (proposal.getProponent() != null) {
-                    notificationService.createNotification(
-                            proposal.getProponent().getId(),
-                            "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected by OVCAF.",
-                            "Proposal Rejected",
-                            "REJECTION",
-                            proposal.getId());
+                    notificationService.notifyUsers(List.of(proposal.getProponent()),
+                            "Your proposal \"" + proposal.getProjectTitle()
+                                    + "\" has been rejected by OVCAF.",
+                            "Proposal Rejected", NotificationTypes.REJECTION, proposal.getId(),
+                            NotificationEvent.STATUS_UPDATED);
                 }
+                notifyRps(proposal,
+                        "OVCAF rejected the proposal: \"" + proposal.getProjectTitle() + "\"",
+                        "Proposal Rejected", NotificationTypes.REJECTION);
+                break;
+            default:
+                // No decision, no notification.
                 break;
         }
     }
 
-    private void notifyRole(String role, Proposal proposal, String message, String title, String type) {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            if (role.equals(user.getRole())) {
-                notificationService.createNotification(user.getId(), message, title, type, proposal.getId());
-            }
-        }
+    /** Notifies both ORPS roles; the service de-duplicates an account that holds both. */
+    private void notifyRps(Proposal proposal, String message, String title, String type) {
+        notificationService.notifyRoles(
+                List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF),
+                message, title, type, proposal.getId(), NotificationEvent.STATUS_UPDATED);
     }
 
     /**

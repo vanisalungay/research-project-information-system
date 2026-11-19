@@ -7,6 +7,7 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -60,6 +61,7 @@ class ProposalServiceOcApprovalTest {
         service = new ProposalService(proposalRepository,
                 userRepository,
                 notificationService,
+                new ProposalNotificationPolicy(notificationService),
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),
@@ -312,8 +314,8 @@ class ProposalServiceOcApprovalTest {
 
         service.approveWithSpecialOrder(PROPOSAL_ID, "SO-2026-062", null, false, null);
 
-        verify(notificationService, never()).createNotification(
-                eq(9L), anyString(), anyString(), anyString(), any());
+        verify(notificationService, never()).notifyRoles(
+                eq(List.of("OVCAF")), anyString(), anyString(), anyString(), any(), any());
     }
 
     /**
@@ -329,7 +331,8 @@ class ProposalServiceOcApprovalTest {
 
         service.approveWithSpecialOrder(PROPOSAL_ID, "SO-2026-063", null, true, null);
 
-        verify(notificationService).createNotification(
-                eq(9L), anyString(), eq("Proposal for OVCAF Review"), eq("ENDORSEMENT"), eq(PROPOSAL_ID));
+        verify(notificationService).notifyRoles(
+                eq(List.of("OVCAF")), anyString(), eq("Proposal for OVCAF Review"),
+                eq("FUNDING"), eq(PROPOSAL_ID), any(NotificationEvent.class));
     }
 }

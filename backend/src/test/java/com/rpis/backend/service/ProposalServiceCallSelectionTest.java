@@ -24,7 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -51,7 +52,7 @@ class ProposalServiceCallSelectionTest {
         userRepository = mock(UserRepository.class);
         announcementService = mock(ProposalAnnouncementService.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 

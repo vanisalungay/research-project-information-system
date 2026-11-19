@@ -4,20 +4,26 @@ import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
-import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.util.AnnouncementStatus;
+import com.rpis.backend.util.NotificationEvent;
+import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,43 +39,13 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final ProposalAnnouncementRepository announcementRepository;
     private final ProposalRepository proposalRepository;
-
-    /**
-     * The notification types raised by the proposal review/processing workflow.
-     *
-     * <p>The RPS Admin does not take part in that workflow - the RPS Staff and the reviewing
-     * offices do - so these notifications are never returned to (and never marked read for)
-     * an RPS Admin account. The stored rows are left untouched: they stay in the database
-     * and every other role still reads them normally.
-     */
-    private static final Set<String> PROPOSAL_WORKFLOW_TYPES = Set.of(
-            "PROPOSAL_UPDATE", "REVIEW_REQUEST", "APPROVAL", "REVISION", "REJECTION", "FUNDING");
-
-    /** The one role that is not part of the proposal review/processing workflow. */
-    private static final String ROLE_RPS_ADMIN = UserRoles.RPS_ADMIN;
-
-    /**
-     * True when a notification must never reach this account: an RPS Admin and a
-     * proposal-workflow notification. Every other role/type pair stays visible.
-     */
-    private static boolean hiddenFrom(User user, Notification notification) {
-        if (user == null || notification == null) {
-            return false;
-        }
-        if (!ROLE_RPS_ADMIN.equalsIgnoreCase(user.getRole())) {
-            return false;
-        }
-        String type = notification.getType();
-        return type != null && PROPOSAL_WORKFLOW_TYPES.contains(type.toUpperCase(Locale.ROOT));
-    }
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationPreferencePolicy preferencePolicy;
 
     public List<Notification> getNotificationsForUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user)
-                .stream()
-                .filter(notification -> !hiddenFrom(user, notification))
-                .collect(Collectors.toList());
+        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
         fillAnnouncementDetails(notifications);
         fillProposalDocumentIds(notifications);
         return notifications;
@@ -89,7 +65,7 @@ public class NotificationService {
     private void fillProposalDocumentIds(List<Notification> notifications) {
         Set<Long> proposalIds = new HashSet<>();
         for (Notification notification : notifications) {
-            if (isProposalWorkflowNotification(notification)
+            if (NotificationTypes.isProposalWorkflow(notification.getType())
                     && notification.getProposalId() != null) {
                 proposalIds.add(notification.getProposalId());
             }
@@ -105,16 +81,11 @@ public class NotificationService {
                 .collect(Collectors.toMap(Proposal::getId, Proposal::getDocumentId));
 
         for (Notification notification : notifications) {
-            if (isProposalWorkflowNotification(notification)) {
+            if (NotificationTypes.isProposalWorkflow(notification.getType())) {
                 notification.setProposalDocumentId(
                         documentIds.get(notification.getProposalId()));
             }
         }
-    }
-
-    private static boolean isProposalWorkflowNotification(Notification notification) {
-        String type = notification.getType();
-        return type != null && PROPOSAL_WORKFLOW_TYPES.contains(type.toUpperCase(Locale.ROOT));
     }
 
     /**
@@ -174,9 +145,16 @@ public class NotificationService {
      */
     public Notification createNotification(Long userId, String message, String title, String type,
             Long proposalId, Long proposalAnnouncementId) {
+        return createNotification(userId, message, title, type, proposalId,
+                proposalAnnouncementId, null);
+    }
+
+    public Notification createNotification(Long userId, String message, String title, String type,
+            Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        return createNotificationForUser(user, message, title, type, proposalId, proposalAnnouncementId);
+        return createNotificationForUser(user, message, title, type, proposalId,
+                proposalAnnouncementId, event);
     }
 
     /**
@@ -194,8 +172,27 @@ public class NotificationService {
 
     public Notification createNotificationForUser(User user, String message, String title,
             String type, Long proposalId, Long proposalAnnouncementId) {
+        return createNotificationForUser(user, message, title, type, proposalId,
+                proposalAnnouncementId, null);
+    }
+
+    /**
+     * Writes a notification unless the recipient's saved preferences suppress it or an
+     * idempotency key has already produced it. Returning {@code null} means "nothing was
+     * written"; callers that ignore the return value are unaffected.
+     */
+    public Notification createNotificationForUser(User user, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
         if (user == null) {
             throw new IllegalArgumentException("A recipient account is required.");
+        }
+        if (!preferencePolicy.shouldNotify(user, type, event)) {
+            return null;
+        }
+        String dedupeKey = event == null ? null : event.dedupeKey();
+        if (dedupeKey != null && user.getId() != null
+                && notificationRepository.existsByUserIdAndDedupeKey(user.getId(), dedupeKey)) {
+            return null;
         }
         Notification notification = new Notification();
         notification.setUser(user);
@@ -204,8 +201,85 @@ public class NotificationService {
         notification.setType(type);
         notification.setProposalId(proposalId);
         notification.setProposalAnnouncementId(proposalAnnouncementId);
+        notification.setDedupeKey(dedupeKey);
         notification.setIsRead(false);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        // Delivered by NotificationRealtimePublisher only after the surrounding workflow
+        // transaction commits. When there is no transaction the listener runs immediately.
+        eventPublisher.publishEvent(new NotificationCreatedEvent(saved.getId(), user.getId()));
+        return saved;
+    }
+
+    /**
+     * Writes one notification to each distinct recipient. A user who appears twice in the
+     * supplied collection (for example a proponent who is also returned by a role query)
+     * receives exactly one row for the event. Null entries and accounts without an id are
+     * ignored rather than failing the workflow.
+     */
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId) {
+        return notifyUsers(recipients, message, title, type, proposalId,
+                proposalAnnouncementId, null);
+    }
+
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
+        if (recipients == null || recipients.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, User> unique = new LinkedHashMap<>();
+        for (User user : recipients) {
+            if (user != null && user.getId() != null) {
+                unique.putIfAbsent(user.getId(), user);
+            }
+        }
+        List<Notification> created = new ArrayList<>(unique.size());
+        for (User user : unique.values()) {
+            Notification notification = createNotificationForUser(
+                    user, message, title, type, proposalId, proposalAnnouncementId, event);
+            if (notification != null) {
+                created.add(notification);
+            }
+        }
+        return created;
+    }
+
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId) {
+        return notifyUsers(recipients, message, title, type, proposalId, null, null);
+    }
+
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId, NotificationEvent event) {
+        return notifyUsers(recipients, message, title, type, proposalId, null, event);
+    }
+
+    /**
+     * Writes the same notification to every approved account in the given roles. The roles
+     * are resolved with one query and the recipients are de-duplicated, so overlapping
+     * roles can never produce two rows for one account.
+     */
+    public List<Notification> notifyRoles(Collection<String> roles, String message, String title,
+            String type, Long proposalId) {
+        return notifyRoles(roles, message, title, type, proposalId, null);
+    }
+
+    public List<Notification> notifyRoles(Collection<String> roles, String message, String title,
+            String type, Long proposalId, NotificationEvent event) {
+        if (roles == null || roles.isEmpty()) {
+            return List.of();
+        }
+        Set<String> distinct = new LinkedHashSet<>();
+        for (String role : roles) {
+            if (role != null && !role.isBlank()) {
+                distinct.add(role.trim().toUpperCase(Locale.ROOT));
+            }
+        }
+        if (distinct.isEmpty()) {
+            return List.of();
+        }
+        return notifyUsers(userRepository.findByRoleIn(new ArrayList<>(distinct)),
+                message, title, type, proposalId, null, event);
     }
 
     @Transactional
@@ -213,32 +287,32 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
         notification.setIsRead(true);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        Long ownerId = saved.getUser() != null ? saved.getUser().getId() : null;
+        if (ownerId != null) {
+            eventPublisher.publishEvent(new NotificationChangedEvent(ownerId, "read"));
+        }
+        return saved;
     }
 
     /**
-     * Marks a notification as read on behalf of the authenticated caller. When the
-     * caller is restricted to their own records (a Proponent), the notification must
-     * belong to them; otherwise the request is rejected with 403.
+     * Marks a notification as read on behalf of the authenticated caller. The notification
+     * must belong to that caller; another account's notification id is rejected with 403,
+     * whatever role the caller holds.
      */
     @Transactional
-    public Notification markAsReadForCurrentUser(Long notificationId, Long requesterId, boolean restrictToOwner) {
+    public Notification markAsReadForCurrentUser(Long notificationId, Long requesterId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
-        if (restrictToOwner) {
-            Long ownerId = notification.getUser() != null ? notification.getUser().getId() : null;
-            if (ownerId == null || !ownerId.equals(requesterId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "You are not authorized to access this notification.");
-            }
-        }
-        // An account that can never see the notification must not be able to mark it read
-        // either: the row is returned untouched instead of being written.
-        if (hiddenFrom(notification.getUser(), notification)) {
-            return notification;
+        Long ownerId = notification.getUser() != null ? notification.getUser().getId() : null;
+        if (ownerId == null || !ownerId.equals(requesterId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to access this notification.");
         }
         notification.setIsRead(true);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        eventPublisher.publishEvent(new NotificationChangedEvent(requesterId, "read"));
+        return saved;
     }
 
     @Transactional
@@ -247,12 +321,9 @@ public class NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
         for (Notification notification : notifications) {
-            // A notification this account can never see is left exactly as it is, so
-            // "mark all as read" cannot silently touch it.
-            if (!hiddenFrom(user, notification)) {
-                notification.setIsRead(true);
-            }
+            notification.setIsRead(true);
         }
         notificationRepository.saveAll(notifications);
+        eventPublisher.publishEvent(new NotificationChangedEvent(userId, "read-all"));
     }
 }

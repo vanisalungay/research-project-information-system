@@ -140,6 +140,13 @@
         </p>
       </section>
     </template>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/oc-notification"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
@@ -149,6 +156,7 @@ import { useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { isSoDraft } from '@/utils/soDraft.js'

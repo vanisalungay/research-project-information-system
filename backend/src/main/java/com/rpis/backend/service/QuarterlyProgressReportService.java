@@ -8,12 +8,14 @@ import com.rpis.backend.model.QuarterlyObjective;
 import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.TerminalReportData;
 import com.rpis.backend.model.TerminalReportSection;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.model.WorkplanObjective;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationTypes;
 import com.rpis.backend.util.PercentageValue;
 import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +89,7 @@ public class QuarterlyProgressReportService {
     private final ProposalRepository proposalRepository;
     private final UploadStorage uploadStorage;
     private final OvcafValidationRepository ovcafValidationRepository;
+    private final NotificationService notificationService;
 
     public List<QuarterlyProgressReport> getReportsByProposal(Long proposalId) {
         return reportRepository.findByProposalIdOrderByCreatedAtDesc(proposalId);
@@ -390,16 +393,56 @@ public class QuarterlyProgressReportService {
      * project status are committed together, or neither is.</p>
      */
     private QuarterlyProgressReport submit(QuarterlyProgressReport report, Proposal proposal) {
+        boolean alreadyCompleted = PROPOSAL_COMPLETED.equals(proposal.getStatus());
         report.setStatus("SUBMITTED");
         report.setSubmittedAt(LocalDateTime.now());
         report.setSubmittedBy(proponentId(proposal));
         QuarterlyProgressReport saved = reportRepository.save(report);
         completeProjectWhenReportingFinished(proposal, saved);
+        boolean justCompleted = !alreadyCompleted && PROPOSAL_COMPLETED.equals(proposal.getStatus());
+        notifyReportSubmitted(proposal, saved, justCompleted);
         // The submission response carries the proposal status that resulted from this
         // request, so the client can show a project that just became COMPLETED without
         // waiting for a separate read.
         saved.setProposalStatus(proposal.getStatus());
         return saved;
+    }
+
+    /**
+     * Tells ORPS and OVCRIGE that a report was filed - they are the offices that monitor
+     * implementation and read the submitted reports. When this submission is also the
+     * final required stage the project is completed, so the proponent is told too and the
+     * event is raised once as a completion rather than as an ordinary report update.
+     */
+    private void notifyReportSubmitted(Proposal proposal, QuarterlyProgressReport report,
+            boolean justCompleted) {
+        if (proposal == null || proposal.getId() == null) {
+            return;
+        }
+        String label = TYPE_TERMINAL.equals(report.getReportType())
+                ? "Terminal Report"
+                : (report.getPeriod() == null ? "Quarterly Report" : report.getPeriod() + " Quarterly Report");
+        Long proposalId = proposal.getId();
+
+        if (justCompleted) {
+            notificationService.notifyRoles(
+                    List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE),
+                    "The final " + label + " was submitted for \"" + proposal.getProjectTitle()
+                            + "\"; the project is now complete.",
+                    "Project Completed", NotificationTypes.PROJECT_COMPLETION, proposalId);
+            if (proposal.getProponent() != null) {
+                notificationService.notifyUsers(List.of(proposal.getProponent()),
+                        "Your project \"" + proposal.getProjectTitle()
+                                + "\" is complete. All required reporting stages have been submitted.",
+                        "Project Completed", NotificationTypes.PROJECT_COMPLETION, proposalId);
+            }
+            return;
+        }
+
+        notificationService.notifyRoles(
+                List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE),
+                "A " + label + " was submitted for \"" + proposal.getProjectTitle() + "\".",
+                "Quarterly Report Submitted", NotificationTypes.QUARTERLY_REPORT, proposalId);
     }
 
     /**

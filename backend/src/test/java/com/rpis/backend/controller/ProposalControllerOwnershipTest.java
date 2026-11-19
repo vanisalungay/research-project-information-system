@@ -6,6 +6,7 @@ import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
+import com.rpis.backend.service.ProposalNotificationPolicy;
 import com.rpis.backend.service.PriorityAgendaService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
@@ -30,7 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -49,7 +51,7 @@ class ProposalControllerOwnershipTest {
         proposalRepository = mock(ProposalRepository.class);
         userRepository = mock(UserRepository.class);
         ProposalService service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), mock(ProposalAnnouncementService.class),
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(service,

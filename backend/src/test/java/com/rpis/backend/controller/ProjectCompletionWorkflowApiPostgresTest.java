@@ -3,6 +3,7 @@ package com.rpis.backend.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rpis.backend.dto.QuarterlyProgressReportRequest;
+import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.QuarterlyProgressReport;
 import com.rpis.backend.model.TerminalReportData;
@@ -10,6 +11,7 @@ import com.rpis.backend.model.TerminalReportSection;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.model.WorkplanObjective;
+import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import com.rpis.backend.repository.UserRepository;
@@ -74,12 +76,17 @@ class ProjectCompletionWorkflowApiPostgresTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private NotificationRepository notificationRepository;
+    @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private ObjectMapper objectMapper;
 
     private MockMvc mockMvc;
     private Proposal proposal;
+    private User proponent;
+    private User rps;
+    private User ovcrige;
 
     @BeforeEach
     void setUp() {
@@ -88,13 +95,16 @@ class ProjectCompletionWorkflowApiPostgresTest {
         jdbcTemplate.execute("TRUNCATE TABLE proposals RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
 
-        User proponent = new User();
+        proponent = new User();
         proponent.setName("Completion Proponent");
         proponent.setEmail("completion.proponent@msunaawan.edu.ph");
         proponent.setPassword("secret");
         proponent.setRole("PROPONENT");
         proponent.setStatus("APPROVED");
         User savedProponent = userRepository.saveAndFlush(proponent);
+
+        rps = account("Completion RPS", "completion.rps@msunaawan.edu.ph", "RPS_STAFF");
+        ovcrige = account("Completion OVCRIGE", "completion.ovcrige@msunaawan.edu.ph", "OVCRIGE");
 
         Proposal p = new Proposal();
         p.setProjectTitle("Completion Workflow Project");
@@ -121,6 +131,23 @@ class ProjectCompletionWorkflowApiPostgresTest {
     // ------------------------------------------------------------------
     // Request bodies, shaped like the JSON the form sends
     // ------------------------------------------------------------------
+
+    private User account(String name, String email, String role) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword("secret");
+        user.setRole(role);
+        user.setStatus("APPROVED");
+        return userRepository.saveAndFlush(user);
+    }
+
+    private long notifications(User recipient, String type, String title) {
+        return notificationRepository.findByUserOrderByCreatedAtDesc(recipient).stream()
+                .filter(notification -> type.equals(notification.getType()))
+                .filter(notification -> title.equals(notification.getTitle()))
+                .count();
+    }
 
     private QuarterlyProgressReportRequest quarterly(String period, String status) {
         QuarterlyProgressReportRequest request = new QuarterlyProgressReportRequest();
@@ -208,6 +235,28 @@ class ProjectCompletionWorkflowApiPostgresTest {
     // ------------------------------------------------------------------
     // The reported failure, through the exact endpoint the form calls
     // ------------------------------------------------------------------
+
+    @Test
+    void reportSubmissionsNotifyRpsAndOvcrigeAndCompletionNotifiesOnce() throws Exception {
+        submitQuarterly("Q1");
+        submitQuarterly("Q2");
+        submitQuarterly("Q3");
+
+        assertEquals(3, notifications(rps, "QUARTERLY_REPORT", "Quarterly Report Submitted"));
+        assertEquals(3, notifications(ovcrige, "QUARTERLY_REPORT", "Quarterly Report Submitted"));
+
+        Long terminalId = idOf(postReport(terminal("DRAFT"))
+                .andExpect(status().isCreated())
+                .andReturn());
+        putReport(terminalId, terminal("SUBMITTED")).andExpect(status().isOk());
+        flush();
+
+        assertEquals(1, notifications(proponent, "PROJECT_COMPLETION", "Project Completed"));
+        assertEquals(1, notifications(rps, "PROJECT_COMPLETION", "Project Completed"));
+        assertEquals(1, notifications(ovcrige, "PROJECT_COMPLETION", "Project Completed"));
+        assertEquals(3, notifications(rps, "QUARTERLY_REPORT", "Quarterly Report Submitted"),
+                "the final report must not also create a separate submission notification");
+    }
 
     @Test
     void submittingTheTerminalDraftThroughTheFormCompletesTheProjectAndReturnsCompleted() throws Exception {

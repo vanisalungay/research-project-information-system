@@ -145,7 +145,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
@@ -155,6 +156,8 @@ import { hasTerminalReportContent } from '@/utils/terminalReport'
 import { statusTone } from '@/utils/statusTone.js'
 import { reportStatusLabel } from '@/utils/statusCatalog.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+
+const route = useRoute()
 
 const projects = ref([])
 const loading = ref(true)
@@ -174,12 +177,26 @@ async function fetchProjects() {
   try {
     const res = await api.get('/api/quarterly-reports/eligible-projects')
     projects.value = res.data || []
+    await openRequestedProject()
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load projects.'
   } finally {
     loading.value = false
   }
 }
+
+/**
+ * A notification opens this page with `?proposalId=...`; open that project's report
+ * history instead of leaving the user on the master list.
+ */
+async function openRequestedProject() {
+  const requested = Number(route.query.proposalId)
+  if (!Number.isInteger(requested) || requested <= 0) return
+  const target = projects.value.find((p) => Number(p.id) === requested)
+  if (target) await openProject(target)
+}
+
+watch(() => route.query.proposalId, openRequestedProject)
 
 async function openProject(p) {
   selectedProject.value = p

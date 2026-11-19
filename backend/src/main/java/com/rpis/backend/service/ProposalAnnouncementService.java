@@ -11,6 +11,7 @@ import com.rpis.backend.repository.ProposalAnnouncementUpdateRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.util.AnnouncementStatus;
+import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -636,14 +637,12 @@ public class ProposalAnnouncementService {
     private void fanOutToProponents(ProposalAnnouncement announcement, String title, String message) {
         List<User> proponents = userRepository.findByRoleAndStatus("PROPONENT", "APPROVED");
 
-        for (User proponent : proponents) {
-            // proposalId stays null, exactly like the existing "new announcement"
-            // notification: the field references a proposal, while the announcement
-            // itself is carried by proposalAnnouncementId.
-            notificationService.createNotification(
-                    proponent.getId(), message, title, "PROPOSAL_ANNOUNCEMENT", null,
-                    announcement.getId());
-        }
+        // proposalId stays null, exactly like the existing "new announcement"
+        // notification: the field references a proposal, while the announcement itself
+        // is carried by proposalAnnouncementId. One row per account is guaranteed by the
+        // service even if the role query ever returns a duplicate.
+        notificationService.notifyUsers(proponents, message, title,
+                NotificationTypes.PROPOSAL_ANNOUNCEMENT, null, announcement.getId());
     }
 
     // ==================== UPDATE HISTORY ====================

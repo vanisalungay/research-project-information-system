@@ -295,12 +295,20 @@
         </table>
       </div>
     </section>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/notifications"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { announcementStatus } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'

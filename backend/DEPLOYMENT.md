@@ -148,6 +148,9 @@ for f in \
   migration-add-field-level-remarks.sql \
   migration-add-notification-fields.sql \
   migration-add-notification-preferences.sql \
+  migration-add-notification-preferences-configured.sql \
+  migration-add-notification-dedupe-key.sql \
+  migration-add-revision-deadline-index.sql \
   migration-add-priority-agendas.sql \
   migration-add-proposal-address-contact.sql \
   migration-add-proposal-announcement-link.sql \
@@ -511,7 +514,31 @@ operation.
 
 ---
 
-## 11. Deployment checklist
+## 11. Real-time notifications (SSE) and multiple instances
+
+Notification rows are always persisted. The live bell/badge uses a Server-Sent Events
+stream (`GET /api/notifications/stream`) authenticated with the ordinary Bearer token.
+The emitter registry is **in memory**, so it is correct for the single-instance
+deployment this repository describes.
+
+If the application is scaled to more than one instance:
+
+- an event committed on instance A is pushed only to streams connected to A;
+- streams connected to instance B still learn about it from the client's periodic
+  reconciliation (90 seconds while visible) and the focus/visibility/online refresh;
+- a load balancer with **sticky sessions** keeps a browser's stream on one instance and
+  is the smallest change;
+- a shared broker (for example Redis pub/sub) is the alternative if sticky sessions are
+  not available.
+
+Do not disable persistence or rely on the stream as the source of truth. A client that
+was offline when an event occurred receives the row on its next list refresh or
+reconnect. Do not add a broker or sticky-session requirement unless the deployment
+actually runs multiple instances.
+
+---
+
+## 12. Deployment checklist
 
 - [ ] Database backed up (`pg_dump`).
 - [ ] Upload directory backed up, with a manifest.

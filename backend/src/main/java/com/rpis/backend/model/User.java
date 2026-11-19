@@ -81,6 +81,18 @@ public class User {
     private List<String> notifyDeadlines = new ArrayList<>();
 
     /**
+     * Whether the account has explicitly saved the Notifications tab.
+     *
+     * <p>Without this flag a never-configured account and an account that deliberately
+     * cleared every box are indistinguishable: both store an empty list. False means
+     * "use the defaults" (optional proposal alerts on, deadline reminders off); true
+     * makes an empty list a real "all optional alerts off" choice. Core workflow alerts
+     * are delivered regardless.
+     */
+    @Column(name = "notify_preferences_configured")
+    private Boolean notifyPreferencesConfigured = false;
+
+    /**
      * Designation / title of the account, printed on documents the account issues
      * (for example "Dean" or "Department Chair" on the official endorsement letter).
      * Optional for every other role.

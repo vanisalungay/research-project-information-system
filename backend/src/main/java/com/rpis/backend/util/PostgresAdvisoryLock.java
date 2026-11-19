@@ -96,6 +96,9 @@ public final class PostgresAdvisoryLock implements AutoCloseable {
      */
     public static final int PURPOSE_COOPERATING_AGENCIES = 4;
 
+    /** {@code objid} for the hourly revision-deadline reminder sweep. */
+    public static final int PURPOSE_REVISION_DEADLINE_REMINDERS = 5;
+
     private final DataSource dataSource;
     private final Connection connection;
     private final int purpose;

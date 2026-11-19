@@ -51,7 +51,7 @@ class RiskManagementPlanSaveTest {
         UserRepository userRepository = mock(UserRepository.class);
         ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class),
                 new LocalUploadStorage("uploads"));

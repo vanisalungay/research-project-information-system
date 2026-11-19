@@ -173,28 +173,42 @@
           <!-- Section 1 -->
           <div class="notif-section">
             <h3 class="section-heading">Proposal Submissions & Reviews</h3>
-            <p class="section-desc">Select when you want to get notified regarding proposals status.</p>
+            <p class="section-desc">Select which optional proposal updates you want to receive.</p>
             <div class="notif-grid">
-              <label class="notif-item" v-for="notif in proposalNotifications" :key="notif">
-                <input type="checkbox" v-model="notifications.proposals" :value="notif" />
+              <label class="notif-item" v-for="option in proposalOptions" :key="option.key">
+                <input type="checkbox" v-model="notifications.proposals" :value="option.key" />
                 <div class="notif-text">
-                  <span class="notif-title">{{ notif }}</span>
-                  <span class="notif-subtitle">Receive immediate alerts when this update is triggered.</span>
+                  <span class="notif-title">{{ option.label }}</span>
+                  <span class="notif-subtitle">{{ option.description }}</span>
                 </div>
               </label>
             </div>
+            <p class="section-desc notif-mandatory-note">
+              Core workflow alerts — review requests, returns, rejections, approvals,
+              financial actions and endorsement requests — are always delivered.
+            </p>
           </div>
 
           <!-- Section 2 -->
           <div class="notif-section">
             <h3 class="section-heading">Deadlines & Deliverables</h3>
-            <p class="section-desc">Set date threshold notifications for evaluation reviews.</p>
+            <p class="section-desc">Set date reminders for deadlines that exist in RPIS.</p>
             <div class="notif-grid">
-              <label class="notif-item" v-for="notif in deadlineNotifications" :key="notif">
-                <input type="checkbox" v-model="notifications.deadlines" :value="notif" />
+              <label
+                class="notif-item"
+                v-for="option in deadlineOptions"
+                :key="option.key"
+                :class="{ 'notif-item--unavailable': !option.available }"
+              >
+                <input
+                  type="checkbox"
+                  v-model="notifications.deadlines"
+                  :value="option.key"
+                  :disabled="!option.available"
+                />
                 <div class="notif-text">
-                  <span class="notif-title">{{ notif }}</span>
-                  <span class="notif-subtitle">Receive calendar warnings prior to evaluation closure.</span>
+                  <span class="notif-title">{{ option.label }}</span>
+                  <span class="notif-subtitle">{{ option.description }}</span>
                 </div>
               </label>
             </div>
@@ -230,6 +244,12 @@ import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ElectronicSignaturePanel from '@/components/ElectronicSignaturePanel.vue'
 import { useDialog } from '@/composables/useDialog'
+import {
+  DEADLINE_OPTIONS,
+  PROPOSAL_OPTIONS,
+  initialDeadlineSelection,
+  initialProposalSelection,
+} from '@/utils/notificationPreferences.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -252,20 +272,11 @@ const specializationsList = [
   'Data Analytics'
 ]
 
-// The Notification Routing options a user can subscribe to. The selection made
-// here is stored on the account (see saveNotif) - the options are configuration,
-// the choice is data.
-const proposalNotifications = [
-  'New Proposal Assigned',
-  'Proponent Submitted Revision',
-  'New Attachment Uploaded',
-  'Proposal Status Updated'
-]
-
-const deadlineNotifications = [
-  'Evaluation Deadline Reminders',
-  'Revision Deadline Reminders'
-]
+// The Notification Routing options a user can subscribe to. The visible labels and
+// stable keys live in one module so a copy edit cannot silently change what a saved
+// preference means.
+const proposalOptions = PROPOSAL_OPTIONS
+const deadlineOptions = DEADLINE_OPTIONS
 
 // Security Form Reactive Binding
 const securityForm = reactive({
@@ -322,14 +333,11 @@ const loadUserProfile = async () => {
           personalForm.specialization = user.specialization ? user.specialization.split(',') : []
           securityForm.oldName = user.name || ''
 
-          // Notification Routing: the selection stored on the account, so it is the
-          // same on every browser and every instance.
-          notifications.proposals = Array.isArray(user.notifyProposals)
-            ? [...user.notifyProposals]
-            : []
-          notifications.deadlines = Array.isArray(user.notifyDeadlines)
-            ? [...user.notifyDeadlines]
-            : []
+          // Notification Routing: the selection stored on the account. Legacy labels
+          // are normalized to stable keys, and an account that never saved the tab
+          // shows the effective defaults (optional proposal alerts on, reminders off).
+          notifications.proposals = initialProposalSelection(user)
+          notifications.deadlines = initialDeadlineSelection(user)
         }
       }
     }
@@ -463,6 +471,7 @@ const saveNotif = async () => {
         ...userStore.user,
         notifyProposals: response.data.notifyProposals ?? [],
         notifyDeadlines: response.data.notifyDeadlines ?? [],
+        notifyPreferencesConfigured: response.data.notifyPreferencesConfigured ?? true,
       })
     }
 
@@ -782,6 +791,27 @@ input:focus {
 
 .notif-item:hover {
   border-color: #ffd803;
+}
+
+.notif-item--unavailable {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.notif-item--unavailable:hover {
+  border-color: var(--color-border, #cbd5e1);
+}
+
+.notif-item--unavailable input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.notif-mandatory-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .notif-item input[type="checkbox"] {

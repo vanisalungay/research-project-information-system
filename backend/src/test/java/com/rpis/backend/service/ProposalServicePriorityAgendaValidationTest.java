@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -53,7 +54,7 @@ class ProposalServicePriorityAgendaValidationTest {
         announcementService = mock(ProposalAnnouncementService.class);
         priorityAgendaService = mock(PriorityAgendaService.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService,
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), priorityAgendaService, new LocalUploadStorage("uploads"));
 

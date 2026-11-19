@@ -55,7 +55,8 @@ class QuarterlyProgressReportServiceTest {
         proposalRepository = mock(ProposalRepository.class);
         ovcafValidationRepository = mock(OvcafValidationRepository.class);
         service = new QuarterlyProgressReportService(reportRepository, proposalRepository,
-                new LocalUploadStorage("uploads"), ovcafValidationRepository);
+                new LocalUploadStorage("uploads"), ovcafValidationRepository,
+                mock(NotificationService.class));
 
         Proposal proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);

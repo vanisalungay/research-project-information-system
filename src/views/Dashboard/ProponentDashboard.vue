@@ -285,55 +285,12 @@
         </template>
       </section>
 
-      <section class="dash-section">
-        <header class="dash-section-head">
-          <span class="dash-section-icon" v-html="icons.bell"></span>
-          <h3 class="dash-section-title">Recent notifications</h3>
-          <span v-if="unreadCount > 0" class="end-badge is-pending">
-            {{ unreadBadgeLabel(unreadCount) }} unread
-          </span>
-          <div class="dash-section-actions">
-            <router-link class="end-btn is-link" to="/notifications">View all</router-link>
-          </div>
-        </header>
-
-        <template v-if="notificationsLoading">
-          <span v-for="n in 3" :key="n" class="dash-skeleton dash-skeleton--row"></span>
-        </template>
-
-        <p v-else-if="recentNotificationsList.length === 0" class="dash-empty">
-          You have no notifications yet. Calls for Proposal, review decisions and deadline
-          reminders will appear here.
-        </p>
-
-        <ul v-else class="dash-notes">
-          <li
-            v-for="notification in recentNotificationsList"
-            :key="notification.id"
-            class="dash-note"
-            :class="{ 'dash-note--unread': isUnreadNotification(notification) }"
-          >
-            <span class="dash-note-icon" v-html="icons.bell"></span>
-            <span class="dash-note-body">
-              <span class="dash-note-title">{{ notification.title }}</span>
-              <p class="dash-note-text">{{ notification.message }}</p>
-              <span class="dash-note-foot">
-                <span class="dash-note-date">{{ formatTimestamp(notification.createdAt) }}</span>
-                <span v-if="isUnreadNotification(notification)" class="end-badge is-pending">
-                  Unread
-                </span>
-              </span>
-            </span>
-            <router-link
-              class="end-btn is-link dash-note-action"
-              to="/notifications"
-              :aria-label="`Open the notifications page for: ${notification.title}`"
-            >
-              Open
-            </router-link>
-          </li>
-        </ul>
-      </section>
+      <NotificationPreview
+        title="Recent notifications"
+        :limit="5"
+        view-all-to="/notifications"
+        empty-text="You have no notifications yet. Calls for Proposal, review decisions and deadline reminders will appear here."
+      />
     </div>
   </div>
 </template>
@@ -344,6 +301,7 @@ import { computed, onMounted, ref } from 'vue'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { useNotificationStore } from '@/stores/notifications'
 import { useUserDataStore } from '@/stores/userData'
 import { announcementStatus } from '@/utils/announcementStatus'
@@ -365,7 +323,7 @@ import {
   fundingProgramLabel,
   issuedLetterCount,
 } from '@/utils/endorsement.js'
-import { isUnreadNotification, unreadBadgeLabel } from '@/utils/notifications.js'
+import { unreadBadgeLabel } from '@/utils/notifications.js'
 import { PROPOSAL_SUMMARY_BUCKETS, proposalSummaryCounts } from '@/utils/proposalSummary.js'
 import { statusTone } from '@/utils/statusTone.js'
 import {
@@ -375,7 +333,6 @@ import {
   revisionDaysLeft,
   revisionDaysLeftLabel,
 } from '@/utils/revisionDeadline.js'
-import { formatTimestamp } from '@/utils/timestamps.js'
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -515,9 +472,7 @@ const recentEndorsements = computed(() => endorsements.value.slice(0, 3))
  * Notifications come from the shared store: the shell already reads them for the bell and
  * the sidebar badge, so the dashboard shows the same records without a second request.
  */
-const recentNotificationsList = computed(() => notificationStore.recent)
 const unreadCount = computed(() => notificationStore.unreadCount)
-const notificationsLoading = computed(() => notificationStore.loading)
 
 /** The readable reason a request failed, or the fallback sentence. */
 const failureMessage = (reason, fallback) => reason?.response?.data?.error || fallback

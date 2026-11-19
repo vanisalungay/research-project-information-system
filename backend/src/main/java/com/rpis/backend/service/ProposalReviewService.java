@@ -3,9 +3,12 @@ package com.rpis.backend.service;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
 import com.rpis.backend.model.User;
+import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalReviewRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.NotificationEvent;
+import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,10 +92,8 @@ public class ProposalReviewService {
         } else if ("APPROVED".equals(decision)) {
             if ("REC".equals(role)) {
                 targetStatus = "REC_APPROVED";
-            } else if ("OVCRIGE".equals(role) || "OVC".equals(role)) {
+            } else if ("OVCRIGE".equals(role)) {
                 targetStatus = "OVC_APPROVED";
-            } else if ("OC".equals(role)) {
-                targetStatus = "APPROVED";
             } else {
                 targetStatus = "APPROVED";
             }
@@ -104,35 +105,45 @@ public class ProposalReviewService {
         }
         proposalRepository.save(proposal);
 
-        // Notify Proponent (returns are routed to RPS instead)
+        String title = proposal.getProjectTitle();
+
+        // The proponent is told the outcome of an evaluation unless the proposal was
+        // returned for revision - a return goes to ORPS first, who forwards it with the
+        // deadline, so the proponent learns about it from that message instead.
         if (!returnedForRevision && proposal.getProponent() != null) {
-            notificationService.createNotification(
-                    proposal.getProponent().getId(),
-                    "A review decision has been submitted on your proposal \"" + proposal.getProjectTitle() +
-                            "\". Role: " + role + ", Decision: " + decision + ", Overall Proposal Status: " + targetStatus
-            );
+            String type = "REJECTED".equals(decision)
+                    ? NotificationTypes.REJECTION
+                    : NotificationTypes.APPROVAL;
+            String notificationTitle = "REJECTED".equals(decision)
+                    ? "Proposal Rejected"
+                    : "Proposal Evaluated";
+            notificationService.notifyUsers(List.of(proposal.getProponent()),
+                    "A review decision has been submitted on your proposal \"" + title
+                            + "\". Decision: " + decision + ".",
+                    notificationTitle, type, proposalId, NotificationEvent.STATUS_UPDATED);
         }
 
-        // Notify relevant reviewers or roles for next step
+        // Notify the office that owns the next step. Each role is resolved by query, so
+        // the whole user table is never loaded.
         if ("REC_APPROVED".equals(targetStatus)) {
-            notifyRole("OVCRIGE", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by REC and is ready for OVC review.");
+            notificationService.notifyRoles(List.of(UserRoles.OVCRIGE),
+                    "Proposal \"" + title + "\" was approved by REC and is ready for OVC review.",
+                    "Proposal Approved by REC", NotificationTypes.APPROVAL, proposalId,
+                    NotificationEvent.STATUS_UPDATED);
         } else if ("OVC_APPROVED".equals(targetStatus)) {
-            notifyRole("OC", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by OVC and is ready for OC final approval.");
+            notificationService.notifyRoles(List.of(UserRoles.OC),
+                    "Proposal \"" + title + "\" was approved by OVC and is ready for OC final approval.",
+                    "Final Approval Required", NotificationTypes.APPROVAL, proposalId,
+                    NotificationEvent.STATUS_UPDATED);
         } else if (returnedForRevision) {
-            String msg = "Proposal \"" + proposal.getProjectTitle() + "\" was returned for revision by " + role + " and awaits RPS review.";
-            notifyRole("RPS_ADMIN", msg);
-            notifyRole("RPS_STAFF", msg);
+            notificationService.notifyRoles(
+                    List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF),
+                    "Proposal \"" + title + "\" was returned for revision by " + role
+                            + " and awaits RPS review.",
+                    "Revision Request Received", NotificationTypes.REVISION, proposalId,
+                    NotificationEvent.STATUS_UPDATED);
         }
 
         return review;
-    }
-
-    private void notifyRole(String role, String message) {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            if (role.equalsIgnoreCase(user.getRole())) {
-                notificationService.createNotification(user.getId(), message);
-            }
-        }
     }
 }

@@ -5,6 +5,7 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -30,8 +31,8 @@ import static org.mockito.Mockito.when;
  * The SO draft rules, at the service boundary. A draft records what OC has entered
  * so far, but it is not an OC approval: it must leave the status and
  * {@code soUploadedAt} untouched (OVCAF treats both as proof the approval
- * completed), never notify downstream roles, and never stage a file it cannot
- * reference or leave an orphaned upload behind.
+ * completed), notify OVCAF only when a meaningful draft field changed, and never
+ * stage a file it cannot reference or leave an orphaned upload behind.
  */
 class ProposalServiceSoDraftTest {
 
@@ -53,6 +54,7 @@ class ProposalServiceSoDraftTest {
         service = new ProposalService(proposalRepository,
                 mock(UserRepository.class),
                 notificationService,
+                new ProposalNotificationPolicy(notificationService),
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),
@@ -87,7 +89,10 @@ class ProposalServiceSoDraftTest {
         assertEquals(STORED_PATH, saved.getSoFilePath());
         assertEquals("Working notes.", saved.getRemarks());
         verify(proposalRepository, times(1)).save(proposal);
-        verify(notificationService, never()).createNotification(any(), any(), any(), any(), any());
+        verify(notificationService).notifyRoles(
+                eq(java.util.List.of("OVCAF")), anyString(),
+                eq("Special Order Draft Updated"), eq("SPECIAL_ORDER_DRAFT"),
+                eq(PROPOSAL_ID), any(NotificationEvent.class));
     }
 
     @Test
@@ -100,6 +105,8 @@ class ProposalServiceSoDraftTest {
         assertNull(saved.getSoUploadedAt());
         assertEquals("FOR_OC_APPROVAL", saved.getStatus());
         verify(proposalRepository, times(1)).save(proposal);
+        verify(notificationService, never()).notifyRoles(
+                any(), anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -193,7 +200,45 @@ class ProposalServiceSoDraftTest {
         assertNull(saved.getSoUploadedAt());
         assertEquals("FOR_OC_APPROVAL", saved.getStatus());
         verify(proposalRepository, times(2)).save(proposal);
-        verify(notificationService, never()).createNotification(any(), any(), any(), any(), any());
+        // The first save (budget=true) is meaningful; switching to without-budget removes
+        // OVCAF from the route, so the second save is not a task for that office.
+        verify(notificationService, times(1)).notifyRoles(
+                any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void savingTheSameDraftAgainDoesNotNotifyOvcafTwice() {
+        service.saveSpecialOrderDraft(PROPOSAL_ID, "SO-2026-111", null, true, "Notes", false);
+
+        service.saveSpecialOrderDraft(PROPOSAL_ID, "SO-2026-111", null, true, "Notes", false);
+
+        verify(notificationService, times(1)).notifyRoles(
+                any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void aNotesOnlyEditDoesNotNotifyOvcaf() {
+        proposal.setSoNumber("SO-2026-112");
+        proposal.setNeedsBudget(Boolean.TRUE);
+
+        service.saveSpecialOrderDraft(PROPOSAL_ID, "SO-2026-112", null, true, "New notes", false);
+
+        verify(notificationService, never()).notifyRoles(
+                any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void anOmittedBudgetClassificationDoesNotWipeTheEarlierChoice() {
+        proposal.setSoNumber("SO-2026-113");
+        proposal.setNeedsBudget(Boolean.TRUE);
+
+        Proposal saved = service.saveSpecialOrderDraft(
+                PROPOSAL_ID, "SO-2026-114", null, null, null, false);
+
+        assertEquals(Boolean.TRUE, saved.getNeedsBudget(),
+                "omitting the field must not silently change the budget route");
+        verify(notificationService, times(1)).notifyRoles(
+                any(), anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test

@@ -34,7 +34,7 @@
            RPS) easy to pick out of the list. Nothing is hidden by default. -->
       <select v-model="filterKind" class="filter-select">
         <option value="all">All kinds</option>
-        <option v-if="showProposalKind" value="proposal">Proposal updates</option>
+        <option value="proposal">Proposal updates</option>
         <option value="call">Calls for Proposals</option>
         <option value="endorsement">Endorsements</option>
         <option value="other">Other</option>
@@ -85,7 +85,7 @@
           <div class="notification-content">
             <div class="notification-header">
               <h3 class="notification-title">{{ notification.title }}</h3>
-              <span class="notification-time">{{ formatDateTime(notification.createdAt) }}</span>
+              <RelativeTime class="notification-time" :value="notification.createdAt" />
             </div>
 
             <!-- Call for Proposal notification: the call it is about, with its CURRENT
@@ -118,7 +118,7 @@
                      stored documentId (MSUN-ORPS-DA-028-2026-REV00). It is omitted when the
                      record has no proposal or no identifier, never replaced by the database id. -->
                 <span
-                  v-if="notificationKind(notification) === 'proposal' && notification.proposalDocumentId"
+                  v-if="notificationKind(notification, userStore.user?.role) === 'proposal' && notification.proposalDocumentId"
                   class="notification-proposal"
                 >
                   {{ notification.proposalDocumentId }}
@@ -134,7 +134,7 @@
             </div>
           </div>
 
-          <div class="notification-arrow">
+          <div v-if="canOpen(notification)" class="notification-arrow">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
@@ -173,42 +173,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { useUserDataStore, UserRole } from '@/stores/userData'
-import api from '@/utils/api'
+import { useUserDataStore } from '@/stores/userData'
+import { useNotificationStore } from '@/stores/notifications'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import RelativeTime from '@/components/RelativeTime.vue'
 import { useDialog } from '@/composables/useDialog'
-import { notificationDestination } from '@/utils/notificationTarget'
-import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import { resolveNotificationDestination } from '@/utils/notificationDestination'
 import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
 import { groupNotifications, notificationKind } from '@/utils/notificationGroups'
 
-const { dialogState, showAlert, showConfirm } = useDialog()
+const { dialogState, showAlert } = useDialog()
 
 const router = useRouter()
 
 const userStore = useUserDataStore()
+const notificationStore = useNotificationStore()
+const { notifications, loading, error, unreadCount } = storeToRefs(notificationStore)
 
-const notifications = ref([])
-const loading = ref(false)
-const error = ref(null)
 const searchQuery = ref('')
 const filterStatus = ref('all')
 /** The kind of notification to show; the list stays newest-first within a kind. */
 const filterKind = ref('all')
-
-/**
- * The RPS Admin takes no part in the proposal review/processing workflow, so the backend
- * never returns those notifications for that role (see NotificationService) and the
- * "Proposal updates" kind is offered only to the roles that actually receive them.
- */
-const showProposalKind = computed(() => userStore.user?.role !== UserRole.RPS_ADMIN)
-
-const unreadCount = computed(() => {
-  return notifications.value.filter(n => !n.isRead).length
-})
 
 const filteredNotifications = computed(() => {
   let result = notifications.value
@@ -222,20 +211,22 @@ const filteredNotifications = computed(() => {
 
   // Filter by kind (proposal updates, calls, endorsements, ...)
   if (filterKind.value !== 'all') {
-    result = result.filter(n => notificationKind(n) === filterKind.value)
+    result = result.filter(
+      n => notificationKind(n, userStore.user?.role) === filterKind.value,
+    )
   }
 
   // Filter by search query
   if (searchQuery.value.trim()) {
     const keyword = searchQuery.value.toLowerCase()
-    result = result.filter(n => 
+    result = result.filter(n =>
       n.title?.toLowerCase().includes(keyword) ||
-      n.message?.toLowerCase().includes(keyword)
+      n.message?.toLowerCase().includes(keyword),
     )
   }
 
-  // Sort by date (newest first)
-  return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  // Sort a copy: the store's array must never be reordered by a filter view.
+  return [...result].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
 /**
@@ -244,7 +235,10 @@ const filteredNotifications = computed(() => {
  * The groups are always rendered in full - there is no collapsed or compact state.
  */
 const notificationGroups = computed(() => {
-  const { proposalUpdates, others } = groupNotifications(filteredNotifications.value)
+  const { proposalUpdates, others } = groupNotifications(
+    filteredNotifications.value,
+    userStore.user?.role,
+  )
   const groups = []
   if (others.length) {
     groups.push({ key: 'others', title: '', items: others })
@@ -259,93 +253,36 @@ const notificationGroups = computed(() => {
   return groups
 })
 
-const fetchNotifications = async () => {
-  loading.value = true
-  error.value = null
-  try {
-    const userId = userStore.user?.id
-    if (!userId) {
-      error.value = 'User not authenticated'
-      return
-    }
-    const res = await api.get(`/api/notifications?userId=${userId}`)
-    notifications.value = Array.isArray(res.data) ? res.data : []
-  } catch (err) {
-    console.error(err)
-    error.value = 'Failed to load notifications'
-  } finally {
-    loading.value = false
-  }
-}
+const fetchNotifications = () => notificationStore.refresh(userStore.user?.id)
 
-const markAsRead = async (id) => {
-  try {
-    await api.put(`/api/notifications/${id}/read`)
-    const notification = notifications.value.find(n => n.id === id)
-    if (notification) {
-      notification.isRead = true
-    }
-  } catch (err) {
-    console.error(err)
-    await showAlert('Failed to mark notification as read', { type: 'error', title: 'Error' })
-  }
-}
+const markAsRead = (id) => notificationStore.markAsRead(id)
 
-const markAllAsRead = async () => {
-  try {
-    const userId = userStore.user?.id
-    await api.put('/api/notifications/read-all', null, {
-      params: { userId }
-    })
-    notifications.value.forEach(n => n.isRead = true)
-  } catch (err) {
-    console.error(err)
-    await showAlert('Failed to mark all notifications as read', { type: 'error', title: 'Error' })
-  }
-}
+const markAllAsRead = () => notificationStore.markAllAsRead()
 
-const handleNotificationClick = (notification) => {
-  // Mark as read when clicked. The request is not awaited: the read-state update is
-  // best-effort and must never block or cancel the navigation below.
+const canOpen = (notification) =>
+  Boolean(resolveNotificationDestination(notification, userStore.user?.role))
+
+const handleNotificationClick = async (notification) => {
+  // The read-state write is best-effort and never blocks navigation.
   if (!notification.isRead) {
-    markAsRead(notification.id)
+    notificationStore.markAsRead(notification.id)
   }
 
-  // The destination the notification itself carries: an endorsement notification opens
-  // the endorsement request it is about (the Dean's review screen, or the Proponent's own
-  // request), a Call for Proposals notification opens that exact announcement. Both are
-  // resolved from the saved record and the signed-in role, never from the notification
-  // text, and only ever to a page that role may open.
-  const destination = notificationDestination(notification, userStore.user?.role)
+  const destination = resolveNotificationDestination(
+    notification,
+    userStore.user?.role,
+  )
   if (destination) {
     router.push(destination)
     return
   }
 
-  // A proposal notification (a submission, a review request, an approval ...) opens the
-  // proposal on the page the signed-in role owns: the RPS roles on the proposal details
-  // screen, REC on its own detailed view, OVCRIGE on the review screen, OVCAF on financial
-  // validation and the Chancellor on the final-approval screen. It used to hard-code the
-  // Proponent's /detailed-proposal URL - a page none of those roles owns - and did a full
-  // page reload. A notification with no usable reference only marks itself read.
-  const proposalDestination = proposalNotificationDestination(notification, userStore.user?.role)
-  if (proposalDestination) {
-    router.push(proposalDestination)
-  }
-}
-
-const formatDateTime = (dateString) => {
-  if (!dateString) return 'N/A'
-  const date = new Date(dateString)
-  if (Number.isNaN(date.getTime())) return 'N/A'
-
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  // A valid notification always carries a record reference; when the record is gone,
+  // or this role may not open it, say so instead of silently landing on a Dashboard.
+  await showAlert(
+    'This notification is not linked to a record you can open.',
+    { type: 'info', title: 'Nothing to open' },
+  )
 }
 
 const formatType = (type) => {
@@ -356,12 +293,20 @@ const formatType = (type) => {
 const getTypeClass = (type) => {
   const typeMap = {
     'PROPOSAL_UPDATE': 'type-proposal',
+    'PROPOSAL_ENDORSED': 'type-proposal',
     'REVIEW_REQUEST': 'type-review',
     'APPROVAL': 'type-approval',
     'REVISION': 'type-revision',
     'REJECTION': 'type-rejection',
     'ENDORSEMENT': 'type-endorsement',
-    'FUNDING': 'type-funding'
+    'FUNDING': 'type-funding',
+    'PROPOSAL_ANNOUNCEMENT': 'type-default',
+    'QUARTERLY_REPORT': 'type-proposal',
+    'PROJECT_COMPLETION': 'type-approval',
+    'DEAN_ASSIGNMENT': 'type-default',
+    'SPECIAL_ORDER_DRAFT': 'type-funding',
+    'REVISION_DEADLINE_REMINDER': 'type-revision',
+    'EVALUATION_DEADLINE_REMINDER': 'type-revision',
   }
   return typeMap[type] || 'type-default'
 }

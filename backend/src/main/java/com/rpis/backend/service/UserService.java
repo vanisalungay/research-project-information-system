@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -433,11 +434,23 @@ public class UserService {
         // Notification Routing preferences (Manage Profile -> Notifications). Null
         // means "this client does not manage them" and leaves the stored selection
         // untouched; an empty list is a real value (the user cleared every box).
+        // Legacy display labels are normalized to stable keys. Saving either list marks
+        // the account as explicitly configured, which is what makes an empty list mean
+        // "all optional alerts off" instead of "never opened".
+        boolean preferencesSubmitted = updatedUser.getNotifyProposals() != null
+                || updatedUser.getNotifyDeadlines() != null;
         if (updatedUser.getNotifyProposals() != null) {
-            user.setNotifyProposals(updatedUser.getNotifyProposals());
+            user.setNotifyProposals(new ArrayList<>(
+                    com.rpis.backend.util.NotificationPreferenceKeys.normalize(
+                            updatedUser.getNotifyProposals())));
         }
         if (updatedUser.getNotifyDeadlines() != null) {
-            user.setNotifyDeadlines(updatedUser.getNotifyDeadlines());
+            user.setNotifyDeadlines(new ArrayList<>(
+                    com.rpis.backend.util.NotificationPreferenceKeys.normalize(
+                            updatedUser.getNotifyDeadlines())));
+        }
+        if (preferencesSubmitted) {
+            user.setNotifyPreferencesConfigured(true);
         }
 
         User saved = userRepository.save(user);

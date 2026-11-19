@@ -65,7 +65,7 @@ class ProposalServiceDuplicateTest {
         notificationService = mock(NotificationService.class);
         announcementService = mock(ProposalAnnouncementService.class);
         versionService = mock(ProposalVersionService.class);
-        service = new ProposalService(proposalRepository, userRepository, notificationService,
+        service = new ProposalService(proposalRepository, userRepository, notificationService, new ProposalNotificationPolicy(notificationService),
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 

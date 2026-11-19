@@ -7,6 +7,8 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationEvent;
+import com.rpis.backend.util.NotificationTypes;
 import com.rpis.backend.util.ProposalStatus;
 import com.lowagie.text.pdf.PdfReader;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,7 @@ public class ProposalService {
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ProposalNotificationPolicy proposalNotificationPolicy;
     private final ProposalAnnouncementService proposalAnnouncementService;
     private final ProposalVersionService proposalVersionService;
     private final ProposalSectionRemarkService proposalSectionRemarkService;
@@ -873,10 +876,9 @@ public class ProposalService {
             proposalSectionRemarkService.closeActiveRound(proposal);
         }
 
-        // Send system notification for submissions
-        notifySubscribedRoles(
-                proposal,
-                "Proposal Update: " + proposal.getProjectTitle());
+        // Notify the RPS that submitted work is waiting (a resubmission gets its own
+        // wording so it is not reported as a brand-new proposal).
+        proposalNotificationPolicy.notifyForStatus(proposal, isRevisionResubmission);
 
         return proposal;
     }
@@ -978,11 +980,17 @@ public class ProposalService {
         String storedStatus = ProposalStatus.requireSupportedStatus(upper);
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if (storedStatus.equals(previousStatus)) {
+            // A retried or repeated request must not create a second notification for the
+            // same transition.
+            return proposal;
+        }
         proposal.setStatus(storedStatus);
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
     }
@@ -1004,7 +1012,7 @@ public class ProposalService {
     @Transactional
     public Proposal saveProposalDirect(Proposal proposal) {
         proposal = proposalRepository.save(proposal);
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
         return proposal;
     }
 
@@ -1130,7 +1138,7 @@ public class ProposalService {
             recordStatusChange(proposal, "FOR_OC_APPROVAL", targetStatus, normalisedNotes);
 
             Proposal saved = proposalRepository.save(proposal);
-            notifySubscribedRoles(saved, null);
+            proposalNotificationPolicy.notifyForStatus(saved);
             if (previousPath != null && !previousPath.isBlank()
                     && (storedPath != null || removeSoFile)) {
                 deleteStoredSpecialOrderAfterCommit(previousPath);
@@ -1201,6 +1209,11 @@ public class ProposalService {
         }
 
         String previousPath = proposal.getSoFilePath();
+        String previousFileName = proposal.getSoFileName();
+        String previousSoNumber = proposal.getSoNumber() == null
+                ? null
+                : proposal.getSoNumber().trim();
+        Boolean previousNeedsBudget = proposal.getNeedsBudget();
         boolean keepsStoredFile = previousPath != null && !previousPath.isBlank() && !removeSoFile;
         if (normalisedSoNumber.isEmpty() && soBytes == null && !keepsStoredFile) {
             throw new IllegalArgumentException(SPECIAL_ORDER_DRAFT_EMPTY_MESSAGE);
@@ -1225,11 +1238,28 @@ public class ProposalService {
         }
 
         try {
-            proposal.setSoNumber(normalisedSoNumber.isEmpty() ? null : normalisedSoNumber);
-            proposal.setNeedsBudget(needsBudget);
+            String newSoNumber = normalisedSoNumber.isEmpty() ? null : normalisedSoNumber;
+            // An omitted budget classification must not wipe an earlier choice; the SO
+            // draft form may legitimately send only the notes or a file on a later save.
+            Boolean newNeedsBudget = needsBudget != null ? needsBudget : previousNeedsBudget;
+            String newFileName = previousFileName;
             if (storedPath != null) {
-                proposal.setSoFileName(specialOrderDisplayName(soFile, soFormat));
-                proposal.setSoFilePath(storedPath);
+                newFileName = specialOrderDisplayName(soFile, soFormat);
+            } else if (removeSoFile) {
+                newFileName = null;
+            }
+            String newPath = storedPath != null ? storedPath : (removeSoFile ? null : previousPath);
+
+            boolean numberChanged = !Objects.equals(previousSoNumber, newSoNumber);
+            boolean budgetChanged = !Objects.equals(previousNeedsBudget, newNeedsBudget);
+            boolean fileChanged = storedPath != null
+                    || (removeSoFile && previousPath != null && !previousPath.isBlank());
+
+            proposal.setSoNumber(newSoNumber);
+            proposal.setNeedsBudget(newNeedsBudget);
+            if (storedPath != null) {
+                proposal.setSoFileName(newFileName);
+                proposal.setSoFilePath(newPath);
             } else if (removeSoFile) {
                 proposal.setSoFileName(null);
                 proposal.setSoFilePath(null);
@@ -1239,10 +1269,12 @@ public class ProposalService {
             } else if (draftExisted) {
                 proposal.setRemarks(null);
             }
-            // Deliberately no soUploadedAt and no status/notification change: the draft
-            // is not an OC approval.
+            // Deliberately no soUploadedAt and no status change: the draft is not an OC
+            // approval. It may still notify OVCAF that a meaningful draft changed.
 
             Proposal saved = proposalRepository.save(proposal);
+            notifyOvcafOfMeaningfulDraftChange(saved, numberChanged, budgetChanged, fileChanged,
+                    newNeedsBudget);
             if (previousPath != null && !previousPath.isBlank() && !previousPath.equals(storedPath)
                     && (storedPath != null || removeSoFile)) {
                 deleteStoredSpecialOrderAfterCommit(previousPath);
@@ -1254,6 +1286,47 @@ public class ProposalService {
             }
             throw e;
         }
+    }
+
+    /**
+     * Tells OVCAF about a Special Order draft only when something that matters changed:
+     * the SO number, the document, or the budget routing. An identical re-save and a
+     * notes-only edit produce nothing. OVCAF is skipped entirely when the proposal is
+     * classified without a budget, because Finance has no action on it.
+     */
+    private void notifyOvcafOfMeaningfulDraftChange(Proposal saved, boolean numberChanged,
+            boolean budgetChanged, boolean fileChanged, Boolean afterBudget) {
+        if (!numberChanged && !budgetChanged && !fileChanged) {
+            return;
+        }
+        // Only a proposal that is still routed to OVCAF needs the draft update. Switching
+        // to "without budget" removes Finance from the route, so it is not a task for them.
+        if (!Boolean.TRUE.equals(afterBudget)) {
+            return;
+        }
+
+        String soNumber = saved.getSoNumber() == null || saved.getSoNumber().isBlank()
+                ? "not set"
+                : saved.getSoNumber();
+        String routing = Boolean.TRUE.equals(saved.getNeedsBudget())
+                ? "with budget"
+                : Boolean.FALSE.equals(saved.getNeedsBudget())
+                        ? "without budget"
+                        : "budget classification not set";
+        String document = saved.getSoFilePath() != null && !saved.getSoFilePath().isBlank()
+                ? "document attached"
+                : "no document attached";
+
+        String message = "The Chancellor's Office updated the Special Order draft for \""
+                + saved.getProjectTitle() + "\" (SO No. " + soNumber + "; " + routing + "; "
+                + document + "). Final approval is still pending. The proposal becomes "
+                + "available to OVCAF after the Chancellor's Office completes final approval.";
+
+        NotificationEvent event = NotificationEvent.soDraftChanged(
+                numberChanged || budgetChanged, fileChanged);
+        notificationService.notifyRoles(List.of(UserRoles.OVCAF), message,
+                "Special Order Draft Updated", NotificationTypes.SPECIAL_ORDER_DRAFT,
+                saved.getId(), event);
     }
 
     /** Largest accepted Special Order document in bytes. */
@@ -1425,7 +1498,7 @@ public class ProposalService {
                 proposal, sectionRemarks, returnedByOffice, returnedByUserId, returnedByName);
 
         // Notify RPS to review and forward the revision request.
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
     }
@@ -1462,7 +1535,10 @@ public class ProposalService {
         recordStatusChange(proposal, "FOR_OC_APPROVAL", "REC_APPROVED", normalisedRemarks);
 
         Proposal saved = proposalRepository.save(proposal);
-        notifySubscribedRoles(saved, null);
+        // The status is REC_APPROVED so OVCRIGE can act on it, but the event is a return
+        // from the Chancellor's Office - not an REC recommendation - and the proponent
+        // must not be told the proposal was approved.
+        proposalNotificationPolicy.notifyOvcrigeReturned(saved, normalisedRemarks);
         return saved;
     }
 
@@ -1564,8 +1640,8 @@ public class ProposalService {
                             + "\" has been returned for revision. Deadline: "
                             + (deadlineLdt != null ? deadlineLdt.toLocalDate().toString() : "—"),
                     "Revision Required",
-                    "REVISION",
-                    proposal.getId());
+                    NotificationTypes.REVISION,
+                    proposal.getId(), null, NotificationEvent.STATUS_UPDATED);
         }
 
         return proposal;
@@ -2714,262 +2790,4 @@ public class ProposalService {
         }
     }
 
-    private void notifySubscribedRoles(Proposal proposal, String message) {
-        String status = proposal.getStatus();
-        if (status == null) {
-            return;
-        }
-
-        for (User user : recipientsFor(proposal, status)) {
-            String role = user.getRole();
-
-            switch (status) {
-                // Newly submitted proposal -> notify RPS staff/admins to check.
-                // Both spellings mean the same submission (legacy rows keep SUBMITTED).
-                case ProposalStatus.FOR_REVIEW:
-                case ProposalStatus.LEGACY_SUBMITTED:
-                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "New proposal submitted for review: \"" + proposal.getProjectTitle() + "\"",
-                                "New Proposal Submitted",
-                                "PROPOSAL_UPDATE",
-                                proposal.getId());
-                    }
-                    break;
-
-                // RPS endorsed it to OVCRIGE -> notify OVCRIGE to review & coordinate
-                case "ENDORSED":
-                    if ("OVCRIGE".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal has been endorsed to OVCRIGE: \"" + proposal.getProjectTitle() + "\"",
-                                "Proposal Endorsed",
-                                "ENDORSEMENT",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCRIGE forwarded to REC -> notify REC to conduct technical/merit evaluation
-                case "UNDER_REVIEW":
-                    if ("REC".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Proposal awaiting REC review and evaluation: \"" + proposal.getProjectTitle() + "\"",
-                                "Review Request",
-                                "REVIEW_REQUEST",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC approved & recommended -> notify OVCRIGE to prepare chancellor final
-                // approval list
-                case "REC_APPROVED":
-                    if ("OVCRIGE".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "REC has evaluated and recommended proposal for approval: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Proposal Approved by REC",
-                                "APPROVAL",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCRIGE forwarded to OVCAF -> notify OVCAF to review & endorse
-                case "FOR_OVCAF_APPROVAL":
-                    if ("OVCAF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is ready for your review and endorsement: \"" + proposal.getProjectTitle()
-                                        + "\"",
-                                "Proposal for OVCAF Review",
-                                "ENDORSEMENT",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCAF endorsed to OC -> notify OC (Chancellor) for final approval
-                case "FOR_OC_APPROVAL":
-                    if ("OC".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
-                                "Final Approval Required",
-                                "APPROVAL",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Returned by a reviewing office -> notify RPS to review and forward.
-                case "RETURNED_TO_RPS":
-                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal was returned for revision and awaits your review and forwarding: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Revision Request Received",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC returned for revision -> notify proponent to revise
-                case "REC_REVISION":
-                case "REVISION":
-                    // RPS returned for revision -> notify proponent to revise
-                case "RPS_RETURNED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Your proposal \"" + proposal.getProjectTitle()
-                                        + "\" has been returned for revision. Please check feedback.",
-                                "Revision Required",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC rejected or Chancellor rejected -> notify proponent
-                case "REC_REJECTED":
-                case "REJECTED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected.",
-                                "Proposal Rejected",
-                                "REJECTION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to
-                // authorize budget. The Chancellor's WITHOUT BUDGET classification
-                // approves the proposal for immediate implementation, so Finance is not
-                // asked to endorse a budget it was told does not apply. A record that is
-                // merely missing the classification keeps the previous behaviour.
-                case "APPROVED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Congratulations! Your proposal \"" + proposal.getProjectTitle()
-                                        + "\" has received final approval by the Chancellor.",
-                                "Proposal Approved",
-                                "APPROVAL",
-                                proposal.getId());
-                    } else if ("OVCAF".equals(role) && !Boolean.FALSE.equals(proposal.getNeedsBudget())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is approved and ready for budget endorsement: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Budget Endorsement Required",
-                                "FUNDING",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Budget ready for release -> notify OVCAF (Finance)
-                case "READY_FOR_RELEASE":
-                    if ("OVCAF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget processing requested for proposal: \"" + proposal.getProjectTitle() + "\"",
-                                "Budget Processing Request",
-                                "FUNDING",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Funds released -> notify proponent & RPS (RII/DARES) to monitor
-                // implementation
-                case "RELEASED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Implementation funds have been successfully released for your project: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Funds Released",
-                                "FUNDING",
-                                proposal.getId());
-                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Funds released. Ready for implementation monitoring: \"" + proposal.getProjectTitle()
-                                        + "\"",
-                                "Implementation Monitoring",
-                                "PROPOSAL_UPDATE",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Returned by OVCAF -> notify proponent & RPS
-                case "RETURNED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget release request for your proposal \"" + proposal.getProjectTitle()
-                                        + "\" was returned.",
-                                "Budget Request Returned",
-                                "REVISION",
-                                proposal.getId());
-                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget release was returned by Finance Office for proposal: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Budget Request Returned",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-            }
-        }
-    }
-
-    /**
-     * The accounts a proposal status change actually concerns.
-     *
-     * <p>This is the fix for the measured write-path bottleneck. The previous
-     * implementation started from {@code userRepository.findAll()}, so every status
-     * change loaded <em>every</em> account in the system and iterated all of them just
-     * to find the two or three that matched. With the 518-account load-test data set
-     * that was ~500 rows of loading per proposal write, and it grows linearly with the
-     * user table - exactly the wrong shape for a university-wide system.
-     *
-     * <p>Behaviour is unchanged: the same statuses still notify the same accounts,
-     * because the switch inside {@link #notifySubscribedRoles} is untouched and each
-     * case still re-checks the role. This method only narrows the candidate set, so a
-     * role that is not returned here can never receive a notification it received
-     * before - and the proponent is included for the statuses whose case tests for
-     * them.
-     */
-    private List<User> recipientsFor(Proposal proposal, String status) {
-        switch (status) {
-            case ProposalStatus.FOR_REVIEW, ProposalStatus.LEGACY_SUBMITTED,
-                    "RETURNED_TO_RPS", "RELEASED", "RETURNED":
-                return userRepository.findByRoleIn(List.of("RPS_ADMIN", "RPS_STAFF"));
-            case "ENDORSED", "REC_APPROVED":
-                return userRepository.findByRoleIn(List.of("OVCRIGE"));
-            case "UNDER_REVIEW":
-                return userRepository.findByRoleIn(List.of("REC"));
-            case "FOR_OVCAF_APPROVAL", "READY_FOR_RELEASE":
-                return userRepository.findByRoleIn(List.of("OVCAF"));
-            case "APPROVED": {
-                // Notifies the proponent and Finance.
-                List<User> recipients = new ArrayList<>(userRepository.findByRoleIn(List.of("OVCAF")));
-                if (proposal.getProponent() != null) {
-                    recipients.add(proposal.getProponent());
-                }
-                return recipients;
-            }
-            default: {
-                // The revision/rejection statuses notify only the proponent; a status
-                // not listed at all notifies nobody.
-                if (proposal.getProponent() != null) {
-                    return List.of(proposal.getProponent());
-                }
-                return List.of();
-            }
-        }
-    }
 }

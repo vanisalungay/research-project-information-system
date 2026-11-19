@@ -114,10 +114,24 @@ test('the Dean opens the endorsement request itself', () => {
     name: ENDORSEMENT_REVIEW_ROUTE,
     params: { id: 42 },
   })
-  // Any other reviewing role that receives one is sent to the same review screen.
-  assert.deepEqual(notificationDestination(notification, 'RPS_ADMIN'), {
-    name: ENDORSEMENT_REVIEW_ROUTE,
+  // A role that never receives a Dean endorsement request has no destination, instead of
+  // being sent to the Dean's review screen with an id it cannot resolve.
+  for (const role of ['RPS_ADMIN', 'RPS_STAFF', 'REC', 'OC']) {
+    assert.equal(notificationDestination(notification, role), null)
+  }
+})
+
+test('a historical ENDORSEMENT row addressed to OVCRIGE or OVCAF opens the proposal', () => {
+  // Before PROPOSAL_ENDORSED existed, the proposal-forwarding notification used
+  // ENDORSEMENT for those two offices. Their `proposalId` is a proposal id.
+  const notification = { type: ENDORSEMENT_NOTIFICATION_TYPE, proposalId: 42 }
+
+  assert.deepEqual(notificationDestination(notification, 'OVCRIGE'), {
+    name: 'OvcReviewProposal',
     params: { id: 42 },
+  })
+  assert.deepEqual(notificationDestination(notification, 'OVCAF'), {
+    path: '/ovcaf/proposals/42',
   })
 })
 
@@ -146,18 +160,21 @@ test('an endorsement notification without a usable request opens the endorsement
   }
 })
 
-test('an announcement notification still opens its announcement for every role', () => {
+test('an announcement notification opens the announcement for the Proponent only', () => {
   const notification = {
     type: 'PROPOSAL_ANNOUNCEMENT',
     proposalId: null,
     proposalAnnouncementId: 14,
   }
 
-  for (const role of [PROPONENT_ROLE, 'DEAN']) {
-    assert.deepEqual(notificationDestination(notification, role), {
-      name: ANNOUNCEMENT_DETAILS_ROUTE,
-      params: { id: 14 },
-    })
+  assert.deepEqual(notificationDestination(notification, PROPONENT_ROLE), {
+    name: ANNOUNCEMENT_DETAILS_ROUTE,
+    params: { id: 14 },
+  })
+  // The announcement details page belongs to the Proponent; another role must not be
+  // sent to a page it cannot open.
+  for (const role of ['DEAN', 'RPS_ADMIN', 'OVCRIGE', 'OVCAF', 'REC', 'OC']) {
+    assert.equal(notificationDestination(notification, role), null)
   }
 })
 

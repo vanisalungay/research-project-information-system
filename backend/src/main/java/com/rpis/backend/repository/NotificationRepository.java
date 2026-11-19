@@ -10,4 +10,7 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findByUserOrderByCreatedAtDesc(User user);
+
+    /** True when a generated notification with this idempotency key already exists. */
+    boolean existsByUserIdAndDedupeKey(Long userId, String dedupeKey);
 }
