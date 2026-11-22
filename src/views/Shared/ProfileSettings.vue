@@ -82,10 +82,10 @@
               id="fullName"
               type="text"
               v-model="personalForm.fullName"
-              placeholder="Dela Cruz, Juan, M., Jr."
+              placeholder="Juan Dela Cruz"
               @blur="personalForm.fullName = formatPersonName(personalForm.fullName)"
             />
-            <PersonNameHint />
+            <FullNameHint />
           </div>
           <div class="field-group">
             <label for="email">Email Address</label>
@@ -160,10 +160,10 @@
                 id="newName"
                 type="text"
                 v-model="securityForm.newName"
-                placeholder="Dela Cruz, Juan, M., Jr."
+                placeholder="Juan Dela Cruz"
                 @blur="securityForm.newName = formatPersonName(securityForm.newName)"
               />
-              <PersonNameHint />
+              <FullNameHint />
             </div>
             <div class="field-group">
               <label for="confirmName">Confirm New Full Name</label>
@@ -319,9 +319,9 @@ import ElectronicSignaturePanel from '@/components/ElectronicSignaturePanel.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import PasswordRequirements from '@/components/PasswordRequirements.vue'
 import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
-import PersonNameHint from '@/components/PersonNameHint.vue'
+import FullNameHint from '@/components/FullNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
-import { formatPersonName } from '@/utils/personName'
+import { firstLastNameError, formatPersonName } from '@/utils/personName'
 import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 import {
   DEADLINE_OPTIONS,
@@ -393,6 +393,10 @@ const securitySubmitDisabled = computed(
 )
 
 // Personal Info Form Reactive Binding
+// The name currently stored on the account. A legacy "Last, First" stored name is
+// preserved as-is: only a newly entered name has to follow the First Name Last Name rule.
+const loadedName = ref('')
+
 const personalForm = reactive({
   fullName: '',
   email: '',
@@ -419,6 +423,7 @@ const loadUserProfile = async () => {
       // request is in flight. The authoritative values are then read from the
       // backend below.
       personalForm.fullName = storedUser.name || ''
+      loadedName.value = storedUser.name || ''
       personalForm.email = storedUser.email || ''
       personalForm.department = storedUser.departmentOffice || ''
       personalForm.contact = storedUser.contactNumber || ''
@@ -432,6 +437,7 @@ const loadUserProfile = async () => {
         const user = response.data
         if (user) {
           personalForm.fullName = user.name || ''
+          loadedName.value = user.name || ''
           personalForm.email = user.email || ''
           personalForm.department = user.departmentOffice || ''
           personalForm.contact = user.contactNumber || ''
@@ -481,8 +487,16 @@ const saveSecurity = async () => {
     return showAlert('Please fill out at least one change field.', { type: 'warning', title: 'Validation Error' })
   }
 
-  if (securityForm.newName && securityForm.newName !== securityForm.confirmName) {
-    return showAlert('New username confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
+  // A newly entered account name is First Name first, then Last Name - the
+  // "Last, First" order is reserved for names inside proposal documents.
+  if (securityForm.newName) {
+    const nameError = firstLastNameError(securityForm.newName)
+    if (nameError) {
+      return showAlert(nameError, { type: 'error', title: 'Name Required' })
+    }
+    if (securityForm.newName !== securityForm.confirmName) {
+      return showAlert('New username confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
+    }
   }
 
   // The password block is validated as a unit, against the same rules the backend
@@ -569,6 +583,17 @@ const saveSecurity = async () => {
 const savePersonal = async () => {
   if (!personalForm.fullName.trim() || !personalForm.email.trim()) {
     return showAlert('Full Name and Email Address are required.', { type: 'warning', title: 'Validation Error' })
+  }
+
+  // Only a name that was actually edited is re-validated; an unchanged legacy
+  // stored name must not block saving the other personal fields.
+  personalForm.fullName = formatPersonName(personalForm.fullName)
+  const nameChanged = personalForm.fullName.trim() !== loadedName.value.trim()
+  if (nameChanged) {
+    const nameError = firstLastNameError(personalForm.fullName)
+    if (nameError) {
+      return showAlert(nameError, { type: 'error', title: 'Name Required' })
+    }
   }
 
   try {

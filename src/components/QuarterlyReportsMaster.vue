@@ -40,7 +40,7 @@
           <tbody>
             <tr v-for="r in selectedReports" :key="r.id">
               <td class="report-name">{{ reportName(r) }}</td>
-              <td class="report-date">{{ formatDate(r.submittedAt) || '—' }}</td>
+              <td class="report-date">{{ formatReportDate(r.submittedAt) || '—' }}</td>
               <td>
                 <span class="status-badge" :class="statusTone(r.status)">
                   {{ reportStatusLabel(r.status) }}
@@ -157,6 +157,12 @@ import { hasTerminalReportContent } from '@/utils/terminalReport'
 import { statusTone } from '@/utils/statusTone.js'
 import { reportStatusLabel } from '@/utils/statusCatalog.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import {
+  isTerminalReport,
+  reportName,
+  reportPeriodLabel,
+  formatReportDate,
+} from '@/utils/reportViewing.js'
 
 const route = useRoute()
 
@@ -219,7 +225,7 @@ async function openProject(p) {
 // every quarterly progress report opens the read-only three page report modal.
 // Both are read only - the report id of the clicked row is the record they load.
 function viewReport(r) {
-  if (isTerminal(r)) {
+  if (isTerminalReport(r)) {
     if (hasStructuredTerminal(r)) {
       terminalDoc.value = r
       return
@@ -227,7 +233,7 @@ function viewReport(r) {
     terminalModal.value = {
       reportId: r.id,
       fileName: r.terminalReportFileName || '',
-      periodLabel: periodLabel(r),
+      periodLabel: reportPeriodLabel(r),
     }
     return
   }
@@ -251,36 +257,6 @@ function printTerminalDocument() {
     title: `Terminal Report - ${terminalDoc.value?.projectTitle || ''}`,
     element,
   })
-}
-
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
-}
-// Reporting stages 1-3 are quarterly progress reports (each paired with a
-// Project Workplan); the fourth stage is the Terminal Report.
-function isTerminal(r) {
-  return r?.reportType === 'TERMINAL_REPORT'
-}
-
-// The Project Workplan is structured form data (workplan_json), not a file, and
-// is displayed inside the read-only report viewer (page 3).
-function reportTypeLabel(r) {
-  return isTerminal(r) ? 'Terminal Report' : 'Quarterly Progress Report'
-}
-
-function periodLabel(r) {
-  if (isTerminal(r)) return ''
-  return `${r.period || ''} ${r.year || ''}`.trim()
-}
-
-/**
- * Report column value, derived from the stored record: the terminal report is
- * named by its type, and each quarterly progress report by its reporting period
- * (e.g. "Quarterly Progress Report — Q3 2026").
- */
-function reportName(r) {
-  const period = periodLabel(r)
-  return period ? `${reportTypeLabel(r)} — ${period}` : reportTypeLabel(r)
 }
 
 onMounted(fetchProjects)

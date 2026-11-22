@@ -208,7 +208,10 @@ test('the account control shows the signed-in user and keeps the dropdown', () =
   assert.match(HEADER, /\{\{ userStore\.user\?\.name \?\? 'Guest' \}\}/)
   assert.match(HEADER, /\{\{ formatRole\(userStore\.user\?\.role\) \}\}/)
   assert.match(HEADER, /v-for="menuItem in menuItems"/)
-  assert.match(HEADER, /case 'LOGOUT':/)
+  // Signing out is no longer a header menu item: it lives at the bottom of the sidebar.
+  assert.doesNotMatch(HEADER, /case 'LOGOUT':/)
+  assert.match(SIDEBAR, /Sign Out/, 'the sidebar owns the one Sign Out action')
+  assert.match(SIDEBAR, /@click="signOut"/)
   // The example account in the reference is never hardcoded.
   assert.doesNotMatch(HEADER, /Proponent User/)
 })
@@ -276,8 +279,8 @@ test('every role keeps its navigation items and the role filter', () => {
     '/budget-processing',
     '/endorsed-proposals',
     '/ovc-quarterly-reports',
-    '/ovcaf/inbox',
-    '/ovcaf/reports',
+    '/ovcaf/proposals',
+    '/ovcaf/quarterly-reports',
     '/assigned-proposals',
     '/manage-profile',
   ]) {

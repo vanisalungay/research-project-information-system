@@ -125,6 +125,14 @@
     <div v-if="showToast" class="toast" :class="toastType">
       {{ toastMessage }}
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -132,6 +140,10 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import NotificationPreview from '@/components/NotificationPreview.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
+
+const { dialogState, showConfirm } = useDialog()
 
 const users = ref([])
 const isLoading = ref(true)
@@ -170,6 +182,12 @@ const showNotification = (message, type = 'success') => {
 }
 
 const approveUser = async (user) => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Approve the account of ${user.name}? The account will be able to sign in with its assigned role.`,
+    { title: 'Approve Account', type: 'warning', confirmText: 'Approve' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     await api.put(`/api/users/${user.id}/approve`)
@@ -184,6 +202,12 @@ const approveUser = async (user) => {
 }
 
 const rejectUser = async (user) => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Reject the account of ${user.name}? The account will not be able to sign in.`,
+    { title: 'Reject Account', type: 'danger', confirmText: 'Reject Account' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     await api.put(`/api/users/${user.id}/reject`)

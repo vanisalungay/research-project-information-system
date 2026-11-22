@@ -832,7 +832,7 @@ const fetchFieldRemarks = async (proposalId) => {
   }
 }
 
-const { dialogState, showAlert } = useDialog()
+const { dialogState, showAlert, showConfirm } = useDialog()
 const duplicating = ref(false)
 /** True while the Call for Proposal picker of "Make a Copy" is open. */
 const showCallPicker = ref(false)
@@ -871,6 +871,13 @@ const createProposalCopy = async (call) => {
     return
   }
   if (duplicating.value) return
+
+  const confirmed = await showConfirm(
+    `Create a new draft from "${proposal.value.projectTitle || 'this proposal'}" under ` +
+      `"${call.name}"? The original proposal is not changed.`,
+    { title: 'Make a Copy', type: 'warning', confirmText: 'Create Draft Copy' },
+  )
+  if (!confirmed) return
 
   duplicating.value = true
   try {

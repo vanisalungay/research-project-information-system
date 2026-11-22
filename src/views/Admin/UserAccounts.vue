@@ -49,7 +49,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="user in filteredUsers" :key="user.id">
+          <tr v-for="user in visibleUsers" :key="user.id">
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>
@@ -111,6 +111,16 @@
           </tr>
         </tbody>
       </table>
+      <PaginationBar
+        v-if="filteredUsers.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredUsers.length"
+        item-label="account"
+        item-label-plural="accounts"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
 
     <!-- Create User Modal -->
@@ -131,12 +141,20 @@
     />
 
     <!-- Reset Password Modal: the same compact dialog language as Create user account. -->
-    <div v-if="showResetModal" class="adm-overlay" @click.self="closeResetModal">
+    <div
+      v-if="showResetModal"
+      class="adm-overlay"
+      @click.self="closeResetModal"
+      @keydown.esc="closeResetModal"
+    >
       <div
+        ref="resetModal"
         class="adm-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="reset-password-title"
+        tabindex="-1"
+        @keydown="onResetKeydown"
       >
         <header class="adm-header">
           <span class="adm-header-icon" aria-hidden="true">
@@ -167,7 +185,8 @@
           </button>
         </header>
 
-        <div class="adm-body">
+        <form class="adm-form" @submit.prevent="resetPassword">
+          <div class="adm-body">
           <p v-if="resetError" class="adm-error" role="alert">{{ resetError }}</p>
           <p v-if="resetSuccess" class="adm-success" role="status">{{ resetSuccess }}</p>
 
@@ -230,42 +249,44 @@
             The password changes immediately. Share it securely with the user; they can
             change it later from Account Settings.
           </p>
-        </div>
+          </div>
 
-        <footer class="adm-footer">
-          <button
-            type="button"
-            class="adm-btn adm-btn--secondary"
-            :disabled="resetLoading"
-            @click="closeResetModal"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="adm-btn adm-btn--primary"
-            :disabled="resetLoading || !resetPasswordValid"
-            @click="resetPassword"
-          >
-            <span v-if="resetLoading" class="adm-spinner" aria-hidden="true"></span>
-            <span>{{ resetLoading ? 'Resetting…' : 'Reset password' }}</span>
-            <svg v-if="!resetLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="8" cy="15" r="4" />
-              <path d="m11 12 8-8" />
-              <path d="m18 5 2 2" />
-            </svg>
-          </button>
-        </footer>
+          <footer class="adm-footer">
+            <button
+              type="button"
+              class="adm-btn adm-btn--secondary"
+              :disabled="resetLoading"
+              @click="closeResetModal"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="adm-btn adm-btn--primary"
+              :disabled="resetLoading || !resetPasswordValid"
+            >
+              <span v-if="resetLoading" class="adm-spinner" aria-hidden="true"></span>
+              <span>{{ resetLoading ? 'Resetting…' : 'Reset password' }}</span>
+              <svg v-if="!resetLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="8" cy="15" r="4" />
+                <path d="m11 12 8-8" />
+                <path d="m18 5 2 2" />
+              </svg>
+            </button>
+          </footer>
+        </form>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import '@/assets/adminModal.css'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
@@ -294,6 +315,10 @@ const confirmPassword = ref('')
 const resetError = ref('')
 const resetSuccess = ref('')
 const resetLoading = ref(false)
+const resetModal = ref(null)
+let resetCloseTimer = null
+let resetTrigger = null
+let bodyOverflowBefore = ''
 
 // The reset button waits for a password that satisfies every requirement and a
 // matching confirmation; the server re-validates the same policy.
@@ -309,6 +334,20 @@ const filteredUsers = computed(() => {
     revokedRolesOf(u).join(' ').toLowerCase().includes(keyword)
   )
 })
+
+// Accounts page their own filtered list; the total is the real number of matching
+// accounts, not the number of rows currently rendered.
+const {
+  page,
+  pageSize,
+  pageItems: visibleUsers,
+  setPage,
+  setPageSize,
+  reset: resetPage,
+} = usePagination(filteredUsers)
+
+// A new search is a new result set: start at its first page.
+watch(search, resetPage)
 
 /**
  * Every role the account holds. The API returns the primary role first and the full
@@ -413,16 +452,54 @@ const onDeanChanged = async () => {
 }
 
 const openResetModal = (user) => {
+  if (resetCloseTimer !== null) {
+    clearTimeout(resetCloseTimer)
+    resetCloseTimer = null
+  }
+  resetTrigger = document.activeElement
+  bodyOverflowBefore = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
   selectedUser.value = user
   newPassword.value = ''
   confirmPassword.value = ''
   resetError.value = ''
   resetSuccess.value = ''
   showResetModal.value = true
+  nextTick(() => resetModal.value?.querySelector('#resetNewPassword')?.focus())
+}
+
+/** Keep Tab inside the reset dialog while it is open. */
+const onResetKeydown = (event) => {
+  if (event?.key !== 'Tab' || !resetModal.value) return
+  const focusable = [...resetModal.value.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => element.offsetParent !== null)
+  if (focusable.length === 0) return
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
 }
 
 const closeResetModal = () => {
+  // A reset in flight must not be dismissed: the request would still complete while the
+  // administrator loses the success or failure feedback.
+  if (resetLoading.value) return
+  if (resetCloseTimer !== null) {
+    clearTimeout(resetCloseTimer)
+    resetCloseTimer = null
+  }
   showResetModal.value = false
+  document.body.style.overflow = bodyOverflowBefore
+  if (resetTrigger && typeof resetTrigger.focus === 'function') {
+    resetTrigger.focus()
+  }
+  resetTrigger = null
   selectedUser.value = null
   newPassword.value = ''
   confirmPassword.value = ''
@@ -431,6 +508,8 @@ const closeResetModal = () => {
 }
 
 const resetPassword = async () => {
+  // Enter submits the form; a second submit while the request is in flight is ignored.
+  if (resetLoading.value) return
   resetError.value = ''
   resetSuccess.value = ''
 
@@ -456,7 +535,8 @@ const resetPassword = async () => {
       password: newPassword.value
     })
     resetSuccess.value = `Password for ${selectedUser.value.name} has been reset successfully.`
-    setTimeout(() => {
+    resetCloseTimer = setTimeout(() => {
+      resetCloseTimer = null
       closeResetModal()
     }, 2000)
   } catch (err) {
@@ -473,6 +553,16 @@ const resetPassword = async () => {
 }
 
 onMounted(loadUsers)
+
+onBeforeUnmount(() => {
+  if (resetCloseTimer !== null) {
+    clearTimeout(resetCloseTimer)
+    resetCloseTimer = null
+  }
+  if (showResetModal.value) {
+    document.body.style.overflow = bodyOverflowBefore
+  }
+})
 </script>
 
 <style scoped>
@@ -672,101 +762,4 @@ td {
   font-weight: 600;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal-box {
-  background: white;
-  padding: 28px;
-  border-radius: 12px;
-  width: 420px;
-  max-width: 90vw;
-}
-
-.modal-box h3 {
-  font-size: 20px;
-  color: #1f2937;
-  margin-bottom: 16px;
-}
-
-.user-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-}
-
-.user-info p {
-  margin: 4px 0;
-  font-size: 14px;
-  color: #475569;
-}
-
-.form-group {
-  margin-bottom: 14px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 6px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  border-color: #2452ff;
-}
-
-.success-text {
-  color: #16a34a;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-/* Layout only; the action colours come from assets/actions.css. */
-.cancel-btn {
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.confirm-btn {
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.confirm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>

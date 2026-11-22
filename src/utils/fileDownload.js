@@ -99,8 +99,8 @@ export function downloadAllFiles(files) {
  * @param {'workplan'|'terminal'} docType which attached document to fetch
  * @param {string} [fileName] suggested download file name
  */
-export async function downloadReportDocument(reportId, docType, fileName) {
-  const res = await api.get(`/api/quarterly-reports/${reportId}/documents/${docType}`, {
+export async function downloadReportDocument(reportId, docType, fileName, basePath = '/api/quarterly-reports') {
+  const res = await api.get(`${basePath}/${reportId}/documents/${docType}`, {
     responseType: 'blob',
   })
   const url = window.URL.createObjectURL(res.data)
@@ -141,8 +141,9 @@ export async function previewReportDocument(reportId, docType) {
  * @param {string} [fileName] stored file name (used to restore the media type)
  * @returns {Promise<string>} object URL - release it with releaseObjectUrl()
  */
-export async function fetchReportDocumentPreviewUrl(reportId, docType, fileName) {
-  const res = await api.get(`/api/quarterly-reports/${reportId}/documents/${docType}`, {
+export async function fetchReportDocumentPreviewUrl(reportId, docType, fileName,
+  basePath = '/api/quarterly-reports') {
+  const res = await api.get(`${basePath}/${reportId}/documents/${docType}`, {
     responseType: 'blob',
   })
   return window.URL.createObjectURL(retypeForPreview(res.data, fileName))

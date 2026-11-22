@@ -50,7 +50,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in reports" :key="r.id">
+          <tr v-for="r in reportRows" :key="r.id">
             <td class="cell-report">
               <div class="report-info">
                 <span class="report-title">{{ reportTypeLabel(r) }}</span>
@@ -104,6 +104,16 @@
           </tr>
         </tbody>
       </table>
+      <PaginationBar
+        v-if="reports.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="reports.length"
+        item-label="report"
+        item-label-plural="reports"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </template>
 
     <!-- Read-only view modal: the report content scrolls inside the modal while
@@ -172,6 +182,8 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import BackButton from '@/components/BackButton.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
@@ -189,6 +201,15 @@ const proposalId = computed(() => route.params.proposalId)
 
 const project = ref(null)
 const reports = ref([])
+
+// The report table pages the real records; its total is every report, not the page.
+const {
+  page,
+  pageSize,
+  pageItems: reportRows,
+  setPage,
+  setPageSize,
+} = usePagination(reports)
 const nextStage = ref(null)
 const loading = ref(true)
 const error = ref('')

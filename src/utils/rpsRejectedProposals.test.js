@@ -35,17 +35,59 @@ test('Rejected Proposals is a normal category beside the existing filters', () =
   )
 })
 
-test('the rejected list fetches returned-to-RPS rows and keeps only rejection returns', () => {
-  assert.ok(PANEL.includes("statusIn: ['RETURNED_TO_RPS'], sort: 'returnedAt'"))
-  assert.ok(PANEL.includes('isOvcrigeRejection'), 'the rejection test is explicit')
+test('the rejected list fetches every office rejection and keeps only rejection returns', () => {
   assert.ok(
-    PANEL.includes("String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'"),
+    PANEL.includes("statusIn: ['RETURNED_TO_RPS', 'REJECTED'], sort: 'returnedAt'"),
+    'pending hand-offs and finalized rejections are both retrieved',
+  )
+  assert.ok(PANEL.includes('isPendingRejection'), 'the rejection test is explicit')
+  const QUEUE = read('./rejectionQueue.js')
+  assert.ok(
+    QUEUE.includes("String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'"),
     'return_kind separates a rejection from a revision return',
   )
+  assert.ok(PANEL.includes("from '@/utils/rejectionQueue.js'"),
+    'the panel uses the shared rejection read model')
   assert.ok(
     !PANEL.includes("String(proposal?.returnedByOffice || '').toUpperCase() === 'OVCRIGE'"),
     'the office alone must not classify a historical revision return as a rejection',
   )
+  assert.ok(
+    QUEUE.includes('isRejectedProposal'),
+    'finalized REJECTED rows stay in the Rejected Proposals category',
+  )
+  assert.ok(
+    PANEL.includes('rejectionOffice(proposal)'),
+    'the rejecting office is shown to ORPS',
+  )
+  assert.ok(
+    PANEL.includes('rejectionRemarks(proposal)'),
+    'the rejection reason is shown to ORPS',
+  )
+  assert.ok(
+    PANEL.includes('selectedOffice'),
+    'ORPS can filter the rejected queue by the rejecting office',
+  )
+  assert.ok(
+    PANEL.includes('rejectionOffices'),
+    'the office filter is populated from the real rejected rows',
+  )
+  assert.ok(PANEL.includes("label: 'All'"), 'the All filter is offered')
+  assert.ok(
+    PANEL.includes("label: proposalStatusLabel('RETURNED_TO_RPS')"),
+    'Returned to RPS uses the shared status label',
+  )
+  assert.ok(
+    PANEL.includes("label: proposalStatusLabel('REJECTED')"),
+    'Rejected uses the shared status label',
+  )
+  assert.ok(PANEL.includes("value: 'RETURNED'"), 'Returned to RPS maps to the pending hand-off')
+  assert.ok(PANEL.includes("value: 'REJECTED'"), 'Rejected maps to the finalized status')
+  assert.ok(PANEL.includes('matchesRejectionStatus'),
+    'the filter is matched against the stored workflow record, not the label')
+  assert.ok(PANEL.includes('clearFilters'), 'the filters can be cleared in one action')
+  assert.ok(PANEL.includes('hasActiveFilters'), 'Clear is offered only while a filter is active')
+  assert.ok(PANEL.includes('activated()'), 'the queue reloads when the category is shown again')
   assert.ok(
     PANEL.includes("statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS']"),
     'the All Submitted request is unchanged',
@@ -76,7 +118,11 @@ test('the rejected table reuses the submitted columns and the Review action', ()
   }
   assert.ok(PANEL.includes('@click="viewProposal(proposal)"'), 'the row action is kept')
   assert.ok(PANEL.includes("name: 'RpsForwardRevision'"), 'rejections open the ORPS processing page')
-  assert.ok(PANEL.includes('Rejected by OVCRIGE'), 'the category context is shown')
-  assert.ok(PANEL.includes('pageSize: 10'), 'the rejected list paginates')
-  assert.ok(PANEL.includes('pager-controls'), 'the pager is rendered for the rejected category')
+  assert.ok(PANEL.includes('awaiting ORPS'), 'the pending category context is shown')
+  assert.ok(
+    PANEL.includes('Rejection forwarded to proponent'),
+    'finalized rejections are distinguished from pending ones',
+  )
+  assert.ok(PANEL.includes('pageSize: 10'), 'the list paginates')
+  assert.ok(PANEL.includes('<PaginationBar'), 'the shared pagination bar is rendered')
 })

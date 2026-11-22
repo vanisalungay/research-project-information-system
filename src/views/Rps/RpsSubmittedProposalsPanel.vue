@@ -24,12 +24,54 @@
           <option value="FOR REVIEW">{{ proposalStatusLabel('FOR REVIEW') }}</option>
           <option value="REVISION">{{ proposalStatusLabel('REVISION') }}</option>
           <option value="ENDORSED">{{ proposalStatusLabel('ENDORSED') }}</option>
-          <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
         </select>
         <svg class="field-icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
+
+      <!-- Rejected Proposals: filter by the real workflow record, not the label. -->
+      <div
+        v-else
+        class="rejection-status-filter"
+        role="group"
+        aria-label="Filter rejected proposals"
+      >
+        <button
+          v-for="option in rejectionStatusOptions"
+          :key="option.value"
+          type="button"
+          class="filter-chip"
+          :class="{ active: selectedRejectionStatus === option.value }"
+          :aria-pressed="selectedRejectionStatus === option.value"
+          @click="selectedRejectionStatus = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+
+      <!-- In the Rejected category ORPS can narrow the queue by the office that rejected. -->
+      <div v-if="category === 'rejected'" class="select-wrap">
+        <svg class="field-icon filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <select v-model="selectedOffice" class="status-select" aria-label="Filter by rejecting office">
+          <option value="">All Rejecting Offices</option>
+          <option v-for="office in rejectionOffices" :key="office" :value="office">{{ office }}</option>
+        </select>
+        <svg class="field-icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
+      <button
+        v-if="hasActiveFilters"
+        type="button"
+        class="clear-filters-btn"
+        @click="clearFilters"
+      >
+        Clear filters
+      </button>
     </div>
 
     <!-- Loading -->
@@ -58,6 +100,9 @@
               <td>
                 <div class="title-cell">{{ proposal.projectTitle || proposal.title }}</div>
                 <div class="subtext">{{ proposal.programTitle || 'N/A' }}</div>
+                <div v-if="category === 'rejected' && rejectionRemarks(proposal)" class="subtext rejection-remarks">
+                  <strong>Reason:</strong> {{ rejectionRemarks(proposal) }}
+                </div>
               </td>
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
               <td class="date-cell">
@@ -73,54 +118,44 @@
                 <span :class="['status', statusTone(proposal.status)]">
                   {{ proposalStatusLabel(proposal.status) }}
                 </span>
-                <div v-if="category === 'rejected'" class="subtext">Rejected by OVCRIGE</div>
+                <div v-if="category === 'rejected'" class="subtext">
+                  <template v-if="isPendingRejection(proposal)">
+                    Rejected by {{ rejectionOffice(proposal) }} · awaiting ORPS
+                  </template>
+                  <template v-else>Rejection forwarded to proponent</template>
+                </div>
               </td>
               <td>
-                <button class="review-btn btn-view" @click="viewProposal(proposal)">Review</button>
+                <button class="review-btn btn-view" @click="viewProposal(proposal)">
+                  {{ isPendingRejection(proposal) ? 'Review' : 'View' }}
+                </button>
               </td>
             </tr>
             <tr v-if="filteredProposals.length === 0">
-              <td colspan="6" class="empty">
-                {{ search || selectedStatus
-                  ? 'No proposals match your search.'
-                  : category === 'rejected'
-                    ? 'No rejected proposals found.'
-                    : 'No submitted proposals found.' }}
-              </td>
+              <td colspan="6" class="empty">{{ emptyMessage }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div v-if="category === 'rejected'" class="table-footer pager">
-        <span>
-          Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredProposals.length }}
-          rejected proposal{{ filteredProposals.length === 1 ? '' : 's' }}
-        </span>
-        <div v-if="totalPages > 1" class="pager-controls">
-          <button type="button" :disabled="page === 1" @click="page--">&lsaquo;</button>
-          <button
-            v-for="pg in totalPages"
-            :key="pg"
-            type="button"
-            class="pager-num"
-            :class="{ active: pg === page }"
-            @click="page = pg"
-          >
-            {{ pg }}
-          </button>
-          <button type="button" :disabled="page === totalPages" @click="page++">&rsaquo;</button>
-        </div>
-      </div>
-      <div v-else class="table-footer">
-        Showing {{ filteredProposals.length }} proposal{{ filteredProposals.length === 1 ? '' : 's' }}
-      </div>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { clampPage } from '@/composables/usePagination.js'
 import { statusTone } from '@/utils/statusTone.js'
 import {
   isForReviewStatus,
@@ -128,22 +163,36 @@ import {
   proposalStatusMatches,
 } from '@/utils/proposalStatus.js'
 
+import {
+  isPendingRejection,
+  matchesRejectionStatus,
+  rejectionOfficeOf,
+  rejectionOfficesOf,
+  rejectionRemarksOf,
+} from '@/utils/rejectionQueue.js'
+
 /**
- * A proposal OVCRIGE rejected and returned to ORPS. It shares RETURNED_TO_RPS with
- * ordinary revision returns, so return_kind is what separates the two: only a
- * REJECTION return belongs in the Rejected Proposals category.
+ * The three status filters of the Rejected Proposals category. They map to the stored
+ * workflow records, never to the badge text:
+ *  - ALL: every rejection in the category (pending hand-off + finalized).
+ *  - RETURNED: status RETURNED_TO_RPS with return_kind REJECTION (awaiting ORPS).
+ *  - REJECTED: status REJECTED (the rejection was finalized / decided by ORPS).
+ * Ordinary RETURNED_TO_RPS revision returns are excluded from this category entirely.
  */
-const isOvcrigeRejection = (proposal) =>
-  String(proposal?.status || '').toUpperCase() === 'RETURNED_TO_RPS' &&
-  String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'
+const REJECTION_STATUS_OPTIONS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'RETURNED', label: proposalStatusLabel('RETURNED_TO_RPS') },
+  { value: 'REJECTED', label: proposalStatusLabel('REJECTED') },
+]
 
 export default {
   name: 'RpsSubmittedProposalsPanel',
+  components: { PaginationBar },
   props: {
     /**
      * 'all' (default) lists the complete submitted set. 'rejected' is the Rejected
-     * Proposals category: the same table, restricted to proposals OVCRIGE rejected and
-     * returned to ORPS (status RETURNED_TO_RPS, returnedByOffice OVCRIGE).
+     * Proposals category: every reviewing-office rejection (RETURNED_TO_RPS with
+     * return_kind REJECTION) plus the rejections ORPS has already finalized (REJECTED).
      */
     category: { type: String, default: 'all' },
   },
@@ -151,9 +200,13 @@ export default {
     return {
       search: '',
       selectedStatus: '',
+      selectedOffice: '',
+      selectedRejectionStatus: 'ALL',
+      rejectionStatusOptions: REJECTION_STATUS_OPTIONS,
       proposals: [],
       loading: false,
       error: null,
+      hasLoaded: false,
       page: 1,
       pageSize: 10,
     }
@@ -162,11 +215,33 @@ export default {
     isRejectedCategory() {
       return this.category === 'rejected'
     },
+    /** The distinct rejecting offices in the loaded rejected rows. */
+    rejectionOffices() {
+      return rejectionOfficesOf(this.proposals)
+    },
+    hasActiveFilters() {
+      if (this.isRejectedCategory) {
+        return Boolean(
+          this.search.trim()
+          || this.selectedOffice
+          || this.selectedRejectionStatus !== 'ALL',
+        )
+      }
+      return Boolean(this.search.trim() || this.selectedStatus)
+    },
+    emptyMessage() {
+      if (this.hasActiveFilters) return 'No proposals match the selected search and filters.'
+      return this.isRejectedCategory
+        ? 'No rejected proposals found.'
+        : 'No submitted proposals found.'
+    },
     filteredProposals() {
       const keyword = this.search.toLowerCase().trim()
       const rejectedOnly = this.isRejectedCategory
       return this.proposals.filter((p) => {
-        if (rejectedOnly && !isOvcrigeRejection(p)) return false
+        if (rejectedOnly && !matchesRejectionStatus(p, this.selectedRejectionStatus)) return false
+        if (rejectedOnly && this.selectedOffice
+          && this.rejectionOffice(p) !== this.selectedOffice) return false
         const matchesStatus = proposalStatusMatches(p.status, this.selectedStatus)
         if (!matchesStatus) return false
         if (!keyword) return true
@@ -174,11 +249,19 @@ export default {
         const program = String(p.programTitle || '').toLowerCase()
         const documentId = String(p.documentId || p.proposalCode || '').toLowerCase()
         const leader = String(p.projectLeader || p.proponent?.name || '').toLowerCase()
+        // In the Rejected category, the rejecting office and the reason are searchable too,
+        // so ORPS can find a rejection by who sent it or what it says.
+        const office = rejectedOnly ? String(p.returnedByOffice || '').toLowerCase() : ''
+        const reason = rejectedOnly
+          ? String(p.returnRemarks || p.remarks || '').toLowerCase()
+          : ''
         return (
           title.includes(keyword) ||
           program.includes(keyword) ||
           documentId.includes(keyword) ||
-          leader.includes(keyword)
+          leader.includes(keyword) ||
+          office.includes(keyword) ||
+          reason.includes(keyword)
         )
       })
     },
@@ -190,15 +273,9 @@ export default {
       return this.filteredProposals.slice(start, start + this.pageSize)
     },
     visibleProposals() {
-      // The complete Submitted list keeps its existing one-page behaviour; the new
-      // Rejected category pages its own, usually shorter, list.
-      return this.isRejectedCategory ? this.paginatedProposals : this.filteredProposals
-    },
-    rangeStart() {
-      return this.filteredProposals.length ? (this.page - 1) * this.pageSize + 1 : 0
-    },
-    rangeEnd() {
-      return Math.min(this.page * this.pageSize, this.filteredProposals.length)
+      // Every category is paginated. The total reported by PaginationBar is the real
+      // filtered total, not the number of rows on the current page.
+      return this.paginatedProposals
     },
   },
   watch: {
@@ -208,6 +285,12 @@ export default {
     selectedStatus() {
       this.page = 1
     },
+    selectedOffice() {
+      this.page = 1
+    },
+    selectedRejectionStatus() {
+      this.page = 1
+    },
     totalPages(count) {
       if (this.page > count) this.page = count
     },
@@ -215,16 +298,44 @@ export default {
   methods: {
     statusTone,
     proposalStatusLabel,
+    setPage(value) {
+      this.page = clampPage(value, this.totalPages)
+    },
+    setPageSize(value) {
+      this.pageSize = Math.max(1, Number(value) || 10)
+      this.page = 1
+    },
+    /** Restores the full category without changing the stored catalogue. */
+    clearFilters() {
+      this.search = ''
+      this.selectedStatus = ''
+      this.selectedOffice = ''
+      this.selectedRejectionStatus = 'ALL'
+      this.page = 1
+    },
+    isPendingRejection(proposal) {
+      return isPendingRejection(proposal)
+    },
+    /** The office that made the rejection, as recorded on the proposal. */
+    rejectionOffice(proposal) {
+      return rejectionOfficeOf(proposal)
+    },
+    /** The reason the rejecting office recorded, capped for the table row. */
+    rejectionRemarks(proposal) {
+      return rejectionRemarksOf(proposal)
+    },
     async fetchProposals() {
       this.loading = true
       this.error = null
       try {
         const rejected = this.isRejectedCategory
-        // Rejected Proposals: returned to ORPS by OVCRIGE, newest rejection first.
-        // The Submitted list keeps its original statuses and submission ordering.
+        // Rejected Proposals: every office rejection, whether it is awaiting ORPS
+        // (RETURNED_TO_RPS + return_kind REJECTION) or has already been finalized
+        // (REJECTED), newest rejection first. The Submitted list keeps its original
+        // statuses and submission ordering.
         const res = await api.get('/api/proposals', {
           params: rejected
-            ? { statusIn: ['RETURNED_TO_RPS'], sort: 'returnedAt' }
+            ? { statusIn: ['RETURNED_TO_RPS', 'REJECTED'], sort: 'returnedAt' }
             : {
                 statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
                 // Server-side ordering by the real submission event (not created_at or
@@ -242,6 +353,7 @@ export default {
         this.proposals = []
       } finally {
         this.loading = false
+        this.hasLoaded = true
       }
     },
     viewProposal(proposal) {
@@ -264,6 +376,13 @@ export default {
   },
   mounted() {
     this.fetchProposals()
+  },
+  /**
+   * The parent keeps each category alive, so returning to this tab after a proposal was
+   * rejected or forwarded elsewhere reloads the queue instead of showing cached rows.
+   */
+  activated() {
+    if (this.hasLoaded) this.fetchProposals()
   },
 }
 </script>
@@ -293,6 +412,58 @@ export default {
   align-items: center;
   flex: 1 1 260px;
   min-width: 180px;
+}
+
+/* Rejected Proposals status filter: real, visible chips rather than hidden tabs. */
+.rejection-status-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip {
+  padding: 6px 12px;
+  border: 1px solid #dfe2ef;
+  border-radius: 999px;
+  background: #fff;
+  color: #3b4160;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.filter-chip:hover {
+  border-color: #1f1a3d;
+  color: #1f1a3d;
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid #1f1a3d;
+  outline-offset: 2px;
+}
+
+.filter-chip.active {
+  background: #1f1a3d;
+  border-color: #1f1a3d;
+  color: #ffdf00;
+}
+
+.clear-filters-btn {
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: #6b5a3a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.clear-filters-btn:hover {
+  color: #1f1a3d;
 }
 
 .select-wrap {
@@ -457,6 +628,17 @@ export default {
   font-size: 10px;
   color: #78809a;
   margin-top: 2px;
+}
+
+.rejection-remarks {
+  max-width: 420px;
+  white-space: normal;
+  line-height: 1.4;
+  color: #6b5a3a;
+}
+
+.rejection-remarks strong {
+  color: #4b3d24;
 }
 
 .date-cell {

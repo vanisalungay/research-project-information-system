@@ -95,6 +95,12 @@ const props = defineProps({
   fileName: { type: String, default: '' },
   /** Reporting period shown under the file name, when the host knows it. */
   periodLabel: { type: String, default: '' },
+  /**
+   * The authorized documents route to read from. The default is the shared
+   * quarterly-report endpoint used by ORPS/OVCRIGE; OVCAF passes its own
+   * read-only route because it has no access to the generic one.
+   */
+  documentsBasePath: { type: String, default: '/api/quarterly-reports' },
 })
 
 const emit = defineEmits(['close'])
@@ -138,6 +144,7 @@ async function loadPreview() {
       props.reportId,
       'terminal',
       props.fileName,
+      props.documentsBasePath,
     )
   } catch (e) {
     previewError.value = 'The Terminal Report file could not be loaded for preview.'
@@ -164,7 +171,7 @@ async function download() {
   downloading.value = true
   downloadError.value = ''
   try {
-    await downloadReportDocument(props.reportId, 'terminal', props.fileName)
+    await downloadReportDocument(props.reportId, 'terminal', props.fileName, props.documentsBasePath)
   } catch (e) {
     downloadError.value = 'Failed to download the Terminal Report. Please try again.'
   } finally {

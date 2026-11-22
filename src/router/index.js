@@ -57,9 +57,8 @@ import RpsForwardRevision from '@/views/Rps/RpsForwardRevision.vue'
 
 /* OVCAF */
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
-import OvcafValidate from '../views/Ovcaf/OvcafValidate.vue'
 import OvcafProposalInbox from '../views/Ovcaf/OvcafProposalInbox.vue'
-import OvcafReports from '../views/Ovcaf/OvcafReports.vue'
+import OvcafQuarterlyReports from '../views/Ovcaf/OvcafQuarterlyReports.vue'
 import OvcafProposalDetails from '../views/Ovcaf/OvcafProposalDetails.vue'
 import OvcafFinancialValidation from '../views/Ovcaf/OvcafFinancialValidation.vue'
 
@@ -164,10 +163,13 @@ const routes = [
       { path: 'ovcaf-dash', component: OvcafDashboard },
       { path: 'ovcaf/validate/:id?', name: 'OvcafValidate', component: OvcafFinancialValidation },
       { path: 'ovcaf-notification', component: NotificationPage },
-      { path: '/ovcaf/inbox', component: OvcafProposalInbox },
-      { path: '/ovcaf/reports', component: OvcafReports },
-      { path: '/ovcaf/proposals/:id', component: OvcafProposalDetails },
-      { path: 'ovcaf-validate', component: OvcafValidate },
+      { path: 'ovcaf/proposals', name: 'OvcafProposals', component: OvcafProposalInbox },
+      { path: 'ovcaf/proposals/:id', component: OvcafProposalDetails },
+      // The old destinations remain reachable for bookmarks and older links.
+      { path: '/ovcaf/inbox', redirect: '/ovcaf/proposals' },
+      { path: 'ovcaf/quarterly-reports', name: 'OvcafQuarterlyReports', component: OvcafQuarterlyReports },
+      { path: '/ovcaf/reports', redirect: '/ovcaf/quarterly-reports' },
+      { path: 'ovcaf-validate', redirect: '/ovcaf/proposals' },
 
       // ================= OVCRIGE =================
       { path: 'review-prop', component: OvcReviewProposal },

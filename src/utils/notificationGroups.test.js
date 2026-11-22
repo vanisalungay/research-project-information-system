@@ -161,8 +161,13 @@ test('the OVCRIGE feed is one list, without a redundant Proposal Updates heading
   )
   assert.match(
     page,
-    /\{ key: 'all', title: '', items: filteredNotifications\.value \}/,
-    'the single group keeps the newest-first filtered list',
+    /\{ key: 'all', title: '', items: pageNotifications\.value \}/,
+    'the single group keeps the newest-first page of the filtered list',
+  )
+  assert.match(
+    page,
+    /return \[\.\.\.result\]\.sort\(\(a, b\) => new Date\(b\.createdAt\) - new Date\(a\.createdAt\)\)/,
+    'the filtered list is sorted newest first before it is paged',
   )
 })
 

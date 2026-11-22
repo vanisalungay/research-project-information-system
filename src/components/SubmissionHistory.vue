@@ -3,7 +3,7 @@
     <div class="sh-header">
       <div class="sh-heading">
         <h3>Submission &amp; Revision History</h3>
-        <p class="sh-subtitle">Oldest first, with the current version marked.</p>
+        <p class="sh-subtitle">Newest first, with the current version marked.</p>
       </div>
       <span v-if="versions.length" class="sh-count">{{ versions.length }} version{{ versions.length > 1 ? 's' : '' }}</span>
     </div>
@@ -17,14 +17,14 @@
 
     <div v-else class="sh-timeline">
       <div
-        v-for="(v, index) in versions"
+        v-for="(v, index) in sortedVersions"
         :key="v.id || v.versionNumber"
         class="sh-item"
         :class="{ 'sh-item-current': isCurrent(v) }"
       >
         <div class="sh-rail">
           <div class="sh-dot"></div>
-          <div v-if="index !== versions.length - 1" class="sh-line"></div>
+          <div v-if="index !== sortedVersions.length - 1" class="sh-line"></div>
         </div>
 
         <div class="sh-card">
@@ -122,8 +122,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import api from '@/utils/api'
+import { sortVersionsNewestFirst } from '@/utils/versionHistory.js'
 // Section 24: "% Time Devoted" is stored as a plain number and always read as a
 // percentage, so a version recorded with a legacy "50%" and one with "50" both show "50%".
 import { formatTimeDevoted } from '@/utils/personnelTime'
@@ -137,6 +138,10 @@ const props = defineProps({
 const versions = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// The API keeps its own ordering; the display always reads newest event first, using the
+// version's revision event when it has one and its submission event otherwise.
+const sortedVersions = computed(() => sortVersionsNewestFirst(versions.value))
 
 const activeVersion = ref(null)
 const details = ref(null)

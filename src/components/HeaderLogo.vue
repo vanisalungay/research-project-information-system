@@ -83,28 +83,21 @@
             <p class="user-role">{{ formatRole(userStore.user?.role) }}</p>
           </div>
 
-          <svg class="chevron-icon" :class="{ open: showDropdown }" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg v-if="menuItems.length" class="chevron-icon" :class="{ open: showDropdown }"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
 
-          <!-- Dropdown Menu (unchanged: the same role-based items and actions) -->
-          <div v-if="showDropdown" class="dropdown-menu" role="menu">
+          <!-- Dropdown Menu: role switching only. Sign Out lives at the sidebar bottom. -->
+          <div v-if="showDropdown && menuItems.length" class="dropdown-menu" role="menu">
             <button
               v-for="menuItem in menuItems"
               :key="menuItem"
               class="dropdown-item"
-              :class="{ 'logout-item': menuItem === 'LOGOUT' }"
               role="menuitem"
               @click.stop="handleMenuItemClick(menuItem)"
             >
-              <svg v-if="menuItem === 'LOGOUT'" class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              <svg v-else class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
                 <circle cx="8.5" cy="7" r="4"></circle>
                 <polyline points="17 11 19 13 23 9"></polyline>
@@ -226,12 +219,6 @@ const closeLoginDialog = () => {
   errorMessage.value = ''
 }
 
-const logout = () => {
-  userStore.logout()
-  notificationStore.reset()
-  router.push('/login')
-}
-
 const handleLogin = async () => {
   errorMessage.value = ''
   loginLoading.value = true
@@ -271,9 +258,6 @@ const handleMenuItemClick = (menuItem) => {
       showLoginDialog.value = true
       break
 
-    case 'LOGOUT':
-      logout()
-      break
   }
 }
 
@@ -287,8 +271,6 @@ const menuItems = computed(() => {
   if (userStore.user?.role === UserRole.RPS_STAFF) {
     items.push('SWITCH TO RPS ADMIN')
   }
-
-  items.push('LOGOUT')
 
   return items
 })

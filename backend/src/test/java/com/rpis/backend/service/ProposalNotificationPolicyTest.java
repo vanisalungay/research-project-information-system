@@ -255,4 +255,65 @@ class ProposalNotificationPolicyTest {
                 eq("Proposal Returned for Revision"), eq(NotificationTypes.REVISION),
                 eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
     }
+
+    @Test
+    void anOvcafBudgetApprovalTellsTheProponentOrpsAndTheChancellorOnce() {
+        Proposal proposal = proposal("READY_FOR_RELEASE");
+        proposal.setProponent(proponent());
+
+        policy.notifyOvcafBudgetApproved(proposal);
+
+        verify(notificationService).notifyUsers(
+                eq(List.of(proposal.getProponent())), anyString(), eq("Budget Approved"),
+                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
+        verify(notificationService).notifyRoles(
+                eq(List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)), anyString(),
+                eq("Budget Approved"), eq(NotificationTypes.PROPOSAL_UPDATE), eq(42L),
+                any(NotificationEvent.class));
+        org.mockito.ArgumentCaptor<NotificationEvent> event =
+                org.mockito.ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(notificationService).notifyRoles(
+                eq(List.of(UserRoles.OC)),
+                org.mockito.ArgumentMatchers.contains("ready for fund release"),
+                eq("Budget Approved by OVCAF"), eq(NotificationTypes.APPROVAL), eq(42L),
+                event.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "ovcaf:budget-approved:42", event.getValue().dedupeKey(),
+                "the approval must be idempotent per proposal");
+    }
+
+    @Test
+    void anOvcafReturnNotifiesOnlyOrpsAndCarriesTheRemarks() {
+        Proposal proposal = proposal("RETURNED_TO_RPS");
+        proposal.setProponent(proponent());
+
+        policy.notifyOvcafReturned(proposal, "Correct the MOOE line.");
+
+        verify(notificationService).notifyRoles(
+                eq(List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)),
+                org.mockito.ArgumentMatchers.contains("Correct the MOOE line"),
+                eq("Proposal Returned by OVCAF"), eq(NotificationTypes.REVISION), eq(42L),
+                any(NotificationEvent.class));
+        verify(notificationService, never()).notifyUsers(
+                any(), anyString(), anyString(), anyString(), any(), any(NotificationEvent.class),
+                anyString());
+    }
+
+    @Test
+    void anOvcafRejectionHandsTheReasonToOrpsWithoutNotifyingTheProponent() {
+        Proposal proposal = proposal("RETURNED_TO_RPS");
+        proposal.setProponent(proponent());
+
+        policy.notifyRpsRejectionReturned(proposal, "Not a fundable expense.", "OVCAF");
+
+        verify(notificationService).notifyRoles(
+                eq(List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)),
+                org.mockito.ArgumentMatchers.contains("Not a fundable expense"),
+                eq("Proposal Rejected by OVCAF"), eq(NotificationTypes.REJECTION), eq(42L),
+                any(NotificationEvent.class));
+        verify(notificationService, never()).notifyUsers(
+                any(), anyString(), anyString(), anyString(), any(), any(NotificationEvent.class),
+                anyString());
+    }
 }

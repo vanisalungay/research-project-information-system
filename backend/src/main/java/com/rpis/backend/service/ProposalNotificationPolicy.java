@@ -157,7 +157,8 @@ public class ProposalNotificationPolicy {
             }
             case "RETURNED_TO_RPS" -> notificationService.notifyRoles(RPS,
                     "A proposal was returned for revision and awaits your review and forwarding: \""
-                            + title + "\"",
+                            + title + "\"."
+                            + remarksSentence(proposal),
                     "Revision Request Received", NotificationTypes.REVISION, proposalId,
                     NotificationEvent.STATUS_UPDATED);
             case "REC_REVISION", "REVISION", "RPS_RETURNED" -> notifyProponent(proposal,
@@ -249,23 +250,85 @@ public class ProposalNotificationPolicy {
     }
 
     /**
+     * OVCAF approving the budget is one event with four audiences: the proponent is told
+     * the release is awaited, ORPS is told the release is next, and the Chancellor's
+     * Office is told the budget it issued the SO for has cleared. The shared dedupe key
+     * makes a retried endorsement produce no second row for any of them.
+     */
+    public void notifyOvcafBudgetApproved(Proposal proposal) {
+        if (proposal == null) {
+            return;
+        }
+        Long proposalId = proposal.getId();
+        String title = proposal.getProjectTitle();
+        NotificationEvent event =
+                NotificationEvent.STATUS_UPDATED.withDedupeKey("ovcaf:budget-approved:" + proposalId);
+
+        notifyProponent(proposal,
+                "The budget for your proposal \"" + title
+                        + "\" has been approved by OVCAF and is awaiting fund release. "
+                        + "The project becomes approved for implementation once the release is recorded.",
+                "Budget Approved", NotificationTypes.APPROVAL, event);
+        notificationService.notifyRoles(RPS,
+                "Budget approved by OVCAF; awaiting fund release: \"" + title + "\"",
+                "Budget Approved", NotificationTypes.PROPOSAL_UPDATE, proposalId, event);
+        notificationService.notifyRoles(OC,
+                "OVCAF approved the budget for proposal \"" + title
+                        + "\". It is now ready for fund release.",
+                "Budget Approved by OVCAF", NotificationTypes.APPROVAL, proposalId, event);
+    }
+
+    /**
+     * OVCAF returning a proposal is a hand-off to ORPS, not a proponent decision. The
+     * remarks the reviewer wrote travel with the notification so ORPS can act on them.
+     */
+    public void notifyOvcafReturned(Proposal proposal, String remarks) {
+        if (proposal == null) {
+            return;
+        }
+        String message = "OVCAF returned proposal \"" + proposal.getProjectTitle()
+                + "\" for budget revision. It awaits your review and forwarding to the proponent.";
+        if (remarks != null && !remarks.isBlank()) {
+            message += " Remarks: " + truncateRemarks(remarks);
+        }
+        notificationService.notifyRoles(RPS, message,
+                "Proposal Returned by OVCAF",
+                NotificationTypes.REVISION, proposal.getId(),
+                NotificationEvent.STATUS_UPDATED.withDedupeKey(
+                        "ovcaf:returned:" + proposal.getId()));
+    }
+
+    /**
      * OVCRIGE rejecting a proposal is a hand-off to ORPS, not a final decision. The
      * Proponent is deliberately not notified here: ORPS reviews the rejection and
      * forwards it through the existing rejection workflow.
      */
     public void notifyRpsRejectionReturned(Proposal proposal, String remarks) {
+        notifyRpsRejectionReturned(proposal, remarks, "OVCRIGE");
+    }
+
+    /**
+     * The same hand-off for any reviewing office. OVCAF uses this too, so ORPS is told
+     * which office rejected the proposal and the reason it recorded.
+     */
+    public void notifyRpsRejectionReturned(Proposal proposal, String remarks, String office) {
         if (proposal == null) {
             return;
         }
-        String message = "OVCRIGE rejected proposal \""
+        String source = office == null || office.isBlank() ? "a reviewing office" : office;
+        String message = source + " rejected proposal \""
                 + proposal.getProjectTitle() + "\" and returned it to ORPS for processing.";
         if (remarks != null && !remarks.isBlank()) {
             message += " Reason: " + truncateRemarks(remarks);
         }
+        NotificationEvent event = "OVCAF".equalsIgnoreCase(source)
+                ? NotificationEvent.STATUS_UPDATED.withDedupeKey(
+                        "ovcaf:rejected:" + proposal.getId())
+                : NotificationEvent.STATUS_UPDATED;
         notificationService.notifyRoles(RPS, message,
-                "Proposal Rejected by OVCRIGE",
+                "Proposal Rejected by " + source,
                 NotificationTypes.REJECTION, proposal.getId(),
-                NotificationEvent.STATUS_UPDATED);
+                event);
     }
 
     /** The reason text kept in a notification, capped so one row stays readable. */

@@ -446,6 +446,14 @@
         <p v-if="saveError" class="state error">{{ saveError }}</p>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -454,6 +462,8 @@ import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import BackButton from '@/components/BackButton.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
 import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
@@ -490,6 +500,7 @@ const TERMINAL_FORMAT_URL = '/templates/ORPS-Inhouse-Terminal-Report-Format-2026
 
 const route = useRoute()
 const router = useRouter()
+const { dialogState, showConfirm } = useDialog()
 const proposalId = computed(() => route.params.proposalId)
 
 /** Direct-URL fallback: the report list of the proposal this form belongs to. */
@@ -1084,6 +1095,15 @@ async function submitStage(payload, type, period) {
     saveError.value = 'Please complete the Project Workplan form (at least one objective) before submitting.'
     return
   }
+
+  const submissionLabel = type === 'TERMINAL_REPORT' ? 'Terminal Report' : 'Quarterly Progress Report'
+  const confirmed = await showConfirm(
+    `Submit the ${submissionLabel} for ${period || 'this reporting period'}? ` +
+      'The report will be sent for review and cannot be edited while it is being evaluated.',
+    { title: `Submit ${submissionLabel}`, type: 'warning', confirmText: 'Submit Report' },
+  )
+  if (!confirmed) return false
+
   saving.value = true
   saveError.value = ''
   try {

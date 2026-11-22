@@ -1075,6 +1075,14 @@ public class ProposalService {
             // same transition.
             return proposal;
         }
+        // An implementation-approved project has already passed the financial evaluation.
+        // OVCAF must not be able to move it back through the budget route with the generic
+        // status endpoint; its financial decision is closed.
+        if (UserRoles.OVCAF.equalsIgnoreCase(currentUser.getRole())
+                && "APPROVED".equals(previousStatus)) {
+            throw new IllegalStateException(
+                    "This proposal is Implementation Approved; its financial evaluation is closed.");
+        }
         proposal.setStatus(storedStatus);
         if ("ENDORSED".equals(storedStatus)) {
             // The generic transition is the same workflow event as the dedicated
@@ -1088,6 +1096,122 @@ public class ProposalService {
         proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
+    }
+
+    /** The roles that make up ORPS itself: they own the final rejection decision. */
+    private static final Set<String> ORPS_ROLES = Set.of(
+            UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF);
+
+    /** A proposal that has already moved past evaluation can no longer be rejected. */
+    private static final Set<String> NON_REJECTABLE_STATUSES = Set.of(
+            "APPROVED", "RELEASED", "COMPLETED");
+
+    /**
+     * A reviewing office rejects a proposal.
+     *
+     * <p>Every rejection is centralized in this one method so no office can deliver a
+     * rejection to the Proponent on its own:
+     * <ul>
+     *   <li>ORPS (RPS Admin / Staff) makes the final decision: the proposal becomes
+     *       {@code REJECTED} and the Proponent is notified;</li>
+     *   <li>OVCRIGE, REC, OVCAF and any other reviewing office hand the record to ORPS as
+     *       {@code RETURNED_TO_RPS} with {@code return_kind='REJECTION'} and the rejecting
+     *       office recorded. Only ORPS is notified; ORPS then forwards the decision
+     *       through {@link #finalizeRejection(Long, String)}.</li>
+     * </ul>
+     *
+     * <p>Remarks are mandatory. They are stored on the proposal, in the audited status
+     * history and in the ORPS notification, so ORPS can review the rejection before
+     * communicating it.
+     */
+    @Transactional
+    public Proposal rejectProposal(Long proposalId, String remarks) {
+        String role = currentUser.getRole();
+        String office = role == null ? null : role.trim().toUpperCase(Locale.ROOT);
+        String reason = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
+        if (reason == null) {
+            throw new IllegalArgumentException("Rejection remarks are required.");
+        }
+        if (office == null) {
+            throw new IllegalStateException("A signed-in reviewing role is required to reject a proposal.");
+        }
+        return ORPS_ROLES.contains(office)
+                ? rejectAsOrps(proposalId, reason)
+                : rejectToOrpsFromOffice(proposalId, office, reason);
+    }
+
+    /** ORPS rejects a proposal outright; this is the decision the Proponent receives. */
+    private Proposal rejectAsOrps(Long proposalId, String reason) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("REJECTED".equals(previousStatus)) {
+            // Idempotent: a retried request must not notify the Proponent twice.
+            return proposal;
+        }
+        if (REVISION_STATUSES.contains(previousStatus)) {
+            throw new IllegalStateException(
+                    "Revision statuses can only be set through the RPS revision workflow.");
+        }
+        if (NON_REJECTABLE_STATUSES.contains(previousStatus)) {
+            throw new IllegalStateException(
+                    "This proposal has already completed its evaluation and can no longer be rejected.");
+        }
+
+        proposal.setStatus("REJECTED");
+        proposal.setRemarks(reason);
+        recordStatusChange(proposal, previousStatus, "REJECTED", reason);
+
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyForStatus(saved);
+        return saved;
+    }
+
+    /** A reviewing office routes its rejection to ORPS instead of notifying the Proponent. */
+    private Proposal rejectToOrpsFromOffice(Long proposalId, String office, String reason) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        boolean alreadyHandedOff = "RETURNED_TO_RPS".equals(previousStatus)
+                && "REJECTION".equalsIgnoreCase(
+                        proposal.getReturnKind() == null ? "" : proposal.getReturnKind().trim());
+        if (alreadyHandedOff || "REJECTED".equals(previousStatus)) {
+            // Idempotent: a repeated click must not create a second ORPS notification.
+            return proposal;
+        }
+        if (NON_REJECTABLE_STATUSES.contains(previousStatus)) {
+            throw new IllegalStateException(
+                    "This proposal has already completed its evaluation and can no longer be rejected.");
+        }
+
+        Long actorId = currentUser.requireUserId();
+        String actorName = userRepository.findById(actorId).map(User::getName).orElse(null);
+
+        proposal.setStatus("RETURNED_TO_RPS");
+        proposal.setRemarks(reason);
+        proposal.setReturnRemarks(reason);
+        proposal.setReturnedByOffice(office);
+        proposal.setReturnKind("REJECTION");
+        proposal.setReturnedByUserId(actorId);
+        proposal.setReturnedByName(PersonNameFormatter.format(actorName));
+        proposal.setReturnedAt(LocalDateTime.now());
+        // A fresh rejection hand-off restarts the revision-forward metadata; ORPS owns
+        // the next step and no deadline has been set yet.
+        proposal.setRevisionDeadline(null);
+        proposal.setRevisionForwardedAt(null);
+        proposal.setRevisionForwardedByName(null);
+        proposal.setRevisionForwardedByUserId(null);
+        proposal.setRevisionNotes(null);
+
+        recordStatusChange(proposal, previousStatus, "RETURNED_TO_RPS", reason);
+
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyRpsRejectionReturned(saved, reason, office);
+        return saved;
     }
 
     /**
@@ -1771,7 +1895,7 @@ public class ProposalService {
         if (!"RETURNED_TO_RPS".equals(previousStatus)
                 || !"REJECTION".equalsIgnoreCase(returnKind)) {
             throw new IllegalStateException(
-                    "This proposal is not awaiting ORPS processing of an OVCRIGE rejection.");
+                    "This proposal is not awaiting ORPS processing of a reviewing office rejection.");
         }
 
         String note = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
@@ -1860,7 +1984,7 @@ public class ProposalService {
         currentUser.requireAccessTo(proposal);
         if ("REJECTION".equalsIgnoreCase(proposal.getReturnKind())) {
             throw new IllegalStateException(
-                    "This proposal was rejected by OVCRIGE and must be finalized, not forwarded as a revision.");
+                    "This proposal was rejected by a reviewing office and must be finalized, not forwarded as a revision.");
         }
         String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         LocalDateTime deadlineLdt = parseDeadline(deadline);

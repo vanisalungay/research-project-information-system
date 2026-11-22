@@ -797,6 +797,15 @@ const submitProposal = async () => {
     return
   }
 
+  // The last action before the proposal leaves the proponent's control: confirm it here
+  // rather than relying on the checkbox alone.
+  const confirmedSubmit = await showConfirm(
+    `Submit "${props.proposalData?.project_title || 'this proposal'}" to ORPS for review? ` +
+      'You will not be able to edit it while it is under review.',
+    { title: 'Submit Proposal', type: 'warning', confirmText: 'Submit Proposal' },
+  )
+  if (!confirmedSubmit) return
+
   submitting.value = true
   submitMessage.value = 'Submitting proposal...'
   error.value = null

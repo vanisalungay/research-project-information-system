@@ -46,7 +46,11 @@ class OvcafProposalDetailsApiTest {
         proposalRepository = mock(ProposalRepository.class);
         validationRepository = mock(OvcafValidationRepository.class);
         OvcafService service = new OvcafService(proposalRepository, validationRepository,
-                mock(UserRepository.class), mock(NotificationService.class));
+                mock(UserRepository.class),
+                mock(com.rpis.backend.repository.ProposalStatusHistoryRepository.class),
+                mock(NotificationService.class),
+                mock(com.rpis.backend.service.ProposalNotificationPolicy.class),
+                mock(com.rpis.backend.security.CurrentUser.class));
         mockMvc = MockMvcBuilders.standaloneSetup(new OvcafController(service)).build();
     }
 

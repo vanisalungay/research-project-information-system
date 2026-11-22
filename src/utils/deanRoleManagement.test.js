@@ -220,7 +220,11 @@ test('the redesigned page has filter counts, search and a dynamic footer', () =>
   assert.ok(PAGE.includes("String(assignment.assignedCollege || '').toLowerCase().includes(term)"))
 
   // The footer count is derived, never hardcoded.
-  assert.ok(PAGE.includes('Showing {{ rows.length }} of {{ filteredTotal }} dean records'))
+  assert.ok(PAGE.includes('<PaginationBar'), 'the shared pager is used')
+  assert.ok(
+    PAGE.includes(':total="rows.length"'),
+    'the pager total comes from the real searched rows',
+  )
   assert.ok(!/Showing \d+ of \d+ dean records/.test(PAGE), 'no sample count is hardcoded')
 
   // The Dean identity, college code, status and dates all come from real data.
@@ -234,10 +238,10 @@ test('the redesigned page has filter counts, search and a dynamic footer', () =>
   assert.ok(PAGE.includes('formatDate(assignment.dateRevoked)'), 'revoked is the real date')
   assert.ok(PAGE.includes("month: 'short'"), 'one consistent date format')
 
-  // One truthful API read supplies every view; the page is unpaginated.
+  // One truthful API read supplies every view; the table pages that real record set.
   assert.ok(PAGE.includes("params: { status: 'ALL' }"), 'the records are read once')
   assert.ok(PAGE.includes('class="table-card"'), 'the table lives in one rounded card')
-  assert.ok(PAGE.includes('class="table-footer"'), 'the footer is part of the card')
+  assert.ok(PAGE.includes('<PaginationBar'), 'the pager is part of the card')
   assert.ok(PAGE.includes('class="search-box"'), 'the search field is compact')
 })
 

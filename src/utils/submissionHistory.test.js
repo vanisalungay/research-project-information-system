@@ -19,7 +19,16 @@ const DETAILS = read('../views/Rps/RpsProposalDetails.vue')
 test('the section has a clear title, subtitle and version count', () => {
   assert.ok(HISTORY.includes('Submission &amp; Revision History'))
   assert.ok(HISTORY.includes('class="sh-subtitle"'))
+  assert.ok(HISTORY.includes('Newest first, with the current version marked.'))
   assert.ok(HISTORY.includes("{{ versions.length }} version"))
+})
+
+test('the timeline renders the newest event first without changing the stored list', () => {
+  assert.ok(HISTORY.includes("import { sortVersionsNewestFirst } from '@/utils/versionHistory.js'"))
+  assert.ok(HISTORY.includes('sortVersionsNewestFirst(versions.value)'))
+  assert.match(HISTORY, /v-for="\(v, index\) in sortedVersions"/)
+  assert.match(HISTORY, /index !== sortedVersions\.length - 1/)
+  assert.ok(!HISTORY.includes('versions.value.sort('), 'the fetched array is not mutated')
 })
 
 test('every existing history field is still displayed', () => {

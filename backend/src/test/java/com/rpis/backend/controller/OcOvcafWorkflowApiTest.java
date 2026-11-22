@@ -78,6 +78,7 @@ class OcOvcafWorkflowApiTest {
     private String proponentToken;
     private User proponent;
     private User ovcaf;
+    private User oc;
 
     @BeforeEach
     void setUp() {
@@ -85,8 +86,9 @@ class OcOvcafWorkflowApiTest {
         jdbcTemplate.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
 
         proponent = user("Maria Proponent", "maria.oc.workflow@msunaawan.edu.ph", "PROPONENT");
-        User oc = user("Chancellor", "chancellor.oc.workflow@msunaawan.edu.ph", "OC");
+        oc = user("Chancellor", "chancellor.oc.workflow@msunaawan.edu.ph", "OC");
         ovcaf = user("OVCAF Reviewer", "ovcaf.oc.workflow@msunaawan.edu.ph", "OVCAF");
+        user("ORPS Staff", "rps.oc.workflow@msunaawan.edu.ph", "RPS_STAFF");
 
         proponentToken = tokenService.generateToken(proponent.getId(), "PROPONENT");
         ocToken = tokenService.generateToken(oc.getId(), "OC");
@@ -649,5 +651,186 @@ class OcOvcafWorkflowApiTest {
         assertEquals("OC", history.get("actor_role"));
         assertEquals("Chancellor", history.get("actor_name"));
         assertEquals(1, historyCount(proposal.getId()));
+    }
+
+    /** A proposal OVCAF may evaluate: OC approval and SO are already recorded. */
+    private Proposal ovcafProposal() {
+        Proposal proposal = proposal("FOR_OVCAF_APPROVAL");
+        proposal.setSoNumber("SO-2026-OVCAF-" + System.nanoTime());
+        proposal.setSoUploadedAt(java.time.LocalDateTime.now());
+        return proposalRepository.saveAndFlush(proposal);
+    }
+
+    private static final String CHECKED =
+            "\"budgetComplete\":true,\"budgetComputationCorrect\":true,"
+            + "\"supportingDocsComplete\":true,\"expensesReasonable\":true,"
+            + "\"fundingSourceIdentified\":true,\"complianceVerified\":true";
+
+    private static String validationBody(String decision, String remarks, boolean checked) {
+        String checks = checked ? CHECKED
+                : "\"budgetComplete\":false,\"budgetComputationCorrect\":false,"
+                    + "\"supportingDocsComplete\":false,\"expensesReasonable\":false,"
+                    + "\"fundingSourceIdentified\":false,\"complianceVerified\":false";
+        String remarkValue = remarks == null ? "null" : "\"" + remarks + "\"";
+        return "{\"decision\":\"" + decision + "\",\"remarks\":" + remarkValue + "," + checks + "}";
+    }
+
+    private int ocNotifications(String title) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM notifications WHERE user_id = ? AND title = ?",
+                Integer.class, oc.getId(), title);
+    }
+
+    private int rpsNotifications(String type) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM notifications n JOIN users u ON u.id = n.user_id "
+                        + "WHERE u.role = 'RPS_STAFF' AND n.type = ?",
+                Integer.class, type);
+    }
+
+    @Test
+    void ovcafBudgetApprovalNotifiesOcOnceAndRecordsTheTransition() throws Exception {
+        Proposal proposal = ovcafProposal();
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("APPROVED_ENDORSED", null, true))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isCreated());
+
+        proposalRepository.flush();
+        assertEquals("READY_FOR_RELEASE", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+        assertEquals(1, ocNotifications("Budget Approved by OVCAF"),
+                "OVCAF approving the budget must tell the Chancellor's Office exactly once");
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM proposal_status_history WHERE proposal_id = ? "
+                        + "AND from_status = 'FOR_OVCAF_APPROVAL' AND to_status = 'READY_FOR_RELEASE'",
+                Integer.class, proposal.getId()),
+                "the OVCAF transition must be audited");
+
+        // The same decision cannot be submitted twice, and it cannot duplicate the alert.
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("APPROVED_ENDORSED", null, true))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isConflict());
+        assertEquals(1, ocNotifications("Budget Approved by OVCAF"));
+    }
+
+    @Test
+    void ovcafReturnRequiresRemarksAndHandsTheProposalToOrps() throws Exception {
+        Proposal proposal = ovcafProposal();
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("RETURNED_FOR_REVISION", null, false))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Remarks are required")));
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("RETURNED_FOR_REVISION", "Correct the MOOE line.", false))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isCreated());
+
+        proposalRepository.flush();
+        Map<String, Object> row = jdbcTemplate.queryForMap(
+                "SELECT status, return_kind, return_remarks, returned_by_office "
+                        + "FROM proposals WHERE id = ?", proposal.getId());
+        assertEquals("RETURNED_TO_RPS", row.get("status"));
+        assertEquals("REVISION", row.get("return_kind"));
+        assertEquals("Correct the MOOE line.", row.get("return_remarks"));
+        assertEquals("OVCAF", row.get("returned_by_office"));
+        assertTrue(rpsNotifications(NotificationTypes.REVISION) >= 1,
+                "ORPS must be told that the proposal awaits its revision hand-off");
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM proposal_status_history WHERE proposal_id = ? "
+                        + "AND to_status = 'RETURNED_TO_RPS'",
+                Integer.class, proposal.getId()));
+    }
+
+    @Test
+    void ovcafRejectionRequiresRemarksAndHandsTheProposalToOrps() throws Exception {
+        Proposal proposal = ovcafProposal();
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("REJECTED", " ", false))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("REJECTED", "Not a fundable expense.", false))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isCreated());
+
+        proposalRepository.flush();
+        Map<String, Object> row = jdbcTemplate.queryForMap(
+                "SELECT status, return_kind, return_remarks FROM proposals WHERE id = ?", proposal.getId());
+        assertEquals("RETURNED_TO_RPS", row.get("status"));
+        assertEquals("REJECTION", row.get("return_kind"));
+        assertEquals("Not a fundable expense.", row.get("return_remarks"));
+        assertTrue(rpsNotifications(NotificationTypes.REJECTION) >= 1,
+                "ORPS must receive the rejection reason for finalization");
+        // The proponent is not notified until ORPS finalizes the rejection.
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM notifications WHERE user_id = ? AND type = 'REJECTION'",
+                Integer.class, proponent.getId()));
+    }
+
+    @Test
+    void anImplementationApprovedProposalCannotBeEvaluatedAgain() throws Exception {
+        Proposal proposal = proposal("APPROVED");
+        proposal.setSoNumber("SO-2026-LOCK-" + System.nanoTime());
+        proposal.setSoUploadedAt(java.time.LocalDateTime.now());
+        proposalRepository.saveAndFlush(proposal);
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("APPROVED_ENDORSED", null, true))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isConflict());
+
+        proposalRepository.flush();
+        assertEquals("APPROVED", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM ovcaf_validations WHERE proposal_id = ?",
+                Integer.class, proposal.getId()),
+                "no evaluation record may be created for a finalized decision");
+    }
+
+    @Test
+    void anIncompleteChecklistCannotApproveThroughTheApi() throws Exception {
+        Proposal proposal = ovcafProposal();
+
+        mockMvc.perform(post("/api/ovcaf/proposals/{id}/validate", proposal.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validationBody("APPROVED_ENDORSED", null, false))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Complete every financial validation checklist item")))
+                .andExpect(jsonPath("$.error", containsString("Line-Item Budget is complete")));
+
+        proposalRepository.flush();
+        assertEquals("FOR_OVCAF_APPROVAL", jdbcTemplate.queryForObject(
+                "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM ovcaf_validations WHERE proposal_id = ?",
+                Integer.class, proposal.getId()),
+                "an incomplete approval must not create a validation record");
+    }
+
+    @Test
+    void ovcafEndpointsRequireTheOvcafRole() throws Exception {
+        mockMvc.perform(get("/api/ovcaf/proposals")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ocToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/ovcaf/proposals")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isForbidden());
     }
 }
