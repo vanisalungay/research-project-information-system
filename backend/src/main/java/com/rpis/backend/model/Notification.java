@@ -92,6 +92,17 @@ public class Notification {
     @Transient
     private String proposalDocumentId;
 
+    /**
+     * Computed (not persisted) proposal id this notification should open, filled by the
+     * notification service on read. It is the same value as {@link #proposalId} for a
+     * proposal-workflow row, the proposal behind the endorsement request for an
+     * {@code ENDORSEMENT} row (whose {@code proposalId} is polymorphic), and null when the
+     * linked proposal no longer exists. Clients resolve navigation from this field when it
+     * is present so a stale or endorsement-request id is never opened as a proposal.
+     */
+    @Transient
+    private Long linkedProposalId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

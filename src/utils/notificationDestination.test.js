@@ -86,6 +86,61 @@ test('a historical ENDORSEMENT row for OVCRIGE/OVCAF opens the proposal', () => 
   })
 })
 
+test('the backend-resolved proposal link wins over the polymorphic id', () => {
+  // An ENDORSEMENT row whose proposalId is an endorsement-request id: the backend says
+  // which proposal the request belongs to, and that is what must open.
+  const notification = {
+    type: 'ENDORSEMENT',
+    proposalId: 91,
+    linkedProposalId: 42,
+  }
+  assert.deepEqual(resolveNotificationDestination(notification, 'OVCRIGE'), {
+    name: 'OvcReviewProposal',
+    params: { id: 42 },
+  })
+  assert.deepEqual(resolveNotificationDestination(notification, 'OVCAF'), {
+    path: '/ovcaf/proposals/42',
+  })
+
+  // A proposal-workflow row resolves the same way for every role.
+  for (const role of ['PROPONENT', 'RPS_ADMIN', 'REC', 'OVCRIGE', 'OVCAF', 'OC']) {
+    const destination = resolveNotificationDestination(
+      { type: 'APPROVAL', proposalId: 91, linkedProposalId: 42 },
+      role,
+    )
+    assert.ok(destination, role)
+    assert.ok(JSON.stringify(destination).includes('42'), role)
+  }
+})
+
+test('an explicitly missing linked proposal opens nothing, never a dangling id', () => {
+  // The backend sends null when the referenced proposal no longer exists. Falling back
+  // to proposalId here would open a deleted record (or an unrelated one).
+  const notification = { type: 'PROPOSAL_ENDORSED', proposalId: 5, linkedProposalId: null }
+  for (const role of ['PROPONENT', 'RPS_ADMIN', 'REC', 'OVCRIGE', 'OVCAF', 'OC']) {
+    assert.equal(resolveNotificationDestination(notification, role), null, role)
+  }
+  assert.equal(
+    resolveNotificationDestination(
+      { type: 'ENDORSEMENT', proposalId: 91, linkedProposalId: null },
+      'OVCRIGE',
+    ),
+    null,
+  )
+})
+
+test('an endorsement request without a linked proposal falls back only for Dean/Proponent', () => {
+  const notification = { type: 'ENDORSEMENT', proposalId: 91, linkedProposalId: null }
+  assert.deepEqual(resolveNotificationDestination(notification, 'DEAN'), {
+    name: 'DeanEndorsementReview',
+    params: { id: 91 },
+  })
+  assert.deepEqual(resolveNotificationDestination(notification, 'PROPONENT'), {
+    name: 'ProponentEndorsementDetails',
+    params: { id: 91 },
+  })
+})
+
 test('an endorsement notification without a request opens the endorsement list', () => {
   assert.deepEqual(
     resolveNotificationDestination({ type: 'ENDORSEMENT', proposalId: null }, 'DEAN'),

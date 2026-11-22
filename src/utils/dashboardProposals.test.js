@@ -58,6 +58,21 @@ test('the requested date field wins, with the known fields as fallbacks', () => 
   )
 })
 
+test('an explicit fallback list stops a submission sort falling through to an edit time', () => {
+  const rows = [
+    { id: 1, submittedAt: '2026-11-10T10:00:00', updatedAt: '2026-11-01T10:00:00' },
+    { id: 2, createdAt: '2026-11-05T10:00:00', updatedAt: '2026-11-20T10:00:00' },
+  ]
+  assert.deepEqual(
+    latestProposalSnippets(rows, {
+      dateField: 'submittedAt',
+      fallbackDateFields: ['createdAt'],
+    }).map((p) => p.id),
+    [1, 2],
+    'the row without a submission date uses its creation date, never its edit date',
+  )
+})
+
 test('an invalid or missing date falls back to the id, and ties break by id', () => {
   const rows = [
     { id: 3, updatedAt: 'not-a-date' },

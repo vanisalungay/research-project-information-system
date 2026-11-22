@@ -33,6 +33,22 @@ export function asNotificationId(value) {
   return Number.isInteger(id) && id > 0 ? id : null
 }
 
+/**
+ * The proposal a notification may open, resolved by the backend.
+ *
+ * `linkedProposalId` is the backend's answer: the proposal for a proposal-workflow row,
+ * the proposal behind an endorsement request for an `ENDORSEMENT` row, or null when the
+ * linked record no longer exists. When the field is present at all its value wins - a
+ * deliberate null must not fall back to the polymorphic `proposalId`, which may be an
+ * endorsement-request id or a dangling reference. Payloads from an older backend do not
+ * carry the field, so `proposalId` remains the fallback.
+ */
+export function notificationProposalId(notification) {
+  if (!notification || typeof notification !== 'object') return null
+  const hasResolvedLink = Object.prototype.hasOwnProperty.call(notification, 'linkedProposalId')
+  return asNotificationId(hasResolvedLink ? notification.linkedProposalId : notification.proposalId)
+}
+
 /** The proposal page each role owns. Null for a role with no proposal page (Dean). */
 export function proposalDestinationForRole(proposalId, role) {
   const id = asNotificationId(proposalId)
@@ -88,10 +104,10 @@ function endorsementDestination(notification, role) {
       ? { name: 'ProponentEndorsementDetails', params: { id: requestId } }
       : { name: 'ProponentEndorsements' }
   }
-  // Historical proposal-forwarding rows addressed to OVCRIGE/OVCAF. The id in
-  // proposalId is the proposal, not an endorsement request.
+  // Historical proposal-forwarding rows addressed to OVCRIGE/OVCAF. Their `proposalId` is
+  // polymorphic, so the backend's resolved proposal link is used instead.
   if (role === ROLES.OVCRIGE || role === ROLES.OVCAF) {
-    return proposalDestinationForRole(notification?.proposalId, role)
+    return proposalDestinationForRole(notificationProposalId(notification), role)
   }
   return null
 }
@@ -117,7 +133,7 @@ export function resolveNotificationDestination(notification, role) {
 
   if (type === NOTIFICATION_TYPES.QUARTERLY_REPORT ||
       type === NOTIFICATION_TYPES.PROJECT_COMPLETION) {
-    return reportDestinationForRole(notification.proposalId, role)
+    return reportDestinationForRole(notificationProposalId(notification), role)
   }
 
   if (type === NOTIFICATION_TYPES.DEAN_ASSIGNMENT) {
@@ -141,13 +157,13 @@ export function resolveNotificationDestination(notification, role) {
     (type === NOTIFICATION_TYPES.REVISION ||
       type === NOTIFICATION_TYPES.REVISION_DEADLINE_REMINDER)
   ) {
-    const proposalId = asNotificationId(notification.proposalId)
+    const proposalId = notificationProposalId(notification)
     if (proposalId) return { path: `/submit-revision/${proposalId}` }
   }
 
   // Proposal-workflow types, and any older/untyped row that still carries a proposal
   // reference, open the proposal page the role owns.
-  const proposalDestination = proposalDestinationForRole(notification.proposalId, role)
+  const proposalDestination = proposalDestinationForRole(notificationProposalId(notification), role)
   if (proposalDestination) return proposalDestination
 
   // A notification about an announcement that is not of the announcement type (for
@@ -168,5 +184,5 @@ export function notificationDestination(notification, role) {
 
 export function proposalNotificationDestination(notification, role) {
   if (!notification) return null
-  return proposalDestinationForRole(notification.proposalId, role)
+  return proposalDestinationForRole(notificationProposalId(notification), role)
 }

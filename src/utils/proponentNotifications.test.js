@@ -17,7 +17,8 @@ const PAGE = read('../views/Notifications/NotificationPage.vue')
 const DESTINATION = read('notificationDestination.js')
 
 test('the Proponent feed is not split into groups that break the newest-first order', () => {
-  assert.ok(PAGE.includes("userStore.user?.role === 'PROPONENT'"), 'the Proponent case is explicit')
+  assert.ok(PAGE.includes("role === 'PROPONENT'"), 'the Proponent case is explicit')
+  assert.ok(PAGE.includes("role === 'OVCRIGE'"), 'the OVCRIGE feed is also one untitled list')
   assert.ok(PAGE.includes("key: 'all'"), 'the Proponent list is one group')
   assert.match(
     PAGE,

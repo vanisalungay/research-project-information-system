@@ -1,8 +1,10 @@
 package com.rpis.backend.service;
 
+import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.User;
+import com.rpis.backend.repository.EndorsementRequestRepository;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
@@ -16,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -48,6 +52,7 @@ class NotificationServiceTest {
     private NotificationRepository notificationRepository;
     private UserRepository userRepository;
     private ProposalRepository proposalRepository;
+    private EndorsementRequestRepository endorsementRequestRepository;
     private ApplicationEventPublisher eventPublisher;
     private NotificationService service;
 
@@ -56,10 +61,11 @@ class NotificationServiceTest {
         notificationRepository = mock(NotificationRepository.class);
         userRepository = mock(UserRepository.class);
         proposalRepository = mock(ProposalRepository.class);
+        endorsementRequestRepository = mock(EndorsementRequestRepository.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
         service = new NotificationService(notificationRepository, userRepository,
-                mock(ProposalAnnouncementRepository.class), proposalRepository, eventPublisher,
-                new NotificationPreferencePolicy());
+                mock(ProposalAnnouncementRepository.class), proposalRepository,
+                endorsementRequestRepository, eventPublisher, new NotificationPreferencePolicy());
         when(notificationRepository.save(any(Notification.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -137,7 +143,53 @@ class NotificationServiceTest {
         assertNull(missingProposal.getProposalDocumentId(),
                 "a missing proposal yields no identifier rather than a wrong one");
         assertNull(noProposal.getProposalDocumentId());
-        verify(proposalRepository).findAllById(Set.of(84L, 85L, 999L));
+        verify(proposalRepository, atLeastOnce()).findAllById(Set.of(84L, 85L, 999L));
+    }
+
+    @Test
+    void theLinkedProposalIsResolvedAndStaleReferencesBecomeNull() {
+        User staff = user(STAFF_ID, "RPS_STAFF");
+        Notification endorsed = notification(1L, "PROPOSAL_ENDORSED");
+        endorsed.setProposalId(84L);
+        Notification recApproved = notification(2L, "APPROVAL");
+        recApproved.setProposalId(85L);
+        Notification deleted = notification(3L, "REVISION");
+        deleted.setProposalId(999L);
+        Notification legacyForwarding = notification(4L, "ENDORSEMENT");
+        legacyForwarding.setProposalId(84L); // historically this type held a proposal id
+        Notification requestEndorsement = notification(5L, "ENDORSEMENT");
+        requestEndorsement.setProposalId(70L); // the canonical meaning: a request id
+        Notification requestWithoutProposal = notification(6L, "ENDORSEMENT");
+        requestWithoutProposal.setProposalId(71L);
+
+        when(proposalRepository.findAllById(any())).thenAnswer(invocation -> {
+            Collection<Long> ids = invocation.getArgument(0);
+            List<Proposal> found = new ArrayList<>();
+            if (ids.contains(84L)) found.add(proposal(84L, "MSUN-ORPS-DA-123-2026-REV00"));
+            if (ids.contains(85L)) found.add(proposal(85L, "MSUN-ORPS-DA-124-2026-REV00"));
+            return found;
+        });
+        EndorsementRequest withProposal = new EndorsementRequest();
+        withProposal.setId(70L);
+        withProposal.setProposalId(85L);
+        EndorsementRequest withoutProposal = new EndorsementRequest();
+        withoutProposal.setId(71L);
+        when(endorsementRequestRepository.findAllById(any()))
+                .thenReturn(List.of(withProposal, withoutProposal));
+
+        inboxOf(staff, List.of(endorsed, recApproved, deleted, legacyForwarding,
+                requestEndorsement, requestWithoutProposal));
+
+        assertEquals(84L, endorsed.getLinkedProposalId(), "a live proposal id is linked");
+        assertEquals(85L, recApproved.getLinkedProposalId());
+        assertNull(deleted.getLinkedProposalId(),
+                "a deleted proposal must not become a navigation target");
+        assertEquals(84L, legacyForwarding.getLinkedProposalId(),
+                "a legacy ENDORSEMENT row that already holds a proposal id opens that proposal");
+        assertEquals(85L, requestEndorsement.getLinkedProposalId(),
+                "an ENDORSEMENT row holding a request id opens the proposal behind the request");
+        assertNull(requestWithoutProposal.getLinkedProposalId(),
+                "an endorsement request with no proposal opens nothing");
     }
 
     @Test

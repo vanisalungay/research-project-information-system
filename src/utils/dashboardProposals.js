@@ -29,10 +29,18 @@ function timestamp(value) {
   return Number.isFinite(time) ? time : 0
 }
 
-/** The recency of one proposal, in milliseconds; 0 when no usable date exists. */
-export function proposalRecency(proposal, dateField = 'updatedAt') {
+/**
+ * The recency of one proposal, in milliseconds; 0 when no usable date exists.
+ *
+ * `fallbackDateFields` replaces the default fallback order. A caller that sorts by a
+ * specific event (for example the submission date) can pass only the acceptable
+ * fallbacks, so the order can never silently fall through to an unrelated timestamp
+ * such as the last edit.
+ */
+export function proposalRecency(proposal, dateField = 'updatedAt', fallbackDateFields = DATE_FALLBACKS) {
   if (!proposal || typeof proposal !== 'object') return 0
-  const fields = [dateField, ...DATE_FALLBACKS.filter((field) => field !== dateField)]
+  const fallbacks = Array.isArray(fallbackDateFields) ? fallbackDateFields : DATE_FALLBACKS
+  const fields = [dateField, ...fallbacks.filter((field) => field !== dateField)]
   for (const field of fields) {
     const time = timestamp(proposal[field])
     if (time) return time
@@ -51,13 +59,13 @@ function proposalId(proposal) {
  * view so a "View all" table reads in the same order as its five-item preview.
  */
 export function sortProposalsNewestFirst(proposals, options = {}) {
-  const { dateField = 'updatedAt' } = options
+  const { dateField = 'updatedAt', fallbackDateFields = DATE_FALLBACKS } = options
   const source = Array.isArray(proposals) ? proposals : []
   return source
     .map((proposal, index) => ({
       proposal,
       index,
-      time: proposalRecency(proposal, dateField),
+      time: proposalRecency(proposal, dateField, fallbackDateFields),
       id: proposalId(proposal),
     }))
     .sort((a, b) => {
@@ -72,13 +80,17 @@ export function sortProposalsNewestFirst(proposals, options = {}) {
  * The latest proposals for a dashboard preview.
  *
  * @param {Array} proposals the authorized proposals already loaded for the dashboard
- * @param {{ limit?: number, dateField?: string }} options
+ * @param {{ limit?: number, dateField?: string, fallbackDateFields?: string[] }} options
  * @returns {Array} a new array with at most `limit` distinct proposals, newest first
  */
 export function latestProposalSnippets(proposals, options = {}) {
-  const { limit = DASHBOARD_PROPOSAL_LIMIT, dateField = 'updatedAt' } = options
+  const {
+    limit = DASHBOARD_PROPOSAL_LIMIT,
+    dateField = 'updatedAt',
+    fallbackDateFields = DATE_FALLBACKS,
+  } = options
   const safeLimit = Math.max(0, Number.isFinite(Number(limit)) ? Number(limit) : DASHBOARD_PROPOSAL_LIMIT)
-  const ordered = sortProposalsNewestFirst(proposals, { dateField })
+  const ordered = sortProposalsNewestFirst(proposals, { dateField, fallbackDateFields })
 
   const result = []
   const seen = new Set()

@@ -233,13 +233,15 @@ const filteredNotifications = computed(() => {
  * The visible notifications, split so the proposal updates sit in their own group. Nothing
  * is dropped: the groups always hold every notification the filters left in, newest first.
  * The groups are always rendered in full - there is no collapsed or compact state.
+ *
+ * Two feeds are one strict reverse-chronological list: the Proponent's, because a proposal
+ * update must never be pushed below an older call or endorsement row, and OVCRIGE's,
+ * because every notification that office receives is a proposal update - a "Proposal
+ * Updates" heading over the only group is just clutter.
  */
 const notificationGroups = computed(() => {
-  // The Proponent feed is one strict reverse-chronological list: a proposal update
-  // must never be pushed below an older call or endorsement row by grouping. The
-  // reviewing offices keep the existing "Proposal Updates" group because their feed
-  // is dominated by proposal work.
-  if (userStore.user?.role === 'PROPONENT') {
+  const role = userStore.user?.role
+  if (role === 'PROPONENT' || role === 'OVCRIGE') {
     return filteredNotifications.value.length
       ? [{ key: 'all', title: '', items: filteredNotifications.value }]
       : []

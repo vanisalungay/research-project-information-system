@@ -107,7 +107,7 @@
                   {{ proposal.projectLeader || proposal.proponent?.name || '-' }}
                 </td>
                 <td class="cell-id">
-                  {{ proposal.createdAt?.substring(0, 10) }}
+                  {{ proposalSubmittedAt(proposal)?.substring(0, 10) || '—' }}
                 </td>
                 <td>
                   <span class="end-badge" :class="statusTone(proposal.status)">
@@ -142,6 +142,11 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { latestProposalSnippets } from '@/utils/dashboardProposals'
+import {
+  OVCRIGE_DASHBOARD_FETCH_STATUSES,
+  isOvcrigePipelineProposal,
+  proposalSubmittedAt,
+} from '@/utils/ovcrigeProposals'
 import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
@@ -205,23 +210,31 @@ const stats = ref({
 const proposals = ref([])
 
 /**
- * The preview shows the five latest endorsed proposals. The full array remains the
- * source of the statistic cards and of the "View All" page; this only shortens the
- * table, newest first by the submission date the table displays.
+ * The preview shows the five latest proposals that are in OVCRIGE's pipeline, newest
+ * submission first. The full array remains the source of the statistic cards; this only
+ * removes proposals that have not been endorsed to OVCRIGE (and finished projects) from
+ * the table, and shortens it to five.
  */
 const latestEndorsed = computed(() =>
-  latestProposalSnippets(proposals.value, { dateField: 'createdAt' }),
+  latestProposalSnippets(
+    proposals.value.filter(isOvcrigePipelineProposal),
+    { dateField: 'submittedAt', fallbackDateFields: ['createdAt'] },
+  ),
 )
 
 const loading = ref(true)
 
 const loadDashboard = async () => {
   try {
-    // Fetch proposals relevant to OVCRIGE workflow
-    // Use proper params serialization for array parameters
+    // Fetch proposals relevant to the OVCRIGE workflow. Ordering is done by the server
+    // on the real submission event (submitted_at), so a record's last edit or the order
+    // the rows happen to be stored in can never decide what appears first. The returned
+    // statuses are included only because the "For Revision" card counts them; the table
+    // itself is filtered to the pipeline below.
     const proposalResponse = await api.get('/api/proposals', {
       params: {
-        statusIn: ['FOR REVIEW', 'SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+        statusIn: [...OVCRIGE_DASHBOARD_FETCH_STATUSES],
+        sort: 'submittedAt'
       },
       paramsSerializer: {
         indexes: null // array format: statusIn=a&statusIn=b&statusIn=c

@@ -46,10 +46,13 @@ test('RPS Staff previews the latest five in every proposal section', () => {
   assert.match(source, /latestProposalSnippets\(filteredBudget\.value, \{ dateField: 'updatedAt' \}\)/)
 })
 
-test('OVCRIGE shows the latest five endorsed proposals, newest first', () => {
+test('OVCRIGE shows the latest five endorsed proposals, newest submission first', () => {
   const source = dashboards.OVCRIGE
   assert.match(source, /v-for="proposal in latestEndorsed"/)
-  assert.match(source, /latestProposalSnippets\(proposals\.value, \{ dateField: 'createdAt' \}\)/)
+  assert.match(
+    source,
+    /latestProposalSnippets\(\s*proposals\.value\.filter\(isOvcrigePipelineProposal\),\s*\{ dateField: 'submittedAt', fallbackDateFields: \['createdAt'\] \},?\s*\)/,
+  )
 })
 
 test('REC shows the latest five assigned proposals', () => {

@@ -149,6 +149,23 @@ test('each proposal update shows the full message and its record details', () =>
   )
 })
 
+test('the OVCRIGE feed is one list, without a redundant Proposal Updates heading', () => {
+  const page = read('../views/Notifications/NotificationPage.vue')
+
+  // Every notification OVCRIGE receives is a proposal update, so a heading above the only
+  // group adds nothing. The role shares the Proponent's single untitled group branch.
+  assert.match(
+    page,
+    /role === 'PROPONENT' \|\| role === 'OVCRIGE'/,
+    'OVCRIGE must use the single, untitled group',
+  )
+  assert.match(
+    page,
+    /\{ key: 'all', title: '', items: filteredNotifications\.value \}/,
+    'the single group keeps the newest-first filtered list',
+  )
+})
+
 test('the Proposal updates kind is offered to every role', () => {
   const page = read('../views/Notifications/NotificationPage.vue')
 

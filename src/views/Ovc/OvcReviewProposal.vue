@@ -255,7 +255,14 @@ const loadProposal = async () => {
     await loadFieldRemarks()
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to load proposal details.'
+    const status = err?.response?.status
+    if (status === 404) {
+      error.value = 'This proposal is no longer available. It may have been removed.'
+    } else if (status === 403) {
+      error.value = 'You no longer have access to this proposal.'
+    } else {
+      error.value = 'Failed to load proposal details.'
+    }
   } finally {
     loading.value = false
   }
@@ -310,7 +317,21 @@ onMounted(loadProposal)
 // opening another proposal, or Back/Forward between two, reloads the right record.
 watch(() => route.params.id, () => loadProposal())
 
+/** The proposal as it should be named in a confirmation dialog. */
+const proposalLabel = () => {
+  const title = proposal.value.projectTitle || 'this proposal'
+  const id = proposal.value.documentId || proposal.value.proposalCode || proposal.value.id
+  return id ? `"${title}" (${id})` : `"${title}"`
+}
+
 const forwardToRec = async () => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Forward ${proposalLabel()} to the Research Evaluation Committee (REC) for evaluation? ` +
+      'The proposal will leave the OVCRIGE queue and move to REC review.',
+    { title: 'Forward to REC', type: 'warning', confirmText: 'Forward to REC' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id
@@ -327,6 +348,13 @@ const forwardToRec = async () => {
 }
 
 const forwardToOc = async () => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Approve REC's recommendation for ${proposalLabel()} and forward it to the Office of the ` +
+      'Chancellor for final approval? The proposal will no longer be awaiting an OVCRIGE decision.',
+    { title: 'Approve & Forward to OC', type: 'warning', confirmText: 'Approve & Forward' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id
@@ -348,11 +376,16 @@ const returnForRevision = () => {
 }
 
 const rejectProposal = async () => {
-  const confirmed = await showConfirm('Are you sure you want to reject this proposal?', {
-    title: 'Reject Proposal',
-    type: 'danger',
-    confirmText: 'Reject'
-  })
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Reject ${proposalLabel()}? The proposal will be closed as rejected and the proponent ` +
+      'will be notified. This cannot be undone from the OVCRIGE page.',
+    {
+      title: 'Reject Proposal',
+      type: 'danger',
+      confirmText: 'Reject',
+    },
+  )
   if (!confirmed) return
   actionLoading.value = true
   try {

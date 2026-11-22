@@ -86,6 +86,20 @@ test('every statistic is bound to real data, never typed into the template', () 
 
 test('the dashboard reads its proposals and leaves notifications to the shared store', () => {
   assert.match(DASHBOARD, /api\.get\('\/api\/proposals'/, 'proposals come from the same endpoint')
+  assert.match(
+    DASHBOARD,
+    /sort: 'submittedAt'/,
+    'the list must be ordered by the server on the real submission date',
+  )
+  assert.match(
+    DASHBOARD,
+    /statusIn: \[\.\.\.OVCRIGE_DASHBOARD_FETCH_STATUSES\]/,
+    'the request must use the shared OVCRIGE status set, not an inline list',
+  )
+  assert.ok(
+    !DASHBOARD.includes("'FOR REVIEW'") && !DASHBOARD.includes("'APPROVED'"),
+    'not-yet-endorsed and finished proposals must not be requested for this table',
+  )
   assert.ok(
     !DASHBOARD.includes('/api/notifications'),
     'notifications are read once by the shared store, with no hardcoded user id',
@@ -145,8 +159,8 @@ test('the proposal table keeps its columns, cells and status text', () => {
   )
   assert.match(
     DASHBOARD,
-    /\{\{ proposal\.createdAt\?\.substring\(0, 10\) \}\}/,
-    'the submission date cell must be kept',
+    /\{\{ proposalSubmittedAt\(proposal\)\?\.substring\(0, 10\) \|\| '—' \}\}/,
+    'the submission date cell must read the submission event, not the row creation time',
   )
 
   // The status shown goes through the shared proposal label, so a newly submitted
@@ -170,8 +184,8 @@ test('the proposal table keeps its columns, cells and status text', () => {
   )
   assert.match(
     DASHBOARD,
-    /latestProposalSnippets\(proposals\.value, \{ dateField: 'createdAt' \}\)/,
-    'the preview must be newest-first by the displayed submission date',
+    /latestProposalSnippets\(\s*proposals\.value\.filter\(isOvcrigePipelineProposal\),\s*\{ dateField: 'submittedAt', fallbackDateFields: \['createdAt'\] \},?\s*\)/,
+    'the preview must be newest-first by the real submission date and only show the pipeline',
   )
 
   // The loading and empty states are the real ones, not placeholder text.

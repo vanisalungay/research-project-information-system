@@ -1,9 +1,11 @@
 package com.rpis.backend.service;
 
+import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
+import com.rpis.backend.repository.EndorsementRequestRepository;
 import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
@@ -23,6 +25,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -41,6 +44,7 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final ProposalAnnouncementRepository announcementRepository;
     private final ProposalRepository proposalRepository;
+    private final EndorsementRequestRepository endorsementRequestRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationPreferencePolicy preferencePolicy;
 
@@ -80,6 +84,7 @@ public class NotificationService {
         }
         fillAnnouncementDetails(notifications);
         fillProposalDocumentIds(notifications);
+        fillLinkedProposalIds(notifications);
         return notifications;
     }
 
@@ -118,6 +123,87 @@ public class NotificationService {
                         documentIds.get(notification.getProposalId()));
             }
         }
+    }
+
+    /**
+     * Fills the computed (not persisted) proposal link the client should open.
+     *
+     * <p>{@code proposalId} alone is not safe to navigate by: it is an endorsement request
+     * id on an {@code ENDORSEMENT} row, and historical rows of that type were also written
+     * with a proposal id, so the value is polymorphic. A deleted proposal is also still a
+     * non-null id. This method therefore verifies the record against the database:
+     * <ul>
+     *   <li>proposal-workflow rows link to the proposal only when it still exists;</li>
+     *   <li>{@code ENDORSEMENT} rows link to the proposal directly when the id is a
+     *       proposal (legacy forwarding rows), otherwise through the endorsement request;
+     *   <li>anything that resolves to nothing stays null, and the client shows its
+     *       "nothing to open" message instead of navigating to a broken record.</li>
+     * </ul>
+     */
+    private void fillLinkedProposalIds(List<Notification> notifications) {
+        Set<Long> workflowIds = new HashSet<>();
+        Set<Long> endorsementIds = new HashSet<>();
+        for (Notification notification : notifications) {
+            if (notification.getProposalId() == null) {
+                continue;
+            }
+            if (NotificationTypes.isProposalWorkflow(notification.getType())) {
+                workflowIds.add(notification.getProposalId());
+            } else if (NotificationTypes.ENDORSEMENT.equalsIgnoreCase(notification.getType())) {
+                endorsementIds.add(notification.getProposalId());
+            }
+        }
+
+        Set<Long> existingWorkflowIds = existingProposalIds(workflowIds);
+
+        // An ENDORSEMENT id may itself be a proposal (the historical forwarding rows) or an
+        // endorsement request whose linked proposal we must look up.
+        Set<Long> endorsementIdsThatAreProposals = existingProposalIds(endorsementIds);
+        Set<Long> requestIds = new HashSet<>(endorsementIds);
+        requestIds.removeAll(endorsementIdsThatAreProposals);
+
+        Map<Long, Long> proposalByRequestId = new HashMap<>();
+        if (!requestIds.isEmpty()) {
+            for (EndorsementRequest request : endorsementRequestRepository.findAllById(requestIds)) {
+                if (request != null && request.getId() != null && request.getProposalId() != null) {
+                    proposalByRequestId.put(request.getId(), request.getProposalId());
+                }
+            }
+        }
+        Set<Long> linkedByRequest = existingProposalIds(new HashSet<>(proposalByRequestId.values()));
+
+        for (Notification notification : notifications) {
+            Long proposalId = notification.getProposalId();
+            if (proposalId == null) {
+                notification.setLinkedProposalId(null);
+                continue;
+            }
+            Long linked = null;
+            if (NotificationTypes.isProposalWorkflow(notification.getType())) {
+                linked = existingWorkflowIds.contains(proposalId) ? proposalId : null;
+            } else if (NotificationTypes.ENDORSEMENT.equalsIgnoreCase(notification.getType())) {
+                if (endorsementIdsThatAreProposals.contains(proposalId)) {
+                    linked = proposalId;
+                } else {
+                    Long requestProposalId = proposalByRequestId.get(proposalId);
+                    linked = requestProposalId != null && linkedByRequest.contains(requestProposalId)
+                            ? requestProposalId
+                            : null;
+                }
+            }
+            notification.setLinkedProposalId(linked);
+        }
+    }
+
+    /** The ids that still exist in {@code proposals}, with one query for the whole batch. */
+    private Set<Long> existingProposalIds(Set<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        return proposalRepository.findAllById(ids).stream()
+                .map(Proposal::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     /**
