@@ -29,11 +29,11 @@
         <input
           type="text"
           v-model="name"
-          placeholder="Dela Cruz, Juan, M., Jr."
+          placeholder="Juan Dela Cruz"
           required
           @blur="name = formatPersonName(name)"
         />
-        <PersonNameHint />
+        <FullNameHint />
 
         <label>ID Number</label>
         <input
@@ -118,9 +118,9 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import PasswordRequirements from '@/components/PasswordRequirements.vue'
 import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
-import PersonNameHint from '@/components/PersonNameHint.vue'
+import FullNameHint from '@/components/FullNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
-import { formatPersonName } from '@/utils/personName'
+import { firstLastNameError, formatPersonName } from '@/utils/personName'
 import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
@@ -139,6 +139,11 @@ const passwordReady = computed(() => passwordFormReady(password.value, confirmPa
 
 const handleRegister = async () => {
   name.value = formatPersonName(name.value)
+  const nameError = firstLastNameError(name.value)
+  if (nameError) {
+    await showAlert(nameError, { type: 'error', title: 'Name Required' })
+    return
+  }
 
   const policyMessage = passwordPolicyMessage(password.value)
   if (policyMessage) {

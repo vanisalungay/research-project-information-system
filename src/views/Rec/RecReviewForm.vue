@@ -133,7 +133,8 @@
       <div class="evaluation-section">
         <h3 class="section-title">II. Evaluation Criteria</h3>
         <p class="evaluation-hint">
-          Select one score from 1 (Poor) to 5 (Excellent) for each indicator. Scoring is optional.
+          Select one score from 1 (Poor) to 5 (Excellent) for each indicator. Every criterion is
+          required before the proposal can be approved.
         </p>
 
         <div v-for="group in SCORE_GROUPS" :key="group.key" class="score-group">
@@ -169,7 +170,12 @@
         v-model="overallComments"
         class="comment-box"
         rows="5"
+        :aria-describedby="approvalError ? 'approval-requirements' : undefined"
       ></textarea>
+
+      <p v-if="approvalError" id="approval-requirements" class="approval-requirements" role="status">
+        {{ approvalError }}
+      </p>
 
       <!-- DECISION SUBMISSION -->
       <h3 class="decision-title">Decision Submission</h3>
@@ -177,7 +183,9 @@
       <div class="decision-buttons">
         <button
           class="btn-approve"
-          :disabled="!proposal.id || isForwarding || proposal.status === 'REC_APPROVED'"
+          :disabled="!proposal.id || isForwarding || proposal.status === 'REC_APPROVED' || !approvalReady"
+          :aria-describedby="approvalReady ? undefined : 'approval-requirements'"
+          :title="approvalError || null"
           @click="openApproveModal"
         >
           Approve Proposal
@@ -208,9 +216,9 @@
           aria-describedby="approve-message"
           tabindex="-1"
         >
-          <h3 id="approve-title" class="confirm-heading">Forward Proposal</h3>
+          <h3 id="approve-title" class="confirm-heading">Confirm REC Approval</h3>
           <p id="approve-message" class="confirm-message">
-            Are you sure you want to forward this proposal?
+            This proposal will be approved after confirmation and forwarded to OVCRIGE. Continue?
           </p>
 
           <div class="confirm-actions">
@@ -230,7 +238,7 @@
               @click="confirmApproval"
             >
               <span v-if="isForwarding" class="confirm-spinner" aria-hidden="true"></span>
-              Approve
+              {{ isForwarding ? 'Approving...' : 'Approve Proposal' }}
             </button>
           </div>
         </div>
@@ -267,13 +275,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, nextTick, onBeforeUnmount } from 'vue'
+import { computed, ref, reactive, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import {
+  evaluationApprovalError,
+  isEvaluationApprovalReady,
+  normalizeEvaluationScore,
+} from '@/utils/recEvaluation.js'
 
 const { dialogState, showAlert } = useDialog()
 
@@ -393,6 +406,15 @@ const SCORE_VALUES = [1, 2, 3, 4, 5]
 const scores = reactive(Object.fromEntries(SCORE_FIELDS.map((field) => [field, null])))
 const overallComments = ref('')
 
+// Approval is allowed only when every criterion has a valid 1-5 score and the overall
+// comment is not empty/whitespace. The same rule is enforced by the backend.
+const approvalError = computed(() =>
+  evaluationApprovalError(scores, SCORE_FIELDS, overallComments.value),
+)
+const approvalReady = computed(() =>
+  isEvaluationApprovalReady(scores, SCORE_FIELDS, overallComments.value),
+)
+
 // ==== Modal / request state ====
 const showApproveModal = ref(false)
 const showSuccessMessage = ref(false)
@@ -489,8 +511,12 @@ watch(showApproveModal, async (open) => {
   approveSheet.value?.focus()
 })
 
-const openApproveModal = () => {
+const openApproveModal = async () => {
   if (isForwarding.value || !proposal.value.id || proposal.value.status === 'REC_APPROVED') return
+  if (!approvalReady.value) {
+    await showAlert(approvalError.value, { type: 'warning', title: 'Evaluation Incomplete' })
+    return
+  }
   showApproveModal.value = true
 }
 
@@ -514,16 +540,10 @@ const resolveReviewerId = () => {
   return userStore.user?.id ?? null
 }
 
-/** Keeps every submitted score an integer in 1-5 (or null when the criterion is left blank). */
-const normalizeScore = (value) => {
-  const number = Number(value)
-  return Number.isInteger(number) && number >= 1 && number <= 5 ? number : null
-}
-
 /** The review body: the 15 scores, the overall comments, and the REC decision. */
 const buildReviewPayload = () => {
   const payload = {}
-  for (const field of SCORE_FIELDS) payload[field] = normalizeScore(scores[field])
+  for (const field of SCORE_FIELDS) payload[field] = normalizeEvaluationScore(scores[field])
   return {
     ...payload,
     overallComments: overallComments.value.trim() || null,
@@ -534,6 +554,13 @@ const buildReviewPayload = () => {
 const confirmApproval = async () => {
   // Set synchronously: a second click (or a double-tap) returns before a second request starts.
   if (isForwarding.value) return
+
+  // Re-checked at the moment of submission, not only when the button was enabled.
+  if (!approvalReady.value) {
+    showApproveModal.value = false
+    await showAlert(approvalError.value, { type: 'warning', title: 'Evaluation Incomplete' })
+    return
+  }
 
   const proposalId = proposal.value.id
   if (proposalId == null) {
@@ -570,7 +597,13 @@ const confirmApproval = async () => {
     console.error(err)
     const body = err?.response?.data
     const serverMessage =
-      typeof body === 'string' ? body : typeof body?.message === 'string' ? body.message : ''
+      typeof body === 'string'
+        ? body
+        : typeof body?.message === 'string'
+          ? body.message
+          : typeof body?.error === 'string'
+            ? body.error
+            : ''
     await showAlert(
       serverMessage.trim() || 'Failed to forward the proposal. Please try again.',
       { type: 'error', title: 'Forwarding Failed' },
@@ -850,6 +883,19 @@ onBeforeUnmount(() => {
   font-size: var(--fs-sm, 14px);
   color: var(--color-text, #1e293b);
   background: var(--color-card-background, #ffffff);
+}
+
+/* The approval requirements stay visible while something is missing, so a disabled
+   Approve button always has an explanation beside it. */
+.approval-requirements {
+  margin: 8px 0 0;
+  padding: 9px 12px;
+  border-left: 3px solid var(--status-warning-solid, #d97706);
+  border-radius: 6px;
+  background: var(--status-warning-bg, #fffbeb);
+  color: #7c4a03;
+  font-size: var(--fs-sm, 13px);
+  line-height: 1.45;
 }
 
 /* Decision Submission */

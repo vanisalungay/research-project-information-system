@@ -964,7 +964,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserDataStore()
 
-const { dialogState, showAlert } = useDialog()
+const { dialogState, showAlert, showConfirm } = useDialog()
 
 const proposalId = computed(() => route.params.id as string | undefined)
 
@@ -1415,6 +1415,13 @@ const submitRevision = async () => {
     error.value = 'User not logged in.'
     return
   }
+
+  const confirmed = await showConfirm(
+    `Resubmit the revised proposal "${proposal.value.project_title || 'this proposal'}"? ` +
+      'It will return to ORPS for review and cannot be edited while under review.',
+    { title: 'Submit Revision', type: 'warning', confirmText: 'Submit Revision' },
+  )
+  if (!confirmed) return
 
   loading.value = true
   error.value = ''

@@ -101,6 +101,15 @@
             <button class="btn-action btn-warning" @click="returnForRevision" :disabled="actionLoading">
               {{ actionLoading ? 'Processing...' : 'Return for Revision' }}
             </button>
+            <div v-if="canReject" class="reject-remarks">
+              <label for="rejectRemarks">Rejection Reason <span>(required)</span></label>
+              <textarea
+                id="rejectRemarks"
+                v-model="rejectRemarks"
+                rows="3"
+                placeholder="Explain why this proposal is rejected. ORPS reviews this reason before forwarding it to the proponent."
+              ></textarea>
+            </div>
             <button v-if="canReject" class="btn-action btn-danger" @click="rejectProposal" :disabled="actionLoading">
               {{ actionLoading ? 'Processing...' : 'Reject Proposal' }}
             </button>
@@ -203,6 +212,7 @@ const showSuccess = ref(false)
 const showError = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const rejectRemarks = ref('')
 
 /** Reject is only offered while the proposal is still in OVCRIGE's review stages. */
 const canReject = computed(() => isOvcrigeRejectable(proposal.value))
@@ -364,6 +374,13 @@ const returnForRevision = () => {
 
 const rejectProposal = async () => {
   if (actionLoading.value) return
+  if (!rejectRemarks.value.trim()) {
+    await showAlert('Enter the reason for rejecting this proposal. ORPS needs it to review and forward the decision.', {
+      type: 'warning',
+      title: 'Rejection Reason Required',
+    })
+    return
+  }
   const confirmed = await showConfirm(
     `Reject ${proposalLabel()} and return it to ORPS? ORPS will review the rejection and ` +
       'inform the proponent. The proposal is not closed as rejected until ORPS processes it.',
@@ -377,7 +394,9 @@ const rejectProposal = async () => {
   actionLoading.value = true
   try {
     const proposalId = route.params.id
-    await api.put(`/api/proposals/${proposalId}/reject-to-rps`, { remarks: null })
+    await api.put(`/api/proposals/${proposalId}/reject-to-rps`, {
+      remarks: rejectRemarks.value.trim(),
+    })
     successMessage.value = 'Proposal rejected and returned to ORPS for processing.'
     showSuccess.value = true
     proposal.value.status = 'RETURNED_TO_RPS'
@@ -485,6 +504,44 @@ const formatReviewerPosition = (position) => {
 </script>
 
 <style scoped>
+.reject-remarks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.reject-remarks label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.reject-remarks label span {
+  font-weight: 400;
+  text-transform: none;
+  opacity: 0.75;
+}
+
+.reject-remarks textarea {
+  width: 100%;
+  min-height: 74px;
+  padding: 9px 11px;
+  border: 1px solid #d5d9e6;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.reject-remarks textarea:focus {
+  outline: 2px solid rgba(36, 82, 255, 0.35);
+  outline-offset: 1px;
+}
+
 /* The shell supplies the content padding and the lavender content background; a page-level
    background and a 100vh minimum only fought with it. */
 .proposal-detail-page {

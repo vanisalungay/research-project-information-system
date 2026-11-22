@@ -92,7 +92,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="proposal in filteredProposals" :key="proposal.id">
+            <tr v-for="proposal in paginatedProposals" :key="proposal.id">
               <td class="cell-id" :title="proposal.documentId || proposal.proposalCode || '—'">
                 {{ proposal.documentId || proposal.proposalCode || '—' }}
               </td>
@@ -126,6 +126,16 @@
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
   </div>
 
@@ -134,7 +144,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 // The Dean endorsement the proposal is being continued from, when the Proponent
@@ -145,7 +155,9 @@ import { statusTone } from '@/utils/statusTone.js'
 import { isApprovedProject, proposalActionLabel, proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { useDialog } from '@/composables/useDialog'
+import { usePagination } from '@/composables/usePagination.js'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -384,6 +396,19 @@ const filteredProposals = computed(() => {
     return true
   }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
+
+// The list pages the filtered set; its total is the real number of matching proposals.
+const {
+  page,
+  pageSize,
+  pageItems: paginatedProposals,
+  setPage,
+  setPageSize,
+  reset: resetPage,
+} = usePagination(filteredProposals)
+
+// A new search or status filter is a new result set: start at its first page.
+watch([search, statusFilter], resetPage)
 
 const viewProposal = (id) => {
   router.push({ name: 'ProponentDetiailedProp', query: { id } })

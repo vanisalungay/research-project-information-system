@@ -1,5 +1,5 @@
 <template>
-  <div class="overlay" @click.self="requestClose" @keydown.esc="requestClose">
+  <div class="adm-overlay" @click.self="requestClose" @keydown.esc="requestClose">
     <!-- ================= DEAN ACCOUNT CREATION =================
          The same component and the same creation call as every other account, with the
          compact Dean-specific presentation used by Dean Role Management: fixed header,
@@ -246,10 +246,12 @@
          information panel, fields and footer language (see assets/adminModal.css). -->
     <div
       v-else
+      ref="standardModal"
       class="adm-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-account-title"
+      tabindex="-1"
     >
       <header class="adm-header">
         <span class="adm-header-icon" aria-hidden="true">
@@ -396,9 +398,13 @@
                   <rect x="4" y="10" width="16" height="10" rx="2" />
                   <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                 </svg>
-                <span id="tempPassword" class="adm-preview-muted">
-                  Generated securely when you create the account
-                </span>
+                <input
+                  id="tempPassword"
+                  class="adm-preview-input adm-preview-muted"
+                  value="Generated securely when you create the account"
+                  readonly
+                  aria-label="Temporary password generation status"
+                />
               </div>
               <p class="adm-hint">You will see it once, right after the account is created.</p>
             </div>
@@ -572,25 +578,33 @@ const canCreateDean = computed(() =>
 
 const deanNameInput = ref(null)
 const deanModal = ref(null)
+const standardModal = ref(null)
 let previouslyFocused = null
+let bodyOverflowBefore = ''
 
 function requestClose() {
   if (isLoading.value) return
   emit('close')
 }
 
+/** The dialog currently on screen (Dean or standard), for focus management. */
+function activeModal() {
+  return deanMode.value ? deanModal.value : standardModal.value
+}
+
 /**
  * Escape closes the modal; Tab stays inside it, so keyboard users cannot land on the
- * page behind the overlay. The standard form keeps its existing focus behaviour.
+ * page behind the overlay. This applies to both the Dean and the standard form.
  */
 function onModalKeydown(event) {
   if (event?.key === 'Escape') {
     requestClose()
     return
   }
-  if (event?.key !== 'Tab' || !deanMode.value || !deanModal.value) return
+  const modal = activeModal()
+  if (event?.key !== 'Tab' || !modal) return
 
-  const focusable = [...deanModal.value.querySelectorAll(
+  const focusable = [...modal.querySelectorAll(
     'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
   )].filter((element) => element.offsetParent !== null)
   if (focusable.length === 0) return
@@ -607,15 +621,25 @@ function onModalKeydown(event) {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onModalKeydown)
-  if (!deanMode.value) return
   previouslyFocused = document.activeElement
-  nextTick(() => deanNameInput.value?.focus())
+  bodyOverflowBefore = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  window.addEventListener('keydown', onModalKeydown)
+  nextTick(() => {
+    if (deanMode.value) {
+      deanNameInput.value?.focus()
+    } else {
+      const firstField = standardModal.value?.querySelector('#name')
+        || standardModal.value?.querySelector('button, input, select')
+      firstField?.focus()
+    }
+  })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onModalKeydown)
-  // Return focus to the + Create Dean Account trigger when the modal closes.
+  document.body.style.overflow = bodyOverflowBefore
+  // Return focus to the trigger when the modal closes.
   if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
     previouslyFocused.focus()
   }
@@ -754,75 +778,6 @@ const copyBoth = async () => {
 </script>
 
 <style scoped>
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal {
-  background: var(--color-card-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 14px;
-  width: 440px;
-  max-width: 90%;
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--color-border, #f1f5f9);
-}
-
-.modal-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-heading, #1e293b);
-  margin: 0;
-}
-
-.close-x {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--color-text-soft, #94a3b8);
-  transition: color 0.15s ease;
-  padding: 4px;
-}
-
-.close-x:hover {
-  color: var(--color-heading, #1e293b);
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.subtitle {
-  font-size: 0.875rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0 0 20px 0;
-  line-height: 1.4;
-}
-
 .error-banner {
   display: flex;
   align-items: center;
@@ -840,86 +795,6 @@ const copyBoth = async () => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-group label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text, #475569);
-  text-align: left;
-}
-
-input,
-select {
-  padding: 10px 14px;
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #1f2937);
-  width: 100%;
-}
-
-input:focus,
-select:focus {
-  outline: none;
-  border-color: #2452ff;
-  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.15);
-}
-
-input:disabled,
-select:disabled {
-  background: var(--color-background-soft, #f1f5f9);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-button {
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-/* Layout only; the action colours come from assets/actions.css. */
-.cancel-btn {
-  border-radius: 8px;
-}
-
-.create-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .spinner {
@@ -951,13 +826,6 @@ button:disabled {
   }
 }
 /* ===== Generated credentials ===== */
-.field-hint {
-  margin: 6px 0 0;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: #6b7280;
-}
-
 .credentials {
   margin-top: 8px;
   padding: 16px;

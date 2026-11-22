@@ -50,13 +50,15 @@ test('every raw score is a circular radio choice, never a number input', () => {
   assert.ok(FORM.includes(':value="n"'), 'each radio carries a numeric 1-5 value')
 })
 
-test('the forwarding confirmation asks first and offers Approve and Cancel', () => {
+test('the approval confirmation asks first and offers Approve and Cancel', () => {
+  assert.ok(FORM.includes('Confirm REC Approval'), 'the approval dialog has a clear title')
   assert.ok(
-    FORM.includes('Are you sure you want to forward this proposal?'),
+    FORM.includes('This proposal will be approved after confirmation and forwarded to OVCRIGE.'),
     'the exact confirmation message is present',
   )
-  assert.match(FORM, /Cancel\s*<\/button>/, 'Cancel closes without forwarding')
-  assert.match(FORM, /Approve\s*<\/button>/, 'Approve executes the forwarding action')
+  assert.match(FORM, /Cancel\s*<\/button>/, 'Cancel closes without approving')
+  assert.ok(FORM.includes('@click="confirmApproval"'), 'Approve executes the approval action')
+  assert.ok(FORM.includes("'Approve Proposal'"), 'the confirm button names the action')
   assert.ok(FORM.includes('showApproveModal'), 'the modal is driven by its own state')
 })
 

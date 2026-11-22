@@ -2,6 +2,7 @@ package com.rpis.backend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rpis.backend.dto.OvcafValidationRequest;
 import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.model.GadChecklistData;
@@ -167,6 +168,27 @@ class NotificationWorkflowAcceptanceApiTest {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
+    /** A REC review body. An approval must carry every criterion and an overall comment. */
+    private String reviewPayload(String decision) throws Exception {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("decision", decision);
+        if ("APPROVED".equals(decision)) {
+            for (String field : new String[] {
+                    "soundnessSectorNeedScore", "soundnessEffectiveSolutionScore",
+                    "soundnessReasonableBudgetScore", "soundnessDoableWorkplanScore",
+                    "suitabilityCostEffectiveScore", "suitabilityPartnersIdentifiedScore",
+                    "suitabilityCommercializationScore", "suitabilityTimelyUtilizationScore",
+                    "significanceEconomicImpactScore", "significanceSocialImpactScore",
+                    "significanceEnvironmentalImpactScore", "significanceSustainabilityScore",
+                    "competenceAlignmentScore", "competenceCollaborationScore",
+                    "competenceDeliverablesUnderstandingScore"}) {
+                payload.put(field, 4);
+            }
+            payload.put("overallComments", "The proposal meets the evaluation criteria.");
+        }
+        return objectMapper.writeValueAsString(payload);
+    }
+
     private Proposal proposalAt(String status, String title) {
         Proposal proposal = new Proposal();
         proposal.setProjectTitle(title);
@@ -176,10 +198,75 @@ class NotificationWorkflowAcceptanceApiTest {
     }
 
     @Test
-    void aRecRejectionAndARecReturnNotifyTheCorrectParty() throws Exception {
+    void aRecApprovalCannotBypassTheScoresOrTheComment() throws Exception {
+        Proposal proposal = proposalAt("UNDER_REVIEW", "Incomplete REC review");
+
+        // No scores, no comment: the direct API is refused and nothing changes.
+        mockMvc.perform(post("/api/proposals/{id}/reviews?reviewerId={reviewerId}",
+                                proposal.getId(), rec.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"APPROVED\"}"))
+                .andExpect(status().isBadRequest());
+        assertEquals("UNDER_REVIEW",
+                proposalRepository.findById(proposal.getId()).orElseThrow().getStatus());
+
+        // Every score, but a whitespace-only comment, is still not an approval.
+        ObjectNode whitespace = (ObjectNode) objectMapper.readTree(reviewPayload("APPROVED"));
+        whitespace.put("overallComments", "   ");
+        mockMvc.perform(post("/api/proposals/{id}/reviews?reviewerId={reviewerId}",
+                                proposal.getId(), rec.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(whitespace)))
+                .andExpect(status().isBadRequest());
+
+        // A score outside the 1-5 range is refused even with a comment.
+        ObjectNode invalidScore = (ObjectNode) objectMapper.readTree(reviewPayload("APPROVED"));
+        invalidScore.put("soundnessSectorNeedScore", 6);
+        mockMvc.perform(post("/api/proposals/{id}/reviews?reviewerId={reviewerId}",
+                                proposal.getId(), rec.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidScore)))
+                .andExpect(status().isBadRequest());
+
+        // A complete evaluation is accepted and moves the proposal on.
+        mockMvc.perform(post("/api/proposals/{id}/reviews?reviewerId={reviewerId}",
+                                proposal.getId(), rec.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewPayload("APPROVED")))
+                .andExpect(status().isCreated());
+        assertEquals("REC_APPROVED",
+                proposalRepository.findById(proposal.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void aRecRejectionGoesToOrpsAndARecReturnNotifiesOnlyRps() throws Exception {
         Proposal rejected = proposalAt("UNDER_REVIEW", "Will be rejected");
         mockMvc.perform(put("/api/proposals/{id}/reject", rejected.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"remarks\":\"The methodology does not meet the review criteria.\"}"))
+                .andExpect(status().isOk());
+
+        // The REC rejection is a hand-off: ORPS is informed, the Proponent is not.
+        Proposal handedOff = proposalRepository.findById(rejected.getId()).orElseThrow();
+        assertEquals("RETURNED_TO_RPS", handedOff.getStatus());
+        assertEquals("REJECTION", handedOff.getReturnKind());
+        assertEquals("REC", handedOff.getReturnedByOffice());
+        assertEquals("The methodology does not meet the review criteria.",
+                handedOff.getReturnRemarks());
+        assertEquals(1, count(rpsStaff, NotificationTypes.REJECTION, "Proposal Rejected by REC"));
+        assertEquals(0, count(proponent, NotificationTypes.REJECTION, "Proposal Rejected"),
+                "a reviewing office must not notify the Proponent directly");
+
+        // Only after ORPS forwards the rejection is the Proponent told.
+        mockMvc.perform(put("/api/proposals/{id}/finalize-rejection", rejected.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + rpsStaffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"remarks\":\"Forwarded after ORPS review.\"}"))
                 .andExpect(status().isOk());
         assertEquals(1, count(proponent, NotificationTypes.REJECTION, "Proposal Rejected"));
 
@@ -233,7 +320,7 @@ class NotificationWorkflowAcceptanceApiTest {
                                 rec.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"decision\":\"APPROVED\"}"))
+                        .content(reviewPayload("APPROVED")))
                 .andExpect(status().isCreated());
         assertEquals(1, count(ovcrige, NotificationTypes.APPROVAL, "Proposal Approved by REC"));
         assertEquals(1, count(proponent, NotificationTypes.APPROVAL, "Proposal Approved by REC"));
@@ -278,6 +365,8 @@ class NotificationWorkflowAcceptanceApiTest {
                 .andExpect(status().isCreated());
         assertEquals(1, count(proponent, NotificationTypes.APPROVAL, "Budget Approved"));
         assertEquals(1, count(rpsStaff, NotificationTypes.PROPOSAL_UPDATE, "Budget Approved"));
+        assertEquals(1, count(oc, NotificationTypes.APPROVAL, "Budget Approved by OVCAF"),
+                "OVCAF approving the budget must notify the Chancellor's Office exactly once");
 
         mockMvc.perform(put("/api/ovcaf/proposals/{id}/release?releasedById={releasedById}",
                                 proposalId, ovcaf.getId())

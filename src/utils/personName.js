@@ -32,6 +32,26 @@ export const PERSON_NAME_EXAMPLE = 'Dela Cruz, Juan, M., Jr.'
 /** One complete sentence, for fields that have room for only one line of help. */
 export const PERSON_NAME_HINT = `${PERSON_NAME_FORMAT}. Example: ${PERSON_NAME_EXAMPLE}.`
 
+/** The account/profile form's one example: First Name first, then Last Name. */
+export const FULL_NAME_EXAMPLE = 'Juan Dela Cruz'
+
+/**
+ * The account-creation/profile name rule: one plain "First Name Last Name" entry, at
+ * least two words, and no comma order. Returns '' when valid, otherwise the readable
+ * message the form shows. Existing stored names are never re-derived or reordered.
+ */
+export function firstLastNameError(value) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim()
+  if (!text) return 'The full name is required.'
+  if (text.includes(',')) {
+    return 'Enter the first name and last name only, without commas - for example, Juan Dela Cruz.'
+  }
+  if (text.split(' ').filter(Boolean).length < 2) {
+    return 'Enter both the first name and the last name - for example, Juan Dela Cruz.'
+  }
+  return ''
+}
+
 /** II, III, IV ... are suffixes and keep their capitals; "Jr" is title-cased. */
 const ROMAN_NUMERAL = /^(i{1,3}|iv|v|vi{1,3}|ix|x)$/i
 

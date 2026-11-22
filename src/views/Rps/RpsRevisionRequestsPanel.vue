@@ -14,7 +14,7 @@
 
     <template v-else-if="activeTab === 'awaiting'">
       <p v-if="awaiting.length === 0" class="muted">No revision requests found.</p>
-      <div v-for="p in awaiting" :key="p.id" class="card">
+      <div v-for="p in awaitingPageItems" :key="p.id" class="card">
         <div class="card-top">
           <h3>{{ p.projectTitle || 'Untitled' }}</h3>
           <span class="badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
@@ -46,11 +46,21 @@
           <router-link :to="`/rps-forward-revision/${p.id}`" class="btn btn-primary">Review &amp; Forward</router-link>
         </div>
       </div>
+      <PaginationBar
+        v-if="awaiting.length"
+        :page="awaitingPage"
+        :page-size="awaitingPageSize"
+        :total="awaiting.length"
+        item-label="revision request"
+        item-label-plural="revision requests"
+        @update:page="setAwaitingPage"
+        @update:page-size="setAwaitingPageSize"
+      />
     </template>
 
     <template v-else>
       <p v-if="forwarded.length === 0" class="muted">No revision requests found.</p>
-      <div v-for="p in forwarded" :key="p.id" class="card">
+      <div v-for="p in forwardedPageItems" :key="p.id" class="card">
         <div class="card-top">
           <h3>{{ p.projectTitle || 'Untitled' }}</h3>
           <span class="badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span>
@@ -71,13 +81,25 @@
         </div>
         <p class="hint">The proponent has not yet resubmitted this revision. Once submitted, it will appear under Submitted Proposals.</p>
       </div>
+      <PaginationBar
+        v-if="forwarded.length"
+        :page="forwardedPage"
+        :page-size="forwardedPageSize"
+        :total="forwarded.length"
+        item-label="revision request"
+        item-label-plural="revision requests"
+        @update:page="setForwardedPage"
+        @update:page-size="setForwardedPageSize"
+      />
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onActivated, onMounted, watch } from 'vue'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import { activeRemarksBySection, PROPOSAL_SECTIONS } from '@/utils/proposalSections'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
@@ -86,9 +108,35 @@ const awaiting = ref([])
 const forwarded = ref([])
 const loading = ref(false)
 const error = ref('')
+const hasLoaded = ref(false)
 const activeTab = ref('awaiting')
 // Section remarks returned by the reviewing office, keyed by proposal id.
 const flaggedSections = ref({})
+
+// Each tab pages its own list. The totals are the real filtered totals, so the pager stays
+// accurate when a revision is forwarded or a rejection is excluded.
+const {
+  page: awaitingPage,
+  pageSize: awaitingPageSize,
+  pageItems: awaitingPageItems,
+  setPage: setAwaitingPage,
+  setPageSize: setAwaitingPageSize,
+  reset: resetAwaitingPage,
+} = usePagination(awaiting)
+const {
+  page: forwardedPage,
+  pageSize: forwardedPageSize,
+  pageItems: forwardedPageItems,
+  setPage: setForwardedPage,
+  setPageSize: setForwardedPageSize,
+  reset: resetForwardedPage,
+} = usePagination(forwarded)
+
+// Switching tabs is a criteria change: the next list starts on its first page.
+watch(activeTab, (tab) => {
+  if (tab === 'awaiting') resetAwaitingPage()
+  else resetForwardedPage()
+})
 
 /**
  * OVCRIGE rejections share RETURNED_TO_RPS with ordinary revision returns. They are
@@ -156,10 +204,17 @@ async function fetchProposals() {
     error.value = 'Failed to load revision requests.'
   } finally {
     loading.value = false
+    hasLoaded.value = true
   }
 }
 
 onMounted(fetchProposals)
+
+// The parent keeps each category alive: returning to this tab after RPS forwarded a
+// revision (or a proposal was returned) reloads the real records instead of cached rows.
+onActivated(() => {
+  if (hasLoaded.value) fetchProposals()
+})
 </script>
 
 <style scoped>

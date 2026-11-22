@@ -48,11 +48,11 @@
               id="name"
               type="text"
               v-model="name"
-              placeholder="Dela Cruz, Juan, M., Jr."
+              placeholder="Juan Dela Cruz"
               required
               @blur="name = formatPersonName(name)"
             />
-            <PersonNameHint />
+            <FullNameHint />
           </div>
 
           <div class="input-group">
@@ -232,9 +232,9 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import PasswordRequirements from '@/components/PasswordRequirements.vue'
 import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
-import PersonNameHint from '@/components/PersonNameHint.vue'
+import FullNameHint from '@/components/FullNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
-import { formatPersonName } from '@/utils/personName'
+import { firstLastNameError, formatPersonName } from '@/utils/personName'
 import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
@@ -287,6 +287,11 @@ const handleRegister = async () => {
   // Format once more in case the field was never blurred (e.g. the form was submitted
   // with the keyboard while the input still had focus).
   name.value = formatPersonName(name.value)
+  const nameError = firstLastNameError(name.value)
+  if (nameError) {
+    errorMessage.value = nameError
+    return
+  }
 
   const payload = {
     name: name.value,

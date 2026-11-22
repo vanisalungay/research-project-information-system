@@ -33,14 +33,37 @@
             <span class="nav-text">{{ item.text }}</span>
           </router-link>
         </li>
+        <!-- Sign Out sits below Profile Settings, at the bottom of every role's sidebar. -->
+        <li class="profile-item signout-item">
+          <button
+            type="button"
+            class="nav-link profile-link signout-link"
+            :title="collapsed ? 'Sign Out' : null"
+            @click="signOut"
+          >
+            <span class="nav-icon" v-html="getIcon('logout')"></span>
+            <span class="nav-text">Sign Out</span>
+          </button>
+        </li>
       </ul>
     </div>
+
+    <!-- The one shared confirmation dialog: signing out happens only after Confirm. -->
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </nav>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
 import { useDeanAttentionStore } from '@/stores/deanAttention'
@@ -53,6 +76,7 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserDataStore()
 const notificationStore = useNotificationStore()
 const deanAttentionStore = useDeanAttentionStore()
@@ -71,6 +95,7 @@ const icons = {
   revisions: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`,
   evalCriteria: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
   settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
+  logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
   review: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
   calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 }
@@ -253,15 +278,15 @@ const allNavItems = [
 
   {
     iconKey: 'review',
-    text: 'Inbox',
-    path: '/ovcaf/inbox',
+    text: 'Proposals',
+    path: '/ovcaf/proposals',
     roles: [UserRole.OVCAF],
     section: 'main',
   },
   {
     iconKey: 'notification',
-    text: 'Financial Reports',
-    path: '/ovcaf/reports',
+    text: 'Quarterly Reports',
+    path: '/ovcaf/quarterly-reports',
     roles: [UserRole.OVCAF],
     section: 'main',
   },
@@ -352,6 +377,33 @@ const badgeFor = (item) => {
     )
   }
   return isNotificationsItem(item) ? unreadBadgeLabel(notificationStore.unreadCount) : ''
+}
+
+const { dialogState, showConfirm } = useDialog()
+const signingOut = ref(false)
+
+/**
+ * The one logout path. The account and the notification session are cleared only after
+ * the user confirms in the shared dialog; Cancel, Escape, the close button and clicking
+ * the overlay all resolve to false and leave the session untouched. A second click while
+ * the dialog is open (or while the redirect is running) is ignored.
+ */
+const signOut = async () => {
+  if (signingOut.value || dialogState.show) return
+  const confirmed = await showConfirm(
+    'Are you sure you want to sign out of your account?',
+    {
+      title: 'Confirm Sign Out',
+      type: 'warning',
+      confirmText: 'Confirm Sign Out',
+      cancelText: 'Cancel',
+    },
+  )
+  if (!confirmed || signingOut.value) return
+  signingOut.value = true
+  userStore.logout()
+  notificationStore.reset()
+  router.push('/login')
 }
 </script>
 
@@ -559,6 +611,51 @@ li.active .nav-link {
 .profile-link:focus-visible {
   outline: 2px solid #1c1a3c;
   outline-offset: -3px;
+}
+
+/* Sign Out: the secondary bottom action below the yellow Profile Settings control. */
+.signout-item,
+.signout-item:hover {
+  margin-top: 6px;
+  background: transparent;
+}
+
+.signout-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.signout-link,
+.signout-item .signout-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--rpis-on-dark-muted, #aab0c5);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.signout-link:hover {
+  color: #ffffff;
+}
+
+.signout-link:focus-visible {
+  outline: 2px solid var(--rpis-accent, #ffd000);
+  outline-offset: -3px;
+}
+
+.signout-link .nav-icon,
+.signout-link .nav-icon :deep(svg) {
+  width: 19px;
+  height: 19px;
+  color: inherit;
 }
 
 .profile-item .nav-icon,

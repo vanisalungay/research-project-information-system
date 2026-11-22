@@ -35,7 +35,10 @@ test('both dialogs import and use the one shared stylesheet', () => {
 test('the Create user account dialog matches the reference structure', () => {
   const standard = CREATE.slice(CREATE.indexOf('STANDARD ACCOUNT CREATION'))
   assert.ok(standard.includes('class="adm-modal"'))
+  assert.ok(standard.includes('ref="standardModal"'))
+  assert.ok(standard.includes('tabindex="-1"'))
   assert.ok(standard.includes('aria-labelledby="create-account-title"'))
+  assert.ok(CREATE.includes('class="adm-overlay"'), 'the shared overlay is used')
   assert.ok(standard.includes('>Create user account</h2>'))
   assert.ok(standard.includes('Add an official account and choose what this person can access.'))
 
@@ -56,6 +59,11 @@ test('the Create user account dialog matches the reference structure', () => {
   assert.ok(standard.includes('You will see it once, right after the account is created.'))
   assert.ok(standard.includes('id="email"'))
   assert.ok(standard.includes(':value="generatedEmail"'), 'the preview is generated, not hardcoded')
+  assert.match(
+    standard,
+    /<input\s+id="tempPassword"[\s\S]*?readonly/,
+    'the password status is a labelable read-only control',
+  )
 
   // Footer: Cancel and Create account, with an arrow on the primary action.
   assert.ok(standard.includes('class="adm-footer"'))
@@ -79,6 +87,21 @@ test('the Reset password dialog uses the same family, with real account data', (
   assert.ok(reset.includes('class="adm-footer"'))
   assert.ok(reset.includes("resetLoading ? 'Resetting…' : 'Reset password'"))
   assert.ok(reset.includes('class="adm-input"'), 'password fields use the shared input style')
+  assert.ok(reset.includes('<form class="adm-form" @submit.prevent="resetPassword">'))
+  assert.ok(reset.includes('type="submit"'), 'Enter submits the reset form')
+  assert.ok(reset.includes('@keydown.esc="closeResetModal"'))
+  assert.ok(reset.includes('onResetKeydown'), 'Tab stays in the reset dialog')
+  assert.ok(reset.includes('if (resetLoading.value) return'),
+    'a reset in flight cannot be dismissed or submitted twice')
+})
+
+test('the legacy element selectors no longer override the shared dialog classes', () => {
+  // Vue's scoped input/select/button selectors outrank the shared .adm-* classes, which
+  // made Create and Reset look different. The generic rules must stay removed.
+  assert.ok(!/^input,\s*$/m.test(CREATE), 'no generic input/select rule')
+  assert.ok(!/^button \{$/m.test(CREATE), 'no generic button rule')
+  assert.ok(!/^\.overlay \{/m.test(CREATE), 'the shared overlay replaced the local one')
+  assert.match(SHARED, /\.adm-header \{[\s\S]*?padding: 12px 12px 11px/)
 })
 
 test('the shared dialog keeps the compact, scrollable, accessible contract', () => {

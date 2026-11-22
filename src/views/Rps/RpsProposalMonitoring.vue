@@ -133,7 +133,7 @@
       <!-- Proposal cards -->
       <div v-else class="proposal-grid">
         <article
-          v-for="prop in filteredProposals"
+          v-for="prop in rowProposals"
           :key="prop.id ?? prop.documentId"
           class="proposal-card"
         >
@@ -212,12 +212,24 @@
           </footer>
         </article>
       </div>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </template>
   </div>
 </template>
 
 <script>
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { clampPage } from '@/composables/usePagination.js'
 import { statusTone, statusColor } from '@/utils/statusTone.js'
 import {
   proposalStatusLabel,
@@ -229,6 +241,7 @@ const PROPONENT_FALLBACK = 'Proponent unavailable'
 
 export default {
   name: 'ProposalMonitoringList',
+  components: { PaginationBar },
 
   data() {
     return {
@@ -238,6 +251,8 @@ export default {
       proposals: [],
       loading: false,
       error: null,
+      page: 1,
+      pageSize: 12,
     }
   },
 
@@ -271,10 +286,37 @@ export default {
       // re-sorting here would also lose its id tie-breaker and missing-date handling.
 
       return result
-    }
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredProposals.length / this.pageSize))
+    },
+    rowProposals() {
+      const start = (this.page - 1) * this.pageSize
+      return this.filteredProposals.slice(start, start + this.pageSize)
+    },
+  },
+
+  watch: {
+    // A new search or filter is a new result set: start at its first page.
+    searchQuery() {
+      this.page = 1
+    },
+    selectedOffice() {
+      this.page = 1
+    },
+    selectedStatus() {
+      this.page = 1
+    },
   },
 
   methods: {
+    setPage(value) {
+      this.page = clampPage(value, this.totalPages)
+    },
+    setPageSize(value) {
+      this.pageSize = Math.max(1, Number(value) || 12)
+      this.page = 1
+    },
     async fetchProposals() {
       this.loading = true
       this.error = null

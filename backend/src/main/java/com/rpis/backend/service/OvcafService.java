@@ -1,15 +1,19 @@
 package com.rpis.backend.service;
 
+import com.rpis.backend.dto.OvcafProposalFilterOptions;
+import com.rpis.backend.dto.OvcafProposalPageResponse;
 import com.rpis.backend.dto.OvcafProposalResponse;
 import com.rpis.backend.dto.OvcafReportsSummaryResponse;
 import com.rpis.backend.dto.OvcafValidationRequest;
 import com.rpis.backend.model.OvcafValidation;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalBudget;
+import com.rpis.backend.model.ProposalStatusHistory;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
+import com.rpis.backend.repository.ProposalStatusHistoryRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.util.NotificationEvent;
@@ -34,29 +38,49 @@ public class OvcafService {
      */
     private static final Set<String> OVCAF_DETAIL_STATUSES = CurrentUser.OVCAF_VISIBLE_STATUSES;
 
+    /** The statuses the proposals page lists, in workflow order. */
+    private static final List<String> OVCAF_LIST_STATUSES = List.of(
+            "FOR_OVCAF_APPROVAL", "READY_FOR_RELEASE", "APPROVED", "RELEASED");
+
+    /** The six financial-validation checklist items and the label shown to the reviewer. */
+    private static final Map<String, String> CHECKLIST_LABELS;
+    static {
+        Map<String, String> labels = new LinkedHashMap<>();
+        labels.put("budgetComplete", "Line-Item Budget is complete and matches all pages");
+        labels.put("budgetComputationCorrect", "Budget computations are mathematically correct");
+        labels.put("supportingDocsComplete", "All supporting financial files are attached and verified");
+        labels.put("expensesReasonable", "Proposed expenses are reasonable and justified");
+        labels.put("fundingSourceIdentified", "Funding source is officially identified and compliant");
+        labels.put("complianceVerified",
+                "Compliance with standard government/university funding guidelines verified");
+        CHECKLIST_LABELS = Collections.unmodifiableMap(labels);
+    }
+
+    private static final String CHECKLIST_INCOMPLETE_MESSAGE =
+            "Complete every financial validation checklist item before approving. Missing: ";
+    private static final String REMARKS_REQUIRED_MESSAGE =
+            "Remarks are required when returning or rejecting a proposal.";
+    private static final int REMARKS_MAX_LENGTH = 2000;
+
     private final ProposalRepository proposalRepository;
     private final OvcafValidationRepository validationRepository;
     private final UserRepository userRepository;
+    private final ProposalStatusHistoryRepository statusHistoryRepository;
     private final NotificationService notificationService;
+    private final ProposalNotificationPolicy notificationPolicy;
+    private final CurrentUser currentUser;
 
     /**
      * Get all proposals that are pending OVCAF review
      * Statuses: FOR_OVCAF_APPROVAL, APPROVED (awaiting budget processing)
      */
     public List<OvcafProposalResponse> getProposalsForOvcaf() {
-        List<String> ovcafStatuses = Arrays.asList(
-                "FOR_OVCAF_APPROVAL",
-                "APPROVED",
-                "READY_FOR_RELEASE",
-                "RELEASED");
-        List<Proposal> proposals = proposalRepository.findByStatusIn(ovcafStatuses);
+        List<Proposal> proposals = loadOvcafVisibleProposals();
+        Map<Long, LocalDateTime> receipts = receiptDates(proposals);
+        proposals.sort(receivedAtComparator(receipts, true)
+                .thenComparing(Proposal::getId, Comparator.nullsLast(Comparator.reverseOrder())));
         return proposals.stream()
-                // A proposal only becomes OVCAF's concern after the Office of the
-                // Chancellor has recorded its final approval and Special Order. A record
-                // that merely carries an OVCAF-adjacent status (for example one advanced
-                // by hand while its OC approval failed) must not appear as received.
-                .filter(OvcafService::hasCompletedOcApproval)
-                .map(this::mapToResponse)
+                .map(proposal -> mapToResponse(proposal, receivedAtOf(proposal, receipts)))
                 .collect(Collectors.toList());
     }
 
@@ -64,11 +88,185 @@ public class OvcafService {
      * Get proposals pending validation (FOR_OVCAF_APPROVAL status only)
      */
     public List<OvcafProposalResponse> getPendingValidationProposals() {
-        List<Proposal> proposals = proposalRepository.findByStatus("FOR_OVCAF_APPROVAL");
-        return proposals.stream()
+        List<Proposal> proposals = proposalRepository.findByStatus("FOR_OVCAF_APPROVAL").stream()
                 .filter(OvcafService::hasCompletedOcApproval)
-                .map(this::mapToResponse)
+                .collect(Collectors.toCollection(ArrayList::new));
+        Map<Long, LocalDateTime> receipts = receiptDates(proposals);
+        proposals.sort(receivedAtComparator(receipts, true)
+                .thenComparing(Proposal::getId, Comparator.nullsLast(Comparator.reverseOrder())));
+        return proposals.stream()
+                .map(proposal -> mapToResponse(proposal, receivedAtOf(proposal, receipts)))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * One page of the OVCAF proposals page. Filtering, ordering and pagination happen on
+     * the server so the page shows the same data regardless of client state.
+     */
+    @Transactional(readOnly = true)
+    public OvcafProposalPageResponse getProposalPage(String search, String status, String college,
+            String program, String sortBy, String sortDir, int page, int size) {
+        List<Proposal> visible = loadOvcafVisibleProposals();
+        Map<Long, LocalDateTime> receipts = receiptDates(visible);
+        OvcafProposalFilterOptions options = filterOptions(visible);
+
+        String keyword = trimToNull(search) == null ? null : search.trim().toLowerCase(Locale.ROOT);
+        String statusFilter = trimToNull(status);
+        String collegeFilter = trimToNull(college);
+        String programFilter = trimToNull(program);
+
+        List<Proposal> filtered = visible.stream()
+                .filter(p -> statusFilter == null
+                        || normaliseStatus(p.getStatus()).equals(normaliseStatus(statusFilter)))
+                .filter(p -> collegeFilter == null || matches(p.getCollege(), collegeFilter))
+                .filter(p -> programFilter == null || matches(p.getProgramTitle(), programFilter))
+                .filter(p -> keyword == null || matchesSearch(p, keyword))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        boolean descending = !"asc".equalsIgnoreCase(trimToNull(sortDir) == null ? "desc" : sortDir.trim());
+        filtered.sort(comparatorFor(sortBy, receipts, descending)
+                .thenComparing(Proposal::getId, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int totalItems = filtered.size();
+        int totalPages = Math.max(1, (int) Math.ceil(totalItems / (double) safeSize));
+        int safePage = Math.min(Math.max(page, 1), totalPages);
+        int from = Math.min((safePage - 1) * safeSize, totalItems);
+        int to = Math.min(from + safeSize, totalItems);
+
+        List<OvcafProposalResponse> items = filtered.subList(from, to).stream()
+                .map(proposal -> mapToResponse(proposal, receivedAtOf(proposal, receipts)))
+                .collect(Collectors.toList());
+
+        OvcafProposalPageResponse response = new OvcafProposalPageResponse();
+        response.setItems(items);
+        response.setPage(safePage);
+        response.setSize(safeSize);
+        response.setTotalItems(totalItems);
+        response.setTotalPages(totalPages);
+        response.setFilterOptions(options);
+        return response;
+    }
+
+    /** The OVCAF-visible proposals, newest receipt first. */
+    private List<Proposal> loadOvcafVisibleProposals() {
+        return proposalRepository.findByStatusIn(OVCAF_LIST_STATUSES).stream()
+                // A proposal only becomes OVCAF's concern after the Office of the
+                // Chancellor has recorded its final approval and Special Order. A record
+                // that merely carries an OVCAF-adjacent status (for example one advanced
+                // by hand while its OC approval failed) must not appear as received.
+                .filter(OvcafService::hasCompletedOcApproval)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /** Real receipt events; the first (oldest) row per proposal wins. */
+    private Map<Long, LocalDateTime> receiptDates(List<Proposal> proposals) {
+        if (proposals.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = proposals.stream().map(Proposal::getId).filter(Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, LocalDateTime> receipts = new HashMap<>();
+        for (ProposalStatusHistory row : statusHistoryRepository.findOvcafReceiptEvents(ids)) {
+            if (row.getProposal() != null && row.getProposal().getId() != null) {
+                receipts.putIfAbsent(row.getProposal().getId(), row.getChangedAt());
+            }
+        }
+        return receipts;
+    }
+
+    /** The actual moment OVCAF received the proposal; SO upload is the recorded fallback. */
+    private static LocalDateTime receivedAtOf(Proposal proposal, Map<Long, LocalDateTime> receipts) {
+        LocalDateTime event = proposal.getId() == null ? null : receipts.get(proposal.getId());
+        return event != null ? event : proposal.getSoUploadedAt();
+    }
+
+    private LocalDateTime receivedAtFor(Proposal proposal) {
+        if (proposal == null || proposal.getId() == null) {
+            return proposal == null ? null : proposal.getSoUploadedAt();
+        }
+        List<ProposalStatusHistory> rows =
+                statusHistoryRepository.findOvcafReceiptEvents(List.of(proposal.getId()));
+        if (!rows.isEmpty()) {
+            return rows.get(0).getChangedAt();
+        }
+        return proposal.getSoUploadedAt();
+    }
+
+    private static Comparator<Proposal> receivedAtComparator(Map<Long, LocalDateTime> receipts,
+            boolean descending) {
+        Comparator<LocalDateTime> order =
+                descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        return Comparator.comparing(
+                (Proposal p) -> receivedAtOf(p, receipts),
+                Comparator.nullsLast(order));
+    }
+
+    private Comparator<Proposal> comparatorFor(String sortBy, Map<Long, LocalDateTime> receipts,
+            boolean descending) {
+        String key = trimToNull(sortBy) == null ? "receivedAt" : sortBy.trim();
+        return switch (key) {
+            case "documentId" -> textComparator(Proposal::getDocumentId, descending);
+            case "projectTitle" -> textComparator(Proposal::getProjectTitle, descending);
+            case "projectLeader" -> textComparator(Proposal::getProjectLeader, descending);
+            case "college" -> textComparator(Proposal::getCollege, descending);
+            case "status" -> textComparator(Proposal::getStatus, descending);
+            default -> receivedAtComparator(receipts, descending);
+        };
+    }
+
+    private static Comparator<Proposal> textComparator(java.util.function.Function<Proposal, String> value,
+            boolean descending) {
+        Comparator<String> order = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        return Comparator.comparing(
+                proposal -> {
+                    String text = value.apply(proposal);
+                    return text == null ? null : text.toLowerCase(Locale.ROOT);
+                },
+                Comparator.nullsLast(order));
+    }
+
+    private static boolean matchesSearch(Proposal proposal, String keyword) {
+        return contains(proposal.getDocumentId(), keyword)
+                || contains(proposal.getProposalCode(), keyword)
+                || contains(proposal.getProjectTitle(), keyword)
+                || contains(proposal.getProjectLeader(), keyword)
+                || contains(proposal.getCollege(), keyword)
+                || contains(proposal.getProgramTitle(), keyword);
+    }
+
+    private static boolean contains(String value, String keyword) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private static boolean matches(String value, String expected) {
+        return value != null && value.trim().equalsIgnoreCase(expected.trim());
+    }
+
+    private static OvcafProposalFilterOptions filterOptions(List<Proposal> proposals) {
+        Set<String> statuses = new LinkedHashSet<>();
+        for (String status : OVCAF_LIST_STATUSES) {
+            if (proposals.stream().anyMatch(p -> status.equals(normaliseStatus(p.getStatus())))) {
+                statuses.add(status);
+            }
+        }
+        List<String> colleges = proposals.stream()
+                .map(Proposal::getCollege)
+                .map(OvcafService::trimToNull)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+        List<String> programs = proposals.stream()
+                .map(Proposal::getProgramTitle)
+                .map(OvcafService::trimToNull)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+        return new OvcafProposalFilterOptions(new ArrayList<>(statuses), colleges, programs);
     }
 
     /**
@@ -84,7 +282,7 @@ public class OvcafService {
                 || !hasCompletedOcApproval(proposal)) {
             throw new IllegalArgumentException("Proposal not found: " + proposalId);
         }
-        return mapToResponse(proposal);
+        return mapToResponse(proposal, receivedAtFor(proposal));
     }
 
     /**
@@ -111,65 +309,181 @@ public class OvcafService {
                     "Unknown OVCAF decision. Use APPROVED_ENDORSED, RETURNED_FOR_REVISION or REJECTED.");
         }
 
+        String remarks = normaliseRemarks(request.getRemarks());
+
+        // The checklist certifies a budget that is being approved; it is not a
+        // precondition for returning or rejecting an incomplete budget, which needs a
+        // written reason instead. The backend enforces both rules independently of the
+        // form.
+        if ("APPROVED_ENDORSED".equals(decision)) {
+            requireIssuedSpecialOrder(proposal);
+            requireCompleteChecklist(request);
+        } else {
+            requireRemarks(remarks);
+        }
+
         User validator = null;
         if (request.getValidatedById() != null) {
             validator = userRepository.findById(request.getValidatedById())
                     .orElse(null);
         }
 
+        String fromStatus = normaliseStatus(proposal.getStatus());
+        String returnedByName = actorName(validator, request.getValidatedById());
+
         OvcafValidation validation = new OvcafValidation();
         validation.setProposal(proposal);
         validation.setValidatedBy(validator);
         validation.setValidatedAt(LocalDateTime.now());
         validation.setDecision(request.getDecision());
-        validation.setRemarks(request.getRemarks());
+        validation.setRemarks(remarks);
 
         // Set checklist values
-        validation.setBudgetComplete(request.getBudgetComplete() != null ? request.getBudgetComplete() : false);
-        validation.setBudgetComputationCorrect(
-                request.getBudgetComputationCorrect() != null ? request.getBudgetComputationCorrect() : false);
-        validation.setSupportingDocsComplete(
-                request.getSupportingDocsComplete() != null ? request.getSupportingDocsComplete() : false);
-        validation.setExpensesReasonable(
-                request.getExpensesReasonable() != null ? request.getExpensesReasonable() : false);
-        validation.setFundingSourceIdentified(
-                request.getFundingSourceIdentified() != null ? request.getFundingSourceIdentified() : false);
-        validation.setComplianceVerified(
-                request.getComplianceVerified() != null ? request.getComplianceVerified() : false);
+        validation.setBudgetComplete(Boolean.TRUE.equals(request.getBudgetComplete()));
+        validation.setBudgetComputationCorrect(Boolean.TRUE.equals(request.getBudgetComputationCorrect()));
+        validation.setSupportingDocsComplete(Boolean.TRUE.equals(request.getSupportingDocsComplete()));
+        validation.setExpensesReasonable(Boolean.TRUE.equals(request.getExpensesReasonable()));
+        validation.setFundingSourceIdentified(Boolean.TRUE.equals(request.getFundingSourceIdentified()));
+        validation.setComplianceVerified(Boolean.TRUE.equals(request.getComplianceVerified()));
 
         // Update proposal status based on decision
-        switch (request.getDecision()) {
+        switch (decision) {
             case "APPROVED_ENDORSED":
                 // The budget is approved, but the project is not yet approved for
                 // implementation: the budget release it requires has not been recorded.
                 // READY_FOR_RELEASE is the existing intermediate state between the two,
                 // and only releaseFunds() performs the final transition to APPROVED.
-                // An implementation approval is also only valid for a project whose
-                // Special Order has actually been issued by the Office of the Chancellor;
-                // without the SO the proposal could never create the quarterly reports an
-                // implementation-approved project must file.
-                requireIssuedSpecialOrder(proposal);
                 validation.setBudgetEndorsed(true);
                 validation.setBudgetEndorsedAt(LocalDateTime.now());
                 proposal.setStatus("READY_FOR_RELEASE");
                 break;
             case "RETURNED_FOR_REVISION":
-                proposal.setStatus("RETURNED");
-                proposal.setRemarks(request.getRemarks());
+                // The reviewing office returns the proposal to ORPS, which owns the
+                // revision hand-off to the proponent. This is the same routing the
+                // OVCRIGE return uses, so the record enters the existing RPS queue.
+                proposal.setStatus("RETURNED_TO_RPS");
+                proposal.setRemarks(remarks);
+                applyReturnRouting(proposal, "REVISION", remarks, validator, request.getValidatedById(),
+                        returnedByName);
                 break;
             case "REJECTED":
-                proposal.setStatus("REJECTED");
-                proposal.setRemarks(request.getRemarks());
+                // A rejection is also a hand-off: ORPS records the final decision and
+                // notifies the proponent. It is never a direct OVCAF -> Proponent move.
+                proposal.setStatus("RETURNED_TO_RPS");
+                proposal.setRemarks(remarks);
+                applyReturnRouting(proposal, "REJECTION", remarks, validator, request.getValidatedById(),
+                        returnedByName);
+                break;
+            default:
                 break;
         }
 
         proposalRepository.save(proposal);
         OvcafValidation saved = validationRepository.save(validation);
 
-        // Send notifications
-        sendValidationNotifications(proposal, request.getDecision());
+        String toStatus = normaliseStatus(proposal.getStatus());
+        if (!toStatus.equals(fromStatus)) {
+            recordStatusChange(proposal, fromStatus, toStatus, remarks, validator,
+                    request.getValidatedById());
+        }
+
+        // The notification recipients follow the hand-off: an approval tells the
+        // proponent, ORPS and OC; a return/rejection tells ORPS only, because ORPS owns
+        // the next step.
+        switch (decision) {
+            case "APPROVED_ENDORSED" -> notificationPolicy.notifyOvcafBudgetApproved(proposal);
+            case "RETURNED_FOR_REVISION" -> notificationPolicy.notifyOvcafReturned(proposal, remarks);
+            case "REJECTED" -> notificationPolicy.notifyRpsRejectionReturned(proposal, remarks, "OVCAF");
+            default -> {
+                // No decision, no notification.
+            }
+        }
 
         return saved;
+    }
+
+    /** Stores the office-return metadata the RPS revision/rejection workflow reads. */
+    private void applyReturnRouting(Proposal proposal, String returnKind, String remarks,
+            User actor, Long suppliedActorId, String actorName) {
+        proposal.setReturnRemarks(remarks);
+        proposal.setReturnedByOffice(UserRoles.OVCAF);
+        proposal.setReturnKind(returnKind);
+        proposal.setReturnedAt(LocalDateTime.now());
+        Long actorId = actor != null ? actor.getId() : suppliedActorId;
+        if (actorId == null) {
+            actorId = currentUser.getUserId();
+        }
+        proposal.setReturnedByUserId(actorId);
+        proposal.setReturnedByName(actorName);
+    }
+
+    /** The six-item checklist must be fully verified before a budget is approved. */
+    private static void requireCompleteChecklist(OvcafValidationRequest request) {
+        List<String> missing = new ArrayList<>();
+        if (!Boolean.TRUE.equals(request.getBudgetComplete())) missing.add(CHECKLIST_LABELS.get("budgetComplete"));
+        if (!Boolean.TRUE.equals(request.getBudgetComputationCorrect())) {
+            missing.add(CHECKLIST_LABELS.get("budgetComputationCorrect"));
+        }
+        if (!Boolean.TRUE.equals(request.getSupportingDocsComplete())) {
+            missing.add(CHECKLIST_LABELS.get("supportingDocsComplete"));
+        }
+        if (!Boolean.TRUE.equals(request.getExpensesReasonable())) missing.add(CHECKLIST_LABELS.get("expensesReasonable"));
+        if (!Boolean.TRUE.equals(request.getFundingSourceIdentified())) {
+            missing.add(CHECKLIST_LABELS.get("fundingSourceIdentified"));
+        }
+        if (!Boolean.TRUE.equals(request.getComplianceVerified())) missing.add(CHECKLIST_LABELS.get("complianceVerified"));
+        if (!missing.isEmpty()) {
+            throw new IllegalArgumentException(CHECKLIST_INCOMPLETE_MESSAGE + String.join("; ", missing) + ".");
+        }
+    }
+
+    /** A return or rejection must state why. */
+    private static void requireRemarks(String remarks) {
+        if (remarks == null || remarks.isBlank()) {
+            throw new IllegalArgumentException(REMARKS_REQUIRED_MESSAGE);
+        }
+    }
+
+    private static String normaliseRemarks(String remarks) {
+        String trimmed = trimToNull(remarks);
+        if (trimmed == null) {
+            return null;
+        }
+        return trimmed.length() > REMARKS_MAX_LENGTH
+                ? trimmed.substring(0, REMARKS_MAX_LENGTH).trim()
+                : trimmed;
+    }
+
+    /** The reviewer's name, with the authenticated account as the fallback. */
+    private String actorName(User actor, Long suppliedActorId) {
+        if (actor != null) {
+            return actor.getName();
+        }
+        Long actorId = suppliedActorId != null ? suppliedActorId : currentUser.getUserId();
+        if (actorId == null) {
+            return null;
+        }
+        return userRepository.findById(actorId).map(User::getName).orElse(null);
+    }
+
+    /** Records one audited transition; the caller must already be in a transaction. */
+    private void recordStatusChange(Proposal proposal, String fromStatus, String toStatus,
+            String remarks, User actor, Long suppliedActorId) {
+        ProposalStatusHistory entry = new ProposalStatusHistory();
+        entry.setProposal(proposal);
+        entry.setFromStatus(com.rpis.backend.util.ProposalStatus.optionalSupportedStatus(fromStatus));
+        entry.setToStatus(com.rpis.backend.util.ProposalStatus.requireSupportedStatus(toStatus));
+        Long actorId = actor != null ? actor.getId() : suppliedActorId;
+        if (actorId == null) {
+            actorId = currentUser.getUserId();
+        }
+        entry.setActorUserId(actorId);
+        entry.setActorRole(UserRoles.OVCAF);
+        entry.setActorName(actorName(actor, suppliedActorId));
+        entry.setRemarks(remarks);
+        entry.setSource(ProposalStatusHistory.SOURCE_APPLICATION);
+        entry.setChangedAt(LocalDateTime.now());
+        statusHistoryRepository.save(entry);
     }
 
     /**
@@ -186,6 +500,8 @@ public class OvcafService {
         requireCompletedOcApproval(proposal);
         requireAwaitingBudgetEvaluation(proposal);
 
+        String fromStatus = normaliseStatus(proposal.getStatus());
+
         // Get or create validation record
         OvcafValidation validation = validationRepository
                 .findTopByProposalIdOrderByCreatedAtDesc(proposalId)
@@ -197,6 +513,7 @@ public class OvcafService {
 
         validation.setBudgetEndorsed(true);
         validation.setBudgetEndorsedAt(LocalDateTime.now());
+        User endorser = null;
         if (validation.getDecision() == null) {
             // The endorsement is OVCAF's budget approval. Recording the decision keeps
             // the reporting-eligibility check (which requires an APPROVED_ENDORSED
@@ -205,7 +522,8 @@ public class OvcafService {
             validation.setValidatedAt(LocalDateTime.now());
         }
         if (endorsedById != null) {
-            validation.setValidatedBy(userRepository.findById(endorsedById).orElse(null));
+            endorser = userRepository.findById(endorsedById).orElse(null);
+            validation.setValidatedBy(endorser);
         }
         validationRepository.save(validation);
 
@@ -215,22 +533,14 @@ public class OvcafService {
         proposal.setStatus("READY_FOR_RELEASE");
         Proposal saved = proposalRepository.save(proposal);
 
-        // Notify proponent that the budget is approved and the release is awaited.
-        if (saved.getProponent() != null) {
-            notificationService.createNotification(
-                    saved.getProponent().getId(),
-                    "The budget for your proposal \"" + saved.getProjectTitle()
-                            + "\" has been approved by OVCAF and is awaiting fund release. "
-                            + "The project becomes approved for implementation once the release is recorded.",
-                    "Budget Approved",
-                    NotificationTypes.APPROVAL,
-                    saved.getId(), null, NotificationEvent.STATUS_UPDATED,
-                    UserRoles.PROPONENT);
+        if (!"READY_FOR_RELEASE".equals(fromStatus)) {
+            recordStatusChange(saved, fromStatus, "READY_FOR_RELEASE", validation.getRemarks(),
+                    endorser, endorsedById);
         }
-        // Notify ORPS (both staff and administrator) for monitoring.
-        notifyRps(saved,
-                "Budget approved by OVCAF; awaiting fund release: \"" + saved.getProjectTitle() + "\"",
-                "Budget Approved", NotificationTypes.PROPOSAL_UPDATE);
+
+        // One approval event: proponent, ORPS and OC are told, and the dedupe key makes
+        // a retried endorsement produce no second row.
+        notificationPolicy.notifyOvcafBudgetApproved(saved);
 
         return saved;
     }
@@ -244,6 +554,16 @@ public class OvcafService {
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
         requireCompletedOcApproval(proposal);
 
+        // Authorization only applies to a proposal that is actually awaiting the
+        // release. It must never move an Implementation Approved (APPROVED) project
+        // backwards to READY_FOR_RELEASE.
+        String status = normaliseStatus(proposal.getStatus());
+        if (!"READY_FOR_RELEASE".equals(status)) {
+            throw new IllegalStateException(
+                    "This proposal is not awaiting fund release (current status: "
+                            + (status.isEmpty() ? "none" : status) + ").");
+        }
+
         OvcafValidation validation = validationRepository
                 .findTopByProposalIdOrderByCreatedAtDesc(proposalId)
                 .orElseGet(() -> {
@@ -256,7 +576,6 @@ public class OvcafService {
         validation.setBudgetAuthorizedAt(LocalDateTime.now());
         validationRepository.save(validation);
 
-        proposal.setStatus("READY_FOR_RELEASE");
         Proposal saved = proposalRepository.save(proposal);
 
         // Notify the finance office.
@@ -305,9 +624,16 @@ public class OvcafService {
                     "This proposal is not awaiting fund release (current status: "
                             + (status.isEmpty() ? "none" : status) + ").");
         }
-        // Repeating the release of an already-approved project is harmless and must not
-        // duplicate notifications; the first release is the recorded transition.
-        if ("APPROVED".equals(status) && Boolean.TRUE.equals(validation.getFundsReleased())) {
+        // A replay of the release is harmless. When the project is already approved the
+        // only possible repair is to restore the release flags; the transition and its
+        // notifications already happened and must not be repeated.
+        if ("APPROVED".equals(status)) {
+            if (!Boolean.TRUE.equals(validation.getFundsReleased())) {
+                validation.setFundsReleased(true);
+                validation.setFundsReleasedAt(LocalDateTime.now());
+                validation.setReleasedBy(releasedById);
+                validationRepository.save(validation);
+            }
             return proposal;
         }
 
@@ -320,6 +646,10 @@ public class OvcafService {
         // for implementation. RELEASED is intentionally not the final status.
         proposal.setStatus("APPROVED");
         Proposal saved = proposalRepository.save(proposal);
+
+        User releaser = releasedById == null ? null
+                : userRepository.findById(releasedById).orElse(null);
+        recordStatusChange(saved, "READY_FOR_RELEASE", "APPROVED", null, releaser, releasedById);
 
         // Notify proponent and RPS
         if (saved.getProponent() != null) {
@@ -352,6 +682,7 @@ public class OvcafService {
                 "FOR_OC_APPROVAL",
                 "READY_FOR_RELEASE",
                 "RELEASED",
+                "RETURNED_TO_RPS",
                 "RETURNED",
                 "REJECTED");
         // Only proposals with a completed OC approval + SO are OVCAF's to report on;
@@ -493,13 +824,14 @@ public class OvcafService {
         return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
-    private OvcafProposalResponse mapToResponse(Proposal proposal) {
+    private OvcafProposalResponse mapToResponse(Proposal proposal, LocalDateTime receivedAt) {
         OvcafProposalResponse response = new OvcafProposalResponse();
         response.setId(proposal.getId());
         response.setDocumentId(proposal.getDocumentId());
         response.setProjectTitle(proposal.getProjectTitle());
         response.setProjectLeader(proposal.getProjectLeader());
         response.setCollege(proposal.getCollege());
+        response.setProgramTitle(proposal.getProgramTitle());
         response.setStatus(proposal.getStatus());
         response.setDuration(proposal.getDuration());
         response.setStartDate(proposal.getStartDate());
@@ -508,6 +840,9 @@ public class OvcafService {
         response.setRemarks(proposal.getRemarks());
         response.setCreatedAt(proposal.getCreatedAt());
         response.setUpdatedAt(proposal.getUpdatedAt());
+        // The actual OVCAF receipt event (history), falling back to the OC SO timestamp.
+        // It is never the draft's creation date.
+        response.setReceivedAt(receivedAt);
 
         // Proponent info. The card and the details view must name the person typed into the
         // proposal form ("Proponent Name"), not the generic account that owns the record.
@@ -582,62 +917,12 @@ public class OvcafService {
             case "APPROVED":
                 return "Approved";
             case "RETURNED":
+            case "RETURNED_TO_RPS":
                 return "Returned";
             case "REJECTED":
                 return "Rejected";
             default:
                 return "Pending";
-        }
-    }
-
-    private void sendValidationNotifications(Proposal proposal, String decision) {
-        switch (decision) {
-            case "APPROVED_ENDORSED":
-                // The budget is approved; implementation approval follows the release.
-                if (proposal.getProponent() != null) {
-                    notificationService.notifyUsers(List.of(proposal.getProponent()),
-                            "The budget for your proposal \"" + proposal.getProjectTitle()
-                                    + "\" has been approved by OVCAF and is awaiting fund release. "
-                                    + "The project becomes approved for implementation once the release is recorded.",
-                            "Budget Approved", NotificationTypes.APPROVAL, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
-                }
-                // Notify ORPS that the budget cleared and the release is awaited.
-                notifyRps(proposal,
-                        "Budget approved by OVCAF; awaiting fund release: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Approved", NotificationTypes.PROPOSAL_UPDATE);
-                break;
-            case "RETURNED_FOR_REVISION":
-                if (proposal.getProponent() != null) {
-                    notificationService.notifyUsers(List.of(proposal.getProponent()),
-                            "Your proposal \"" + proposal.getProjectTitle()
-                                    + "\" has been returned by OVCAF for budget revision. "
-                                    + "Please review the remarks and resubmit."
-                                    + (proposal.getRemarks() == null || proposal.getRemarks().isBlank()
-                                            ? ""
-                                            : " Remarks: " + proposal.getRemarks().trim()),
-                            "Budget Revision Required", NotificationTypes.FUNDING, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
-                }
-                notifyRps(proposal,
-                        "Budget release was returned by OVCAF for proposal: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Request Returned", NotificationTypes.FUNDING);
-                break;
-            case "REJECTED":
-                if (proposal.getProponent() != null) {
-                    notificationService.notifyUsers(List.of(proposal.getProponent()),
-                            "Your proposal \"" + proposal.getProjectTitle()
-                                    + "\" has been rejected by OVCAF.",
-                            "Proposal Rejected", NotificationTypes.REJECTION, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
-                }
-                notifyRps(proposal,
-                        "OVCAF rejected the proposal: \"" + proposal.getProjectTitle() + "\"",
-                        "Proposal Rejected", NotificationTypes.REJECTION);
-                break;
-            default:
-                // No decision, no notification.
-                break;
         }
     }
 

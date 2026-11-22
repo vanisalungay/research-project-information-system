@@ -541,6 +541,14 @@ const submitReports = async () => {
     return
   }
 
+  const files = [quarterlyReport.value?.name, financialReport.value?.name].filter(Boolean)
+  const confirmed = await showConfirm(
+    `Submit ${files.length} report file${files.length === 1 ? '' : 's'} for ${reportPeriod.value}? ` +
+      'The uploaded reports will be recorded against this project.',
+    { title: 'Submit Reports', type: 'warning', confirmText: 'Submit Reports' },
+  )
+  if (!confirmed) return
+
   uploading.value = true
 
   try {
@@ -568,15 +576,13 @@ const submitReports = async () => {
       showSuccess.value = false
     }, 3000)
   } catch (err) {
+    // A failed upload is reported as failed. It must never be shown as a success: the
+    // reports would then be missing from the project record with no indication why.
     console.error('Upload failed:', err)
-    // For now, show success even if backend endpoint doesn't exist yet
-    showSuccess.value = true
-    successMessage.value = 'Reports submitted! (Backend endpoint pending)'
-    closeUploadModal()
-
-    setTimeout(() => {
-      showSuccess.value = false
-    }, 3000)
+    const message =
+      err?.response?.data?.error ||
+      'The reports could not be uploaded. Please check the files and try again.'
+    await showAlert(message, { type: 'error', title: 'Upload Failed' })
   } finally {
     uploading.value = false
   }

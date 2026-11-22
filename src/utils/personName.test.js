@@ -10,8 +10,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  FULL_NAME_EXAMPLE,
   PERSON_NAME_EXAMPLE,
   PERSON_NAME_FORMAT,
+  firstLastNameError,
   formatPersonName,
   formatPersonNameLines,
 } from './personName.js'
@@ -82,6 +84,24 @@ test('a multi-line team is formatted line by line', () => {
     'Bagares, Xarzha Maurine\nLungay, Vanisa\n\nDela Cruz, Juan, M., Jr.',
   )
   assert.equal(formatPersonNameLines(''), '')
+})
+
+test('the account name example is First Name first, then Last Name', () => {
+  assert.equal(FULL_NAME_EXAMPLE, 'Juan Dela Cruz')
+})
+
+test('account names accept a plain First Name Last Name entry', () => {
+  assert.equal(firstLastNameError('Juan Dela Cruz'), '')
+  assert.equal(firstLastNameError('  JUAN   DELA CRUZ  '), '')
+  assert.equal(firstLastNameError('Maria Clara Dela Cruz'), '')
+  assert.equal(firstLastNameError('Juan Dela Cruz Jr.'), '')
+})
+
+test('account names reject an empty name, a one-word name and the comma order', () => {
+  assert.match(firstLastNameError(''), /required/i)
+  assert.match(firstLastNameError('   '), /required/i)
+  assert.match(firstLastNameError('Juan'), /first name and the last name/i)
+  assert.match(firstLastNameError('Dela Cruz, Juan'), /without commas/i)
 })
 
 test('formatting is idempotent', () => {

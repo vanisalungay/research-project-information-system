@@ -41,7 +41,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="announcement in announcements" :key="announcement.id">
+        <tr v-for="announcement in announcementRows" :key="announcement.id">
           <td class="announcement-name">{{ announcement.name }}</td>
           <td>{{ formatDate(announcement.startDate) }}</td>
           <td>{{ formatDate(announcement.endDate) }}</td>
@@ -66,6 +66,17 @@
         </tr>
       </tbody>
     </table>
+
+    <PaginationBar
+      v-if="announcements.length"
+      :page="page"
+      :page-size="pageSize"
+      :total="announcements.length"
+      item-label="announcement"
+      item-label-plural="announcements"
+      @update:page="setPage"
+      @update:page-size="setPageSize"
+    />
 
     <!-- Create / Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
@@ -299,7 +310,9 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { useDialog } from '@/composables/useDialog'
+import { usePagination } from '@/composables/usePagination.js'
 import { announcementStatus } from '@/utils/announcementStatus'
 import {
   FUNDING_PROGRAMS,
@@ -322,6 +335,16 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 const announcements = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// The list pages its real records; a create or delete re-clamps the current page instead
+// of leaving the table on an empty page.
+const {
+  page,
+  pageSize,
+  pageItems: announcementRows,
+  setPage,
+  setPageSize,
+} = usePagination(announcements)
 
 const showModal = ref(false)
 const isEditing = ref(false)

@@ -11,8 +11,8 @@
     />
     <p class="subtitle">
       <template v-if="isOvcrigeRejection">
-        OVCRIGE rejected this proposal and returned it to ORPS. Review the reason and forward the
-        rejection to the proponent.
+        {{ proposal.returnedByOffice || 'A reviewing office' }} rejected this proposal and returned it
+        to ORPS. Review the reason and forward the rejection to the proponent.
       </template>
       <template v-else>
         Review the returning office's remarks, set the deadline, and forward to the proponent.
@@ -162,9 +162,10 @@ const success = ref('')
 const submitError = ref('')
 
 /**
- * OVCRIGE rejecting a proposal sends it here as RETURNED_TO_RPS with
- * return_kind=REJECTION. ORPS completes the rejection and is the office that informs
- * the proponent; the revision-forward form is not shown for this kind of return.
+ * A reviewing office (OVCRIGE or OVCAF) rejecting a proposal sends it here as
+ * RETURNED_TO_RPS with return_kind=REJECTION. ORPS completes the rejection and is the
+ * office that informs the proponent; the revision-forward form is not shown for this
+ * kind of return.
  */
 const isOvcrigeRejection = computed(
   () =>
@@ -227,10 +228,21 @@ async function fetchProposal() {
 }
 
 async function forward() {
+  if (submitting.value) return
   if (!deadline.value) {
     submitError.value = 'Please set a revision deadline.'
     return
   }
+  const confirmed = await showConfirm(
+    `Forward the revision request for "${proposal.value.projectTitle || 'this proposal'}" ` +
+      `to the proponent? The deadline is ${deadline.value} and the proponent will be notified.`,
+    {
+      title: 'Forward Revision Request',
+      type: 'warning',
+      confirmText: 'Forward to Proponent',
+    },
+  )
+  if (!confirmed) return
   submitting.value = true
   submitError.value = ''
   success.value = ''

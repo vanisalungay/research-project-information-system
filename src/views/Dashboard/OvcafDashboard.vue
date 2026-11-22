@@ -51,7 +51,7 @@
         <span class="dash-section-icon" v-html="icons.proposals"></span>
         <h3 class="dash-section-title">PROPOSALS AWAITING OVCAF REVIEW</h3>
         <div class="dash-section-actions">
-          <router-link class="end-btn is-link" to="/ovcaf/inbox">View all</router-link>
+          <router-link class="end-btn is-link" to="/ovcaf/proposals">View all</router-link>
         </div>
       </header>
 
@@ -98,7 +98,7 @@
         <span class="dash-section-icon" v-html="icons.funds"></span>
         <h3 class="dash-section-title">APPROVED PROPOSALS REQUESTING FUNDS</h3>
         <div class="dash-section-actions">
-          <router-link class="end-btn is-link" to="/ovcaf/inbox">View all</router-link>
+          <router-link class="end-btn is-link" to="/ovcaf/proposals">View all</router-link>
         </div>
       </header>
 
@@ -122,7 +122,7 @@
                 </span>
               </td>
               <td class="text-right">
-                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/validate/${proposal.id}`)">
+                <button class="end-btn is-view row-btn" @click="$router.push(`/ovcaf/proposals/${proposal.id}`)">
                   {{ proposalActionLabel(proposal.status) }}
                 </button>
               </td>

@@ -425,9 +425,22 @@ public class ProposalController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * A reviewing office rejects a proposal. The decision is never delivered to the
+     * Proponent by the office that made it: OVCRIGE, REC and OVCAF rejections are handed
+     * to ORPS (RPS) as a {@code RETURNED_TO_RPS} record with {@code returnKind=REJECTION},
+     * and ORPS forwards the final decision. RPS itself is ORPS, so its own rejection is
+     * the final one and notifies the Proponent immediately.
+     *
+     * <p>Remarks are required: the Proponent cannot be told why a proposal was rejected
+     * if no office recorded a reason.</p>
+     */
     @PutMapping("/{id}/reject")
-    public ResponseEntity<Proposal> rejectProposal(@PathVariable Long id) {
-        Proposal updated = proposalService.updateProposalStatus(id, "REJECTED");
+    public ResponseEntity<Proposal> rejectProposal(
+            @PathVariable Long id,
+            @RequestBody(required = false) RejectToRpsRequest request) {
+        Proposal updated = proposalService.rejectProposal(
+                id, request != null ? request.getRemarks() : null);
         return ResponseEntity.ok(updated);
     }
 

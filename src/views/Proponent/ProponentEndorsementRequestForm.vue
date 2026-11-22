@@ -177,6 +177,14 @@
         </div>
       </form>
     </template>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -185,7 +193,9 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/utils/api'
 import '@/assets/endorsement.css'
 import BackButton from '@/components/BackButton.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
+import { useDialog } from '@/composables/useDialog'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
 import {
   MAX_PROGRAM_TITLE_LENGTH,
@@ -207,6 +217,8 @@ import {
  * the Proponent lands next.
  */
 const emit = defineEmits(['submitted', 'cancel'])
+
+const { dialogState, showConfirm } = useDialog()
 
 const colleges = RPIS_COLLEGES
 const calls = ref([])
@@ -362,12 +374,20 @@ async function loadCalls() {
 }
 
 async function submit() {
+  if (submitting.value) return
   showValidation.value = true
   errorMessage.value = ''
 
   if (Object.keys(errors.value).length > 0) {
     return
   }
+
+  const confirmed = await showConfirm(
+    `Submit the endorsement request for "${form.projectTitle || 'this project'}" to the Dean? ` +
+      'The request will be sent to the assigned college Dean for a decision.',
+    { title: 'Submit Endorsement Request', type: 'warning', confirmText: 'Submit Request' },
+  )
+  if (!confirmed) return
 
   submitting.value = true
   try {

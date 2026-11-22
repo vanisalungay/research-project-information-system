@@ -52,7 +52,7 @@
 
         <tbody>
           <tr
-            v-for="proposal in filteredProposals"
+            v-for="proposal in visibleProposals"
             :key="proposal.id"
             class="clickable-row"
             @click="openProposal(proposal)"
@@ -81,6 +81,16 @@
           </tr>
         </tbody>
       </table>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="budget record"
+        item-label-plural="budget records"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
 
   </div>
@@ -88,6 +98,8 @@
 
 <script>
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { clampPage } from '@/composables/usePagination.js'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
@@ -103,6 +115,7 @@ const BUDGET_FILTERS = ['All', ...Object.keys(BUDGET_STATUS_MAP)]
 
 export default {
   name: "RpsBudgetProcessing",
+  components: { PaginationBar },
 
   data() {
     return {
@@ -112,6 +125,8 @@ export default {
       loading: false,
       error: null,
       filters: BUDGET_FILTERS,
+      page: 1,
+      pageSize: 10,
     }
   },
 
@@ -136,10 +151,33 @@ export default {
       }
 
       return result
-    }
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredProposals.length / this.pageSize))
+    },
+    visibleProposals() {
+      const start = (this.page - 1) * this.pageSize
+      return this.filteredProposals.slice(start, start + this.pageSize)
+    },
+  },
+
+  watch: {
+    search() {
+      this.page = 1
+    },
+    activeFilter() {
+      this.page = 1
+    },
   },
 
   methods: {
+    setPage(value) {
+      this.page = clampPage(value, this.totalPages)
+    },
+    setPageSize(value) {
+      this.pageSize = Math.max(1, Number(value) || 10)
+      this.page = 1
+    },
     async fetchProposals() {
       this.loading = true
       this.error = null

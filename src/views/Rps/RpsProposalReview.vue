@@ -416,17 +416,26 @@ export default {
         await this._showAlert('Please complete the reviewer accountability section before rejecting.', { type: 'warning', title: 'Reviewer Info Required' })
         return
       }
-      const confirmed = await this._showConfirm('Are you sure you want to reject this proposal?', {
-        title: 'Reject Proposal',
-        type: 'danger',
-        confirmText: 'Reject'
-      })
+      if (!this.remarks.trim()) {
+        await this._showAlert('Please provide remarks before rejecting this proposal.', { type: 'warning', title: 'Remarks Required' })
+        return
+      }
+      const confirmed = await this._showConfirm(
+        'The proposal will be rejected and the proponent will be notified with the remarks you entered. Continue?',
+        {
+          title: 'Reject Proposal',
+          type: 'danger',
+          confirmText: 'Reject Proposal'
+        }
+      )
       if (!confirmed) return
       this.actionLoading = true
       try {
         // Save reviewer identity first
         await this.saveReviewerInfo()
-        await api.put(`/api/proposals/${this.$route.params.id}/reject`)
+        await api.put(`/api/proposals/${this.$route.params.id}/reject`, {
+          remarks: this.remarks.trim()
+        })
         this.successMessage = 'Proposal has been rejected.'
         this.showSuccess = true
         this.proposal.status = 'REJECTED'

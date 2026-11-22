@@ -107,7 +107,7 @@
 
             <!-- Dean assignments: the sitting Dean of each college and every predecessor. -->
             <template v-else>
-              <tr v-for="row in rows" :key="row.id">
+              <tr v-for="row in rowItems" :key="row.id">
                 <td>
                   <div class="dean-cell">
                     <span class="dean-avatar" aria-hidden="true">{{ row.initials }}</span>
@@ -170,9 +170,16 @@
         </table>
       </div>
 
-      <footer class="table-footer">
-        Showing {{ rows.length }} of {{ filteredTotal }} dean records
-      </footer>
+      <PaginationBar
+        v-if="rows.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="rows.length"
+        item-label="dean record"
+        item-label-plural="dean records"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
 
     <!-- The existing standard Create Account form, opened on the Dean role and locked to
@@ -220,8 +227,10 @@
  * the pending endorsement requests and closes the outgoing appointment as REVOKED in one
  * transaction; there is no separate Revoke action on this page.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
 import ManageDeanFlow from '@/views/Admin/ManageDeanFlow.vue'
 import { deanAssignmentStatusLabel } from '@/utils/statusCatalog.js'
@@ -290,8 +299,19 @@ const rows = computed(() => searchedAssignments.value.map((assignment) => ({
   revokedLabel: formatDate(assignment.dateRevoked),
 })))
 
-/** The footer's total is the selected filter's size, before the search narrows it. */
-const filteredTotal = computed(() => filteredAssignments.value.length)
+// The table pages the searched rows. The pager's total is the real number of matching
+// Dean records (whatever the active filter and search), never the number on this page.
+const {
+  page,
+  pageSize,
+  pageItems: rowItems,
+  setPage,
+  setPageSize,
+  reset: resetPage,
+} = usePagination(rows)
+
+// A new filter or search is a new result set: both start on its first page.
+watch([search, filter], resetPage)
 
 /**
  * The columns actually rendered: Active and Revoked each drop one column (the revoked

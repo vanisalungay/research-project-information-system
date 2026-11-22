@@ -11,10 +11,10 @@
           <input
             type="text"
             v-model="form.fullName"
-            placeholder="Dela Cruz, Juan, M., Jr."
+            placeholder="Juan Dela Cruz"
             @blur="form.fullName = formatPersonName(form.fullName)"
           />
-          <PersonNameHint />
+          <FullNameHint />
         </div>
 
         <div class="form-group">
@@ -99,9 +99,9 @@
 <script setup>
 import { reactive } from 'vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import PersonNameHint from '@/components/PersonNameHint.vue'
+import FullNameHint from '@/components/FullNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
-import { formatPersonName } from '@/utils/personName'
+import { firstLastNameError, formatPersonName } from '@/utils/personName'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -124,6 +124,17 @@ const saveChanges = async () => {
   if (!hasInput) {
     await showAlert('Please fill out at least one field before saving.', { type: 'warning', title: 'Validation Error' })
     return
+  }
+
+  // The account name is entered First Name first, then Last Name - never the
+  // "Last, First" order used inside proposal documents.
+  if (form.fullName.trim()) {
+    form.fullName = formatPersonName(form.fullName)
+    const nameError = firstLastNameError(form.fullName)
+    if (nameError) {
+      await showAlert(nameError, { type: 'error', title: 'Name Required' })
+      return
+    }
   }
 
   await showAlert('You successfully saved your changes.', { type: 'success', title: 'Changes Saved' })
@@ -163,7 +174,7 @@ const cancelChanges = () => {
 
 /* The shared name-format hint inherits this card's light text; the default opacity is
    too faint on the dark background. */
-.form-card .person-name-hint {
+.form-card .full-name-hint {
   color: #c9c7e2;
   opacity: 1;
 }

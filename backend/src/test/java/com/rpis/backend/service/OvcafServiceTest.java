@@ -38,6 +38,8 @@ class OvcafServiceTest {
 
     private ProposalRepository proposalRepository;
     private OvcafValidationRepository validationRepository;
+    private com.rpis.backend.repository.ProposalStatusHistoryRepository statusHistoryRepository;
+    private ProposalNotificationPolicy notificationPolicy;
     private OvcafService service;
     private Proposal proposal;
 
@@ -45,9 +47,15 @@ class OvcafServiceTest {
     void setUp() {
         proposalRepository = mock(ProposalRepository.class);
         validationRepository = mock(OvcafValidationRepository.class);
+        statusHistoryRepository = mock(com.rpis.backend.repository.ProposalStatusHistoryRepository.class);
+        notificationPolicy = mock(ProposalNotificationPolicy.class);
         UserRepository userRepository = mock(UserRepository.class);
         NotificationService notificationService = mock(NotificationService.class);
-        service = new OvcafService(proposalRepository, validationRepository, userRepository, notificationService);
+        service = new OvcafService(proposalRepository, validationRepository, userRepository,
+                statusHistoryRepository,
+                notificationService,
+                notificationPolicy,
+                mock(com.rpis.backend.security.CurrentUser.class));
 
         proposal = new Proposal();
         proposal.setId(PROPOSAL_ID);
@@ -146,6 +154,25 @@ class OvcafServiceTest {
         return request;
     }
 
+    /** An approval carries the complete six-item checklist. */
+    private OvcafValidationRequest approvalDecision() {
+        OvcafValidationRequest request = decision("APPROVED_ENDORSED");
+        request.setBudgetComplete(true);
+        request.setBudgetComputationCorrect(true);
+        request.setSupportingDocsComplete(true);
+        request.setExpensesReasonable(true);
+        request.setFundingSourceIdentified(true);
+        request.setComplianceVerified(true);
+        return request;
+    }
+
+    /** A negative decision must state why. */
+    private OvcafValidationRequest decisionWithRemarks(String value, String remarks) {
+        OvcafValidationRequest request = decision(value);
+        request.setRemarks(remarks);
+        return request;
+    }
+
     @Test
     void approvingForImplementationWithoutAnIssuedSoIsRefused() {
         proposal.setSoNumber(null);
@@ -172,7 +199,7 @@ class OvcafServiceTest {
         when(proposalRepository.save(any(Proposal.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OvcafValidation validation = service.submitValidation(PROPOSAL_ID, decision("APPROVED_ENDORSED"));
+        OvcafValidation validation = service.submitValidation(PROPOSAL_ID, approvalDecision());
 
         assertEquals("APPROVED_ENDORSED", validation.getDecision());
         assertEquals("READY_FOR_RELEASE", proposal.getStatus(),
@@ -241,27 +268,57 @@ class OvcafServiceTest {
     }
 
     @Test
-    void returningAProposalMovesItToReturned() {
+    void returningAProposalHandsItToOrpsForRevision() {
         when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
         when(validationRepository.save(any(OvcafValidation.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(proposalRepository.save(any(Proposal.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.submitValidation(PROPOSAL_ID, decision("RETURNED_FOR_REVISION"));
-        assertEquals("RETURNED", proposal.getStatus());
+        service.submitValidation(PROPOSAL_ID,
+                decisionWithRemarks("RETURNED_FOR_REVISION", "Recompute the MOOE line."));
+        assertEquals("RETURNED_TO_RPS", proposal.getStatus());
+        assertEquals("REVISION", proposal.getReturnKind());
+        assertEquals("Recompute the MOOE line.", proposal.getReturnRemarks());
+        assertEquals("OVCAF", proposal.getReturnedByOffice());
     }
 
     @Test
-    void rejectingAProposalMovesItToRejected() {
+    void rejectingAProposalHandsItToOrpsForFinalization() {
         when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
         when(validationRepository.save(any(OvcafValidation.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(proposalRepository.save(any(Proposal.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.submitValidation(PROPOSAL_ID, decision("REJECTED"));
-        assertEquals("REJECTED", proposal.getStatus());
+        service.submitValidation(PROPOSAL_ID,
+                decisionWithRemarks("REJECTED", "Not a fundable expense."));
+        assertEquals("RETURNED_TO_RPS", proposal.getStatus());
+        assertEquals("REJECTION", proposal.getReturnKind());
+        assertEquals("Not a fundable expense.", proposal.getReturnRemarks());
+        assertEquals("OVCAF", proposal.getReturnedByOffice());
+    }
+
+    @Test
+    void anApprovalWithAnIncompleteChecklistIsRefused() {
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        OvcafValidationRequest request = decision("APPROVED_ENDORSED");
+        request.setBudgetComplete(true);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.submitValidation(PROPOSAL_ID, request));
+        assertTrue(error.getMessage().contains("Missing:"), error.getMessage());
+        assertEquals("FOR_OVCAF_APPROVAL", proposal.getStatus());
+    }
+
+    @Test
+    void aReturnOrRejectionWithoutRemarksIsRefused() {
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.submitValidation(PROPOSAL_ID, decision("RETURNED_FOR_REVISION")));
+        assertTrue(error.getMessage().contains("Remarks are required"), error.getMessage());
+        assertEquals("FOR_OVCAF_APPROVAL", proposal.getStatus());
     }
 
     @Test
@@ -307,5 +364,69 @@ class OvcafServiceTest {
         when(validationRepository.findTopByProposalIdOrderByCreatedAtDesc(PROPOSAL_ID))
                 .thenReturn(Optional.empty());
         assertEquals(1, service.getPendingValidationProposals().size());
+    }
+
+    @Test
+    void anApprovalNotifiesThroughTheSharedPolicyAndRecordsHistory() {
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.save(any(OvcafValidation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(proposalRepository.save(any(Proposal.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.submitValidation(PROPOSAL_ID, approvalDecision());
+
+        org.mockito.Mockito.verify(notificationPolicy).notifyOvcafBudgetApproved(proposal);
+        org.mockito.ArgumentCaptor<com.rpis.backend.model.ProposalStatusHistory> row =
+                org.mockito.ArgumentCaptor.forClass(com.rpis.backend.model.ProposalStatusHistory.class);
+        org.mockito.Mockito.verify(statusHistoryRepository).save(row.capture());
+        assertEquals("FOR_OVCAF_APPROVAL", row.getValue().getFromStatus());
+        assertEquals("READY_FOR_RELEASE", row.getValue().getToStatus());
+        assertEquals("OVCAF", row.getValue().getActorRole());
+    }
+
+    @Test
+    void aReturnNotifiesOrpsOnlyAndRecordsTheHandOff() {
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.save(any(OvcafValidation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(proposalRepository.save(any(Proposal.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.submitValidation(PROPOSAL_ID,
+                decisionWithRemarks("RETURNED_FOR_REVISION", "Correct the MOOE line."));
+
+        org.mockito.Mockito.verify(notificationPolicy)
+                .notifyOvcafReturned(proposal, "Correct the MOOE line.");
+        org.mockito.Mockito.verify(statusHistoryRepository)
+                .save(any(com.rpis.backend.model.ProposalStatusHistory.class));
+        org.mockito.Mockito.verify(notificationPolicy, org.mockito.Mockito.never())
+                .notifyOvcafBudgetApproved(any(Proposal.class));
+    }
+
+    @Test
+    void aRejectionNotifiesOrpsWithTheReason() {
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(validationRepository.save(any(OvcafValidation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(proposalRepository.save(any(Proposal.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.submitValidation(PROPOSAL_ID,
+                decisionWithRemarks("REJECTED", "Not a fundable expense."));
+
+        org.mockito.Mockito.verify(notificationPolicy)
+                .notifyRpsRejectionReturned(proposal, "Not a fundable expense.", "OVCAF");
+    }
+
+    @Test
+    void authorizingAnImplementationApprovedProjectIsRefused() {
+        proposal.setStatus("APPROVED");
+        when(proposalRepository.findById(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.authorizeBudget(PROPOSAL_ID, 5L));
+        assertTrue(error.getMessage().contains("not awaiting fund release"), error.getMessage());
+        assertEquals("APPROVED", proposal.getStatus());
     }
 }

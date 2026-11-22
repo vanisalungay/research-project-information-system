@@ -1,5 +1,6 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.dto.OvcafProposalPageResponse;
 import com.rpis.backend.dto.OvcafProposalResponse;
 import com.rpis.backend.dto.OvcafReportsSummaryResponse;
 import com.rpis.backend.dto.OvcafValidationRequest;
@@ -35,6 +36,24 @@ public class OvcafController {
     @GetMapping("/proposals/pending")
     public ResponseEntity<List<OvcafProposalResponse>> getPendingValidationProposals() {
         return ResponseEntity.ok(ovcafService.getPendingValidationProposals());
+    }
+
+    /**
+     * One page of the OVCAF proposals page. Filtering, ordering (default: Date Received,
+     * newest first) and pagination are performed on the server.
+     */
+    @GetMapping("/proposals/page")
+    public ResponseEntity<OvcafProposalPageResponse> getProposalPage(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String college,
+            @RequestParam(required = false) String program,
+            @RequestParam(defaultValue = "receivedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ovcafService.getProposalPage(
+                search, status, college, program, sortBy, sortDir, page, size));
     }
 
     /**

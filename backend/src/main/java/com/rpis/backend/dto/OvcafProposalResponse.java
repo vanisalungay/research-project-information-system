@@ -18,6 +18,7 @@ public class OvcafProposalResponse {
     private String proponentName;
     private Long proponentId;
     private String college;
+    private String programTitle;
     private String status;
     private String duration;
     private LocalDate startDate;

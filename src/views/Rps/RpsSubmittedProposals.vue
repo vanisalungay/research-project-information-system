@@ -125,7 +125,7 @@ const categoryMeta = {
   },
   rejected: {
     title: 'Rejected Proposals',
-    description: 'Review proposals rejected by OVCRIGE and returned to ORPS for processing.',
+    description: 'Review proposals rejected by a reviewing office and returned to ORPS for processing.',
   },
 }
 

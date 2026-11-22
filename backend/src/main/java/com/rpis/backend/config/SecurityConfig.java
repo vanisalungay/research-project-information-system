@@ -238,6 +238,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/proposals/*/field-remarks/*")
                         .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.OVCRIGE, UserRoles.OVCAF, UserRoles.REC, UserRoles.OC)
 
+                        // OVCAF's own API (validation decisions, budget release, reports).
+                        // Without this rule every authenticated account could call the
+                        // validation/release endpoints; the service's status checks are
+                        // not a substitute for role authorization.
+                        .requestMatchers("/api/ovcaf/**").hasRole(UserRoles.OVCAF)
+
                         // Quarterly Progress Reports (implementation-phase reporting)
                         .requestMatchers(HttpMethod.POST, "/api/quarterly-reports", "/api/quarterly-reports/**")
                         .hasRole(UserRoles.PROPONENT)

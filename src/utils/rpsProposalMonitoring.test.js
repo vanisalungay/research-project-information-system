@@ -59,28 +59,17 @@ test('loading, API error and empty results each have a rendered state', () => {
   assert.ok(PAGE.includes('No Proposals Found'))
 })
 
-test('every filtered proposal renders in one continuous grid, with no pagination', () => {
+test('the filtered grid is paginated with the shared pager', () => {
   assert.match(
     PAGE,
-    /v-for="prop in filteredProposals"/,
-    'the grid renders the full filtered list',
+    /v-for="prop in rowProposals"/,
+    'the grid renders the current page of the filtered list',
   )
-  for (const removed of [
-    'paginatedProposals',
-    'paginationStartIndex',
-    'paginationEndIndex',
-    'totalPages',
-    'currentPage',
-    'perPage',
-    'btn-pagination',
-    'pagination-panel',
-    'page-indicator',
-    'Showing',
-    'Previous',
-    'Next',
-  ]) {
-    assert.ok(!PAGE.includes(removed), `${removed} must be removed with pagination`)
-  }
+  assert.match(PAGE, /rowProposals\(\) \{[\s\S]*?this\.filteredProposals\.slice/)
+  assert.match(PAGE, /<PaginationBar[\s\S]*?:total="filteredProposals\.length"/)
+  assert.match(PAGE, /searchQuery\(\) \{\s*this\.page = 1/)
+  assert.match(PAGE, /selectedOffice\(\) \{\s*this\.page = 1/)
+  assert.match(PAGE, /selectedStatus\(\) \{\s*this\.page = 1/)
 })
 
 test('Current Office shows the project stage for approved and completed proposals', () => {
@@ -100,7 +89,7 @@ test('drafts are excluded before search and filters, and never reach the grid', 
   )
   assert.match(
     PAGE,
-    /v-for="prop in filteredProposals"/,
-    'the visible cards come from the same filtered list',
+    /v-for="prop in rowProposals"/,
+    'the visible cards come from the same filtered list (its current page)',
   )
 })

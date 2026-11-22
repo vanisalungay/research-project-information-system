@@ -11,7 +11,7 @@
                 <div v-else-if="!proposal" class="card empty-state-box">
                     <p class="empty-title">Proposal Not Found</p>
                     <p class="empty-desc">The proposal you are attempting to validate cannot be found.</p>
-                    <BackButton label="Back to Inbox" to="/ovcaf/inbox" style="margin-top:1rem" />
+                    <BackButton label="Back to Proposals" to="/ovcaf/proposals" style="margin-top:1rem" />
                 </div>
 
                 <div v-else>
@@ -137,15 +137,29 @@
                                     submitting your decision.</p>
                                 <div class="checklist-grid">
                                     <label v-for="(label, key) in checklistLabels" :key="key" class="checklist-item"
-                                        :class="{ checked: checklist[key] }">
-                                        <input type="checkbox" v-model="checklist[key]" class="sr-only" />
-                                        <div class="cb-box" :class="{ filled: checklist[key] }">{{ checklist[key] ? '✓'
-                                            : '' }}</div>
+                                        :class="{ checked: checklist[key], locked: decisionLocked }">
+                                        <input type="checkbox" v-model="checklist[key]" class="sr-only"
+                                            :disabled="decisionLocked" />
+                                        <div class="cb-box" :class="{ filled: checklist[key] }">
+                                            <span v-if="checklist[key]" class="cb-icon" v-html="icons.check"></span>
+                                        </div>
                                         <span class="cb-label">{{ label }}</span>
                                     </label>
                                 </div>
-                                <div v-if="isAllChecked" class="all-checked-banner">✅ All items verified — Approval is
-                                    now available.</div>
+                                <div v-if="isAllChecked" class="all-checked-banner">
+                                    <span class="banner-icon" v-html="icons.check"></span>
+                                    All items verified — Approval is now available.
+                                </div>
+                                <div v-else-if="decision === 'APPROVED_ENDORSED' && !decisionLocked"
+                                    class="checklist-missing" role="status">
+                                    <p class="checklist-missing-title">
+                                        <span class="banner-icon" v-html="icons.alert"></span>
+                                        Remaining before approval:
+                                    </p>
+                                    <ul>
+                                        <li v-for="item in missingChecklistItems" :key="item">{{ item }}</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
@@ -153,46 +167,59 @@
                         <div class="right-col">
                             <div class="card decision-card">
                                 <h4 class="card-title">Evaluation Decision</h4>
+                                <!-- Once the project is Implementation Approved its financial
+                                     evaluation is final. The card stays readable, but nothing in
+                                     it can be changed. The backend enforces the same rule. -->
+                                <div v-if="decisionLocked" class="locked-banner" role="status">
+                                    <span class="banner-icon" v-html="icons.lock"></span>
+                                    This proposal is Implementation Approved. The financial evaluation decision is
+                                    closed.
+                                </div>
                                 <form @submit.prevent="handleSubmit">
                                     <!-- Decision Radio Options -->
                                     <div class="form-group">
                                         <span class="form-label section-label">Select Administrative Action</span>
                                         <div class="radio-list">
                                             <label class="radio-option"
-                                                :class="{ 'selected approve': decision === 'APPROVED_ENDORSED' }">
+                                                :class="{ 'selected approve': decision === 'APPROVED_ENDORSED', locked: decisionLocked }">
                                                 <input type="radio" v-model="decision" value="APPROVED_ENDORSED"
-                                                    class="sr-only" />
+                                                    class="sr-only" :disabled="decisionLocked" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title approve-title">✅ {{
-                                                        ovcafDecisionLabel('APPROVED_ENDORSED') }}</span>
+                                                    <span class="option-title approve-title">
+                                                        <span class="option-icon" v-html="icons.check"></span>
+                                                        {{ ovcafDecisionLabel('APPROVED_ENDORSED') }}</span>
                                                     <span class="option-desc">Budget meets all compliance conditions.
                                                         Proposal will be endorsed back to RII with OVCAF
                                                         certification.</span>
                                                 </div>
                                             </label>
                                             <label class="radio-option"
-                                                :class="{ 'selected return': decision === 'RETURNED_FOR_REVISION' }">
+                                                :class="{ 'selected return': decision === 'RETURNED_FOR_REVISION', locked: decisionLocked }">
                                                 <input type="radio" v-model="decision" value="RETURNED_FOR_REVISION"
-                                                    class="sr-only" />
+                                                    class="sr-only" :disabled="decisionLocked" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title return-title">🔄 {{
-                                                        ovcafDecisionLabel('RETURNED_FOR_REVISION') }}</span>
-                                                    <span class="option-desc">Budget requires corrections. Proposal is
-                                                        sent back with revision instructions.</span>
+                                                    <span class="option-title return-title">
+                                                        <span class="option-icon" v-html="icons.rotate"></span>
+                                                        {{ ovcafDecisionLabel('RETURNED_FOR_REVISION') }}</span>
+                                                    <span class="option-desc">Budget requires corrections. The
+                                                        proposal is returned to ORPS with your remarks for
+                                                        revision.</span>
                                                 </div>
                                             </label>
                                             <label class="radio-option"
-                                                :class="{ 'selected reject': decision === 'REJECTED' }">
+                                                :class="{ 'selected reject': decision === 'REJECTED', locked: decisionLocked }">
                                                 <input type="radio" v-model="decision" value="REJECTED"
-                                                    class="sr-only" />
+                                                    class="sr-only" :disabled="decisionLocked" />
                                                 <div class="radio-indicator"></div>
                                                 <div>
-                                                    <span class="option-title reject-title">❌ {{
-                                                        ovcafDecisionLabel('REJECTED') }}</span>
-                                                    <span class="option-desc">Permanently deny the financial validation
-                                                        request.</span>
+                                                    <span class="option-title reject-title">
+                                                        <span class="option-icon" v-html="icons.x"></span>
+                                                        {{ ovcafDecisionLabel('REJECTED') }}</span>
+                                                    <span class="option-desc">Deny the financial validation
+                                                        request. ORPS records the final rejection and notifies
+                                                        the proponent.</span>
                                                 </div>
                                             </label>
                                         </div>
@@ -202,22 +229,31 @@
                                     <div class="form-group mt-6">
                                         <label for="validation-remarks" class="form-label section-label">
                                             Evaluator Remarks / Instructions
-                                            <span v-if="decision !== 'APPROVED_ENDORSED'" class="required-mark">*
+                                            <span v-if="remarksRequired" class="required-mark">*
                                                 Required</span>
                                         </label>
                                         <textarea id="validation-remarks" v-model="remarks" rows="5"
                                             class="form-control" style="resize:vertical;min-height:110px"
+                                            :disabled="decisionLocked"
                                             placeholder="Provide evaluation notes, revision directions, or justification..."></textarea>
+                                        <p v-if="remarksRequired && !decisionLocked && !remarks.trim()"
+                                            class="field-hint">
+                                            Remarks are required when returning or rejecting a proposal.
+                                        </p>
                                     </div>
 
                                     <!-- Error Banner -->
-                                    <div v-if="formError" class="error-banner">⚠ {{ formError }}</div>
+                                    <div v-if="formError" class="error-banner">
+                                        <span class="banner-icon" v-html="icons.alert"></span>
+                                        {{ formError }}
+                                    </div>
 
                                     <!-- A proposal cannot be approved for implementation until
                                          the Office of the Chancellor has recorded its Special
                                          Order. The backend refuses the approval as well. -->
-                                    <div v-if="approvalBlocked" class="error-banner">
-                                        ⚠ No Special Order (SO) has been issued for this proposal.
+                                    <div v-if="approvalBlocked && !decisionLocked" class="error-banner">
+                                        <span class="banner-icon" v-html="icons.alert"></span>
+                                        No Special Order (SO) has been issued for this proposal.
                                         The Office of the Chancellor must record the SO (Final
                                         Approval) before it can be approved for implementation.
                                     </div>
@@ -225,9 +261,9 @@
                                     <!-- Actions -->
                                     <div class="form-actions">
                                         <button type="button" @click="resetForm" class="btn btn-secondary"
-                                            :disabled="submitLoading">Reset</button>
+                                            :disabled="submitLoading || decisionLocked">Reset</button>
                                         <button type="submit" class="btn btn-primary"
-                                            :disabled="submitLoading || approvalBlocked">
+                                            :disabled="!canSubmit">
                                             {{ submitLoading ? 'Processing...' : 'Submit Evaluation' }}
                                         </button>
                                     </div>
@@ -280,7 +316,7 @@
                                 </p>
                             </div>
                             <button ref="detailsCloseRef" type="button" class="proposal-details-close"
-                                aria-label="Close proposal details" @click="closeProposalDetails">✕</button>
+                                aria-label="Close proposal details" @click="closeProposalDetails">&times;</button>
                         </header>
                         <div class="proposal-details-body">
                             <OvcafProposalDetails :proposal-id="proposal.id" embedded
@@ -305,6 +341,23 @@ import { collegeDisplayParts, fileTypeDescription, initialsFromName } from '@/ut
 import { downloadUploadedFile } from '@/utils/fileDownload';
 import { getScrollContainer } from '@/utils/scrollReset';
 import { ovcafDecisionLabel } from '@/utils/statusCatalog.js';
+import { normalizeStatusKey } from '@/utils/statusLabel.js';
+
+// Inline SVG icons (the application ships no icon dependency). One helper keeps every
+// icon the same size, stroke and alignment; nothing here is an emoji.
+const svg = (paths) =>
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" `
+    + `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+
+const icons = {
+    check: svg('<path d="m20 6-11 11-5-5"/>'),
+    rotate: svg('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'),
+    x: svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+    alert: svg('<path d="M12 9v4"/><path d="M12 17h.01"/>'
+        + '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'),
+    lock: svg('<rect x="4" y="10" width="16" height="10" rx="2"/>'
+        + '<path d="M8 10V7a4 4 0 0 1 8 0v3"/>'),
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -478,6 +531,27 @@ const saveBudgetDocument = async () => {
 
 // ── Computed ──────────────────────────────────────
 const isAllChecked = computed(() => Object.values(checklist).every(v => v === true));
+const missingChecklistItems = computed(() =>
+    Object.entries(checklistLabels)
+        .filter(([key]) => !checklist[key])
+        .map(([, label]) => label)
+);
+const remarksRequired = computed(() => decision.value !== 'APPROVED_ENDORSED');
+// Once the project is Implementation Approved its financial evaluation is final.
+// The backend rejects any direct change to the same record.
+const decisionLocked = computed(() =>
+    normalizeStatusKey(proposal.value?.status) === 'APPROVED'
+);
+/**
+ * The Submit button starts disabled and only becomes available when the rule for the
+ * selected decision is satisfied: every checklist item for an approval, a written
+ * reason for a return or rejection.
+ */
+const canSubmit = computed(() => {
+    if (submitLoading.value || approvalBlocked.value || decisionLocked.value) return false;
+    if (decision.value === 'APPROVED_ENDORSED') return isAllChecked.value;
+    return remarks.value.trim() !== '';
+});
 const confirmBtnClass = computed(() => {
     if (decision.value === 'APPROVED_ENDORSED') return 'btn-success';
     if (decision.value === 'RETURNED_FOR_REVISION') return 'btn-warning';
@@ -485,8 +559,8 @@ const confirmBtnClass = computed(() => {
 });
 const modalMessage = computed(() => {
     if (decision.value === 'APPROVED_ENDORSED') return `You are about to approve and endorse "${proposal.value?.title}". This certifies financial compliance and the proposal will be approved for implementation with or without funding.`;
-    if (decision.value === 'RETURNED_FOR_REVISION') return `You are about to return "${proposal.value?.title}" for budget revision. The proponent will be notified with your remarks.`;
-    return `You are about to permanently reject "${proposal.value?.title}". This action cannot be undone.`;
+    if (decision.value === 'RETURNED_FOR_REVISION') return `You are about to return "${proposal.value?.title}" to ORPS for budget revision. ORPS receives your remarks and forwards the revision to the proponent.`;
+    return `You are about to reject "${proposal.value?.title}" and return it to ORPS for processing. ORPS records the final rejection and notifies the proponent.`;
 });
 
 /**
@@ -573,12 +647,16 @@ onBeforeUnmount(() => {
 // ── Actions ───────────────────────────────────────
 const handleSubmit = () => {
     formError.value = '';
+    if (decisionLocked.value) {
+        formError.value = 'This proposal is Implementation Approved. The financial evaluation decision is closed.';
+        return;
+    }
     if (approvalBlocked.value) {
         formError.value = 'No Special Order (SO) has been issued for this proposal. The Office of the Chancellor must record the SO before implementation approval.';
         return;
     }
     if (decision.value === 'APPROVED_ENDORSED' && !isAllChecked.value) {
-        formError.value = 'All compliance checklist items must be verified before approving.';
+        formError.value = `Complete every checklist item before approving. Remaining: ${missingChecklistItems.value.join('; ')}.`;
         return;
     }
     if (decision.value !== 'APPROVED_ENDORSED' && !remarks.value.trim()) {
@@ -609,8 +687,8 @@ const submitDecision = async () => {
 
         await api.post(`/api/ovcaf/proposals/${proposal.value.id}/validate`, payload);
 
-        // Navigate back to inbox on success
-        router.push('/ovcaf/inbox');
+        // Navigate back to the proposals page on success.
+        router.push('/ovcaf/proposals');
     } catch (err) {
         console.error('Error submitting validation:', err);
         // Surface the backend's domain message (for example the missing-SO rule)
@@ -1214,6 +1292,94 @@ const resetForm = () => {
     padding: 14px 18px;
     border-radius: 12px;
     font-weight: 600;
+}
+
+/* Inline SVG icons: one size/alignment everywhere, no emoji glyphs. */
+.cb-icon,
+.banner-icon,
+.option-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cb-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.banner-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 7px;
+    vertical-align: -3px;
+}
+
+.option-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 7px;
+    vertical-align: -2px;
+}
+
+.cb-icon :deep(svg),
+.banner-icon :deep(svg),
+.option-icon :deep(svg) {
+    width: 100%;
+    height: 100%;
+}
+
+/* Read-only state after Implementation Approved. */
+.checklist-item.locked,
+.radio-option.locked {
+    cursor: not-allowed;
+    opacity: .75;
+}
+
+.checklist-item.locked:hover {
+    background: transparent;
+}
+
+.locked-banner {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-size: .9rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.checklist-missing {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: .88rem;
+    line-height: 1.5;
+}
+
+.checklist-missing-title {
+    display: flex;
+    align-items: center;
+    margin: 0 0 6px;
+    font-weight: 700;
+}
+
+.checklist-missing ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.field-hint {
+    margin: 6px 0 0;
+    font-size: .8rem;
+    color: #b45309;
 }
 
 /* ---------------- Evaluation ---------------- */

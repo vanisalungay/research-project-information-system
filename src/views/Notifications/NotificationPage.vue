@@ -142,6 +142,16 @@
             </div>
           </div>
         </section>
+
+        <PaginationBar
+          :page="page"
+          :page-size="pageSize"
+          :total="filteredNotifications.length"
+          item-label="notification"
+          item-label-plural="notifications"
+          @update:page="setPage"
+          @update:page-size="setPageSize"
+        />
       </div>
 
       <!-- EMPTY STATE -->
@@ -173,14 +183,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
 import RelativeTime from '@/components/RelativeTime.vue'
 import { useDialog } from '@/composables/useDialog'
+import { usePagination } from '@/composables/usePagination.js'
 import { resolveNotificationDestination } from '@/utils/notificationDestination'
 import { announcementStatusLabel, announcementStatusTone } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
@@ -242,13 +254,13 @@ const filteredNotifications = computed(() => {
 const notificationGroups = computed(() => {
   const role = userStore.user?.role
   if (role === 'PROPONENT' || role === 'OVCRIGE') {
-    return filteredNotifications.value.length
-      ? [{ key: 'all', title: '', items: filteredNotifications.value }]
+    return pageNotifications.value.length
+      ? [{ key: 'all', title: '', items: pageNotifications.value }]
       : []
   }
 
   const { proposalUpdates, others } = groupNotifications(
-    filteredNotifications.value,
+    pageNotifications.value,
     userStore.user?.role,
   )
   const groups = []
@@ -264,6 +276,20 @@ const notificationGroups = computed(() => {
   }
   return groups
 })
+
+// The list pages the filtered notifications. Groups are built from the current page, so a
+// "Proposal Updates" heading only covers the rows actually rendered beneath it.
+const {
+  page,
+  pageSize,
+  pageItems: pageNotifications,
+  setPage,
+  setPageSize,
+  reset: resetPage,
+} = usePagination(filteredNotifications)
+
+// Changing a filter is a criteria change: the list starts again on its first page.
+watch([searchQuery, filterStatus, filterKind], resetPage)
 
 const fetchNotifications = () => notificationStore.refresh(userStore.user?.id)
 

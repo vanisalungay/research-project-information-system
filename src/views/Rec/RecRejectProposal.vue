@@ -51,22 +51,31 @@
           <h3 class="card-title">Rejection Details</h3>
 
           <div class="form-group">
-            <label>Primary Reason for Rejection</label>
-            <input type="text" placeholder="Enter primary reason" />
+            <label for="rejectReason">Primary Reason for Rejection</label>
+            <input
+              id="rejectReason"
+              v-model="reason"
+              type="text"
+              placeholder="Enter primary reason"
+              required
+            />
           </div>
 
           <div class="form-group">
-            <label>Detailed Explanation</label>
+            <label for="rejectExplanation">Detailed Explanation</label>
             <textarea
+              id="rejectExplanation"
+              v-model="explanation"
               rows="5"
               placeholder="Provide a clear and structured explanation for the rejection decision. Be specific and concise."
+              required
             ></textarea>
           </div>
 
           <!-- WARNING BOX -->
           <div class="warning-box">
-            ⚠️ Rejection confirmation is permanent and cannot be reversed. The proposal will be
-            locked with a “Rejected” status.
+            ⚠️ This rejection is submitted to ORPS (RPS) for review. ORPS reviews the reason
+            recorded here and forwards the decision to the proponent.
           </div>
         </div>
 
@@ -77,12 +86,12 @@
         <div class="side-card">
           <h4 class="side-title">Rejection Confirmation</h4>
 
-          <p>This action will mark the proposal as <strong>Rejected</strong>.</p>
+          <p>This action will return the proposal to <strong>ORPS</strong> as a rejection.</p>
 
           <ul class="side-list">
-            <li>Proponent will receive a notification</li>
+            <li>ORPS reviews the recorded rejection reason</li>
+            <li>ORPS forwards the decision to the proponent</li>
             <li>Decision cannot be undone</li>
-            <li>Comments will be visible to the applicant</li>
           </ul>
 
           <button class="reject-btn btn-reject" @click="rejectProposal">Reject Proposal</button>
@@ -99,26 +108,13 @@
       <BackButton label="Back to Submission" to="/assigned-proposals" />
     </div>
 
-    <!-- REJECT CONFIRMATION MODAL -->
-    <div v-if="showRejectModal && !error" class="modal-overlay">
-      <div class="modal-box">
-        <p>Are you sure you want to reject this proposal?</p>
-        <div class="modal-actions">
-          <button class="cancel-btn btn-cancel" @click="cancelReject">Cancel</button>
-          <button class="reject-btn btn-reject" @click="confirmReject">Confirm</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- REJECTION SUCCESS MESSAGE -->
-    <div v-if="showRejectSuccess" class="modal-overlay">
-      <div class="modal-box">
-        <p>Proposal rejected successfully!</p>
-        <div class="modal-actions">
-          <button class="btn-primary" @click="closeSuccess">OK</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -127,12 +123,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import BackButton from '@/components/BackButton.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
 
 const router = useRouter()
 const route = useRoute()
+const { dialogState, showAlert, showConfirm } = useDialog()
 
-const showRejectModal = ref(false)
-const showRejectSuccess = ref(false)
+const reason = ref('')
+const explanation = ref('')
 const loading = ref(false)
 const error = ref('')
 
@@ -171,41 +170,55 @@ onMounted(async () => {
   }
 })
 
-const rejectProposal = () => {
-  showRejectModal.value = true
-}
+// Rejection is a workflow action: the reason is required before the confirmation, and
+// nothing is sent to the backend until the reviewer confirms.
+const rejectProposal = async () => {
+  if (loading.value) return
+  if (!reason.value.trim()) {
+    await showAlert('Enter the primary reason for rejecting this proposal.', {
+      type: 'warning',
+      title: 'Reason Required',
+    })
+    return
+  }
+  if (!explanation.value.trim()) {
+    await showAlert('Provide a detailed explanation for the rejection decision.', {
+      type: 'warning',
+      title: 'Explanation Required',
+    })
+    return
+  }
 
-const cancelReject = () => {
-  showRejectModal.value = false
-}
+  const remarks = `${reason.value.trim()}\n\n${explanation.value.trim()}`
+  const confirmed = await showConfirm(
+    'This rejection will be submitted to ORPS for review and forwarded to the proponent. Continue?',
+    {
+      title: 'Reject Proposal',
+      type: 'danger',
+      confirmText: 'Reject Proposal',
+      cancelText: 'Cancel',
+    },
+  )
+  if (!confirmed) return
 
-// Confirm rejection
-const confirmReject = async () => {
   try {
     loading.value = true
-    await api.put(`/api/proposals/${proposal.value.id}/reject`)
-    showRejectModal.value = false
-    showRejectSuccess.value = true
-    
-    setTimeout(() => {
-      router.push('/rec-dash')
-    }, 2000)
+    await api.put(`/api/proposals/${proposal.value.id}/reject`, { remarks })
+    await showAlert(
+      'The rejection was submitted to ORPS. ORPS will review it and forward the decision to the proponent.',
+      { type: 'success', title: 'Rejection Submitted' },
+    )
+    router.push('/rec-dash')
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to reject proposal.'
+    const message =
+      err?.response?.data?.error ||
+      err?.response?.data?.message ||
+      'Failed to reject the proposal. Please try again.'
+    await showAlert(message, { type: 'error', title: 'Rejection Failed' })
   } finally {
     loading.value = false
   }
-}
-
-// Close success modal
-const closeSuccess = () => {
-  showRejectSuccess.value = false
-  router.push('/rec-dash')
-}
-
-const goToSubmission = () => {
-  router.push('/assigned-proposals')
 }
 </script>
 

@@ -40,7 +40,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="proposal in filteredProposals" :key="proposal.id">
+            <tr v-for="proposal in visibleProposals" :key="proposal.id">
               <td class="document-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
               <td>
                 <div class="title-cell">{{ proposal.projectTitle || 'Untitled' }}</div>
@@ -65,26 +65,39 @@
         </table>
       </div>
 
-      <div class="table-footer">
-        Showing {{ filteredProposals.length }} proposal{{ filteredProposals.length === 1 ? '' : 's' }}
-      </div>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { clampPage } from '@/composables/usePagination.js'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsEndorsedProPanel',
+  components: { PaginationBar },
   data() {
     return {
       search: '',
       proposals: [],
       loading: false,
       error: null,
+      hasLoaded: false,
+      page: 1,
+      pageSize: 10,
     }
   },
   computed: {
@@ -98,8 +111,28 @@ export default {
         String(proposal.documentId || proposal.proposalCode || proposal.id).toLowerCase().includes(keyword)
       )
     },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredProposals.length / this.pageSize))
+    },
+    visibleProposals() {
+      const start = (this.page - 1) * this.pageSize
+      return this.filteredProposals.slice(start, start + this.pageSize)
+    },
+  },
+  watch: {
+    // A new search is a different result set: it starts on its first page.
+    search() {
+      this.page = 1
+    },
   },
   methods: {
+    setPage(value) {
+      this.page = clampPage(value, this.totalPages)
+    },
+    setPageSize(value) {
+      this.pageSize = Math.max(1, Number(value) || 10)
+      this.page = 1
+    },
     async fetchProposals() {
       this.loading = true
       this.error = null
@@ -113,6 +146,7 @@ export default {
         this.proposals = []
       } finally {
         this.loading = false
+        this.hasLoaded = true
       }
     },
 
@@ -130,6 +164,10 @@ export default {
   },
   mounted() {
     this.fetchProposals()
+  },
+  // The category is kept alive; returning to it reloads the real endorsed set.
+  activated() {
+    if (this.hasLoaded) this.fetchProposals()
   }
 }
 </script>

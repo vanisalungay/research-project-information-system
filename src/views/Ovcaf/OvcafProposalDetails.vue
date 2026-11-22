@@ -10,14 +10,14 @@
                 <div v-else-if="!proposal" class="card empty-state-box">
                     <p class="empty-title">Proposal Not Found</p>
                     <p class="empty-desc">The proposal you are trying to view does not exist or has been removed.</p>
-                    <BackButton v-if="!embedded" label="Back to Inbox" to="/ovcaf/inbox"
+                    <BackButton v-if="!embedded" label="Back to Proposals" to="/ovcaf/proposals"
                         style="margin-top:1rem" />
                 </div>
 
                 <div v-else>
                     <!-- Action Bar -->
                     <div class="action-bar">
-                        <BackButton v-if="!embedded" label="Back to Inbox" to="/ovcaf/inbox" />
+                        <BackButton v-if="!embedded" label="Back to Proposals" to="/ovcaf/proposals" />
                         <div class="action-bar-right">
                             <button type="button" class="btn btn-download"
                                 :disabled="downloadLoading || !fullProposal" @click="downloadProposal">
@@ -167,6 +167,14 @@
         <!-- Line-Item Budget preview: opens over this page, never navigates away. -->
         <LineItemBudgetPreviewModal v-if="showBudgetPreview" :file-path="budgetDocumentPath(budgetSource)"
             :file-name="budgetFileName" @close="showBudgetPreview = false" />
+
+        <ConfirmDialog
+            v-if="dialogState.show"
+            v-bind="dialogState"
+            @confirm="dialogState.onConfirm"
+            @cancel="dialogState.onCancel"
+            @close="dialogState.show = false"
+        />
     </div>
 </template>
 
@@ -177,6 +185,8 @@ import api from '@/utils/api';
 import BackButton from '@/components/BackButton.vue';
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue';
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import { useDialog } from '@/composables/useDialog';
 import { PROPOSAL_FIELD_SECTIONS } from '@/utils/proposalFields';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';
 import { downloadUploadedFile } from '@/utils/fileDownload';
@@ -184,9 +194,10 @@ import { downloadProposalRecord } from '@/utils/proposalDetailsDocument';
 import { statusTone } from '@/utils/statusTone.js';
 import { proposalStatusLabel } from '@/utils/proposalStatus.js';
 import { normalizeStatusKey } from '@/utils/statusLabel.js';
-import { ovcafDecisionLabel } from '@/utils/statusCatalog.js';
+import { buildProposalTimeline } from '@/utils/proposalTimeline.js';
 
 const route = useRoute();
+const { dialogState, showConfirm } = useDialog();
 
 // The same read-only viewer is rendered both as the standalone /ovcaf/proposals/:id
 // page and inside the evaluation screen's details modal. When embedded, the caller
@@ -288,7 +299,7 @@ const fetchProposal = async () => {
                 // Section 25 is an uploaded document, not a recomputable amount table.
                 beneficiariesFileName: p.beneficiariesFileName || '',
                 beneficiariesFilePath: p.beneficiariesFilePath || '',
-                dateReceived: p.createdAt,
+                dateReceived: p.receivedAt || null,
                 status: p.status,
                 ocRemarks: p.remarks || null,
                 validationChecklist: {
@@ -300,9 +311,10 @@ const fetchProposal = async () => {
                     complianceVerified: p.complianceVerified || false
                 },
                 remarks: p.ovcafRemarks || null,
-                history: buildHistory(p)
+                history: []
             };
             await loadFullProposal(id);
+            await loadStatusHistory(id);
         }
     } catch (err) {
         console.error('Error fetching proposal details:', err);
@@ -339,9 +351,16 @@ const loadFullProposal = async (id) => {
 const releaseFunds = async () => {
     const id = proposal.value?.id;
     if (!id || releasing.value) return;
-    if (!window.confirm(
-        'Record the release of funds for this project? This completes its approval for implementation.'
-    )) return;
+    const confirmed = await showConfirm(
+        'Record the release of funds for this project? This completes its approval for implementation and notifies the proponent and ORPS.',
+        {
+            title: 'Record Fund Release',
+            type: 'warning',
+            confirmText: 'Record Release',
+            cancelText: 'Cancel',
+        },
+    );
+    if (!confirmed) return;
     releasing.value = true;
     releaseError.value = '';
     try {
@@ -356,38 +375,44 @@ const releaseFunds = async () => {
     }
 };
 
-// Build history from proposal data
-const buildHistory = (p) => {
-    const history = [];
-    if (p.createdAt) {
-        history.push({
-            stage: 'Submission',
-            action: 'Proposal Submitted',
-            user: p.projectLeader || p.proponentName || 'Project Leader',
-            date: new Date(p.createdAt).toLocaleString('en-PH'),
-            notes: null
-        });
+/**
+ * The audited workflow events, newest first. The shared timeline builder sorts by the
+ * raw event timestamp (never a formatted date) and keeps every recorded transition, so
+ * OVCAF approvals, returns and rejections appear in the order they happened.
+ */
+const loadStatusHistory = async (id) => {
+    try {
+        const res = await api.get(`/api/proposals/${id}/status-history`);
+        const entries = buildProposalTimeline(fullProposal.value || proposal.value, res.data || []);
+        if (proposal.value) {
+            proposal.value = {
+                ...proposal.value,
+                history: entries.map((entry) => ({
+                    stage: entry.kind === 'milestone' ? 'Workflow Milestone' : 'Status Update',
+                    action: entry.label,
+                    user: entry.actorName || 'System',
+                    date: formatHistoryDate(entry.timestamp) || entry.detail || '',
+                    notes: entry.remarks || null
+                }))
+            };
+        }
+    } catch (err) {
+        console.error('Error fetching the proposal status history:', err);
     }
-    if (['FOR_OVCAF_APPROVAL', 'APPROVED', 'FOR_OC_APPROVAL', 'READY_FOR_RELEASE', 'RELEASED']
-        .includes(p.status)) {
-        history.push({
-            stage: 'OVCAF',
-            action: 'Received for Financial Validation',
-            user: 'System',
-            date: new Date(p.updatedAt || p.createdAt).toLocaleString('en-PH'),
-            notes: null
-        });
-    }
-    if (p.ovcafDecision) {
-        history.push({
-            stage: 'OVCAF',
-            action: ovcafDecisionLabel(p.ovcafDecision) || p.ovcafDecision,
-            user: 'OVCAF Evaluator',
-            date: new Date(p.updatedAt).toLocaleString('en-PH'),
-            notes: p.ovcafRemarks || null
-        });
-    }
-    return history;
+};
+
+/** Date and time, so two events on the same day remain visibly ordered. */
+const formatHistoryDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 };
 
 // ── Lifecycle ─────────────────────────────────────

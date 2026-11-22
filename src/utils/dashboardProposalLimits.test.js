@@ -74,13 +74,13 @@ test('OC previews five per section, newest submission first', () => {
   assert.ok(source.includes('showAll.value ? approvedProposals.value : approvedProposalsPreview.value'))
 })
 
-test('OVCAF previews five per section and keeps the full Inbox link', () => {
+test('OVCAF previews five per section and links to the full Proposals page', () => {
   const source = dashboards.OVCAF
   assert.match(source, /v-for="proposal in forReviewPreview"/)
   assert.match(source, /v-for="proposal in completedPreview"/)
   assert.match(source, /latestProposalSnippets\(forReview\.value, \{ dateField: 'updatedAt' \}\)/)
   assert.match(source, /latestProposalSnippets\(completed\.value, \{ dateField: 'updatedAt' \}\)/)
-  assert.ok(source.includes('to="/ovcaf/inbox"'), 'the full OVCAF listing must remain reachable')
+  assert.ok(source.includes('to="/ovcaf/proposals"'), 'the full OVCAF listing must remain reachable')
 })
 
 test('existing View All destinations are preserved', () => {

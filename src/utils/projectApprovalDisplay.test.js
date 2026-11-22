@@ -61,7 +61,6 @@ test('the status filters take their text from the canonical label', () => {
     ['ProponentProposals.vue', PROPONENT_PROPOSALS],
     ['ProponentProposalMonitoring.vue', PROPONENT_MONITORING],
     ['RpsProposalMonitoring.vue', RPS_MONITORING],
-    ['OvcafProposalInbox.vue', OVCAF_INBOX],
   ]) {
     const statusFilter = statusFilterSource(source)
     assert.ok(
@@ -78,6 +77,20 @@ test('the status filters take their text from the canonical label', () => {
       name + ' must not hardcode a Completed option',
     )
   }
+
+  // OVCAF now offers exactly the statuses its API returns, each rendered through the
+  // canonical status label; no status text is typed into the page.
+  const ovcafStatusFilter = statusFilterSource(OVCAF_INBOX)
+  assert.ok(
+    ovcafStatusFilter.includes('v-for="status in options.statuses"'),
+    'OvcafProposalInbox.vue must offer the API-provided statuses',
+  )
+  assert.ok(
+    ovcafStatusFilter.includes('{{ proposalStatusLabel(status) }}'),
+    'OvcafProposalInbox.vue must render each status through proposalStatusLabel',
+  )
+  assert.ok(!/>\s*Completed\s*<\/option>/.test(ovcafStatusFilter),
+    'OvcafProposalInbox.vue must not hardcode a Completed option')
 })
 
 test('COMPLETED has its own option wherever it is offered', () => {

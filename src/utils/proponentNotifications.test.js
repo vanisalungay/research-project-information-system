@@ -25,7 +25,13 @@ test('the Proponent feed is not split into groups that break the newest-first or
     /sort\(\(a, b\) => new Date\(b\.createdAt\) - new Date\(a\.createdAt\)\)/,
     'the list is sorted newest first',
   )
-  assert.match(PAGE, /filteredNotifications\.value/, 'the grouped page uses the sorted filtered list')
+  assert.match(
+    PAGE,
+    /pageNotifications\.value/,
+    'the visible groups come from the paged slice of the sorted filtered list',
+  )
+  // Signing out lives in the sidebar, below Profile Settings.
+  assert.match(PAGE, /role === 'PROPONENT'/, 'the Proponent feed branch is kept')
 })
 
 test('the Proponent feeds are scoped to the signed-in account', () => {

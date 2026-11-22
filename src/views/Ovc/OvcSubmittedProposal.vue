@@ -97,25 +97,16 @@
       </table>
 
       <!-- PAGINATION -->
-      <div v-if="totalPages > 1" class="pagination-container">
-        <div class="pagination-info">
-          Showing <strong>{{ rangeStart }}</strong>–<strong>{{ rangeEnd }}</strong> of
-          <strong>{{ filteredProposals.length }}</strong> proposals
-        </div>
-        <div class="pagination-controls">
-          <button class="pagination-btn" :disabled="page === 1" @click="page--">&lsaquo;</button>
-          <button
-            v-for="pg in totalPages"
-            :key="pg"
-            class="pagination-btn page-num"
-            :class="{ active: pg === page }"
-            @click="page = pg"
-          >
-            {{ pg }}
-          </button>
-          <button class="pagination-btn" :disabled="page === totalPages" @click="page++">&rsaquo;</button>
-        </div>
-      </div>
+      <PaginationBar
+        v-if="filteredProposals.length"
+        :page="page"
+        :page-size="PAGE_SIZE"
+        :total="filteredProposals.length"
+        :show-page-size="false"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="page = $event"
+      />
     </div>
   </div>
 </template>
@@ -124,6 +115,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import {
