@@ -38,7 +38,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in selectedReports" :key="r.id">
+            <tr v-for="r in reportPageItems" :key="r.id">
               <td class="report-name">{{ reportName(r) }}</td>
               <td class="report-date">{{ formatReportDate(r.submittedAt) || '—' }}</td>
               <td>
@@ -53,6 +53,16 @@
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        v-if="selectedReports.length"
+        :page="reportPage"
+        :page-size="reportPageSize"
+        :total="selectedReports.length"
+        item-label="report"
+        item-label-plural="reports"
+        @update:page="setReportPage"
+        @update:page-size="setReportPageSize"
+      />
     </template>
 
     <!-- Master list of eligible projects -->
@@ -60,28 +70,39 @@
       <div v-if="projects.length === 0" class="state">
         No approved projects with an issued Special Order yet.
       </div>
-      <table v-else class="project-table">
-        <thead>
-          <tr>
-            <th>Proposal ID</th>
-            <th>Project Title</th>
-            <th>Project Leader</th>
-            <th>SO Number</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in projects" :key="p.id">
-            <td class="id-cell">{{ p.documentId || p.proposalCode || '—' }}</td>
-            <td class="title-cell">{{ p.projectTitle || 'Untitled' }}</td>
-            <td>{{ p.projectLeader || p.proponent?.name || 'N/A' }}</td>
-            <td>{{ p.soNumber || 'N/A' }}</td>
-            <td><span class="status-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span></td>
-            <td><button class="btn-view" @click="openProject(p)">View Reports</button></td>
-          </tr>
-        </tbody>
-      </table>
+      <template v-else>
+        <table class="project-table">
+          <thead>
+            <tr>
+              <th>Proposal ID</th>
+              <th>Project Title</th>
+              <th>Project Leader</th>
+              <th>SO Number</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in projectPageItems" :key="p.id">
+              <td class="id-cell">{{ p.documentId || p.proposalCode || '—' }}</td>
+              <td class="title-cell">{{ p.projectTitle || 'Untitled' }}</td>
+              <td>{{ p.projectLeader || p.proponent?.name || 'N/A' }}</td>
+              <td>{{ p.soNumber || 'N/A' }}</td>
+              <td><span class="status-badge" :class="statusTone(p.status)">{{ proposalStatusLabel(p.status) }}</span></td>
+              <td><button class="btn-view" @click="openProject(p)">View Reports</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <PaginationBar
+          :page="projectPage"
+          :page-size="projectPageSize"
+          :total="projects.length"
+          item-label="project"
+          item-label-plural="projects"
+          @update:page="setProjectPage"
+          @update:page-size="setProjectPageSize"
+        />
+      </template>
     </template>
 
     <!-- Read-only quarterly progress report modal: the same three page viewer the
@@ -149,6 +170,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import BackButton from '@/components/BackButton.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
@@ -178,12 +201,32 @@ const terminalModal = ref(null)
 const terminalDoc = ref(null)
 const terminalDocRef = ref(null)
 
+// Both lists use the system-wide ten-row pager. The project pager resets when the
+// master list is replaced; the report pager resets when another project is opened.
+const {
+  page: projectPage,
+  pageSize: projectPageSize,
+  pageItems: projectPageItems,
+  setPage: setProjectPage,
+  setPageSize: setProjectPageSize,
+  reset: resetProjectPage,
+} = usePagination(projects)
+const {
+  page: reportPage,
+  pageSize: reportPageSize,
+  pageItems: reportPageItems,
+  setPage: setReportPage,
+  setPageSize: setReportPageSize,
+  reset: resetReportPage,
+} = usePagination(selectedReports)
+
 async function fetchProjects() {
   loading.value = true
   error.value = ''
   try {
     const res = await api.get('/api/quarterly-reports/eligible-projects')
     projects.value = res.data || []
+    resetProjectPage()
     await openRequestedProject()
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load projects.'
@@ -208,6 +251,7 @@ watch(() => route.query.proposalId, openRequestedProject)
 async function openProject(p) {
   selectedProject.value = p
   selectedReports.value = []
+  resetReportPage()
   reportsLoading.value = true
   try {
     const res = await api.get(`/api/quarterly-reports/proposal/${p.id}`)

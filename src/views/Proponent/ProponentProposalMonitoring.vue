@@ -94,8 +94,9 @@
     </div>
 
     <!-- Proposals List -->
-    <div v-else-if="filteredProposals.length > 0" class="proposals-list">
-      <div v-for="proposal in filteredProposals" :key="proposal.id" class="proposal-card">
+    <template v-else-if="filteredProposals.length > 0">
+      <div class="proposals-list">
+        <div v-for="proposal in pageItems" :key="proposal.id" class="proposal-card">
         <!-- Card Header -->
         <div class="card-header">
           <div class="header-left">
@@ -167,7 +168,17 @@
           </button>
         </div>
       </div>
-    </div>
+      </div>
+      <PaginationBar
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredProposals.length"
+        item-label="proposal"
+        item-label-plural="proposals"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
+    </template>
 
     <!-- Empty State -->
     <div v-else class="empty-state">
@@ -265,11 +276,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { currentUserId } from '@/utils/session'
 import { useQuarterlyReportLauncher } from '@/composables/useQuarterlyReportLauncher'
+import { usePagination } from '@/composables/usePagination.js'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import {
   canonicalProposalStatus,
@@ -375,6 +388,12 @@ const filteredProposals = computed(() => {
 
   return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
+
+// The shared pager shows ten proposals by default; a new search or status filter is a
+// new result set and returns to its first page.
+const { page, pageSize, pageItems, setPage, setPageSize, reset } =
+  usePagination(filteredProposals)
+watch([searchQuery, statusFilter], reset)
 
 // Methods
 const fetchProposals = async () => {

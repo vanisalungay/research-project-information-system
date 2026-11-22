@@ -82,7 +82,8 @@ test('reports open in the shared read-only viewers', () => {
 })
 
 test('pagination is driven by the server result', () => {
-  assert.ok(PAGE.includes('Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalItems }}'))
-  assert.ok(PAGE.includes('Page {{ page }} of {{ totalPages }}'))
-  assert.ok(PAGE.includes('@click="goToPage(filters.page + 1)"'))
+  assert.ok(PAGE.includes('<PaginationBar'))
+  assert.ok(PAGE.includes(':total="totalItems"'))
+  assert.ok(PAGE.includes(':page-size="filters.limit"'))
+  assert.ok(PAGE.includes('@update:page="goToPage"'))
 })

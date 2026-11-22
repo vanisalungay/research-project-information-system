@@ -90,6 +90,7 @@
               <th>Proposal Title</th>
               <th>Proponent</th>
               <th>Date Submitted</th>
+              <th v-if="category === 'rejected'">Date Processed</th>
               <th>Status</th>
               <th class="col-actions">Actions</th>
             </tr>
@@ -107,11 +108,11 @@
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
               <td class="date-cell">
                 {{ proposal.submittedAt?.substring(0, 10) || 'N/A' }}
-                <div
-                  v-if="category === 'rejected' && proposal.returnedAt"
-                  class="subtext"
-                >
-                  Returned {{ String(proposal.returnedAt).substring(0, 10) }}
+              </td>
+              <td v-if="category === 'rejected'" class="date-cell processed-cell">
+                {{ processedDate(proposal) }}
+                <div class="subtext">
+                  {{ isPendingRejection(proposal) ? 'Returned to ORPS' : 'Forwarded to proponent' }}
                 </div>
               </td>
               <td>
@@ -122,7 +123,9 @@
                   <template v-if="isPendingRejection(proposal)">
                     Rejected by {{ rejectionOffice(proposal) }} · awaiting ORPS
                   </template>
-                  <template v-else>Rejection forwarded to proponent</template>
+                  <template v-else>
+                    Rejected by {{ rejectionOffice(proposal) }} · forwarded to proponent
+                  </template>
                 </div>
               </td>
               <td>
@@ -132,7 +135,7 @@
               </td>
             </tr>
             <tr v-if="filteredProposals.length === 0">
-              <td colspan="6" class="empty">{{ emptyMessage }}</td>
+              <td :colspan="category === 'rejected' ? 7 : 6" class="empty">{{ emptyMessage }}</td>
             </tr>
           </tbody>
         </table>
@@ -324,27 +327,47 @@ export default {
     rejectionRemarks(proposal) {
       return rejectionRemarksOf(proposal)
     },
+    /**
+     * Date Processed, from the actual workflow event:
+     *  - pending hand-off -> when the rejecting office routed it to ORPS;
+     *  - finalized -> when ORPS forwarded the rejection to the proponent.
+     */
+    processedDate(proposal) {
+      const value = isPendingRejection(proposal)
+        ? proposal.rejectionRoutedAt || proposal.routedAt
+        : proposal.rejectionProcessedAt || proposal.processedAt
+      if (!value) return '—'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return '—'
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    },
     async fetchProposals() {
       this.loading = true
       this.error = null
       try {
         const rejected = this.isRejectedCategory
-        // Rejected Proposals: every office rejection, whether it is awaiting ORPS
-        // (RETURNED_TO_RPS + return_kind REJECTION) or has already been finalized
-        // (REJECTED), newest rejection first. The Submitted list keeps its original
-        // statuses and submission ordering.
-        const res = await api.get('/api/proposals', {
-          params: rejected
-            ? { statusIn: ['RETURNED_TO_RPS', 'REJECTED'], sort: 'returnedAt' }
-            : {
+        // Rejected Proposals: read from the dedicated ORPS queue endpoint. It contains
+        // every reviewing-office rejection (pending hand-off + finalized) together with
+        // the actual routed-at and processed-at workflow timestamps. The Submitted list
+        // keeps its original statuses and submission ordering.
+        const res = rejected
+          ? await api.get('/api/proposals/rejections')
+          : await api.get('/api/proposals', {
+              params: {
                 statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
                 // Server-side ordering by the real submission event (not created_at or
                 // updated_at). The server also breaks equal timestamps by proposal id and
                 // puts records with no submission timestamp last.
                 sort: 'submittedAt',
               },
-          paramsSerializer: { indexes: null },
-        })
+              paramsSerializer: { indexes: null },
+            })
         this.proposals = Array.isArray(res.data) ? res.data : []
         this.page = 1
       } catch (err) {
@@ -644,6 +667,12 @@ export default {
 .date-cell {
   color: #78809a;
   white-space: nowrap;
+}
+
+/* The Date Processed column carries a date, time and workflow caption. */
+.processed-cell {
+  min-width: 150px;
+  vertical-align: top;
 }
 
 /* STATUS BADGES

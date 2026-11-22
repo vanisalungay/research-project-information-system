@@ -51,7 +51,7 @@
     <!-- CARDS GRID -->
     <div class="revision-grid">
       <div
-        v-for="revision in filteredRevisions"
+        v-for="revision in pageItems"
         :key="revision.id"
         class="revision-card"
       >
@@ -170,13 +170,25 @@
         </div>
       </div>
     </div>
+    <PaginationBar
+      v-if="filteredRevisions.length"
+      :page="page"
+      :page-size="pageSize"
+      :total="filteredRevisions.length"
+      item-label="revision request"
+      item-label-plural="revision requests"
+      @update:page="setPage"
+      @update:page-size="setPageSize"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { currentUserId } from '@/utils/session'
 import {
@@ -238,6 +250,11 @@ const filteredRevisions = computed(() => {
     )
   })
 })
+
+// Ten revision requests per page by default; a new search starts on page one.
+const { page, pageSize, pageItems, setPage, setPageSize, reset } =
+  usePagination(filteredRevisions)
+watch(searchQuery, reset)
 
 // Header summary: only the revision requests the proponent can still revise and resubmit.
 // The queue already holds just the RPS-forwarded revision requests (the status rule in

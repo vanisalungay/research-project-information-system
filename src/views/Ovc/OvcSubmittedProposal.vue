@@ -100,12 +100,12 @@
       <PaginationBar
         v-if="filteredProposals.length"
         :page="page"
-        :page-size="PAGE_SIZE"
+        :page-size="pageSize"
         :total="filteredProposals.length"
-        :show-page-size="false"
         item-label="proposal"
         item-label-plural="proposals"
         @update:page="page = $event"
+        @update:page-size="setPageSize"
       />
     </div>
   </div>
@@ -133,7 +133,7 @@ const loading = ref(false)
 const error = ref(null)
 
 /** How many proposals one page holds. Matches the other office list (OVCAF inbox). */
-const PAGE_SIZE = 8
+const pageSize = ref(10)
 
 const statusOptions = OVCRIGE_PIPELINE_STATUSES
 
@@ -194,17 +194,17 @@ const filteredProposals = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredProposals.value.length / PAGE_SIZE)))
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredProposals.value.length / pageSize.value)))
 
 const paginatedProposals = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE
-  return filteredProposals.value.slice(start, start + PAGE_SIZE)
+  const start = (page.value - 1) * pageSize.value
+  return filteredProposals.value.slice(start, start + pageSize.value)
 })
 
 const rangeStart = computed(() =>
-  filteredProposals.value.length ? (page.value - 1) * PAGE_SIZE + 1 : 0,
+  filteredProposals.value.length ? (page.value - 1) * pageSize.value + 1 : 0,
 )
-const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredProposals.value.length))
+const rangeEnd = computed(() => Math.min(page.value * pageSize.value, filteredProposals.value.length))
 
 // Selecting a filter returns to the first page. A shrinking result set can also leave the
 // current page past the end, so clamp it whenever the page count drops.
@@ -219,6 +219,12 @@ const resetFilters = () => {
   search.value = ''
   statusFilter.value = 'ALL'
   programFilter.value = 'ALL'
+  page.value = 1
+}
+
+/** A new page size starts a new result window on its first page. */
+const setPageSize = (value) => {
+  pageSize.value = Math.max(1, Number(value) || 10)
   page.value = 1
 }
 

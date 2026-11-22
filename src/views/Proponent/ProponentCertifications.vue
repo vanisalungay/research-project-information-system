@@ -46,7 +46,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in certifications" :key="item.id">
+            <tr v-for="item in pageItems" :key="item.id">
               <td>
                 {{ item.title }}
                 <div class="end-muted">{{ item.fileName }}</div>
@@ -78,6 +78,16 @@
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        v-if="certifications.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="certifications.length"
+        item-label="certificate"
+        item-label-plural="certificates"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
     </template>
   </div>
 </template>
@@ -85,6 +95,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import '@/assets/endorsement.css'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import {
   documentTypeLabel,
   fetchCertificationDocument,
@@ -107,6 +119,9 @@ const certifications = ref([])
 const loading = ref(true)
 const error = ref('')
 const actionError = ref('')
+
+// Ten certificates per page by default, using the system-wide pager.
+const { page, pageSize, pageItems, setPage, setPageSize } = usePagination(certifications)
 
 /** The proposal title is part of the certification title, minus its type prefix. */
 function endorsementTitle(item) {

@@ -252,7 +252,7 @@ export default {
       loading: false,
       error: null,
       page: 1,
-      pageSize: 12,
+      pageSize: 10,
     }
   },
 
@@ -314,7 +314,7 @@ export default {
       this.page = clampPage(value, this.totalPages)
     },
     setPageSize(value) {
-      this.pageSize = Math.max(1, Number(value) || 12)
+      this.pageSize = Math.max(1, Number(value) || 10)
       this.page = 1
     },
     async fetchProposals() {

@@ -105,18 +105,16 @@
           </table>
         </div>
 
-        <div v-if="totalItems > 0" class="end-pagination">
-          <span class="end-muted">
-            Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalItems }} reports
-          </span>
-          <div class="end-pager">
-            <button type="button" class="end-page-btn" :disabled="filters.page <= 1"
-              @click="goToPage(filters.page - 1)">Previous</button>
-            <span class="end-muted">Page {{ page }} of {{ totalPages }}</span>
-            <button type="button" class="end-page-btn" :disabled="filters.page >= totalPages"
-              @click="goToPage(filters.page + 1)">Next</button>
-          </div>
-        </div>
+        <PaginationBar
+          v-if="totalItems > 0"
+          :page="page"
+          :page-size="filters.limit"
+          :total="totalItems"
+          item-label="report"
+          item-label-plural="reports"
+          @update:page="goToPage"
+          @update:page-size="setPageSize"
+        />
       </template>
     </div>
 
@@ -162,6 +160,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import '@/assets/endorsement.css'
+import PaginationBar from '@/components/PaginationBar.vue'
 import api from '@/utils/api'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
@@ -281,6 +280,13 @@ const clearFilters = () => {
 const goToPage = (next) => {
   if (next < 1 || next > totalPages.value) return
   filters.page = next
+  fetchReports()
+}
+
+/** A new page size reloads the server window from its first page. */
+const setPageSize = (value) => {
+  filters.limit = Math.max(1, Number(value) || 10)
+  filters.page = 1
   fetchReports()
 }
 

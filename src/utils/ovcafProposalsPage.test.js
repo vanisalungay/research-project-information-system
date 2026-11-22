@@ -23,7 +23,7 @@ const NAV = read('../components/NavMenu.vue')
 test('the page is named Proposals and reuses the shared design layer', () => {
   assert.ok(PAGE.includes('<h2>Proposals</h2>'))
   assert.ok(PAGE.includes("import '@/assets/endorsement.css'"))
-  for (const className of ['end-table-scroll', 'end-table', 'end-badge', 'end-pagination']) {
+  for (const className of ['end-table-scroll', 'end-table', 'end-badge', 'PaginationBar']) {
     assert.ok(PAGE.includes(className), `the page must use ${className}`)
   }
   assert.ok(NAV.includes("text: 'Proposals'") && NAV.includes("path: '/ovcaf/proposals'"))
@@ -93,8 +93,10 @@ test('loading failures are shown instead of looking like an empty list', () => {
 })
 
 test('pagination and row actions come from the server result', () => {
-  assert.ok(PAGE.includes('Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalItems }}'))
-  assert.ok(PAGE.includes('Page {{ page }} of {{ totalPages }}'))
+  assert.ok(PAGE.includes('<PaginationBar'))
+  assert.ok(PAGE.includes(':total="totalItems"'))
+  assert.ok(PAGE.includes(':page-size="filters.limit"'))
+  assert.ok(PAGE.includes('@update:page="goToPage"'))
   assert.ok(PAGE.includes(':to="`/ovcaf/proposals/${p.id}`"'), 'View Details opens the proposal')
   assert.ok(PAGE.includes(':to="`/ovcaf/validate/${p.id}`"'), 'pending proposals keep the Validate action')
   assert.ok(PAGE.includes("normalizeStatusKey(p.status) === 'FOR_OVCAF_APPROVAL'"))

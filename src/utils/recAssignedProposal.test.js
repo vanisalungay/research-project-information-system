@@ -40,10 +40,10 @@ test('the category filter includes REC Revision', () => {
 })
 
 test('the worklist paginates without re-sorting the server result', () => {
-  assert.ok(PAGE.includes('const PAGE_SIZE = 10'))
+  assert.ok(PAGE.includes('const pageSize = ref(10)'))
   assert.ok(PAGE.includes('pagedProposals'))
-  assert.ok(PAGE.includes('end-pagination'))
-  assert.ok(PAGE.includes('goToPage(page - 1)'))
+  assert.ok(PAGE.includes('<PaginationBar'))
+  assert.ok(PAGE.includes('@update:page="goToPage"'))
   assert.ok(!PAGE.includes('.sort('), 'the server order must not be re-sorted')
 })
 

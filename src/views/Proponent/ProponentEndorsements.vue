@@ -89,7 +89,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="request in visibleRequests" :key="request.id">
+              <tr v-for="request in pageItems" :key="request.id">
                 <td>{{ request.referenceNumber }}</td>
                 <td>
                   {{ request.projectTitle }}
@@ -112,6 +112,16 @@
             </tbody>
           </table>
         </div>
+        <PaginationBar
+          v-if="visibleRequests.length"
+          :page="page"
+          :page-size="pageSize"
+          :total="visibleRequests.length"
+          item-label="endorsement request"
+          item-label-plural="endorsement requests"
+          @update:page="setPage"
+          @update:page-size="setPageSize"
+        />
       </template>
     </template>
 
@@ -134,6 +144,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import '@/assets/endorsement.css'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import ProponentCertifications from './ProponentCertifications.vue'
 import ProponentEndorsementRequestForm from './ProponentEndorsementRequestForm.vue'
 import {
@@ -194,6 +206,11 @@ const visibleRequests = computed(() =>
     ? requests.value.filter((request) => request.status === statusFilter.value)
     : requests.value,
 )
+
+// Ten requests per page by default; changing the status filter starts at page one.
+const { page, pageSize, pageItems, setPage, setPageSize, reset } =
+  usePagination(visibleRequests)
+watch(statusFilter, reset)
 
 async function load() {
   loading.value = true

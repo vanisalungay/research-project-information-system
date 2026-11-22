@@ -99,30 +99,16 @@
         </div>
 
         <!-- PAGINATION -->
-        <div v-if="filteredProposals.length" class="end-pagination">
-          <span class="end-muted">
-            Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredProposals.length }}
-          </span>
-          <div class="end-pager">
-            <button
-              type="button"
-              class="end-page-btn"
-              :disabled="page <= 1"
-              @click="goToPage(page - 1)"
-            >
-              Previous
-            </button>
-            <span class="end-muted">Page {{ page }} of {{ totalPages }}</span>
-            <button
-              type="button"
-              class="end-page-btn"
-              :disabled="page >= totalPages"
-              @click="goToPage(page + 1)"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          v-if="filteredProposals.length"
+          :page="page"
+          :page-size="pageSize"
+          :total="filteredProposals.length"
+          item-label="proposal"
+          item-label-plural="proposals"
+          @update:page="goToPage"
+          @update:page-size="setPageSize"
+        />
       </template>
     </div>
   </div>
@@ -132,6 +118,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel, proposalStatusMatches } from '@/utils/proposalStatus.js'
 import '@/assets/endorsement.css'
@@ -144,7 +131,7 @@ const search = ref('')
 const statusFilter = ref('ALL')
 
 /** One page of the filtered worklist. */
-const PAGE_SIZE = 10
+const pageSize = ref(10)
 const page = ref(1)
 
 const loadProposals = async () => {
@@ -182,19 +169,19 @@ const filteredProposals = computed(() => {
 })
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredProposals.value.length / PAGE_SIZE)),
+  Math.max(1, Math.ceil(filteredProposals.value.length / pageSize.value)),
 )
 
 const pagedProposals = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE
-  return filteredProposals.value.slice(start, start + PAGE_SIZE)
+  const start = (page.value - 1) * pageSize.value
+  return filteredProposals.value.slice(start, start + pageSize.value)
 })
 
 const rangeStart = computed(() =>
-  filteredProposals.value.length ? (page.value - 1) * PAGE_SIZE + 1 : 0,
+  filteredProposals.value.length ? (page.value - 1) * pageSize.value + 1 : 0,
 )
 const rangeEnd = computed(() =>
-  Math.min(page.value * PAGE_SIZE, filteredProposals.value.length),
+  Math.min(page.value * pageSize.value, filteredProposals.value.length),
 )
 
 watch([search, statusFilter], () => {
@@ -213,6 +200,11 @@ const submittedDate = (proposal) => {
 const goToPage = (next) => {
   if (next < 1 || next > totalPages.value) return
   page.value = next
+}
+
+const setPageSize = (value) => {
+  pageSize.value = Math.max(1, Number(value) || 10)
+  page.value = 1
 }
 
 const goToReview = (id) => {

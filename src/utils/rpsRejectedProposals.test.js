@@ -37,10 +37,16 @@ test('Rejected Proposals is a normal category beside the existing filters', () =
 
 test('the rejected list fetches every office rejection and keeps only rejection returns', () => {
   assert.ok(
-    PANEL.includes("statusIn: ['RETURNED_TO_RPS', 'REJECTED'], sort: 'returnedAt'"),
-    'pending hand-offs and finalized rejections are both retrieved',
+    PANEL.includes("api.get('/api/proposals/rejections')"),
+    'the dedicated ORPS rejection queue is read instead of a status-only query',
   )
   assert.ok(PANEL.includes('isPendingRejection'), 'the rejection test is explicit')
+  assert.ok(PANEL.includes('Date Processed'), 'the processed date column is present')
+  assert.ok(PANEL.includes('processedDate(proposal)'), 'the column uses the workflow timestamp')
+  assert.ok(PANEL.includes('proposal.rejectionRoutedAt || proposal.routedAt'),
+    'a pending hand-off shows when it was routed to ORPS')
+  assert.ok(PANEL.includes('proposal.rejectionProcessedAt || proposal.processedAt'),
+    'a finalized rejection shows when ORPS forwarded it')
   const QUEUE = read('./rejectionQueue.js')
   assert.ok(
     QUEUE.includes("String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'"),
@@ -120,7 +126,7 @@ test('the rejected table reuses the submitted columns and the Review action', ()
   assert.ok(PANEL.includes("name: 'RpsForwardRevision'"), 'rejections open the ORPS processing page')
   assert.ok(PANEL.includes('awaiting ORPS'), 'the pending category context is shown')
   assert.ok(
-    PANEL.includes('Rejection forwarded to proponent'),
+    PANEL.includes('forwarded to proponent'),
     'finalized rejections are distinguished from pending ones',
   )
   assert.ok(PANEL.includes('pageSize: 10'), 'the list paginates')

@@ -42,8 +42,9 @@
       No calls match your filters.
     </p>
 
-    <div v-else class="calls-grid">
-      <article v-for="call in filteredCalls" :key="call.id" class="call-card">
+    <template v-else>
+      <div class="calls-grid">
+        <article v-for="call in pageItems" :key="call.id" class="call-card">
         <header class="call-card-head">
           <span class="call-status" :class="statusTone(statusOf(call))">
             <span class="call-status-dot" aria-hidden="true"></span>
@@ -81,14 +82,26 @@
             View Call Details
           </router-link>
         </div>
-      </article>
-    </div>
+        </article>
+      </div>
+      <PaginationBar
+        :page="page"
+        :page-size="pageSize"
+        :total="filteredCalls.length"
+        item-label="call"
+        item-label-plural="calls"
+        @update:page="setPage"
+        @update:page-size="setPageSize"
+      />
+    </template>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
+import { usePagination } from '@/composables/usePagination.js'
 import BackButton from '@/components/BackButton.vue'
 import { announcementStatus } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
@@ -119,6 +132,11 @@ const filteredCalls = computed(() => {
       .includes(keyword)
   })
 })
+
+// The shared pager shows ten calls by default; a new search/filter starts at page one.
+const { page, pageSize, pageItems, setPage, setPageSize, reset } =
+  usePagination(filteredCalls)
+watch([search, statusFilter], reset)
 
 async function loadCalls() {
   loading.value = true

@@ -28,4 +28,8 @@ public interface ProposalStatusHistoryRepository extends JpaRepository<ProposalS
             + "AND h.toStatus = 'FOR_OVCAF_APPROVAL' AND h.source <> 'BASELINE_SEED' "
             + "ORDER BY h.changedAt ASC, h.id ASC")
     List<ProposalStatusHistory> findOvcafReceiptEvents(@Param("proposalIds") Collection<Long> proposalIds);
+
+    /** All audited rows of a set of proposals, oldest first, for one batch read. */
+    List<ProposalStatusHistory> findByProposalIdInOrderByChangedAtAscIdAsc(
+            Collection<Long> proposalIds);
 }

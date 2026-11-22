@@ -60,42 +60,28 @@ test('every Dean table scrolls inside its own card', () => {
   }
 })
 
-test('the endorsement request table pages its rows instead of listing them all', () => {
+test('the endorsement request table pages its rows with the shared pager', () => {
   // The list endpoint returns every request in the Dean's scope, so an unbounded table
-  // grew with the term. The page keeps ten rows per page and its own footer.
+  // grew with the term. The page uses the shared pager, which starts at ten rows.
   const source = read('../views/Dean/DeanEndorsementRequests.vue')
 
-  assert.match(source, /const PAGE_SIZE = 10/, 'the table must page at a fixed size')
+  assert.match(source, /const pageSize = ref\(10\)/, 'the table must start at ten rows per page')
   assert.match(source, /v-for="request in pagedRequests"/, 'the table must render only a page')
   assert.match(
     source,
-    /requests\.value\.slice\(start, start \+ PAGE_SIZE\)/,
+    /requests\.value\.slice\(start, start \+ pageSize\.value\)/,
     'the visible rows must be a slice of the result set',
   )
-  assert.match(source, /class="end-pagination"/, 'the footer must be rendered')
-  assert.match(source, /class="end-page-btn"/, 'the footer must use the shared button')
-  assert.match(source, /@click="goToPage\(page - 1\)"/, 'Previous must step back one page')
-  assert.match(source, /@click="goToPage\(page \+ 1\)"/, 'Next must step forward one page')
-  assert.match(source, /:disabled="page <= 1"/, 'Previous must stop at the first page')
-  assert.match(
-    source,
-    /:disabled="page >= totalPages"/,
-    'Next must stop at the last page',
-  )
-  assert.match(
-    source,
-    /Math\.min\(page\.value \* PAGE_SIZE, requests\.value\.length\)/,
-    'the range must never claim more rows than exist',
-  )
+  assert.match(source, /<PaginationBar/, 'the shared pager must be rendered')
+  assert.match(source, /:page-size="pageSize"/, 'the pager must show the selected size')
+  assert.match(source, /@update:page="goToPage"/, 'the pager drives page navigation')
+  assert.match(source, /@update:page-size="setPageSize"/, 'the rows-per-page control is wired')
   // A new filter result starts on page 1, or a short result could open on an empty page.
   assert.match(
     source,
     /async function load\(\)[\s\S]*?page\.value = 1/,
     'loading a new result set must reset the page',
   )
-
-  assert.match(STYLES, /\.end-pagination\s*\{/, 'the pagination footer must be styled')
-  assert.match(STYLES, /\.end-page-btn:disabled/, 'a disabled pager button must look disabled')
 })
 
 test('the table header is readable on the blue band behind it', () => {

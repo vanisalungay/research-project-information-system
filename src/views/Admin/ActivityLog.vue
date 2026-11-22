@@ -91,7 +91,6 @@
             <th>Activity</th>
             <th>Module</th>
             <th>Details</th>
-            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -102,11 +101,6 @@
             <td class="activity-cell">{{ entry.description }}</td>
             <td class="nowrap">{{ entry.module }}</td>
             <td class="details-cell">{{ entry.details }}</td>
-            <td>
-              <span class="status-badge" :class="statusTone(entry.status)">
-                {{ formatStatus(entry.status) }}
-              </span>
-            </td>
             <td class="actions-cell">
               <button type="button" class="view-btn btn-view" @click="openDetails(entry)">
                 View Details
@@ -118,23 +112,16 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="!loading && !error && entries.length" class="pagination">
-      <span class="range-label">{{ rangeLabel }}</span>
-      <div class="pager">
-        <button type="button" class="page-btn" :disabled="page === 0" @click="goToPage(page - 1)">
-          Previous
-        </button>
-        <span class="page-label">Page {{ page + 1 }} of {{ Math.max(totalPages, 1) }}</span>
-        <button
-          type="button"
-          class="page-btn"
-          :disabled="page + 1 >= totalPages"
-          @click="goToPage(page + 1)"
-        >
-          Next
-        </button>
-      </div>
-    </div>
+    <PaginationBar
+      v-if="!loading && !error && entries.length"
+      :page="page + 1"
+      :page-size="size"
+      :total="totalElements"
+      item-label="activity"
+      item-label-plural="activities"
+      @update:page="goToPage($event - 1)"
+      @update:page-size="setPageSize"
+    />
 
     <!-- View Details -->
     <div v-if="showDetails" class="modal-backdrop" @click.self="closeDetails">
@@ -194,6 +181,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import api from '@/utils/api'
+import PaginationBar from '@/components/PaginationBar.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { activityStatusLabel } from '@/utils/statusCatalog.js'
 
@@ -231,9 +219,7 @@ const rangeLabel = computed(() => {
   const first = page.value * size.value + 1
   const last = Math.min((page.value + 1) * size.value, totalElements.value)
   return `Showing ${first}-${last} of ${totalElements.value}`
-})
-
-/** Loads one page with the current filters applied. */
+})/** Loads one page with the current filters applied. */
 const load = async () => {
   loading.value = true
   error.value = ''
@@ -289,6 +275,13 @@ const clearFilters = () => {
 const goToPage = (next) => {
   if (next < 0 || next >= totalPages.value) return
   page.value = next
+  load()
+}
+
+/** Changing the page size is a new result window: restart at its first page. */
+const setPageSize = (value) => {
+  size.value = Math.max(1, Number(value) || 10)
+  page.value = 0
   load()
 }
 

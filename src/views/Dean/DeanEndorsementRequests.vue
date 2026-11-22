@@ -79,28 +79,16 @@
         </table>
       </div>
 
-      <div v-if="requests.length" class="end-pagination">
-        <span class="end-muted">{{ rangeLabel }}</span>
-        <div class="end-pager">
-          <button
-            type="button"
-            class="end-page-btn"
-            :disabled="page <= 1"
-            @click="goToPage(page - 1)"
-          >
-            Previous
-          </button>
-          <span class="end-muted">Page {{ page }} of {{ totalPages }}</span>
-          <button
-            type="button"
-            class="end-page-btn"
-            :disabled="page >= totalPages"
-            @click="goToPage(page + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <PaginationBar
+        v-if="requests.length"
+        :page="page"
+        :page-size="pageSize"
+        :total="requests.length"
+        item-label="request"
+        item-label-plural="requests"
+        @update:page="goToPage"
+        @update:page-size="setPageSize"
+      />
     </template>
   </div>
 </template>
@@ -108,6 +96,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import '@/assets/endorsement.css'
+import PaginationBar from '@/components/PaginationBar.vue'
 import {
   ENDORSEMENT_FILTERS,
   endorsementStatusLabel,
@@ -125,26 +114,25 @@ const error = ref('')
 const statusFilter = ref('')
 
 // The list endpoint returns every request in the Dean's scope, so the table pages it
-// locally. The page size matches the other administrator/end-user tables.
-const PAGE_SIZE = 10
+// locally. The shared pager defaults to 10 rows and lets the Dean choose another size.
+const pageSize = ref(10)
 const page = ref(1)
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(requests.value.length / PAGE_SIZE)),
+  Math.max(1, Math.ceil(requests.value.length / pageSize.value)),
 )
 const pagedRequests = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE
-  return requests.value.slice(start, start + PAGE_SIZE)
-})
-const rangeLabel = computed(() => {
-  if (!requests.value.length) return 'No requests'
-  const first = (page.value - 1) * PAGE_SIZE + 1
-  const last = Math.min(page.value * PAGE_SIZE, requests.value.length)
-  return `Showing ${first}–${last} of ${requests.value.length}`
+  const start = (page.value - 1) * pageSize.value
+  return requests.value.slice(start, start + pageSize.value)
 })
 
 function goToPage(next) {
   if (next < 1 || next > totalPages.value) return
   page.value = next
+}
+
+function setPageSize(value) {
+  pageSize.value = Math.max(1, Number(value) || 10)
+  page.value = 1
 }
 
 async function load() {
