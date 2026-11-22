@@ -6,6 +6,7 @@ import com.rpis.backend.dto.ForwardRevisionRequest;
 import com.rpis.backend.dto.ProposalRequest;
 import com.rpis.backend.dto.ProposalSectionRemarksResponse;
 import com.rpis.backend.dto.ProposalVersionResponse;
+import com.rpis.backend.dto.RejectToRpsRequest;
 import com.rpis.backend.dto.ReturnRevisionRequest;
 import com.rpis.backend.dto.ReturnToOvcrigeRequest;
 import com.rpis.backend.model.CooperatingAgency;
@@ -428,6 +429,60 @@ public class ProposalController {
     public ResponseEntity<Proposal> rejectProposal(@PathVariable Long id) {
         Proposal updated = proposalService.updateProposalStatus(id, "REJECTED");
         return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * OVCRIGE rejects a proposal by returning it to ORPS (RPS). This is deliberately a
+     * separate endpoint from {@code /reject}: the generic rejection closes the proposal
+     * and notifies the Proponent, while this one hands the record to ORPS, which owns
+     * the final decision and the Proponent notification. SecurityConfig restricts this
+     * route to OVCRIGE and the generic route no longer admits OVCRIGE.
+     */
+    @PutMapping("/{id}/reject-to-rps")
+    public ResponseEntity<?> rejectToRps(
+            @PathVariable Long id,
+            @RequestBody(required = false) RejectToRpsRequest request) {
+        try {
+            Proposal saved = proposalService.rejectToRps(
+                    id, request != null ? request.getRemarks() : null);
+            Map<String, Object> response = new HashMap<>();
+            response.put("proposal", saved);
+            response.put("message", "Proposal rejected and returned to ORPS for processing.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage()
+                            : "This proposal cannot be rejected at its current stage."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getReason() != null ? e.getReason() : "Rejection failed."));
+        }
+    }
+
+    /**
+     * ORPS completes an OVCRIGE rejection: the proposal becomes REJECTED and the
+     * Proponent is notified. Only a proposal returned to ORPS by OVCRIGE at the
+     * RETURNED_TO_RPS stage can be finalized this way.
+     */
+    @PutMapping("/{id}/finalize-rejection")
+    public ResponseEntity<?> finalizeRejection(
+            @PathVariable Long id,
+            @RequestBody(required = false) RejectToRpsRequest request) {
+        try {
+            Proposal saved = proposalService.finalizeRejection(
+                    id, request != null ? request.getRemarks() : null);
+            Map<String, Object> response = new HashMap<>();
+            response.put("proposal", saved);
+            response.put("message", "Rejection forwarded to the proponent.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage()
+                            : "This proposal is not awaiting ORPS processing."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getReason() != null ? e.getReason() : "Finalizing the rejection failed."));
+        }
     }
 
     // ========== REVIEWS ==========

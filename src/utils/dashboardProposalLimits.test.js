@@ -61,12 +61,13 @@ test('REC shows the latest five assigned proposals', () => {
   assert.match(source, /latestProposalSnippets\(proposals\.value, \{ dateField: 'createdAt' \}\)/)
 })
 
-test('OC previews five per section and keeps a full-listing view', () => {
+test('OC previews five per section, newest submission first', () => {
   const source = dashboards.OC
   assert.match(source, /v-for="p in visibleForFinalApproval"/)
   assert.match(source, /v-for="p in visibleApprovedProposals"/)
-  assert.match(source, /latestProposalSnippets\(forFinalApproval\.value, \{ dateField: 'updatedAt' \}\)/)
-  assert.match(source, /latestProposalSnippets\(approvedProposals\.value, \{ dateField: 'updatedAt' \}\)/)
+  assert.match(source, /const SUBMITTED_DATE_OPTIONS = \{ dateField: 'submittedAt', fallbackDateFields: \[\] \}/)
+  assert.match(source, /latestProposalSnippets\(forFinalApproval\.value, SUBMITTED_DATE_OPTIONS\)/)
+  assert.match(source, /latestProposalSnippets\(approvedProposals\.value, SUBMITTED_DATE_OPTIONS\)/)
   assert.ok(source.includes("query: { view: 'all' }"),
     'View all must open the full-listing view')
   assert.ok(source.includes('showAll.value ? forFinalApproval.value : forFinalApprovalPreview.value'))

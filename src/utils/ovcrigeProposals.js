@@ -44,6 +44,23 @@ export const OVCRIGE_OC_ENDORSEMENT_STATUSES = Object.freeze([
   'FOR_OC_APPROVAL',
 ])
 
+/**
+ * The stages at which OVCRIGE still owns a proposal and may reject it. A rejection is
+ * returned to ORPS (RPS); it is not the terminal REJECTED state.
+ */
+export const OVCRIGE_REJECTABLE_STATUSES = Object.freeze([
+  'ENDORSED',
+  'UNDER_REVIEW',
+  'REC_APPROVED',
+  'OVC_APPROVED',
+])
+
+/** True when the proposal is still at a stage where OVCRIGE may reject it back to ORPS. */
+export function isOvcrigeRejectable(proposal) {
+  const status = normalizeProposalStatus(proposal?.status)
+  return Boolean(status) && OVCRIGE_REJECTABLE_STATUSES.includes(status)
+}
+
 /** True when a proposal's stored status belongs to the OVCRIGE pipeline. */
 export function isOvcrigePipelineProposal(proposal) {
   const status = normalizeProposalStatus(proposal?.status)

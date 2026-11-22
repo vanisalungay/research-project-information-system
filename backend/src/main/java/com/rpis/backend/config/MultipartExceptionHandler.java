@@ -32,8 +32,8 @@ public class MultipartExceptionHandler {
      * with the Special Order limit because that is the largest upload the forms
      * offer; the message names the same number the form enforces.
      */
-    @Value("${rpis.special-order.max-size-mb:25}")
-    private long maxFileSizeMb = 25;
+    @Value("${rpis.special-order.max-size-mb:10}")
+    private long maxFileSizeMb = 10;
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, String>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {

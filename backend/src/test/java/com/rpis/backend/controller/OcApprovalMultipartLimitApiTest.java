@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * </ul>
  * The limits are scaled down here (app 1 MB, container 2/3 MB) so the test exercises
  * the same layering without sending a 30 MB body. The production values are the same
- * relationship: app 25 MB, container 30/35 MB.
+ * relationship: app 10 MB, container 30/35 MB.
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,

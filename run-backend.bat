@@ -229,6 +229,7 @@ for %%F in (
     migration-widen-notification-type-check.sql
     migration-add-notification-recipient-role.sql
     migration-widen-activity-log-checks.sql
+    migration-add-proposal-return-kind.sql
 ) do (
     if not exist "%%F" (
         echo Migration file missing: %%F

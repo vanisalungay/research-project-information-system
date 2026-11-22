@@ -78,7 +78,7 @@
               <tr>
                 <th>Proposal Title</th>
                 <th>Proponent</th>
-                <th>Date Endorsed</th>
+                <th>Date Submitted</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
               </tr>
@@ -130,7 +130,7 @@
               <tr>
                 <th>Proposal Title</th>
                 <th>Proponent</th>
-                <th>Date</th>
+                <th>Date Submitted</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
               </tr>
@@ -224,13 +224,18 @@ const isLoading = ref(true)
  * The dashboard shows the five latest proposals in each section. "View all" opens the
  * same dashboard in its full-listing view (`?view=all`), so every authorized proposal
  * remains reachable; the statistic cards always use the complete lists.
+ *
+ * Both sections order by the actual submission date. `fallbackDateFields: []` makes the
+ * order fall back only to the submission field itself: a record without one sorts last
+ * instead of silently being ordered by an unrelated timestamp such as the last edit.
  */
 const showAll = computed(() => route.query.view === 'all')
+const SUBMITTED_DATE_OPTIONS = { dateField: 'submittedAt', fallbackDateFields: [] }
 const forFinalApprovalPreview = computed(() =>
-  latestProposalSnippets(forFinalApproval.value, { dateField: 'updatedAt' }),
+  latestProposalSnippets(forFinalApproval.value, SUBMITTED_DATE_OPTIONS),
 )
 const approvedProposalsPreview = computed(() =>
-  latestProposalSnippets(approvedProposals.value, { dateField: 'updatedAt' }),
+  latestProposalSnippets(approvedProposals.value, SUBMITTED_DATE_OPTIONS),
 )
 const visibleForFinalApproval = computed(() =>
   showAll.value ? forFinalApproval.value : forFinalApprovalPreview.value,
@@ -255,9 +260,14 @@ const loadDashboard = async () => {
     // Only proposals that are actually awaiting the Chancellor can be acted on.
     // REC_APPROVED and OVC_APPROVED belong to OVCRIGE's queue - listing them here
     // produced rows whose action buttons could only fail.
+    //
+    // `sort=submittedAt` is applied by the API before the response is returned, so the
+    // order is the same for the five-item preview and for the full listing. The
+    // frontend sort below repeats the same rule on the raw timestamps; it is not a
+    // substitute for the server order.
     const [pendingRes, approvedRes] = await Promise.all([
-      api.get('/api/proposals?statusIn=FOR_OC_APPROVAL'),
-      api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED'),
+      api.get('/api/proposals?statusIn=FOR_OC_APPROVAL&sort=submittedAt'),
+      api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED&sort=submittedAt'),
     ])
 
     const pendingData = Array.isArray(pendingRes.data) ? pendingRes.data : []
@@ -267,30 +277,29 @@ const loadDashboard = async () => {
     stats.value.sentToOvcaf = approvedData.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
     stats.value.approved = approvedData.length
 
-    // Keep the raw timestamps alongside the display date: the five-item preview and the
-    // full-listing view both order by the most recent workflow change.
+    // Keep the raw submission timestamp alongside the display date: the five-item
+    // preview and the full-listing view both order by the moment the proposal was
+    // actually submitted.
     forFinalApproval.value = sortProposalsNewestFirst(pendingData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
-      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      date: p.submittedAt?.substring(0, 10) || 'N/A',
       status: p.status,
-      updatedAt: p.updatedAt,
-      createdAt: p.createdAt,
+      submittedAt: p.submittedAt,
       ...soFields(p),
-    })), { dateField: 'updatedAt' })
+    })), SUBMITTED_DATE_OPTIONS)
 
     approvedProposals.value = sortProposalsNewestFirst(approvedData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
-      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      date: p.submittedAt?.substring(0, 10) || 'N/A',
       status: p.status,
       badgeClass: p.status === 'FOR_OVCAF_APPROVAL' ? 'budget' : 'approved',
-      updatedAt: p.updatedAt,
-      createdAt: p.createdAt,
+      submittedAt: p.submittedAt,
       ...soFields(p),
-    })), { dateField: 'updatedAt' })
+    })), SUBMITTED_DATE_OPTIONS)
   } catch (error) {
     console.error('Failed to load Chancellor dashboard:', error)
   } finally {

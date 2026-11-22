@@ -34,7 +34,6 @@ import PriorityAgendas from '@/views/Admin/PriorityAgendas.vue'
 /* OVCRIGE */
 import OvcReviewProposal from '../views/Ovc/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/Ovc/OvcSubmittedProposal.vue'
-import OvcEndorsedProposal from '../views/Ovc/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/Ovc/OvcAssignReviewer.vue'
 import OvcReturn4Revision from '../views/Ovc/OvcReturn4Revision.vue'
 
@@ -174,7 +173,9 @@ const routes = [
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'review-prop/:id', name: 'OvcReviewProposal', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
-      { path: 'endorsed-proposals', component: OvcEndorsedProposal },
+      // The sidebar's "Endorsed Proposals" page is the same complete RPS-endorsed
+      // pipeline list as the dashboard's View All: the old OC-only page is gone.
+      { path: 'endorsed-proposals', component: OvcSubmittedProposal },
       { path: 'ovc-quarterly-reports', name: 'OvcQuarterlyReports', component: QuarterlyReportsMaster },
       { path: 'assign-reviewer', component: OvcAssignReviewer },
       { path: 'assign-reviewer/:id', name: 'OvcAssignReviewer', component: OvcAssignReviewer },

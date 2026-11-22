@@ -154,6 +154,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
                         .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
 
+                        // OVCRIGE rejection is a hand-off to ORPS, not a final decision.
+                        // The generic /reject path closes the proposal and notifies the
+                        // Proponent, so OVCRIGE is deliberately excluded from it; only ORPS
+                        // can finalize the rejection.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/reject-to-rps")
+                        .hasRole(UserRoles.OVCRIGE)
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/finalize-rejection")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/reject")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.REC, UserRoles.OVCAF)
+
                         // RPS review actions. Recording the reviewer's accountability and
                         // endorsing the reviewed proposal to OVCRIGE belong to the office
                         // that performs the review; the service additionally requires the

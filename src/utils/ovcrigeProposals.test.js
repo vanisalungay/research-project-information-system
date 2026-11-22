@@ -13,7 +13,9 @@ import {
   OVCRIGE_DASHBOARD_FETCH_STATUSES,
   OVCRIGE_OC_ENDORSEMENT_STATUSES,
   OVCRIGE_PIPELINE_STATUSES,
+  OVCRIGE_REJECTABLE_STATUSES,
   isOvcrigePipelineProposal,
+  isOvcrigeRejectable,
   proposalSubmittedAt,
 } from './ovcrigeProposals.js'
 
@@ -58,6 +60,23 @@ test('the OC endorsement list is the REC-recommended subset', () => {
   for (const status of OVCRIGE_OC_ENDORSEMENT_STATUSES) {
     assert.ok(OVCRIGE_PIPELINE_STATUSES.includes(status), status)
   }
+})
+
+test('only a proposal still in OVCRIGE review can be rejected back to ORPS', () => {
+  assert.deepEqual(OVCRIGE_REJECTABLE_STATUSES, [
+    'ENDORSED',
+    'UNDER_REVIEW',
+    'REC_APPROVED',
+    'OVC_APPROVED',
+  ])
+  for (const status of OVCRIGE_REJECTABLE_STATUSES) {
+    assert.equal(isOvcrigeRejectable({ status }), true, status)
+  }
+  for (const status of ['FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'RETURNED_TO_RPS', 'REJECTED']) {
+    assert.equal(isOvcrigeRejectable({ status }), false, status)
+  }
+  assert.equal(isOvcrigeRejectable({ status: ' endorsed ' }), true)
+  assert.equal(isOvcrigeRejectable(null), false)
 })
 
 test('the displayed date is the submission event, never the last edit', () => {

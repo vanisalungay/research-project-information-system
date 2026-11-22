@@ -189,7 +189,8 @@ for f in \
   migration-add-proposal-certification.sql \
   migration-widen-notification-type-check.sql \
   migration-add-notification-recipient-role.sql \
-  migration-widen-activity-log-checks.sql
+  migration-widen-activity-log-checks.sql \
+  migration-add-proposal-return-kind.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"

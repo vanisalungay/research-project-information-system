@@ -214,16 +214,16 @@ public class ProposalService {
             (byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1 };
 
     /**
-     * Largest accepted Special Order document, in megabytes. An official SO is a
-     * scanned document, which is routinely larger than the 10 MB form attachments;
-     * 25 MB is the intended ceiling and every deployment can override it without a
-     * code change. It is deliberately below the servlet's multipart ceiling
+     * Largest accepted Special Order document, in megabytes. It matches the 10 MB
+     * ceiling of the other form attachments and the size shown beside the upload
+     * control; every deployment can override it without a code change. It is
+     * deliberately below the servlet's multipart ceiling
      * ({@code spring.servlet.multipart.max-file-size}) so a file between this limit
      * and the container ceiling is answered here with a readable 400 instead of an
      * opaque 413.
      */
-    @Value("${rpis.special-order.max-size-mb:25}")
-    private long specialOrderMaxSizeMb = 25;
+    @Value("${rpis.special-order.max-size-mb:10}")
+    private long specialOrderMaxSizeMb = 10;
 
     public static final String SPECIAL_ORDER_NUMBER_REQUIRED_MESSAGE =
             "A Special Order (SO) number is required to approve this proposal.";
@@ -1081,6 +1081,7 @@ public class ProposalService {
             // endorsement endpoint, so the endorsement date is recorded here too.
             proposal.setEndorsedAt(LocalDateTime.now());
         }
+        recordStatusChange(proposal, previousStatus, storedStatus, null);
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
@@ -1122,6 +1123,7 @@ public class ProposalService {
         }
         proposal.setStatus("ENDORSED");
         proposal.setEndorsedAt(LocalDateTime.now());
+        recordStatusChange(proposal, previousStatus, "ENDORSED", null);
         Proposal saved = proposalRepository.save(proposal);
         proposalNotificationPolicy.notifyForStatus(saved);
         return saved;
@@ -1463,13 +1465,13 @@ public class ProposalService {
 
     /** Largest accepted Special Order document in bytes. */
     public long getSpecialOrderMaxBytes() {
-        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 10;
         return megabytes * 1024 * 1024;
     }
 
     /** The readable reason shown when the SO document exceeds the configured limit. */
     public String getSpecialOrderMaxSizeMessage() {
-        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 10;
         return "The Special Order document must be " + megabytes + " MB or smaller.";
     }
 
@@ -1607,6 +1609,7 @@ public class ProposalService {
                                       List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         // A return from a reviewing office goes to RPS first, never directly to the
         // Proponent. RPS is the only party that can forward the request and set the
         // revision deadline.
@@ -1614,6 +1617,7 @@ public class ProposalService {
         proposal.setRemarks(remarks);
         proposal.setReturnRemarks(remarks);
         proposal.setReturnedByOffice(returnedByOffice);
+        proposal.setReturnKind("REVISION");
         proposal.setReturnedByUserId(returnedByUserId);
         proposal.setReturnedByName(PersonNameFormatter.format(returnedByName));
         proposal.setReturnedAt(LocalDateTime.now());
@@ -1623,6 +1627,7 @@ public class ProposalService {
         proposal.setRevisionForwardedByName(null);
         proposal.setRevisionForwardedByUserId(null);
         proposal.setRevisionNotes(null);
+        recordStatusChange(proposal, previousStatus, "RETURNED_TO_RPS", remarks);
         proposal = proposalRepository.save(proposal);
 
         // Persist the per-section remarks for this revision round (if any).
@@ -1661,6 +1666,7 @@ public class ProposalService {
                 : truncate(remarks.trim(), 2000);
 
         proposal.setStatus("REC_APPROVED");
+        proposal.setReturnKind(null);
         if (normalisedRemarks != null) {
             proposal.setRemarks(normalisedRemarks);
         }
@@ -1671,6 +1677,126 @@ public class ProposalService {
         // from the Chancellor's Office - not an REC recommendation - and the proponent
         // must not be told the proposal was approved.
         proposalNotificationPolicy.notifyOvcrigeReturned(saved, normalisedRemarks);
+        return saved;
+    }
+
+    /**
+     * The statuses in which OVCRIGE still owns the proposal and may reject it back to
+     * ORPS. Once a proposal has been forwarded to OVCAF or the Chancellor's Office it
+     * has left OVCRIGE's stage and can no longer be rejected from this action.
+     */
+    private static final Set<String> OVCRIGE_REJECTABLE_STATUSES = Set.of(
+            "ENDORSED", "UNDER_REVIEW", "REC_APPROVED", "OVC_APPROVED");
+
+    /**
+     * OVCRIGE rejects a proposal by returning it to ORPS (RPS), not by closing it.
+     *
+     * <p>The target is the existing {@code RETURNED_TO_RPS} state - the same state a
+     * reviewing office uses to hand a record back to ORPS. The rejection reason is
+     * stored in both {@code remarks} and {@code return_remarks}, the transition is
+     * written to {@code proposal_status_history}, and only ORPS is notified. The
+     * Proponent is deliberately not notified here: ORPS reviews the rejection and
+     * forwards the final decision through {@link #finalizeRejection(Long, String)}.
+     *
+     * <p>The row is locked so a repeated click (or two concurrent requests) cannot
+     * create a second history row or a duplicate ORPS notification.
+     */
+    @Transactional
+    public Proposal rejectToRps(Long proposalId, String remarks) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("RETURNED_TO_RPS".equals(previousStatus)) {
+            // A retried request must not produce a second ORPS notification.
+            return proposal;
+        }
+        if (previousStatus == null || !OVCRIGE_REJECTABLE_STATUSES.contains(previousStatus)) {
+            throw new IllegalStateException(
+                    "Only a proposal still in OVCRIGE review can be rejected and returned to ORPS.");
+        }
+
+        String reason = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
+        Long actorId = currentUser.requireUserId();
+        String actorName = userRepository.findById(actorId).map(User::getName).orElse(null);
+
+        proposal.setStatus("RETURNED_TO_RPS");
+        if (reason != null) {
+            proposal.setRemarks(reason);
+            proposal.setReturnRemarks(reason);
+        }
+        proposal.setReturnedByOffice("OVCRIGE");
+        proposal.setReturnKind("REJECTION");
+        proposal.setReturnedByUserId(actorId);
+        proposal.setReturnedByName(PersonNameFormatter.format(actorName));
+        proposal.setReturnedAt(LocalDateTime.now());
+        // A fresh return restarts the revision-forward metadata; no deadline is set here.
+        proposal.setRevisionDeadline(null);
+        proposal.setRevisionForwardedAt(null);
+        proposal.setRevisionForwardedByName(null);
+        proposal.setRevisionForwardedByUserId(null);
+        proposal.setRevisionNotes(null);
+
+        recordStatusChange(proposal, previousStatus, "RETURNED_TO_RPS", reason);
+
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyRpsRejectionReturned(saved, reason);
+        return saved;
+    }
+
+    /**
+     * ORPS completes an OVCRIGE rejection by closing the proposal and informing the
+     * Proponent. Only a proposal returned to ORPS by OVCRIGE can be finalized this way;
+     * a revision return continues through the existing forward-revision workflow.
+     *
+     * <p>The OVCRIGE reason is preserved in {@code return_remarks}; an optional ORPS
+     * note is appended to {@code remarks} so the Proponent's notification carries the
+     * full explanation. The transition is recorded in the proposal's status history.
+     */
+    @Transactional
+    public Proposal finalizeRejection(Long proposalId, String remarks) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("REJECTED".equals(previousStatus)) {
+            // Idempotent: a retried ORPS confirmation must not notify the Proponent twice.
+            return proposal;
+        }
+        String returnKind = proposal.getReturnKind() == null
+                ? null
+                : proposal.getReturnKind().trim();
+        if (!"RETURNED_TO_RPS".equals(previousStatus)
+                || !"REJECTION".equalsIgnoreCase(returnKind)) {
+            throw new IllegalStateException(
+                    "This proposal is not awaiting ORPS processing of an OVCRIGE rejection.");
+        }
+
+        String note = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
+        String ovcrigeReason = proposal.getReturnRemarks();
+        if (ovcrigeReason == null || ovcrigeReason.isBlank()) {
+            ovcrigeReason = proposal.getRemarks();
+        }
+        String finalRemarks;
+        if (ovcrigeReason == null || ovcrigeReason.isBlank()) {
+            finalRemarks = note;
+        } else if (note == null) {
+            finalRemarks = ovcrigeReason;
+        } else {
+            finalRemarks = ovcrigeReason + "\n\nORPS note: " + note;
+        }
+
+        proposal.setStatus("REJECTED");
+        if (finalRemarks != null) {
+            proposal.setRemarks(finalRemarks);
+        }
+        recordStatusChange(proposal, previousStatus, "REJECTED", finalRemarks);
+
+        Proposal saved = proposalRepository.save(proposal);
+        // The existing REJECTED rule notifies the Proponent only; ORPS is the sender.
+        proposalNotificationPolicy.notifyForStatus(saved);
         return saved;
     }
 
@@ -1732,6 +1858,11 @@ public class ProposalService {
                                                String remarks, List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        if ("REJECTION".equalsIgnoreCase(proposal.getReturnKind())) {
+            throw new IllegalStateException(
+                    "This proposal was rejected by OVCRIGE and must be finalized, not forwarded as a revision.");
+        }
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         LocalDateTime deadlineLdt = parseDeadline(deadline);
 
         // If no office return was recorded yet (RPS returning directly), capture the
@@ -1739,6 +1870,7 @@ public class ProposalService {
         if (proposal.getReturnRemarks() == null || proposal.getReturnRemarks().isBlank()) {
             proposal.setReturnRemarks(remarks);
             proposal.setReturnedByOffice("RPS");
+            proposal.setReturnKind("REVISION");
             proposal.setReturnedByUserId(forwardedByUserId);
             proposal.setReturnedByName(PersonNameFormatter.format(forwardedByName));
             if (proposal.getReturnedAt() == null) {
@@ -1756,6 +1888,7 @@ public class ProposalService {
         // Keep the proponent-facing remarks in sync with the office's original remarks so
         // the revision history continues to capture them.
         proposal.setRemarks(proposal.getReturnRemarks());
+        recordStatusChange(proposal, previousStatus, "RPS_RETURNED", proposal.getRemarks());
 
         proposal = proposalRepository.save(proposal);
 

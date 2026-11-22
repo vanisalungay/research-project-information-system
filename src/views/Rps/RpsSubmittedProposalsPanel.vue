@@ -15,7 +15,7 @@
         />
       </div>
 
-      <div class="select-wrap">
+      <div v-if="category !== 'rejected'" class="select-wrap">
         <svg class="field-icon filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
         </svg>
@@ -53,18 +53,27 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="proposal in filteredProposals" :key="proposal.id">
+            <tr v-for="proposal in visibleProposals" :key="proposal.id">
               <td class="document-id">{{ proposal.documentId || proposal.proposalCode || '—' }}</td>
               <td>
                 <div class="title-cell">{{ proposal.projectTitle || proposal.title }}</div>
                 <div class="subtext">{{ proposal.programTitle || 'N/A' }}</div>
               </td>
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
-              <td class="date-cell">{{ proposal.submittedAt?.substring(0, 10) || 'N/A' }}</td>
+              <td class="date-cell">
+                {{ proposal.submittedAt?.substring(0, 10) || 'N/A' }}
+                <div
+                  v-if="category === 'rejected' && proposal.returnedAt"
+                  class="subtext"
+                >
+                  Returned {{ String(proposal.returnedAt).substring(0, 10) }}
+                </div>
+              </td>
               <td>
                 <span :class="['status', statusTone(proposal.status)]">
                   {{ proposalStatusLabel(proposal.status) }}
                 </span>
+                <div v-if="category === 'rejected'" class="subtext">Rejected by OVCRIGE</div>
               </td>
               <td>
                 <button class="review-btn btn-view" @click="viewProposal(proposal)">Review</button>
@@ -72,14 +81,38 @@
             </tr>
             <tr v-if="filteredProposals.length === 0">
               <td colspan="6" class="empty">
-                {{ search || selectedStatus ? 'No proposals match your search.' : 'No submitted proposals found.' }}
+                {{ search || selectedStatus
+                  ? 'No proposals match your search.'
+                  : category === 'rejected'
+                    ? 'No rejected proposals found.'
+                    : 'No submitted proposals found.' }}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="table-footer">
+      <div v-if="category === 'rejected'" class="table-footer pager">
+        <span>
+          Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredProposals.length }}
+          rejected proposal{{ filteredProposals.length === 1 ? '' : 's' }}
+        </span>
+        <div v-if="totalPages > 1" class="pager-controls">
+          <button type="button" :disabled="page === 1" @click="page--">&lsaquo;</button>
+          <button
+            v-for="pg in totalPages"
+            :key="pg"
+            type="button"
+            class="pager-num"
+            :class="{ active: pg === page }"
+            @click="page = pg"
+          >
+            {{ pg }}
+          </button>
+          <button type="button" :disabled="page === totalPages" @click="page++">&rsaquo;</button>
+        </div>
+      </div>
+      <div v-else class="table-footer">
         Showing {{ filteredProposals.length }} proposal{{ filteredProposals.length === 1 ? '' : 's' }}
       </div>
     </div>
@@ -95,8 +128,25 @@ import {
   proposalStatusMatches,
 } from '@/utils/proposalStatus.js'
 
+/**
+ * A proposal OVCRIGE rejected and returned to ORPS. It shares RETURNED_TO_RPS with
+ * ordinary revision returns, so return_kind is what separates the two: only a
+ * REJECTION return belongs in the Rejected Proposals category.
+ */
+const isOvcrigeRejection = (proposal) =>
+  String(proposal?.status || '').toUpperCase() === 'RETURNED_TO_RPS' &&
+  String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'
+
 export default {
   name: 'RpsSubmittedProposalsPanel',
+  props: {
+    /**
+     * 'all' (default) lists the complete submitted set. 'rejected' is the Rejected
+     * Proposals category: the same table, restricted to proposals OVCRIGE rejected and
+     * returned to ORPS (status RETURNED_TO_RPS, returnedByOffice OVCRIGE).
+     */
+    category: { type: String, default: 'all' },
+  },
   data() {
     return {
       search: '',
@@ -104,12 +154,19 @@ export default {
       proposals: [],
       loading: false,
       error: null,
+      page: 1,
+      pageSize: 10,
     }
   },
   computed: {
+    isRejectedCategory() {
+      return this.category === 'rejected'
+    },
     filteredProposals() {
       const keyword = this.search.toLowerCase().trim()
+      const rejectedOnly = this.isRejectedCategory
       return this.proposals.filter((p) => {
+        if (rejectedOnly && !isOvcrigeRejection(p)) return false
         const matchesStatus = proposalStatusMatches(p.status, this.selectedStatus)
         if (!matchesStatus) return false
         if (!keyword) return true
@@ -125,6 +182,35 @@ export default {
         )
       })
     },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredProposals.length / this.pageSize))
+    },
+    paginatedProposals() {
+      const start = (this.page - 1) * this.pageSize
+      return this.filteredProposals.slice(start, start + this.pageSize)
+    },
+    visibleProposals() {
+      // The complete Submitted list keeps its existing one-page behaviour; the new
+      // Rejected category pages its own, usually shorter, list.
+      return this.isRejectedCategory ? this.paginatedProposals : this.filteredProposals
+    },
+    rangeStart() {
+      return this.filteredProposals.length ? (this.page - 1) * this.pageSize + 1 : 0
+    },
+    rangeEnd() {
+      return Math.min(this.page * this.pageSize, this.filteredProposals.length)
+    },
+  },
+  watch: {
+    search() {
+      this.page = 1
+    },
+    selectedStatus() {
+      this.page = 1
+    },
+    totalPages(count) {
+      if (this.page > count) this.page = count
+    },
   },
   methods: {
     statusTone,
@@ -133,19 +219,23 @@ export default {
       this.loading = true
       this.error = null
       try {
-        // Send both spellings of the submitted state so new (FOR REVIEW) and legacy
-        // (SUBMITTED) rows are both listed. parameters are serialized as repeated keys.
+        const rejected = this.isRejectedCategory
+        // Rejected Proposals: returned to ORPS by OVCRIGE, newest rejection first.
+        // The Submitted list keeps its original statuses and submission ordering.
         const res = await api.get('/api/proposals', {
-          params: {
-            statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
-            // Server-side ordering by the real submission event (not created_at or
-            // updated_at). The server also breaks equal timestamps by proposal id and
-            // puts records with no submission timestamp last.
-            sort: 'submittedAt',
-          },
+          params: rejected
+            ? { statusIn: ['RETURNED_TO_RPS'], sort: 'returnedAt' }
+            : {
+                statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
+                // Server-side ordering by the real submission event (not created_at or
+                // updated_at). The server also breaks equal timestamps by proposal id and
+                // puts records with no submission timestamp last.
+                sort: 'submittedAt',
+              },
           paramsSerializer: { indexes: null },
         })
         this.proposals = Array.isArray(res.data) ? res.data : []
+        this.page = 1
       } catch (err) {
         console.error(err)
         this.error = 'Failed to load proposals.'
@@ -415,6 +505,50 @@ export default {
   font-size: 10px;
   color: #78809a;
   border-top: 1px solid #eef0f5;
+}
+
+/* Rejected category pager — same compact scale as the table. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager-controls button {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #e0e4ef;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #25245b;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pager-controls button:hover:not(:disabled) {
+  background: #f4f6fb;
+}
+
+.pager-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pager-controls .pager-num.active {
+  background: #25245b;
+  border-color: #25245b;
+  color: #ffd400;
 }
 
 @media (max-width: 640px) {

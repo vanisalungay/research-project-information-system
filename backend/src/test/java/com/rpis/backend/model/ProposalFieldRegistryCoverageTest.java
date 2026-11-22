@@ -48,7 +48,7 @@ class ProposalFieldRegistryCoverageTest {
             // the proponent can edit a reference again (and its italics survive)
             "referencesJson",
             // return-for-revision routing metadata
-            "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
+            "returnedByOffice", "returnKind", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",
             "revisionForwardedByUserId", "revisionNotes",
             // the Dean endorsement this proposal was submitted under: a structural link to

@@ -2,14 +2,17 @@ package com.rpis.backend.service;
 
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
+import com.rpis.backend.model.ProposalStatusHistory;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalReviewRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -75,6 +78,7 @@ public class ProposalReviewService {
         // Update Proposal Status based on Review Decision
         String decision = reviewInput.getDecision().toUpperCase();
         String role = reviewerRole.toUpperCase();
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         String targetStatus = proposal.getStatus();
         boolean returnedForRevision = false;
 
@@ -86,6 +90,7 @@ public class ProposalReviewService {
             targetStatus = "RETURNED_TO_RPS";
             proposal.setReturnRemarks(reviewInput.getOverallComments());
             proposal.setReturnedByOffice(role);
+            proposal.setReturnKind("REVISION");
             proposal.setReturnedByUserId(reviewer.getId());
             proposal.setReturnedByName(reviewer.getName());
             proposal.setReturnedAt(java.time.LocalDateTime.now());
@@ -108,6 +113,8 @@ public class ProposalReviewService {
         if (returnedForRevision) {
             proposal.setRemarks(reviewInput.getOverallComments());
         }
+        recordStatusHistory(proposal, previousStatus, targetStatus,
+                reviewInput.getOverallComments(), reviewer, role);
         proposalRepository.save(proposal);
 
         // The one notification policy owns the recipients and wording of every status
@@ -118,5 +125,30 @@ public class ProposalReviewService {
         proposalNotificationPolicy.notifyForStatus(proposal);
 
         return review;
+    }
+
+    /**
+     * Appends the review decision to the proposal's audited status timeline. The row is
+     * cascaded by the proposal save in the same transaction, so a failed submission
+     * leaves neither a status change nor a history entry behind.
+     */
+    private void recordStatusHistory(Proposal proposal, String fromStatus, String toStatus,
+                                     String remarks, User reviewer, String role) {
+        String storedFrom = ProposalStatus.optionalSupportedStatus(fromStatus);
+        String storedTo = ProposalStatus.requireSupportedStatus(toStatus);
+        if (storedTo == null || storedTo.equals(storedFrom)) {
+            return;
+        }
+        ProposalStatusHistory entry = new ProposalStatusHistory();
+        entry.setProposal(proposal);
+        entry.setFromStatus(storedFrom);
+        entry.setToStatus(storedTo);
+        entry.setActorUserId(reviewer.getId());
+        entry.setActorRole(role);
+        entry.setActorName(reviewer.getName());
+        entry.setRemarks(remarks);
+        entry.setSource(ProposalStatusHistory.SOURCE_APPLICATION);
+        entry.setChangedAt(LocalDateTime.now());
+        proposal.getStatusHistory().add(entry);
     }
 }

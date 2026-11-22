@@ -1,5 +1,5 @@
 <template>
-  <section class="notification-preview">
+  <section class="notification-preview" :class="{ 'is-compact': compact }">
     <header class="preview-header">
       <div class="preview-heading">
         <h2>{{ title }}</h2>
@@ -11,7 +11,8 @@
         class="preview-view-all"
         @click="router.push(viewAllTo)"
       >
-        View all
+        <span>View all</span>
+        <span v-if="compact" class="preview-view-all-arrow" aria-hidden="true">&rarr;</span>
       </button>
     </header>
 
@@ -23,12 +24,22 @@
         :key="notification.id"
         class="preview-item"
         :class="{ 'is-unread': !notification.isRead }"
+        :role="compact ? 'button' : null"
+        :tabindex="compact ? 0 : null"
         @click="openNotification(notification)"
+        @keydown="handleItemKeydown($event, notification)"
       >
         <span v-if="!notification.isRead" class="preview-dot" aria-hidden="true"></span>
+        <span v-if="compact && !notification.isRead" class="preview-sr-only">Unread</span>
         <div class="preview-content">
           <p class="preview-title">{{ notification.title }}</p>
-          <p class="preview-message">{{ notification.message }}</p>
+          <p class="preview-message" :title="compact ? notification.message : null">{{ notification.message }}</p>
+          <p
+            v-if="compact && notification.proposalDocumentId"
+            class="preview-doc-id"
+          >
+            {{ notification.proposalDocumentId }}
+          </p>
           <RelativeTime class="preview-time" :value="notification.createdAt" />
         </div>
       </li>
@@ -67,6 +78,8 @@ const props = defineProps({
   emptyText: { type: String, default: 'No notifications yet.' },
   /** Hide the "View all" control when the page owns the full list already. */
   showViewAll: { type: Boolean, default: true },
+  /** Compact dashboard variant: tighter cards, scrollable list, keyboard support. */
+  compact: { type: Boolean, default: false },
 })
 
 const router = useRouter()
@@ -95,6 +108,17 @@ async function openNotification(notification) {
     'This notification is not linked to a record you can open.',
     { type: 'info', title: 'Nothing to open' },
   )
+}
+
+/**
+ * Enter/Space on a compact card opens it exactly like a click. The classic preview keeps
+ * its existing mouse-only behaviour, so no other dashboard's interaction changes.
+ */
+function handleItemKeydown(event, notification) {
+  if (!props.compact) return
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  openNotification(notification)
 }
 </script>
 
@@ -214,5 +238,238 @@ async function openNotification(notification) {
 .preview-time {
   font-size: 11px;
   color: #64748b;
+}
+
+/* ===========================================================================
+   Compact variant (opt-in; OVCRIGE dashboard only).
+   Every rule below is scoped to .is-compact, so the Dean, REC, OC, OVCAF,
+   Proponent and RPS dashboards keep the presentation they have today.
+   =========================================================================== */
+
+.notification-preview.is-compact {
+  /* The caller supplies the panel shell (.dash-section); the component is only content. */
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.notification-preview.is-compact .preview-header {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  gap: 6px 10px;
+}
+
+.notification-preview.is-compact .preview-heading {
+  gap: 8px;
+  min-width: 0;
+}
+
+.notification-preview.is-compact .preview-heading h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1c1a3c;
+}
+
+.notification-preview.is-compact .preview-badge {
+  background: #e9efff;
+  color: #1d40cc;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.notification-preview.is-compact .preview-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #315bff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.notification-preview.is-compact .preview-view-all:hover {
+  background: #eef1ff;
+  color: #1d40cc;
+}
+
+.notification-preview.is-compact .preview-view-all:focus-visible {
+  outline: 2px solid #25245b;
+  outline-offset: 2px;
+}
+
+.notification-preview.is-compact .preview-view-all-arrow {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.notification-preview.is-compact .preview-list {
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notification-preview.is-compact .preview-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-preview.is-compact .preview-list::-webkit-scrollbar-thumb {
+  background: #d7dcef;
+  border-radius: 999px;
+}
+
+.notification-preview.is-compact .preview-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-preview.is-compact .preview-item {
+  padding: 10px 12px;
+  gap: 10px;
+  border: 1px solid #edf0f8;
+  border-radius: 10px;
+  background: #fbfcff;
+}
+
+.notification-preview.is-compact .preview-item:hover {
+  background: #f4f7ff;
+  border-color: #e2e8f5;
+}
+
+.notification-preview.is-compact .preview-item.is-unread {
+  background: #eef4ff;
+  border-color: #dbe4ff;
+}
+
+.notification-preview.is-compact .preview-item:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: -2px;
+}
+
+.notification-preview.is-compact .preview-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  background: #315bff;
+}
+
+.notification-preview.is-compact .preview-content {
+  flex: 1;
+}
+
+.notification-preview.is-compact .preview-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.notification-preview.is-compact .preview-item.is-unread .preview-title {
+  font-weight: 700;
+}
+
+.notification-preview.is-compact .preview-message {
+  margin: 2px 0 3px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #5b6484;
+}
+
+.notification-preview.is-compact .preview-doc-id {
+  margin: 0 0 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #8a92ab;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.notification-preview.is-compact .preview-time {
+  font-size: 0.6875rem;
+  color: #8a92ab;
+}
+
+.notification-preview.is-compact .preview-empty {
+  padding: 10px 0;
+  font-size: 0.8125rem;
+  color: #78809a;
+}
+
+/* When the dashboard stacks its panels, the notification panel gets the full content
+   width. Two readable card columns use that space instead of stretching each message into
+   one very long line. The side-by-side desktop layout keeps the single-column list, and a
+   narrow phone keeps one full-width card. */
+@media (min-width: 760px) and (max-width: 1599px) {
+  .notification-preview.is-compact .preview-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+    align-content: start;
+  }
+}
+
+/* The unread state is announced, not conveyed by colour alone. */
+.preview-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .notification-preview.is-compact .preview-heading h2 {
+    color: #f1f2fb !important;
+  }
+
+  .notification-preview.is-compact .preview-badge {
+    background: rgba(49, 91, 255, 0.2) !important;
+    color: #b9c6ff !important;
+    border-color: rgba(148, 166, 255, 0.35) !important;
+  }
+
+  .notification-preview.is-compact .preview-item {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .notification-preview.is-compact .preview-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .notification-preview.is-compact .preview-item.is-unread {
+    background: rgba(49, 91, 255, 0.16) !important;
+    border-color: rgba(120, 145, 255, 0.35) !important;
+  }
+
+  .notification-preview.is-compact .preview-title {
+    color: #e8eaf6 !important;
+  }
+
+  .notification-preview.is-compact .preview-message {
+    color: #b8bfd6 !important;
+  }
+
+  .notification-preview.is-compact .preview-doc-id,
+  .notification-preview.is-compact .preview-time {
+    color: #94a3b8 !important;
+  }
+
+  .notification-preview.is-compact .preview-empty {
+    color: #94a3b8 !important;
+  }
 }
 </style>

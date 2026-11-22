@@ -90,6 +90,15 @@ const activeTab = ref('awaiting')
 // Section remarks returned by the reviewing office, keyed by proposal id.
 const flaggedSections = ref({})
 
+/**
+ * OVCRIGE rejections share RETURNED_TO_RPS with ordinary revision returns. They are
+ * not revision requests: the Submitted Proposals page lists them under Rejected
+ * Proposals and ORPS completes them through the rejection action. An OVCRIGE
+ * return-for-revision keeps return_kind=REVISION and stays here.
+ */
+const isOvcrigeRejection = (proposal) =>
+  String(proposal?.returnKind || '').toUpperCase() === 'REJECTION'
+
 function formatDate(value) {
   if (!value) return '—'
   const d = new Date(value)
@@ -137,8 +146,10 @@ async function fetchProposals() {
       api.get('/api/proposals?statusIn=RETURNED_TO_RPS&sort=returnedAt'),
       api.get('/api/proposals?statusIn=RPS_RETURNED&sort=revisionForwardedAt'),
     ])
-    awaiting.value = Array.isArray(awaitingRes.data) ? awaitingRes.data : []
-    forwarded.value = Array.isArray(forwardedRes.data) ? forwardedRes.data : []
+    awaiting.value = (Array.isArray(awaitingRes.data) ? awaitingRes.data : [])
+      .filter((p) => !isOvcrigeRejection(p))
+    forwarded.value = (Array.isArray(forwardedRes.data) ? forwardedRes.data : [])
+      .filter((p) => !isOvcrigeRejection(p))
     await fetchSectionRemarks([...awaiting.value, ...forwarded.value])
   } catch (err) {
     console.error(err)

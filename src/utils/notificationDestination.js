@@ -149,6 +149,17 @@ export function resolveNotificationDestination(notification, role) {
     return null
   }
 
+  // An OVCRIGE rejection is returned to ORPS, whose office completes the decision.
+  // ORPS opens the return screen (where the rejection is forwarded to the proponent),
+  // not the read-only proposal details.
+  if (
+    (role === ROLES.RPS_ADMIN || role === ROLES.RPS_STAFF) &&
+    type === NOTIFICATION_TYPES.REJECTION
+  ) {
+    const proposalId = notificationProposalId(notification)
+    if (proposalId) return { name: 'RpsForwardRevision', params: { id: proposalId } }
+  }
+
   // A Proponent's revision notification opens the revision form directly. Budget
   // returns use FUNDING, not REVISION, so those still open the proposal details where
   // the financial feedback is shown.

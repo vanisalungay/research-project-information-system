@@ -248,6 +248,32 @@ public class ProposalNotificationPolicy {
                 NotificationEvent.STATUS_UPDATED);
     }
 
+    /**
+     * OVCRIGE rejecting a proposal is a hand-off to ORPS, not a final decision. The
+     * Proponent is deliberately not notified here: ORPS reviews the rejection and
+     * forwards it through the existing rejection workflow.
+     */
+    public void notifyRpsRejectionReturned(Proposal proposal, String remarks) {
+        if (proposal == null) {
+            return;
+        }
+        String message = "OVCRIGE rejected proposal \""
+                + proposal.getProjectTitle() + "\" and returned it to ORPS for processing.";
+        if (remarks != null && !remarks.isBlank()) {
+            message += " Reason: " + truncateRemarks(remarks);
+        }
+        notificationService.notifyRoles(RPS, message,
+                "Proposal Rejected by OVCRIGE",
+                NotificationTypes.REJECTION, proposal.getId(),
+                NotificationEvent.STATUS_UPDATED);
+    }
+
+    /** The reason text kept in a notification, capped so one row stays readable. */
+    private static String truncateRemarks(String remarks) {
+        String trimmed = remarks.trim();
+        return trimmed.length() > 2000 ? trimmed.substring(0, 2000) + "..." : trimmed;
+    }
+
     /** " Special Order <number> has been issued." or '' when no SO is recorded. */
     private static String specialOrderSentence(Proposal proposal) {
         String soNumber = proposal == null ? null : proposal.getSoNumber();

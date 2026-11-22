@@ -23,7 +23,6 @@ const REC_ASSIGNED = read('../views/Rec/RecAssignedProposal.vue')
 const REC_MEETING = read('../views/Rec/RecMeetingDetails.vue')
 const REC_REVIEW_FORM = read('../views/Rec/RecReviewForm.vue')
 const OVC_SUBMITTED = read('../views/Ovc/OvcSubmittedProposal.vue')
-const OVC_ENDORSED = read('../views/Ovc/OvcEndorsedProposal.vue')
 
 /** Every REC / OVCRIGE page that shows a proposal action, with the labels it must show. */
 const PAGES = [
@@ -33,7 +32,6 @@ const PAGES = [
   ['RecReviewForm.vue', REC_REVIEW_FORM, ['VIEW']],
   ['OvcrigeDashboard.vue', OVCRIGE_DASHBOARD, ['REVIEW']],
   ['OvcSubmittedProposal.vue', OVC_SUBMITTED, ['REVIEW']],
-  ['OvcEndorsedProposal.vue', OVC_ENDORSED, ['REVIEW']],
 ]
 
 const rendersLabel = (source, label) =>
@@ -66,7 +64,6 @@ test('each button still runs the handler it ran before', () => {
   assert.ok(REC_REVIEW_FORM.includes('@click="goToDetailed"'), 'review form VIEW handler')
   assert.ok(OVCRIGE_DASHBOARD.includes('@click="goToReview(proposal.id)"'), 'OVCRIGE REVIEW handler')
   assert.ok(OVC_SUBMITTED.includes('@click="goToReview(proposal.id)"'), 'submitted REVIEW handler')
-  assert.ok(OVC_ENDORSED.includes('@click="goToReview(proposal.id)"'), 'endorsed REVIEW handler')
 })
 
 test('the destinations behind those handlers are unchanged', () => {

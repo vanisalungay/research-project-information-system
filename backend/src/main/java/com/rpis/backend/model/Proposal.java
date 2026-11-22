@@ -348,6 +348,16 @@ public class Proposal {
     @Column(name = "returned_by_office")
     private String returnedByOffice;
 
+    /**
+     * Why the proposal was returned to ORPS: {@code REVISION} for an ordinary
+     * return-for-revision, or {@code REJECTION} for an OVCRIGE rejection hand-off.
+     * Both use the {@code RETURNED_TO_RPS} status, so this is the field that keeps the
+     * ORPS Rejected Proposals category separate from Revision Requests. Null on rows
+     * that were never returned.
+     */
+    @Column(name = "return_kind", length = 20)
+    private String returnKind;
+
     @Column(name = "returned_by_name")
     private String returnedByName;
 

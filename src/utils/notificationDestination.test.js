@@ -163,6 +163,23 @@ test('a Call for Proposals notification opens the Proponent announcement', () =>
   }
 })
 
+test('an OVCRIGE rejection notification opens the ORPS return screen', () => {
+  const notification = { type: 'REJECTION', proposalId: 9, linkedProposalId: 9 }
+  assert.deepEqual(resolveNotificationDestination(notification, 'RPS_STAFF'), {
+    name: 'RpsForwardRevision',
+    params: { id: 9 },
+  })
+  assert.deepEqual(resolveNotificationDestination(notification, 'RPS_ADMIN'), {
+    name: 'RpsForwardRevision',
+    params: { id: 9 },
+  })
+  // The Proponent still opens the proposal details where the rejection is shown.
+  assert.deepEqual(resolveNotificationDestination(notification, 'PROPONENT'), {
+    name: 'ProponentPropDetails',
+    params: { id: 9 },
+  })
+})
+
 test('report notifications open the report page each role owns', () => {
   assert.deepEqual(
     resolveNotificationDestination({ type: 'QUARTERLY_REPORT', proposalId: 3 }, 'PROPONENT'),

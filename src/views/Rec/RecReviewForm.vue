@@ -48,18 +48,6 @@
           <label>Research Category</label>
           <p>{{ proposal.researchCategory || '-' }}</p>
         </div>
-
-        <div>
-          <label>Funding Source</label>
-          <p>{{ proposal.fundingSource || '-' }}</p>
-        </div>
-
-        <div>
-          <label>Requested Budget</label>
-          <p>
-            {{ proposal.requestedBudget != null ? '₱' + proposal.requestedBudget.toLocaleString() : '-' }}
-          </p>
-        </div>
       </div>
 
       <!-- SCORING GUIDE -->
@@ -421,8 +409,6 @@ const proposal = ref({
   dateSubmitted: '',
   status: '',
   researchCategory: '',
-  fundingSource: '',
-  requestedBudget: null,
 })
 const loadingProposal = ref(false)
 const loadError = ref('')
@@ -476,8 +462,6 @@ const loadProposal = async () => {
         data.submittedByDate || (data.createdAt ? String(data.createdAt).slice(0, 10) : ''),
       status: data.status || '',
       researchCategory: data.researchType || '',
-      fundingSource: '',
-      requestedBudget: null,
     }
   } catch (err) {
     console.error(err)
