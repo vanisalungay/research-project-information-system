@@ -196,7 +196,7 @@ export PGHOST=127.0.0.1 PGUSER=postgres PGDATABASE=rpis_dev
 ```
 
 <details>
-<summary>Migration order (61 scripts)</summary>
+<summary>Migration order (62 scripts)</summary>
 
 ```bash
 for f in \
@@ -258,6 +258,7 @@ for f in \
   migration-norm-03-fk-consolidation.sql \
   migration-norm-04-proposal-status-fks.sql \
   migration-widen-notification-type-check.sql \
+  migration-normalize-budget-notification-types.sql \
   migration-add-notification-recipient-role.sql \
   migration-widen-activity-log-checks.sql \
   migration-add-proposal-return-kind.sql

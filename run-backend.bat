@@ -231,6 +231,7 @@ for %%F in (
     migration-norm-03-fk-consolidation.sql
     migration-norm-04-proposal-status-fks.sql
     migration-widen-notification-type-check.sql
+    migration-normalize-budget-notification-types.sql
     migration-add-notification-recipient-role.sql
     migration-widen-activity-log-checks.sql
     migration-add-proposal-return-kind.sql
