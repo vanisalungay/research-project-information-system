@@ -23,6 +23,13 @@ public final class EndorsementLetterTemplates {
     /** Display name of the IFP program, as printed on the official letter. */
     public static final String PROGRAM_IFP_LABEL = "Internally Funded Project Proposal (IFP)";
 
+    /**
+     * The complete user-facing name of the IFP program. The letter keeps its official
+     * wording above; every screen (proposal/endorsement details, dashboard, call forms)
+     * shows this name instead of the bare abbreviation.
+     */
+    public static final String PROGRAM_IFP_DISPLAY_LABEL = "Internally Funded Proposal";
+
     /** Label used when a Call for Proposal carries no funding program. */
     public static final String UNSPECIFIED_LABEL = "Unspecified funding program";
 
@@ -45,11 +52,14 @@ public final class EndorsementLetterTemplates {
         return IMPLEMENTED.contains(normalize(fundingProgram));
     }
 
-    /** Human-readable name of a funding program, for the UI and the letter. */
+    /**
+     * Human-readable name of a funding program for the UI. IFP is always shown with its
+     * complete name; the official endorsement letter uses {@link #PROGRAM_IFP_LABEL}.
+     */
     public static String labelFor(String fundingProgram) {
         String key = normalize(fundingProgram);
         if (PROGRAM_IFP.equals(key)) {
-            return PROGRAM_IFP_LABEL;
+            return PROGRAM_IFP_DISPLAY_LABEL;
         }
         if (fundingProgram == null || fundingProgram.isBlank()) {
             return UNSPECIFIED_LABEL;

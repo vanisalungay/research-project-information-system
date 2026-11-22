@@ -24,6 +24,9 @@ import { ANNOUNCEMENT_STATUS_LABELS } from './statusCatalog.js'
 /** Endpoint that returns the open and scheduled Calls for Proposal. */
 export const AVAILABLE_CALLS_ENDPOINT = '/api/proposal-announcements/available'
 
+/** Endpoint behind the dashboard's View All: every published call (open, scheduled, closed). */
+export const PROPONENT_CALLS_ENDPOINT = '/api/proposal-announcements/proponent-calls'
+
 /** Page heading of step 1. */
 export const CALL_FOR_PROPOSAL_TITLE = 'Call for Proposal'
 

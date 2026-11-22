@@ -1,0 +1,151 @@
+/**
+ * tokens.css
+ * ---------------------------------------------------------------------------
+ * The UI geometry scale of RPIS.
+ *
+ * base.css already owns the colour system (--color-*, --status-*, --btn-*, --rpis-*),
+ * the type scale (--fs-*), the spacing scale (--space-*) and the radius scale
+ * (--radius-*). This file only adds what those scales cannot express:
+ *
+ *   - control heights and paddings (30 / 38 / 44px, off the 4px spacing grid),
+ *   - control font sizes (13 / 14 / 15px, off the --fs-* scale),
+ *   - icon sizes, surfaces, elevation, overlays, layers, modal widths, table density.
+ *
+ * Everything here is prefixed --ui- so it can never collide with a legacy token.
+ * The status and action palettes are NOT redefined here: they are pinned by
+ * src/utils/statusColorCatalog.test.js and consumed from base.css / actions.css.
+ *
+ * Imported first by src/assets/main.css.
+ */
+
+:root {
+  /* ===== Control geometry — buttons, icon buttons ===== */
+  --ui-control-height-sm: 30px;
+  --ui-control-height-md: 38px;
+  --ui-control-height-lg: 44px;
+  --ui-control-icon-size: 30px;
+
+  --ui-control-pad-y-sm: 6px;
+  --ui-control-pad-x-sm: 12px;
+  --ui-control-pad-y-md: 10px;
+  --ui-control-pad-x-md: 16px;
+  --ui-control-pad-y-lg: 12px;
+  --ui-control-pad-x-lg: 20px;
+
+  --ui-control-font-sm: 13px;
+  --ui-control-font-md: 14px;
+  --ui-control-font-lg: 15px;
+  --ui-control-weight: 600;
+  --ui-control-radius: 8px;
+  --ui-control-gap: 8px;
+
+  /* ===== Fields — inputs, selects, textareas ===== */
+  --ui-field-height-sm: 30px;
+  --ui-field-height-md: 38px;
+  --ui-field-height-lg: 44px;
+  --ui-field-pad-y: 8px;
+  --ui-field-pad-x: 12px;
+  --ui-field-font: 14px;
+  --ui-field-label-font: 13px;
+  --ui-field-help-font: 12px;
+
+  /* ===== Icons ===== */
+  --ui-icon-xs: 12px;
+  --ui-icon-sm: 14px;
+  --ui-icon-md: 16px;
+  --ui-icon-lg: 18px;
+  --ui-icon-xl: 20px;
+  --ui-icon-2xl: 24px;
+  --ui-icon-empty: 40px;
+
+  /* ===== UI typography — --fs-* stays the source scale ===== */
+  --ui-font-page-title: var(--fs-xl); /* 24px */
+  --ui-font-section-title: var(--fs-lg); /* 18px */
+  --ui-font-modal-title: var(--fs-lg); /* 18px */
+  --ui-font-card-title: var(--fs-base); /* 16px */
+  --ui-font-body: var(--fs-sm); /* 14px */
+  --ui-font-helper: var(--fs-xs); /* 12px */
+  --ui-font-table-header: 13px;
+  --ui-line-tight: 1.25;
+  --ui-line-body: 1.5;
+
+  /* ===== Surfaces and text ===== */
+  --ui-surface-page: var(--color-background);
+  --ui-surface-card: #ffffff;
+  --ui-surface-raised: #ffffff;
+  --ui-surface-sunken: #f8fafc;
+  --ui-surface-input: #ffffff;
+  --ui-surface-hover: #f1f5f9;
+  --ui-surface-selected: #eef2ff;
+  --ui-border-color: var(--color-border);
+  --ui-border-strong: #cbd5e1;
+  --ui-text-heading: var(--color-heading);
+  --ui-text-body: var(--color-text);
+  --ui-text-soft: #475569;
+  --ui-text-muted: #64748b;
+  --ui-overlay-backdrop: rgba(15, 23, 42, 0.5);
+  --ui-overlay-blur: 2px;
+
+  /* ===== Radii outside the control layer ===== */
+  --ui-radius-card: 12px;
+  --ui-radius-panel: 12px;
+  --ui-radius-modal: 14px;
+  --ui-radius-pill: 999px;
+
+  /* ===== Elevation ===== */
+  --ui-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --ui-shadow-md: 0 4px 12px rgba(16, 24, 40, 0.1);
+  --ui-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.16);
+  --ui-shadow-overlay: 0 24px 48px rgba(15, 23, 42, 0.24);
+
+  /* ===== Focus ===== */
+  --ui-focus-width: 2px;
+  --ui-focus-offset: 2px;
+  --ui-focus-color: var(--btn-focus-outline);
+  --ui-focus-halo: 0 0 0 3px var(--btn-focus-ring);
+
+  /* ===== Layers ===== */
+  --ui-z-header: 30;
+  --ui-z-dropdown: 100;
+  --ui-z-sticky: 200;
+  --ui-z-overlay: 1000;
+  --ui-z-modal: 1001;
+  --ui-z-modal-raised: 1100;
+  --ui-z-toast: 2000;
+
+  /* ===== Modal sizing ===== */
+  --ui-modal-width-sm: 400px;
+  --ui-modal-width-md: 560px;
+  --ui-modal-width-lg: 720px;
+  --ui-modal-width-xl: 920px;
+  --ui-modal-max-inline: calc(100vw - 32px);
+  --ui-modal-max-block: calc(100vh - 64px);
+
+  /* ===== Table density ===== */
+  --ui-table-cell-pad-y: 12px;
+  --ui-table-cell-pad-x: 16px;
+}
+
+/* ===== Dark theme surfaces =====
+   The shell (header + sidebar) keeps its fixed navy/indigo/yellow palette defined in
+   base.css, so it is deliberately not touched here. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ui-surface-page: #0f172a;
+    --ui-surface-card: #1e293b;
+    --ui-surface-raised: #1e293b;
+    --ui-surface-sunken: #0f172a;
+    --ui-surface-input: #0f172a;
+    --ui-surface-hover: #273449;
+    --ui-surface-selected: #22304d;
+    --ui-border-strong: #334155;
+    --ui-text-soft: #cbd5e1;
+    --ui-text-muted: #94a3b8;
+    --ui-overlay-backdrop: rgba(2, 6, 23, 0.72);
+
+    --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --ui-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+    --ui-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --ui-shadow-overlay: 0 24px 56px rgba(0, 0, 0, 0.6);
+  }
+}

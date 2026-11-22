@@ -2,14 +2,17 @@ package com.rpis.backend.service;
 
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
+import com.rpis.backend.model.ProposalStatusHistory;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalReviewRepository;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,7 +22,8 @@ public class ProposalReviewService {
     private final ProposalReviewRepository reviewRepository;
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ProposalNotificationPolicy proposalNotificationPolicy;
+    private final com.rpis.backend.security.CurrentUser currentUser;
 
     public List<ProposalReview> getReviewsForProposal(Long proposalId) {
         Proposal proposal = proposalRepository.findById(proposalId)
@@ -34,10 +38,17 @@ public class ProposalReviewService {
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new IllegalArgumentException("Reviewer not found: " + reviewerId));
 
+        // A multi-role account reviews as the role it selected for this session. The
+        // account's primary role is only the fallback for a call that is not made by the
+        // authenticated reviewer themselves.
+        String reviewerRole = reviewerId.equals(currentUser.getUserId())
+                && currentUser.getRole() != null
+                ? currentUser.getRole()
+                : reviewer.getRole();
         ProposalReview review = new ProposalReview();
         review.setProposal(proposal);
         review.setReviewer(reviewer);
-        review.setReviewerRole(reviewer.getRole());
+        review.setReviewerRole(reviewerRole);
 
         // Copy scores
         review.setSoundnessSectorNeedScore(reviewInput.getSoundnessSectorNeedScore());
@@ -66,7 +77,8 @@ public class ProposalReviewService {
 
         // Update Proposal Status based on Review Decision
         String decision = reviewInput.getDecision().toUpperCase();
-        String role = reviewer.getRole().toUpperCase();
+        String role = reviewerRole.toUpperCase();
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         String targetStatus = proposal.getStatus();
         boolean returnedForRevision = false;
 
@@ -78,6 +90,7 @@ public class ProposalReviewService {
             targetStatus = "RETURNED_TO_RPS";
             proposal.setReturnRemarks(reviewInput.getOverallComments());
             proposal.setReturnedByOffice(role);
+            proposal.setReturnKind("REVISION");
             proposal.setReturnedByUserId(reviewer.getId());
             proposal.setReturnedByName(reviewer.getName());
             proposal.setReturnedAt(java.time.LocalDateTime.now());
@@ -89,10 +102,8 @@ public class ProposalReviewService {
         } else if ("APPROVED".equals(decision)) {
             if ("REC".equals(role)) {
                 targetStatus = "REC_APPROVED";
-            } else if ("OVCRIGE".equals(role) || "OVC".equals(role)) {
+            } else if ("OVCRIGE".equals(role)) {
                 targetStatus = "OVC_APPROVED";
-            } else if ("OC".equals(role)) {
-                targetStatus = "APPROVED";
             } else {
                 targetStatus = "APPROVED";
             }
@@ -102,37 +113,42 @@ public class ProposalReviewService {
         if (returnedForRevision) {
             proposal.setRemarks(reviewInput.getOverallComments());
         }
+        recordStatusHistory(proposal, previousStatus, targetStatus,
+                reviewInput.getOverallComments(), reviewer, role);
         proposalRepository.save(proposal);
 
-        // Notify Proponent (returns are routed to RPS instead)
-        if (!returnedForRevision && proposal.getProponent() != null) {
-            notificationService.createNotification(
-                    proposal.getProponent().getId(),
-                    "A review decision has been submitted on your proposal \"" + proposal.getProjectTitle() +
-                            "\". Role: " + role + ", Decision: " + decision + ", Overall Proposal Status: " + targetStatus
-            );
-        }
-
-        // Notify relevant reviewers or roles for next step
-        if ("REC_APPROVED".equals(targetStatus)) {
-            notifyRole("OVCRIGE", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by REC and is ready for OVC review.");
-        } else if ("OVC_APPROVED".equals(targetStatus)) {
-            notifyRole("OC", "Proposal \"" + proposal.getProjectTitle() + "\" was approved by OVC and is ready for OC final approval.");
-        } else if (returnedForRevision) {
-            String msg = "Proposal \"" + proposal.getProjectTitle() + "\" was returned for revision by " + role + " and awaits RPS review.";
-            notifyRole("RPS_ADMIN", msg);
-            notifyRole("RPS_STAFF", msg);
-        }
+        // The one notification policy owns the recipients and wording of every status
+        // transition. Using it here keeps an evaluation outcome consistent with the
+        // dedicated workflow endpoints and prevents a second, generic "decision" message
+        // from being written alongside it. The policy deliberately stays silent for a
+        // return: that goes to RPS first, and the Proponent is told when RPS forwards it.
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return review;
     }
 
-    private void notifyRole(String role, String message) {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            if (role.equalsIgnoreCase(user.getRole())) {
-                notificationService.createNotification(user.getId(), message);
-            }
+    /**
+     * Appends the review decision to the proposal's audited status timeline. The row is
+     * cascaded by the proposal save in the same transaction, so a failed submission
+     * leaves neither a status change nor a history entry behind.
+     */
+    private void recordStatusHistory(Proposal proposal, String fromStatus, String toStatus,
+                                     String remarks, User reviewer, String role) {
+        String storedFrom = ProposalStatus.optionalSupportedStatus(fromStatus);
+        String storedTo = ProposalStatus.requireSupportedStatus(toStatus);
+        if (storedTo == null || storedTo.equals(storedFrom)) {
+            return;
         }
+        ProposalStatusHistory entry = new ProposalStatusHistory();
+        entry.setProposal(proposal);
+        entry.setFromStatus(storedFrom);
+        entry.setToStatus(storedTo);
+        entry.setActorUserId(reviewer.getId());
+        entry.setActorRole(role);
+        entry.setActorName(reviewer.getName());
+        entry.setRemarks(remarks);
+        entry.setSource(ProposalStatusHistory.SOURCE_APPLICATION);
+        entry.setChangedAt(LocalDateTime.now());
+        proposal.getStatusHistory().add(entry);
     }
 }

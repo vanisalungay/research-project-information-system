@@ -21,13 +21,13 @@
       <p class="rv-empty">{{ error }}</p>
       <div class="rv-state-actions">
         <button type="button" class="rv-back" @click="$emit('retry')">Retry</button>
-        <button type="button" class="rv-back" @click="$emit('back')">Go Back</button>
+        <BackButton label="Back" :navigate="false" @click="$emit('back')" />
       </div>
     </div>
 
     <div v-else-if="notFound" class="rv-state">
       <p class="rv-empty">{{ notFoundText }}</p>
-      <button type="button" class="rv-back" @click="$emit('back')">Back to Proposals</button>
+      <BackButton label="Back to Proposals" :navigate="false" @click="$emit('back')" />
     </div>
 
     <template v-else>
@@ -53,6 +53,7 @@
 import { computed, useSlots } from 'vue'
 
 import '@/assets/review.css'
+import BackButton from '@/components/BackButton.vue'
 import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
 

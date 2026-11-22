@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/utils/api'
+import { normalizeEmailInput } from '@/utils/institutionalEmail'
 
 //
 export const UserRole = {
@@ -92,7 +93,13 @@ export const useUserDataStore = defineStore('userData', () => {
   async function login(email, password, role) {
     isLoading.value = true
     try {
-      const response = await api.post('/api/users/login', { email, password, role })
+      // The address is sent in its normalized form and the role in the one spelling the
+      // backend compares, so a typed and a pasted sign-in are the same request.
+      const response = await api.post('/api/users/login', {
+        email: normalizeEmailInput(email),
+        password,
+        role: String(role ?? '').trim().toUpperCase(),
+      })
 
       if (response.data) {
         setUser(response.data)
@@ -123,7 +130,7 @@ export const useUserDataStore = defineStore('userData', () => {
         '/api/users/google-login',
         {
           token,
-          role,
+          role: String(role ?? '').trim().toUpperCase(),
         }
       )
 

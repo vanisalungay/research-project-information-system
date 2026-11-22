@@ -33,7 +33,7 @@ class EndorsementLetterTemplatesTest {
                 EndorsementLetterTemplates.normalize(null));
         assertEquals(EndorsementLetterTemplates.PROGRAM_IFP,
                 EndorsementLetterTemplates.normalize("   "));
-        assertEquals(EndorsementLetterTemplates.PROGRAM_IFP_LABEL,
+        assertEquals(EndorsementLetterTemplates.PROGRAM_IFP_DISPLAY_LABEL,
                 EndorsementLetterTemplates.labelFor(null));
     }
 

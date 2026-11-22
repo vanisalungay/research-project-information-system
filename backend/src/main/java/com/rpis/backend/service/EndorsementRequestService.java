@@ -2,16 +2,19 @@ package com.rpis.backend.service;
 
 import com.rpis.backend.dto.EndorsementDecisionRequest;
 import com.rpis.backend.dto.EndorsementEventResponse;
+import com.rpis.backend.dto.EndorsementLetterVersionResponse;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
 import com.rpis.backend.model.Certification;
 import com.rpis.backend.model.EndorsementLetterSettings;
+import com.rpis.backend.model.EndorsementLetterVersion;
 import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.EndorsementRequestEvent;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
+import com.rpis.backend.repository.EndorsementLetterVersionRepository;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
 import com.rpis.backend.repository.EndorsementRequestRepository;
 import com.rpis.backend.repository.ProposalAnnouncementRepository;
@@ -19,6 +22,7 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.PersonNameFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -102,6 +106,7 @@ public class EndorsementRequestService {
 
     private final EndorsementRequestRepository requestRepository;
     private final EndorsementRequestEventRepository eventRepository;
+    private final EndorsementLetterVersionRepository letterVersionRepository;
     private final UserRepository userRepository;
     private final ProposalAnnouncementRepository announcementRepository;
     private final ProposalAnnouncementService announcementService;
@@ -186,7 +191,7 @@ public class EndorsementRequestService {
                     "Routed to " + dean.getName() + deanScopeNote(dean) + ".");
             notifyUser(dean, saved, "New endorsement request",
                     saved.getReferenceNumber() + " from " + proponent.getName()
-                            + " is waiting for your endorsement.");
+                            + " is waiting for your endorsement.", ROLE_DEAN);
         } else {
             audit(saved, EndorsementRequestEvent.TYPE_ASSIGNED, proponent,
                     "No Dean is configured for " + college
@@ -206,13 +211,13 @@ public class EndorsementRequestService {
     /** The Dean authorized for a college, or the institution-wide fallback. */
     private User findDeanFor(String college) {
         List<User> scoped = userRepository
-                .findByRoleAndAssignedCollegeIgnoreCaseAndStatusOrderByNameAsc(ROLE_DEAN, college,
+                .findByAssignedRoleAndCollegeAndStatusOrderByNameAsc(ROLE_DEAN, college,
                         "APPROVED");
         if (!scoped.isEmpty()) {
             return scoped.get(0);
         }
         List<User> institutionWide = userRepository
-                .findByRoleAndAssignedCollegeIsNullAndStatusOrderByNameAsc(ROLE_DEAN, "APPROVED");
+                .findByAssignedRoleWithoutCollegeAndStatusOrderByNameAsc(ROLE_DEAN, "APPROVED");
         return institutionWide.isEmpty() ? null : institutionWide.get(0);
     }
 
@@ -324,6 +329,94 @@ public class EndorsementRequestService {
     public record StoredLetter(UploadStorage.StoredUpload stored, String fileName) {
     }
 
+    // ==================== LETTER VERSION HISTORY ====================
+
+    /**
+     * Every preserved version of an issued letter, newest first. The current version is
+     * flagged so the Dean can distinguish it from the revisions before it. A legacy
+     * request with a letter but no version row is given one for its current file, so the
+     * list is never empty for an issued letter.
+     */
+    @Transactional
+    public List<EndorsementLetterVersionResponse> letterVersions(Long id) {
+        EndorsementRequest entity = requireVisible(id);
+        if (!entity.hasIssuedLetter()) {
+            return List.of();
+        }
+        ensureCurrentLetterVersion(entity);
+        // An approved letter saved before versioning existed has no version number; it is
+        // version 1 (the original), which is what the backfill and the history row use.
+        Integer current = entity.getLetterVersion() == null ? 1 : entity.getLetterVersion();
+        return letterVersionRepository
+                .findByEndorsementRequestIdOrderByVersionNumberDesc(id).stream()
+                .map(version -> EndorsementLetterVersionResponse.of(version,
+                        current != null && current.equals(version.getVersionNumber())))
+                .toList();
+    }
+
+    /**
+     * One preserved version of an issued letter. The same authorization as the current
+     * letter applies: the owning Proponent, a Dean in scope (or the issuing Dean) and the
+     * RPS administrator / staff. The version must belong to the request in the route.
+     */
+    @Transactional(readOnly = true)
+    public StoredLetter loadLetterVersion(Long id, Long versionId) {
+        requireVisible(id);
+        EndorsementLetterVersion version = letterVersionRepository
+                .findByIdAndEndorsementRequestId(versionId, id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "That letter version was not found for this request."));
+        UploadStorage.StoredUpload stored = uploadStorage.open(version.getFilePath()).orElse(null);
+        if (stored == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "The stored endorsement letter version is no longer available.");
+        }
+        String fileName = version.getFileName();
+        if (fileName == null || fileName.isBlank()) {
+            fileName = "endorsement-letter-v" + version.getVersionNumber() + ".pdf";
+        }
+        return new StoredLetter(stored, fileName);
+    }
+
+    /**
+     * Records (or refreshes) the row for one generated version. The file path, name,
+     * document code and generation time are copied from the request; the original
+     * generator is kept when the row already exists.
+     */
+    private void recordLetterVersion(EndorsementRequest request, Integer versionNumber,
+            Long userId, String userName) {
+        if (versionNumber == null || request == null || !request.hasIssuedLetter()) {
+            return;
+        }
+        EndorsementLetterVersion version = letterVersionRepository
+                .findByEndorsementRequestIdAndVersionNumber(request.getId(), versionNumber)
+                .orElseGet(EndorsementLetterVersion::new);
+        version.setEndorsementRequestId(request.getId());
+        version.setVersionNumber(versionNumber);
+        version.setDocumentCode(request.getLetterDocumentCode());
+        version.setFileName(request.getLetterFileName());
+        version.setFilePath(request.getLetterFilePath());
+        version.setGeneratedAt(request.getLetterGeneratedAt());
+        if (version.getGeneratedByUserId() == null
+                && version.getGeneratedByName() == null) {
+            version.setGeneratedByUserId(userId);
+            version.setGeneratedByName(userName);
+        }
+        letterVersionRepository.save(version);
+    }
+
+    /**
+     * Makes sure the request's current letter has a history row (legacy/backfill gap).
+     * A letter issued before versioning existed has a null version number; it is the
+     * original, version 1. That row is recorded here before a reissue overwrites the
+     * request's file pointer, so the first PDF is never orphaned.
+     */
+    private void ensureCurrentLetterVersion(EndorsementRequest request) {
+        Integer version = request.getLetterVersion() == null ? 1 : request.getLetterVersion();
+        recordLetterVersion(request, version,
+                request.getDecidedByUserId(), request.getDecidedByName());
+    }
+
     // ==================== DEAN: APPROVE ====================
 
     /**
@@ -361,7 +454,8 @@ public class EndorsementRequestService {
         // settings row must never block an endorsement.
         EndorsementLetterSettings settings = settingsService.getSettings();
 
-        String endorserName = firstNonBlank(trimmed(request.getEndorserName()), dean.getName());
+        String endorserName = PersonNameFormatter.format(
+                firstNonBlank(trimmed(request.getEndorserName()), dean.getName()));
         String designation = firstNonBlank(trimmed(request.getEndorserDesignation()),
                 firstNonBlank(trimmed(dean.getDesignation()), "Dean"));
         LocalDate endorsementDate = request.getEndorsementDate() != null
@@ -433,6 +527,8 @@ public class EndorsementRequestService {
         entity.setSignatureFilePath(signatureFile.storedPath());
 
         EndorsementRequest saved = requestRepository.save(entity);
+        // Version 1 of the issued letter is a preserved record from the moment it exists.
+        ensureCurrentLetterVersion(saved);
         audit(saved, EndorsementRequestEvent.TYPE_LETTER_GENERATED, dean,
                 "Official endorsement letter " + documentCode + " generated (version "
                         + saved.getLetterVersion() + ").");
@@ -448,7 +544,8 @@ public class EndorsementRequestService {
 
         notifyUser(saved.getProponent(), saved, "Endorsement approved",
                 saved.getReferenceNumber() + " was endorsed by " + endorserName
-                        + ". The official endorsement letter is now in your Certifications.");
+                        + ". The official endorsement letter is now in your Certifications.",
+                ROLE_PROPONENT);
         return toResponse(saved, announcement);
     }
 
@@ -488,7 +585,8 @@ public class EndorsementRequestService {
         audit(saved, EndorsementRequestEvent.TYPE_REJECTED, dean,
                 "Rejected by " + saved.getDecidedByName() + ": " + reason);
         notifyUser(saved.getProponent(), saved, "Endorsement request rejected",
-                saved.getReferenceNumber() + " was not endorsed: " + reason);
+                saved.getReferenceNumber() + " was not endorsed: " + reason,
+                ROLE_PROPONENT);
         return toResponse(saved);
     }
 
@@ -560,6 +658,9 @@ public class EndorsementRequestService {
         StoredFile newFile = storeFile(letter.content(), "endorsement-letter.pdf");
         String supersededPath = entity.getLetterFilePath();
         Integer supersededVersion = entity.getLetterVersion();
+        // Record the file being superseded before the request starts pointing at the new
+        // one. This also covers a legacy letter that predates version history.
+        ensureCurrentLetterVersion(entity);
         try {
             entity.setLetterFileName(newFile.originalName());
             entity.setLetterFilePath(newFile.storedPath());
@@ -570,6 +671,7 @@ public class EndorsementRequestService {
             entity.setDecidedByDesignation(designation);
 
             EndorsementRequest saved = requestRepository.save(entity);
+            recordLetterVersion(saved, nextVersion, actorId, actor.getName());
             audit(saved, EndorsementRequestEvent.TYPE_LETTER_REISSUED, actor,
                     "Letter reissued as version " + nextVersion + " by " + actor.getName() + " ("
                             + role + "). Superseded version " + supersededVersion
@@ -577,7 +679,8 @@ public class EndorsementRequestService {
             certificationService.refreshDocument(saved);
             notifyUser(saved.getProponent(), saved, "Endorsement letter reissued",
                     "The endorsement letter of " + saved.getReferenceNumber()
-                            + " was reissued (version " + nextVersion + ").");
+                            + " was reissued (version " + nextVersion + ").",
+                    ROLE_PROPONENT);
             return toResponse(saved, announcement);
         } catch (RuntimeException e) {
             deleteQuietly(newFile.storedPath());
@@ -860,7 +963,14 @@ public class EndorsementRequestService {
         if (actor != null) {
             event.setActorId(actor.getId());
             event.setActorName(actor.getName());
-            event.setActorRole(actor.getRole());
+            // The role this session acted in, not the account's primary role: a Proponent
+            // who is also a Dean records a Dean decision as Dean.
+            String role = actor.getId() != null
+                    && actor.getId().equals(currentUser.getUserId())
+                    && currentUser.getRole() != null
+                    ? currentUser.getRole()
+                    : actor.getRole();
+            event.setActorRole(role);
         }
         event.setDetail(detail);
         eventRepository.save(event);
@@ -878,14 +988,15 @@ public class EndorsementRequestService {
      * a Dean is not authorized to open a Proponent's announcement page, so it must never
      * be the destination of the click.
      */
-    private void notifyUser(User recipient, EndorsementRequest entity, String title, String message) {
+    private void notifyUser(User recipient, EndorsementRequest entity, String title,
+            String message, String recipientRole) {
         if (recipient == null || recipient.getId() == null) {
             return;
         }
         try {
             notificationService.createNotification(recipient.getId(), message, title,
                     NOTIFICATION_TYPE_ENDORSEMENT, entity.getId(),
-                    entity.getProposalAnnouncementId());
+                    entity.getProposalAnnouncementId(), null, recipientRole);
         } catch (RuntimeException e) {
             log.warn("Endorsement notification for account {} could not be created: {}",
                     recipient.getId(), e.getMessage());

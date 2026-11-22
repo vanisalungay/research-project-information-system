@@ -22,13 +22,7 @@
     <!-- RIGHT PANEL -->
     <div class="right-panel">
       <div class="right-content">
-        <button class="back-btn" @click="router.push('/login')">
-          <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-          Back to Login
-        </button>
+        <BackButton label="Back to Login" to="/login" class="auth-back" />
 
         <div class="header-section">
           <h2 class="welcome">Create Proponent Account</h2>
@@ -49,14 +43,16 @@
         <!-- FORM -->
         <form class="register-form" @submit.prevent="handleRegister">
           <div class="input-group">
-            <label for="name">Name</label>
+            <label for="name">Full Name</label>
             <input
               id="name"
               type="text"
               v-model="name"
-              placeholder="Enter your full name"
+              placeholder="Dela Cruz, Juan, M., Jr."
               required
+              @blur="name = formatPersonName(name)"
             />
+            <PersonNameHint />
           </div>
 
           <div class="input-group">
@@ -94,27 +90,37 @@
             />
           </div>
 
+          <PasswordRequirements
+            id="password-requirements"
+            :password="password"
+            :confirm="confirmPassword"
+          />
+
           <div class="half-inputs">
             <div class="input-group">
               <label for="password">Password</label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 v-model="password"
                 placeholder="Create a password"
+                autocomplete="new-password"
+                aria-describedby="password-hint password-requirements"
                 required
               />
+              <PasswordFieldHint id="password-hint" kind="new" />
             </div>
 
             <div class="input-group">
               <label for="confirmPassword">Confirm Password</label>
-              <input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 v-model="confirmPassword"
                 placeholder="Confirm your password"
+                autocomplete="new-password"
+                aria-describedby="confirmPassword-hint"
                 required
               />
+              <PasswordFieldHint id="confirmPassword-hint" kind="confirm" />
             </div>
           </div>
 
@@ -133,7 +139,7 @@
             </label>
           </div>
 
-          <button class="register-btn" type="submit">
+          <button class="register-btn" type="submit" :disabled="!passwordReady">
             Create Proponent Account
           </button>
 
@@ -218,11 +224,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PasswordRequirements from '@/components/PasswordRequirements.vue'
+import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
+import { formatPersonName } from '@/utils/personName'
+import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -238,12 +251,22 @@ const agree = ref(false)
 const showTermsModal = ref(false)
 const errorMessage = ref('')
 
+/** The submit button stays disabled until the password and its confirmation are valid. */
+const passwordReady = computed(() => passwordFormReady(password.value, confirmPassword.value))
+
 const handleRegister = async () => {
   errorMessage.value = ''
 
   // Must agree first
   if (!agree.value) {
     errorMessage.value = 'Please read and agree to the Terms and Conditions and Privacy Policy.'
+    return
+  }
+
+  // The same policy the backend enforces; the live checklist above explains what is missing.
+  const policyMessage = passwordPolicyMessage(password.value)
+  if (policyMessage) {
+    errorMessage.value = policyMessage
     return
   }
 
@@ -261,8 +284,12 @@ const handleRegister = async () => {
     return
   }
 
+  // Format once more in case the field was never blurred (e.g. the form was submitted
+  // with the keyboard while the input still had focus).
+  name.value = formatPersonName(name.value)
+
   const payload = {
-    name: name.value.trim(),
+    name: name.value,
     email: email.value.trim().toLowerCase(),
     password: password.value,
     role: 'PROPONENT',
@@ -275,7 +302,9 @@ const handleRegister = async () => {
     await showAlert('Account created successfully! You can now log in.', { type: 'success', title: 'Account Created' })
     router.push('/login')
   } catch (error) {
-    console.log(error)
+    // The axios error can carry the submitted form (including its password) in
+    // `config.data`, so it is never logged. Only a fixed, value-free note is kept.
+    console.error('Registration request failed.')
 
     if (error.response) {
       // The backend refused the registration (duplicate e-mail, invalid payload,
@@ -417,28 +446,8 @@ const handleRegister = async () => {
 }
 
 /* ========== BACK BUTTON ========== */
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  color: #2452ff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
+.auth-back {
   margin-bottom: 24px;
-  padding: 6px 0;
-  transition: color 0.2s ease;
-}
-
-.back-btn:hover {
-  color: #1d40cc;
-}
-
-.back-icon {
-  width: 18px;
-  height: 18px;
 }
 
 /* ========== ERROR BANNER ========== */
@@ -572,6 +581,14 @@ const handleRegister = async () => {
 
 .register-btn:active {
   transform: translateY(0);
+}
+
+.register-btn:disabled,
+.register-btn:disabled:hover {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* ========== SIGN IN LINK ========== */
@@ -724,6 +741,10 @@ const handleRegister = async () => {
     height: auto;
     min-height: 100vh;
     overflow-y: auto;
+    /* Both panels are width:100% at this breakpoint; without wrapping they were
+       squeezed side by side and the form (and the password checklist) became too
+       narrow to read. */
+    flex-wrap: wrap;
   }
 
   .left-panel {

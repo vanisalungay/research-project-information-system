@@ -52,6 +52,7 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
 
 onBeforeUnmount(() => {
   compactQuery?.removeEventListener('change', syncCompactLayout)
+  notificationStore.disconnect()
 })
 
 const toggleSidebar = () => {
@@ -59,21 +60,32 @@ const toggleSidebar = () => {
 }
 
 /**
- * The unread count shown on the header bell and the sidebar badge comes from the same
- * notification data the notification pages read. It is refreshed when the shell mounts
- * and whenever the route or the signed-in user changes, so returning from the
- * notifications page (where items are marked as read) updates it too.
+ * The unread badge and list come from one store, fed by one live SSE connection for
+ * the whole authenticated shell. It starts when the signed-in account is known and
+ * stops when the shell goes away; route changes no longer trigger a list request
+ * because marking a notification read updates the store directly.
  */
 watch(
-  () => [userStore.user?.id ?? null, route.fullPath],
-  ([userId]) => {
-    notificationStore.refresh(userId)
-    // The Dean's dashboard is the one page that holds the endorsement requests and the
-    // notifications, so its sidebar badge is refreshed from the same trigger. Any other
-    // role (or a signed-out shell) resolves to zero without a request.
+  () => userStore.user?.id ?? null,
+  (userId) => {
+    if (userId == null) {
+      notificationStore.reset()
+    } else {
+      notificationStore.connect(userId)
+      notificationStore.refresh(userId)
+    }
+    // The Dean's dashboard also holds the endorsement requests, so its sidebar badge
+    // follows the account/route. Any other role resolves to zero without a request.
     deanAttentionStore.refresh(userStore.user?.role ?? null)
   },
   { immediate: true },
+)
+
+// The Dean's combined "attention" badge still depends on the page (a newly opened
+// endorsement request may not produce a notification of its own).
+watch(
+  () => route.fullPath,
+  () => deanAttentionStore.refresh(userStore.user?.role ?? null),
 )
 </script>
 

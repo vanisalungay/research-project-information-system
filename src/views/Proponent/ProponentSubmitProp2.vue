@@ -91,8 +91,13 @@
               <div class="form-row">
                 <div class="form-group" :class="{ 'has-error': showValidation && errors.submitted_name }">
                   <label>Full Name <span class="req">*</span></label>
-                  <input type="text" v-model="certification.submitted_name"
-                    placeholder="Enter full name of proponent" />
+                  <input
+                    type="text"
+                    v-model="certification.submitted_name"
+                    placeholder="Dela Cruz, Juan, M., Jr."
+                    @blur="certification.submitted_name = formatPersonName(certification.submitted_name)"
+                  />
+                  <PersonNameHint />
                   <span class="field-error" v-if="showValidation && errors.submitted_name">{{
                     errors.submitted_name }}</span>
                 </div>
@@ -257,8 +262,13 @@
                 <div class="form-row">
                   <div class="form-group" :class="{ 'has-error': showValidation && errors.endorsed_name }">
                     <label>Full Name of Endorser <span class="req">*</span></label>
-                    <input type="text" v-model="certification.endorsed_name"
-                      placeholder="Enter name of department chair or dean" />
+                    <input
+                      type="text"
+                      v-model="certification.endorsed_name"
+                      placeholder="Dela Cruz, Juan, M., Jr."
+                      @blur="certification.endorsed_name = formatPersonName(certification.endorsed_name)"
+                    />
+                    <PersonNameHint />
                     <span class="field-error" v-if="showValidation && errors.endorsed_name">{{
                       errors.endorsed_name }}</span>
                   </div>
@@ -324,12 +334,7 @@
 
         <!-- FOOTER -->
         <footer class="modal-footer">
-          <button class="btn-secondary" @click="goBack">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back
-          </button>
+          <BackButton :navigate="false" @click="goBack" />
           <div class="footer-right">
             <button class="btn-outline" @click="saveDraft">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -361,6 +366,8 @@
 
 <script setup>
 import { reactive, ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
+import BackButton from '@/components/BackButton.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import {
   buildStandaloneHtml,
   printDocument,
@@ -395,6 +402,7 @@ import {
   verifyEndorsementDocument
 } from '@/utils/endorsementDocument'
 import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+import { formatPersonName } from '@/utils/personName'
 
 const props = defineProps({
   open: Boolean,
@@ -487,7 +495,7 @@ watch(
   () => props.endorsement,
   (endorsement) => {
     if (!endorsement) return
-    certification.endorsed_name = endorsement.decidedByName || ''
+    certification.endorsed_name = formatPersonName(endorsement.decidedByName || '')
     certification.endorsed_designation = endorsement.decidedByDesignation || ''
     certification.endorsed_date = toDateInputValue(endorsement.endorsementDate)
   },
@@ -848,14 +856,20 @@ const resetForm = () => {
  * chosen files (to be uploaded) and the in-session signature selection. Both "Submit
  * Proposal" and "Save Draft" send exactly this shape, so one save path serves them.
  */
-const getCertificationData = () => ({
-  certification: { ...certification },
-  signatureFiles: {
-    submitted: uploadedFiles.submitted,
-    endorsed: uploadedFiles.endorsed
-  },
-  certificationSignature: selectionPayload(selectedSignature.value)
-})
+const getCertificationData = () => {
+  // Both name fields are formatted here as well as on blur, so a form submitted from
+  // the keyboard (without leaving the field) still stores the standard format.
+  certification.submitted_name = formatPersonName(certification.submitted_name)
+  certification.endorsed_name = formatPersonName(certification.endorsed_name)
+  return {
+    certification: { ...certification },
+    signatureFiles: {
+      submitted: uploadedFiles.submitted,
+      endorsed: uploadedFiles.endorsed
+    },
+    certificationSignature: selectionPayload(selectedSignature.value)
+  }
+}
 
 defineExpose({ resetForm, getCertificationData })
 

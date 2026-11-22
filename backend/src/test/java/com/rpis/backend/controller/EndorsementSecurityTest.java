@@ -58,6 +58,9 @@ class EndorsementSecurityTest {
     void setUp() {
         jdbcTemplate.execute("TRUNCATE TABLE endorsement_request_events RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE certifications RESTART IDENTITY CASCADE");
+        // Plain request-id column, so the Hibernate-built test schema has no FK to cascade
+        // through; clear the version history explicitly.
+        jdbcTemplate.execute("TRUNCATE TABLE endorsement_letter_versions RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE endorsement_requests RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
 

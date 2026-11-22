@@ -1,5 +1,7 @@
+@import './css/tokens.css';
 @import './css/base.css';
 @import './css/fonts.css';
+@import './ui.css';
 @import './status.css';
 @import './actions.css';
 @import './print.css';
@@ -128,6 +130,9 @@ label {
 
 /* ============================================================
    Global Button Defaults
+
+   Geometry (size, padding, radius, font) belongs to assets/ui.css and the
+   action colours to assets/actions.css. Only the element reset stays here.
    ============================================================ */
 
 button {
@@ -136,25 +141,6 @@ button {
   border: none;
   background: none;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-/* Primary button — layout only; the colours come from assets/actions.css. */
-button.btn-primary,
-.login-btn,
-.submit-btn,
-.create-btn {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-}
-
-/* Secondary button — layout only; the colours come from assets/actions.css. */
-button.btn-secondary {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: var(--fs-sm);
-  font-weight: 600;
 }
 
 /* Focus ring for accessibility */

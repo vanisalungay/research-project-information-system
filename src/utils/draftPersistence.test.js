@@ -62,10 +62,11 @@ test('the details step keeps stored documents visible and downloadable', () => {
     'an empty file input does not hide the stored budget')
 })
 
-test('the details budget validation accepts a file the draft already stores', () => {
-  assert.ok(STEP1.includes(
-    '!proposal.line_item_budget_file && !proposal.budget_file_path && !proposal.budget_file_name'
-  ), 'a reopened draft is not asked for its budget file again')
+test('the line-item budget is optional in the details step', () => {
+  assert.ok(!STEP1.includes("errors.line_item_budget_file = 'Line-Item Budget file is required.'"),
+    'an empty budget never blocks the form')
+  assert.ok(STEP1.includes('Line-Item Budget Requirement'),
+    'the upload stays available when the proponent wants to attach one')
 })
 
 // --------------------------------------------------------------- Certification
@@ -203,8 +204,8 @@ test('the review validation uses the checklist, not a GAD file, and accepts stor
     'the checklist is what makes the GAD section complete')
   assert.ok(!STEP3.includes('if (!d.gad_score_file)'),
     'a legacy GAD file is no longer required')
-  assert.ok(STEP3.includes('!d.line_item_budget_file && !d.budget_file_path && !d.budget_file_name'),
-    'a budget the draft already stores satisfies the requirement')
+  assert.ok(!STEP3.includes("errs.push('Line-Item Budget file is missing.')"),
+    'the optional budget file is not a submission requirement')
   assert.ok(
     STEP3.includes('!signatureFiles.submitted && !d.submittedByFilePath && !d.submittedByFileName'),
     'a stored signature (path or legacy file name) satisfies the certification requirement',

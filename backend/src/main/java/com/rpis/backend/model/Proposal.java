@@ -348,6 +348,16 @@ public class Proposal {
     @Column(name = "returned_by_office")
     private String returnedByOffice;
 
+    /**
+     * Why the proposal was returned to ORPS: {@code REVISION} for an ordinary
+     * return-for-revision, or {@code REJECTION} for an OVCRIGE rejection hand-off.
+     * Both use the {@code RETURNED_TO_RPS} status, so this is the field that keeps the
+     * ORPS Rejected Proposals category separate from Revision Requests. Null on rows
+     * that were never returned.
+     */
+    @Column(name = "return_kind", length = 20)
+    private String returnKind;
+
     @Column(name = "returned_by_name")
     private String returnedByName;
 
@@ -379,6 +389,24 @@ public class Proposal {
     // office remarks are never replaced).
     @Column(name = "revision_notes", columnDefinition = "TEXT")
     private String revisionNotes;
+
+    /**
+     * When the proponent actually submitted the proposal (or resubmitted a revision).
+     * This is deliberately separate from {@code created_at} (when the draft row was
+     * first saved) and from {@code updated_at} (which moves on any edit), so a list of
+     * submitted proposals can be ordered by the real submission event.
+     */
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    /**
+     * When RPS actually endorsed this proposal to OVCRIGE. Kept apart from
+     * {@code submitted_at} (when the proponent submitted it) and {@code updated_at}
+     * (which keeps moving through later offices), so the Endorsed Proposals list can be
+     * ordered by the real endorsement event.
+     */
+    @Column(name = "endorsed_at")
+    private LocalDateTime endorsedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

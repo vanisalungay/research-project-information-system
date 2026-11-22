@@ -1,11 +1,14 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.User;
+import com.rpis.backend.repository.NotificationRepository;
 import com.rpis.backend.repository.OvcafValidationRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.service.TokenService;
+import com.rpis.backend.util.NotificationTypes;
 import com.rpis.backend.storage.UploadStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +69,7 @@ class OcOvcafWorkflowApiTest {
     @Autowired private UserRepository userRepository;
     @Autowired private ProposalRepository proposalRepository;
     @Autowired private OvcafValidationRepository validationRepository;
+    @Autowired private NotificationRepository notificationRepository;
     @Autowired private UploadStorage uploadStorage;
     @Autowired private JdbcTemplate jdbcTemplate;
 
@@ -73,6 +77,7 @@ class OcOvcafWorkflowApiTest {
     private String ovcafToken;
     private String proponentToken;
     private User proponent;
+    private User ovcaf;
 
     @BeforeEach
     void setUp() {
@@ -81,7 +86,7 @@ class OcOvcafWorkflowApiTest {
 
         proponent = user("Maria Proponent", "maria.oc.workflow@msunaawan.edu.ph", "PROPONENT");
         User oc = user("Chancellor", "chancellor.oc.workflow@msunaawan.edu.ph", "OC");
-        User ovcaf = user("OVCAF Reviewer", "ovcaf.oc.workflow@msunaawan.edu.ph", "OVCAF");
+        ovcaf = user("OVCAF Reviewer", "ovcaf.oc.workflow@msunaawan.edu.ph", "OVCAF");
 
         proponentToken = tokenService.generateToken(proponent.getId(), "PROPONENT");
         ocToken = tokenService.generateToken(oc.getId(), "OC");
@@ -185,6 +190,18 @@ class OcOvcafWorkflowApiTest {
         assertNotNull(draftPath);
         assertTrue(uploadStorage.exists(draftPath), "the staged document must exist on disk");
 
+        long draftNotifications = ovcafNotifications(NotificationTypes.SPECIAL_ORDER_DRAFT).size();
+        assertEquals(1, draftNotifications,
+                "a meaningful draft change that routes to OVCAF must notify that office once");
+
+        // Re-saving exactly the same values is not a new event.
+        mockMvc.perform(draftRequest(proposal.getId(), null, "SO-DRAFT-1", "true", "draft notes")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ocToken))
+                .andExpect(status().isOk());
+        assertEquals(draftNotifications,
+                ovcafNotifications(NotificationTypes.SPECIAL_ORDER_DRAFT).size(),
+                "an identical re-save must not create a second draft notification");
+
         // The draft satisfies none of OVCAF's gates.
         mockMvc.perform(get("/api/ovcaf/proposals")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
@@ -211,6 +228,14 @@ class OcOvcafWorkflowApiTest {
         assertEquals(draftPath, finalized.get("so_file_path"),
                 "final approval must keep the staged document");
         assertTrue(uploadStorage.exists(draftPath));
+        assertEquals(1, ovcafNotifications(NotificationTypes.FUNDING).size(),
+                "final approval must keep its existing OVCAF notification");
+    }
+
+    private java.util.List<Notification> ovcafNotifications(String type) {
+        return notificationRepository.findByUserOrderByCreatedAtDesc(ovcaf).stream()
+                .filter(notification -> type.equals(notification.getType()))
+                .toList();
     }
 
     @Test

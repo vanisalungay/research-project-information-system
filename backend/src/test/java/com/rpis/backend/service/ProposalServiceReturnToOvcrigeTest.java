@@ -7,6 +7,7 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,6 +60,7 @@ class ProposalServiceReturnToOvcrigeTest {
         service = new ProposalService(proposalRepository,
                 userRepository,
                 notificationService,
+                new ProposalNotificationPolicy(notificationService),
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),
@@ -163,8 +165,10 @@ class ProposalServiceReturnToOvcrigeTest {
 
         service.returnToOvcrige(PROPOSAL_ID, "Returned");
 
-        verify(notificationService, times(1)).createNotification(
-                eq(11L), anyString(), anyString(), anyString(), eq(PROPOSAL_ID));
+        verify(notificationService, times(1)).notifyRoles(
+                eq(List.of("OVCRIGE")), anyString(),
+                eq("Proposal Returned by the Chancellor's Office"), eq("REVISION"), eq(PROPOSAL_ID), any(NotificationEvent.class));
+        verify(notificationService, never()).notifyUsers(any(), anyString(), anyString(), anyString(), any(), any(com.rpis.backend.util.NotificationEvent.class));
     }
 
     @Test

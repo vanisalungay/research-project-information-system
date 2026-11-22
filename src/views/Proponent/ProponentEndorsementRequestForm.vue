@@ -21,7 +21,7 @@
           be raised for a call that is open for submissions.
         </p>
         <div class="end-actions">
-          <router-link class="end-btn" to="/proposals">Back to My Projects</router-link>
+          <BackButton label="Back to My Projects" to="/proposals" />
         </div>
       </div>
 
@@ -184,6 +184,7 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/utils/api'
 import '@/assets/endorsement.css'
+import BackButton from '@/components/BackButton.vue'
 import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
 import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
 import {

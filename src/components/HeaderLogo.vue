@@ -50,8 +50,10 @@
             <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 01-3.46 0" />
           </svg>
-          <!-- The yellow dot appears only while the account really has unread items. -->
-          <span v-if="notificationStore.hasUnread" class="notif-dot" aria-hidden="true"></span>
+          <!-- The count appears only while the account really has unread items. -->
+          <span v-if="notificationStore.hasUnread" class="notif-badge" aria-hidden="true">
+            {{ notificationBadge }}
+          </span>
         </button>
 
         <span class="header-separator" aria-hidden="true"></span>
@@ -127,7 +129,12 @@
           <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
 
           <label>Password</label>
-          <input type="password" v-model="password" placeholder="Enter your password" required />
+          <PasswordInput
+            v-model="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
 
           <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
@@ -144,9 +151,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
 import { useDeanAttentionStore } from '@/stores/deanAttention'
+import { unreadBadgeLabel } from '@/utils/notifications'
 
 defineProps({
   /** True while the sidebar is collapsed (the hamburger reflects it). */
@@ -189,6 +198,11 @@ const formatRole = (role) => {
   }
   return roleMap[role] || role || ''
 }
+
+/** The same capped count the sidebar shows, so the two can never disagree. */
+const notificationBadge = computed(() =>
+  unreadBadgeLabel(notificationStore.unreadCount),
+)
 
 /** Label of the notification control: it also announces the unread count. */
 const notificationLabel = computed(() =>
@@ -460,14 +474,20 @@ onUnmounted(() => {
   height: 20px;
 }
 
-.notif-dot {
+.notif-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  top: 3px;
+  right: 2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
   background: var(--rpis-accent);
+  color: #1b1b1b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
   box-shadow: 0 0 0 2px var(--rpis-surface-control);
 }
 

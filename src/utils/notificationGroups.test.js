@@ -26,13 +26,23 @@ test('the proposal workflow types are one kind, and the rest are not', () => {
     'REVISION',
     'REJECTION',
     'FUNDING',
+    'PROPOSAL_ENDORSED',
   ]) {
     assert.equal(notificationKind(n(1, type)), PROPOSAL_KIND, `${type} is a proposal update`)
   }
 
   assert.equal(notificationKind(n(2, 'PROPOSAL_ANNOUNCEMENT')), 'call')
   assert.equal(notificationKind(n(3, 'ENDORSEMENT')), 'endorsement')
-  assert.equal(notificationKind(n(4, null)), 'other')
+  assert.equal(notificationKind(n(3, 'ENDORSEMENT'), 'DEAN'), 'endorsement')
+  assert.equal(notificationKind(n(3, 'ENDORSEMENT'), 'PROPONENT'), 'endorsement')
+  assert.equal(
+    notificationKind(n(3, 'ENDORSEMENT'), 'OVCRIGE'),
+    PROPOSAL_KIND,
+    'a historical ENDORSEMENT row addressed to OVCRIGE was a proposal notification',
+  )
+  assert.equal(notificationKind(n(4, 'DEAN_ASSIGNMENT')), 'other')
+  assert.equal(notificationKind(n(4, 'QUARTERLY_REPORT')), PROPOSAL_KIND)
+  assert.equal(notificationKind(n(5, null)), 'other')
   assert.equal(notificationKind(null), 'other')
 })
 
@@ -125,13 +135,8 @@ test('each proposal update shows the full message and its record details', () =>
   )
   assert.match(
     page,
-    /\{\{ formatDateTime\(notification\.createdAt\) \}\}/,
-    'the notification date and time are shown',
-  )
-  assert.match(
-    page,
-    /notification-time[\s\S]*?year:\s*'numeric'[\s\S]*?minute:\s*'2-digit'/,
-    'the timestamp includes both the date and the time',
+    /<RelativeTime[^>]*:value="notification\.createdAt"/,
+    'the notification time is rendered by the shared relative-time component',
   )
   assert.match(
     page,
@@ -144,23 +149,40 @@ test('each proposal update shows the full message and its record details', () =>
   )
 })
 
-test('the Proposal updates kind is not offered to the RPS Admin', () => {
+test('the OVCRIGE feed is one list, without a redundant Proposal Updates heading', () => {
+  const page = read('../views/Notifications/NotificationPage.vue')
+
+  // Every notification OVCRIGE receives is a proposal update, so a heading above the only
+  // group adds nothing. The role shares the Proponent's single untitled group branch.
+  assert.match(
+    page,
+    /role === 'PROPONENT' \|\| role === 'OVCRIGE'/,
+    'OVCRIGE must use the single, untitled group',
+  )
+  assert.match(
+    page,
+    /\{ key: 'all', title: '', items: filteredNotifications\.value \}/,
+    'the single group keeps the newest-first filtered list',
+  )
+})
+
+test('the Proposal updates kind is offered to every role', () => {
   const page = read('../views/Notifications/NotificationPage.vue')
 
   assert.match(
     page,
-    /<option v-if="showProposalKind" value="proposal">/,
-    'the kind option must be hidden for a role that never receives proposal updates',
+    /<option value="proposal">Proposal updates<\/option>/,
+    'every role can now receive proposal-workflow notifications',
   )
-  assert.match(
-    page,
-    /userStore\.user\?\.role !== UserRole\.RPS_ADMIN/,
-    'the rule must be keyed on the RPS Admin role',
+  assert.ok(
+    !page.includes('showProposalKind'),
+    'the role-specific exclusion must be gone',
   )
 })
 
-test('the backend is the authority: an RPS Admin never receives proposal-workflow types', () => {
+test('the backend delivers proposal-workflow rows to the RPS Admin too', () => {
   const service = read('../../backend/src/main/java/com/rpis/backend/service/NotificationService.java')
+  const types = read('../../backend/src/main/java/com/rpis/backend/util/NotificationTypes.java')
 
   for (const type of [
     'PROPOSAL_UPDATE',
@@ -169,20 +191,19 @@ test('the backend is the authority: an RPS Admin never receives proposal-workflo
     'REVISION',
     'REJECTION',
     'FUNDING',
+    'PROPOSAL_ENDORSED',
+    'PROPOSAL_SUBMISSION',
   ]) {
-    assert.ok(service.includes(`"${type}"`), `${type} must be excluded for the RPS Admin`)
+    assert.ok(types.includes(`"${type}"`), `${type} is part of the shared workflow vocabulary`)
   }
 
-  assert.ok(service.includes('UserRoles.RPS_ADMIN'), 'the rule must be keyed on the RPS Admin role')
-  // Both the list and "mark all as read" must apply the same rule, so a hidden notification
-  // is never silently marked read.
   assert.ok(
-    service.includes('hiddenFrom(user, notification)'),
-    'the rule must be applied to the list and to mark-all-as-read',
+    !service.includes('hiddenFrom'),
+    'the RPS Admin must see the workflow notifications written for that office',
   )
   assert.ok(
     !service.includes('notificationRepository.delete'),
-    'records must never be deleted - only hidden from the one role',
+    'records must never be deleted to change what a role sees',
   )
 })
 

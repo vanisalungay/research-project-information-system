@@ -14,6 +14,8 @@ const read = (path) => readFileSync(fileURLToPath(new URL(path, import.meta.url)
 
 const FORM = read('../views/Proponent/ProponentSubmitProp.vue')
 const CHECKLIST = read('../components/GadChecklist.vue')
+const CRITERION = read('../components/GadCriterionCard.vue')
+const QUESTION = read('../components/GadQuestionRow.vue')
 const DETAIL = read('../views/Proponent/ProponentDetiailedProp.vue')
 const REVIEW = read('../views/Ovc/OvcReviewProposal.vue')
 
@@ -33,11 +35,22 @@ test('the form sends and validates the checklist', () => {
 })
 
 test('the checklist component renders every item with a response, a score and a comment', () => {
-  assert.ok(CHECKLIST.includes('GAD_CHECKLIST_TITLE'), 'it shows the official title')
+  assert.ok(CHECKLIST.includes('GAD_CHECKLIST_TITLE'), 'it keeps the official title')
   assert.ok(CHECKLIST.includes('GAD_CRITERIA'), 'it renders every criterion')
-  assert.ok(CHECKLIST.includes('v-model="model.responses[item.key]"'), 'the No/Partly/Yes controls')
-  assert.ok(CHECKLIST.includes('v-model="model.comments[item.key]"'), 'a comment per item')
+  assert.ok(CHECKLIST.includes('GadCriterionCard'), 'each category has its own card')
+  assert.ok(CHECKLIST.includes('model.responses'), 'the No/Partly/Yes state')
+  assert.ok(CHECKLIST.includes('model.comments'), 'a comment per item')
   assert.ok(CHECKLIST.includes('GadInterpretationTable'), 'it shows the interpretation table')
+
+  assert.ok(CRITERION.includes('GadQuestionRow'), 'every criterion renders its questions')
+  assert.ok(CRITERION.includes(':score="subtotal"'), 'the card receives its subtotal')
+
+  assert.ok(QUESTION.includes('GAD_RESPONSE_OPTIONS'), 'the three answers come from the shared config')
+  assert.ok(QUESTION.includes('gadItemMaxScore'), 'the maximum comes from the item scale')
+  assert.ok(QUESTION.includes("emit('update:comment'"), 'each question writes its own comment')
+  assert.ok(QUESTION.includes('Comments / gender issues identified'), 'the comments label')
+  assert.ok(QUESTION.includes('Add a short note...'), 'the comments placeholder')
+  assert.ok(QUESTION.includes("emit('clear')"), 'the Clear action')
 })
 
 test('the reviewer and detail views show the completed checklist read-only', () => {

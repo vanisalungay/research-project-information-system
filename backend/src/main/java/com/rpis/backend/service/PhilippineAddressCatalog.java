@@ -214,13 +214,22 @@ public final class PhilippineAddressCatalog {
             }
         }
 
-        // Neither area level answered: only a city that belongs to no province and
-        // no district (City of Isabela, City of Cotabato) is complete that way.
-        if (provinceCode == null && districtCode == null
-                && !isIndependentCity(regionCode, municipality)) {
-            return regionsWithProvinces.contains(regionCode)
-                    ? "Province is required for the address."
-                    : "District is required for the address.";
+        // Section 01 of the Proposal Form no longer asks for a District, so a
+        // province-less request is completed from the city itself: in NCR the PSGC
+        // records the city's district, and an independent city (City of Isabela,
+        // City of Cotabato) belongs to neither level. A region with provinces still
+        // requires the province unless the city is independent.
+        if (provinceCode == null && districtCode == null) {
+            City city = findCity(regionCode, municipality);
+            if (city == null) {
+                return regionsWithProvinces.contains(regionCode)
+                        ? "Province is required for the address."
+                        : "Municipality / city \"" + trimToEmpty(municipality)
+                                + "\" does not belong to " + regionName + ".";
+            }
+            if (regionsWithProvinces.contains(regionCode) && city.provinceCode() != null) {
+                return "Province is required for the address.";
+            }
         }
 
         City city = findCity(regionCode, municipality);

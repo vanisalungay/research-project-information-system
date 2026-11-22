@@ -41,8 +41,15 @@
         <div class="banner-content">
           <strong>Proposal is incomplete. Please go back and fill in the missing fields.</strong>
           <ul>
-            <li v-for="(err, i) in validationErrors" :key="i">{{ err }}</li>
+            <li v-for="(err, i) in validationErrors" :key="i">
+              <button type="button" class="validation-link" @click="emit('reviewMissing')">
+                {{ err }}
+              </button>
+            </li>
           </ul>
+          <button type="button" class="validation-review-btn" @click="emit('reviewMissing')">
+            Open the incomplete sections
+          </button>
         </div>
       </div>
 
@@ -186,12 +193,7 @@
 
       <!-- FOOTER (only show when not submitting/submitted) -->
       <footer v-if="!submitting && !submitted" class="modal-footer">
-        <button class="btn-secondary" @click="goBack" :disabled="submitting">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back
-        </button>
+        <BackButton :navigate="false" @click="goBack" :disabled="submitting" />
         <div class="footer-right">
           <button class="btn-outline" @click="saveAsDraftLocal" :disabled="submitting">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -221,6 +223,7 @@
 import { ref, computed, watch } from 'vue'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import {
@@ -230,6 +233,7 @@ import {
   loadCitiesMunicipalities,
 } from '@/utils/philippineLocations'
 import { validateContact } from '@/utils/contactDetails'
+import { siteNeedsProvince as provinceNeededForSite } from '@/utils/siteLocations'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
 import {
   technologyMapKey,
@@ -291,7 +295,7 @@ const props = defineProps({
     default: null
   }
 })
-const emit = defineEmits(['update:modelValue', 'back', 'savedraft', 'goToStep'])
+const emit = defineEmits(['update:modelValue', 'back', 'savedraft', 'goToStep', 'reviewMissing'])
 
 const userStore = useUserDataStore()
 
@@ -578,26 +582,28 @@ const serializeSixPs = (expectedOutputs) => {
 // (City of Isabela, City of Cotabato) apart from an address that is simply
 // missing its province.
 const citiesMunicipalities = ref([])
-const citiesRead = ref(false)
+const psgcRead = ref(false)
 
 watch(
   () => props.modelValue,
   async (open) => {
-    if (!open || citiesRead.value) return
+    if (!open || psgcRead.value) return
     try {
       citiesMunicipalities.value = await loadCitiesMunicipalities()
     } catch (err) {
-      // The dataset ships with the app; if it cannot be read, the province /
-      // district rule is left to step 1 and to the backend instead of blocking a
-      // valid address here.
+      // The dataset ships with the app; if it cannot be read, the province rule
+      // is left to step 1 and to the backend instead of blocking a valid site here.
       console.error('Failed to load the PSGC cities / municipalities:', err?.message)
       citiesMunicipalities.value = []
     } finally {
-      citiesRead.value = true
+      psgcRead.value = true
     }
   },
   { immediate: true },
 )
+
+/** Province applicability for a site, from the shared pure rule. */
+const siteNeedsProvince = (site) => provinceNeededForSite(citiesMunicipalities.value, site)
 
 /**
  * The certification value to use: what the proponent typed in this session, else what a
@@ -646,14 +652,15 @@ const validationErrors = computed(() => {
     errs.push('Cooperating Agencies is missing.')
   }
 
-  // Sites
+  // Sites. District is optional, and Province only applies where the region has
+  // provinces (a city in NCR has none). The remaining location levels are required.
   if (!d.sites || !d.sites.length) {
     errs.push('No site of implementation provided.')
-  } else {
-    const siteFields = ['country', 'region', 'province', 'district', 'municipality', 'barangay']
-    if (d.sites.some(s => siteFields.some(f => isBlank(s[f])))) {
-      errs.push('Site of Implementation has incomplete fields.')
-    }
+  } else if (d.sites.some((site) =>
+    ['country', 'region', 'municipality', 'barangay'].some((field) => isBlank(site[field])) ||
+    (siteNeedsProvince(site) && isBlank(site.province))
+  )) {
+    errs.push('Site of Implementation has incomplete fields.')
   }
 
   if (isBlank(d.research_type)) errs.push('Research Type is not selected.')
@@ -720,11 +727,8 @@ const validationErrors = computed(() => {
   const personnelTime = validateTimeDevotedRows(d.personnel_requirements)
   if (!personnelTime.valid) errs.push(personnelTime.message)
 
-  // A file chosen in this session or a file already attached to the proposal (restored
-  // when a draft is reopened) both satisfy the requirement.
-  if (!d.line_item_budget_file && !d.budget_file_path && !d.budget_file_name) {
-    errs.push('Line-Item Budget file is missing.')
-  }
+  // Line-Item Budget (section 25) is optional: a proposal may be submitted without
+  // a budget file. A file the proponent did provide is still carried by the save path.
 
   // Certification & Endorsement (step 3). These are final-submission requirements only:
   // saving a draft never runs this check, so an incomplete certification does not block
@@ -785,12 +789,11 @@ const saveAsDraftLocal = async () => {
 const submitProposal = async () => {
   if (!confirmed.value) return
 
-  // Final completeness check
+  // Final completeness check. Send the user back to the details form with every
+  // incomplete section listed and clickable, instead of an alert that only counts
+  // them. The form keeps its entered values; only the view changes.
   if (validationErrors.value.length > 0) {
-    await showAlert(
-      `Your proposal has ${validationErrors.value.length} missing field(s). Please go back and complete all sections before submitting.`,
-      { type: 'warning', title: 'Incomplete Proposal' }
-    )
+    emit('reviewMissing')
     return
   }
 
@@ -1563,6 +1566,41 @@ async function linkEndorsementIfNeeded(proposalId) {
   color: #b91c1c;
   margin-bottom: 2px;
   line-height: 1.4;
+}
+
+/* Each missing item opens the details form, which then lists the incomplete
+   sections and highlights the field. */
+.validation-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #b91c1c;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.validation-link:hover,
+.validation-link:focus-visible {
+  color: #7f1d1d;
+}
+
+.validation-review-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #991b1b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.validation-review-btn:hover {
+  background: #fee2e2;
 }
 
 /* ===== SCROLLBAR ===== */

@@ -50,6 +50,9 @@
       <header class="dash-section-head">
         <span class="dash-section-icon" v-html="icons.proposals"></span>
         <h3 class="dash-section-title">PROPOSALS AWAITING OVCAF REVIEW</h3>
+        <div class="dash-section-actions">
+          <router-link class="end-btn is-link" to="/ovcaf/inbox">View all</router-link>
+        </div>
       </header>
 
       <div v-if="isLoading" class="loading-state">
@@ -68,7 +71,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="proposal in forReview" :key="proposal.id">
+            <tr v-for="proposal in forReviewPreview" :key="proposal.id">
               <td class="cell-title">{{ proposal.title }}</td>
               <td>{{ proposal.proponent }}</td>
               <td>
@@ -94,6 +97,9 @@
       <header class="dash-section-head">
         <span class="dash-section-icon" v-html="icons.funds"></span>
         <h3 class="dash-section-title">APPROVED PROPOSALS REQUESTING FUNDS</h3>
+        <div class="dash-section-actions">
+          <router-link class="end-btn is-link" to="/ovcaf/inbox">View all</router-link>
+        </div>
       </header>
 
       <div v-if="completed.length > 0" class="end-table-scroll">
@@ -107,7 +113,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="proposal in completed" :key="proposal.id">
+            <tr v-for="proposal in completedPreview" :key="proposal.id">
               <td class="cell-title">{{ proposal.title }}</td>
               <td>{{ proposal.proponent }}</td>
               <td>
@@ -127,14 +133,23 @@
 
       <p v-else class="dash-empty">No approved proposals requesting funding.</p>
     </section>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/ovcaf-notification"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import { latestProposalSnippets, sortProposalsNewestFirst } from '@/utils/dashboardProposals'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 
@@ -179,6 +194,15 @@ const stats = ref({
 })
 const isLoading = ref(true)
 
+// The two previews show the five latest records; the full arrays above remain the
+// source of the statistics and of the Inbox link.
+const forReviewPreview = computed(() =>
+  latestProposalSnippets(forReview.value, { dateField: 'updatedAt' }),
+)
+const completedPreview = computed(() =>
+  latestProposalSnippets(completed.value, { dateField: 'updatedAt' }),
+)
+
 /**
  * A proposal is OVCAF's only after the Office of the Chancellor recorded its final
  * approval and the issued Special Order. The status alone is not evidence (a record
@@ -211,24 +235,29 @@ const loadDashboard = async () => {
     // Only proposals with a completed OC approval + SO that still await OVCAF's
     // budget decision can be reviewed. Earlier-stage records (REC_APPROVED,
     // FOR_OC_APPROVAL) are not yet OVCAF's to act on.
-    forReview.value = data
+    // Keep the raw timestamps so the preview and the Inbox view read newest first.
+    forReview.value = sortProposalsNewestFirst(data
       .filter(p => p.status === 'FOR_OVCAF_APPROVAL')
       .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Project',
         proponent: p.projectLeader || 'Unknown Proponent',
-        status: p.status
-      }))
+        status: p.status,
+        updatedAt: p.updatedAt,
+        createdAt: p.createdAt
+      })), { dateField: 'updatedAt' })
 
     // Approved/funding proposals
-    completed.value = data
+    completed.value = sortProposalsNewestFirst(data
       .filter(p => p.status === 'APPROVED' || p.status === 'READY_FOR_RELEASE' || p.status === 'RELEASED')
       .map(p => ({
         id: p.id,
         title: p.projectTitle || 'Untitled Project',
         proponent: p.projectLeader || 'Unknown Proponent',
-        status: p.status
-      }))
+        status: p.status,
+        updatedAt: p.updatedAt,
+        createdAt: p.createdAt
+      })), { dateField: 'updatedAt' })
 
   } catch (error) {
     console.error('Failed to load OVCAF metrics:', error)

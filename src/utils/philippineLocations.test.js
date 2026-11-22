@@ -464,24 +464,25 @@ test('the address is validated without a country, which is never asked for', () 
   assert.equal(validateAddress({ country: 'Philippines', ...complete }, { hasProvinces: true }), '')
 })
 
-test('a region without provinces (NCR) needs a district instead', () => {
+test('a region without provinces (NCR) is complete without a district', () => {
   const ncr = {
     country: 'Philippines',
     region: 'National Capital Region',
     province: '',
-    district: 'First District',
+    district: '',
     municipality: 'City of Manila',
     barangay: 'Barangay 1',
   }
-  assert.equal(validateAddress(ncr, { hasProvinces: false, hasDistricts: true }), '')
-  assert.match(
-    validateAddress({ ...ncr, district: '' }, { hasProvinces: false, hasDistricts: true }),
-    /district/i,
-  )
-  // A province-less region that also has no districts only needs the city.
+  // Section 01 no longer asks for a District. The city completes the address,
+  // whether or not a legacy record still carries a district value.
+  assert.equal(validateAddress(ncr, { hasProvinces: false }), '')
   assert.equal(
-    validateAddress({ ...ncr, district: '' }, { hasProvinces: false, hasDistricts: false }),
+    validateAddress({ ...ncr, district: 'First District' }, { hasProvinces: false }),
     '',
+  )
+  assert.match(
+    validateAddress({ ...ncr, municipality: '' }, { hasProvinces: false }),
+    /municipality \/ city/i,
   )
 })
 

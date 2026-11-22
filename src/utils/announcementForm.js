@@ -81,7 +81,7 @@ export function normalizeFundingProgram(value) {
  * the university supplies that program's official letter.
  */
 export const FUNDING_PROGRAMS = [
-  { key: 'IFP', label: 'Internally Funded Project (IFP)', letterAvailable: true },
+  { key: 'IFP', label: 'Internally Funded Proposal', letterAvailable: true },
 ]
 
 /**

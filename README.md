@@ -196,7 +196,7 @@ export PGHOST=127.0.0.1 PGUSER=postgres PGDATABASE=rpis_dev
 ```
 
 <details>
-<summary>Migration order (49 scripts)</summary>
+<summary>Migration order (61 scripts)</summary>
 
 ```bash
 for f in \
@@ -214,6 +214,9 @@ for f in \
   migration-add-field-level-remarks.sql \
   migration-add-notification-fields.sql \
   migration-add-notification-preferences.sql \
+  migration-add-notification-preferences-configured.sql \
+  migration-add-notification-dedupe-key.sql \
+  migration-add-revision-deadline-index.sql \
   migration-add-priority-agendas.sql \
   migration-add-proposal-address-contact.sql \
   migration-add-proposal-announcement-link.sql \
@@ -236,19 +239,28 @@ for f in \
   migration-rename-dean-role.sql \
   migration-add-must-change-password.sql \
   migration-add-token-version.sql \
+  migration-add-user-roles.sql \
   migration-add-dean-assignments.sql \
+  migration-fix-institutional-email-domain.sql \
   migration-add-gad-checklist.sql \
   migration-add-activity-logs.sql \
   migration-add-endorsement-document-code-unique.sql \
+  migration-add-endorsement-letter-versions.sql \
   migration-add-proposal-needs-budget.sql \
   migration-add-performance-indexes.sql \
   migration-01-db-audit-integrity.sql \
   migration-02-db-audit-dedupe.sql \
   migration-03-db-audit-status-history.sql \
+  migration-add-proposal-submitted-at.sql \
+  migration-add-proposal-endorsed-at.sql \
   migration-norm-01-relational-integrity.sql \
   migration-norm-02-relational-observability.sql \
   migration-norm-03-fk-consolidation.sql \
-  migration-norm-04-proposal-status-fks.sql
+  migration-norm-04-proposal-status-fks.sql \
+  migration-widen-notification-type-check.sql \
+  migration-add-notification-recipient-role.sql \
+  migration-widen-activity-log-checks.sql \
+  migration-add-proposal-return-kind.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"

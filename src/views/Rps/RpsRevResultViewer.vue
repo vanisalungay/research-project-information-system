@@ -915,15 +915,6 @@ export default {
   margin-bottom: 16px;
 }
 
-.back-btn{
-  border:none;
-  padding:10px 18px;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-}
-
 .header-title{
   display:flex;
   justify-content:space-between;

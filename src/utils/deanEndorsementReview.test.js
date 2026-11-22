@@ -79,3 +79,88 @@ test('the page still explains what blocks an approval', () => {
   assert.match(PAGE, /loadAccountSignatures\(\)/, 'the saved signature must be checked')
   assert.match(PAGE, /blockedReason/, 'the blocked reason must reach the template')
 })
+
+test('the review uses the full content width and keeps the audit beside the decision', () => {
+  // A 1040px cap left most of a wide screen empty and stacked the audit history under the
+  // working area, pushing the decision out of sight. The fluid width and the two-column
+  // layout are what use the screen; the columns collapse to one below 980px in the CSS.
+  assert.match(
+    PAGE,
+    /class="end-page end-page--fluid end-page--review"/,
+    'the review page must keep the full-width modifier and its own layout hook',
+  )
+  assert.match(PAGE, /class="end-review-layout"/, 'the decision and the audit share one layout')
+  assert.equal(
+    (PAGE.match(/class="end-review-stack"/g) || []).length,
+    2,
+    'both columns of the review layout must exist',
+  )
+
+  const styles = readFileSync(
+    fileURLToPath(new URL('../assets/endorsement.css', import.meta.url)),
+    'utf8',
+  )
+  assert.match(
+    styles,
+    /\.end-page--review \.end-review-layout\s*\{[^}]*grid-template-columns:/,
+    'the review layout must be a two-column grid',
+  )
+  assert.match(
+    styles,
+    /@media \(max-width: 980px\) \{\s*\.end-page--review \.end-review-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/,
+    'the columns must collapse to one on a narrow screen',
+  )
+})
+
+test('an issued letter lists every preserved version and each one can be opened', () => {
+  // A reissue overwrote the only copy of the letter. The page must now show the preserved
+  // versions, flag the current one, and let the Dean open each version it lists.
+  assert.match(
+    PAGE,
+    /fetchEndorsementLetterVersion,\s*fetchEndorsementLetterVersions,/,
+    'the version endpoints must be wired in',
+  )
+  assert.match(PAGE, /const letterVersions = ref\(\[\]\)/, 'versions must be held in state')
+  assert.match(
+    PAGE,
+    /fetchEndorsementLetterVersions\(route\.params\.id\)/,
+    'the versions must load with the request',
+  )
+  assert.match(PAGE, /class="end-version-history"/, 'the versions need their own section')
+  assert.match(
+    PAGE,
+    /v-for="version in letterVersions"[\s\S]*?version\.version/,
+    'each version must be listed with its number',
+  )
+  assert.match(
+    PAGE,
+    /v-if="version\.current" class="end-version-badge">Current</,
+    'the current version must be flagged',
+  )
+  assert.match(
+    PAGE,
+    /v-else class="end-version-superseded">Superseded</,
+    'older versions must be labelled superseded',
+  )
+  assert.match(
+    PAGE,
+    /@click="previewVersion\(version\)"/,
+    'a preserved version must be viewable',
+  )
+  assert.match(
+    PAGE,
+    /@click="downloadVersion\(version\)"/,
+    'a preserved version must be downloadable',
+  )
+  assert.match(
+    PAGE,
+    /await fetchEndorsementLetterVersion\(\s*request\.value\.id,\s*version\.id/,
+    'the per-version preview and download must fetch that exact version',
+  )
+  // The list must refresh after a reissue, or the Dean would keep seeing the old versions.
+  assert.match(
+    PAGE,
+    /request\.value = await reissueEndorsementLetter[\s\S]*?letterVersions\.value =\s*await fetchEndorsementLetterVersions/,
+    'a reissue must reload the version history',
+  )
+})

@@ -5,8 +5,8 @@
       <div>
         <h2>Activity Log</h2>
         <p class="subtitle">
-          Monitor and review the history of activities performed in the system by your
-          administrator account.
+          Review the administrative actions you have performed across RPS Administration -
+          user accounts, Dean role management, priority agendas and calls for proposal.
         </p>
       </div>
       <div class="header-actions">
@@ -76,8 +76,9 @@
         No activity matches the current search and filters. Try clearing them.
       </p>
       <p v-else>
-        Actions you perform with this administrator account - creating an account, updating a
-        call for proposal, changing your password - are recorded here as they happen.
+        Actions you perform with this administrator account - creating or updating an account,
+        managing a Dean, changing a framework or agenda, updating a call for proposal - are
+        recorded here as they happen.
       </p>
     </div>
 

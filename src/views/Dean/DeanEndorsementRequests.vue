@@ -48,7 +48,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="request in requests" :key="request.id">
+            <tr v-for="request in pagedRequests" :key="request.id">
               <td>{{ request.referenceNumber }}</td>
               <td>
                 {{ request.proponentName }}
@@ -78,12 +78,35 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="requests.length" class="end-pagination">
+        <span class="end-muted">{{ rangeLabel }}</span>
+        <div class="end-pager">
+          <button
+            type="button"
+            class="end-page-btn"
+            :disabled="page <= 1"
+            @click="goToPage(page - 1)"
+          >
+            Previous
+          </button>
+          <span class="end-muted">Page {{ page }} of {{ totalPages }}</span>
+          <button
+            type="button"
+            class="end-page-btn"
+            :disabled="page >= totalPages"
+            @click="goToPage(page + 1)"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </template>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import '@/assets/endorsement.css'
 import {
   ENDORSEMENT_FILTERS,
@@ -101,9 +124,34 @@ const loading = ref(true)
 const error = ref('')
 const statusFilter = ref('')
 
+// The list endpoint returns every request in the Dean's scope, so the table pages it
+// locally. The page size matches the other administrator/end-user tables.
+const PAGE_SIZE = 10
+const page = ref(1)
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(requests.value.length / PAGE_SIZE)),
+)
+const pagedRequests = computed(() => {
+  const start = (page.value - 1) * PAGE_SIZE
+  return requests.value.slice(start, start + PAGE_SIZE)
+})
+const rangeLabel = computed(() => {
+  if (!requests.value.length) return 'No requests'
+  const first = (page.value - 1) * PAGE_SIZE + 1
+  const last = Math.min(page.value * PAGE_SIZE, requests.value.length)
+  return `Showing ${first}–${last} of ${requests.value.length}`
+})
+
+function goToPage(next) {
+  if (next < 1 || next > totalPages.value) return
+  page.value = next
+}
+
 async function load() {
   loading.value = true
   error.value = ''
+  // A filter change starts at the first page of the new result set.
+  page.value = 1
   try {
     requests.value = await fetchEndorsementRequests({ status: statusFilter.value })
   } catch (err) {

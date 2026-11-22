@@ -14,6 +14,7 @@ import {
   GAD_ITEMS,
   GAD_ITEM_COUNT,
   GAD_MAX_SCORE,
+  GAD_SCORE_UI_INSTRUCTION,
   emptyGadChecklist,
   formatGadScore,
   gadChecklistFromSaved,
@@ -22,7 +23,9 @@ import {
   gadChecklistSummary,
   gadChecklistValidation,
   gadInterpretation,
+  gadItemMaxScore,
   gadItemScore,
+  gadScoreValueLabel,
 } from './gadChecklist.js'
 
 const allOf = (response) => Object.fromEntries(GAD_ITEMS.map((item) => [item.key, response]))
@@ -186,4 +189,30 @@ test('scores are formatted with two decimals everywhere', () => {
   assert.equal(formatGadScore(0), '0.00')
   assert.equal(formatGadScore(20), '20.00')
   assert.equal(formatGadScore(undefined), '0.00')
+})
+
+test('the score buttons use each item\'s configured scale, not a fixed 0/0.5/1', () => {
+  // HALF items: 0 / 0.5 / 1.
+  assert.equal(gadItemMaxScore('1.1'), 1)
+  // FULL items: 0 / 1 / 2.
+  assert.equal(gadItemMaxScore('2.0'), 2)
+  // THIRD / THIRD_66 items: 0 / 0.33 / 0.67 or 0.66.
+  assert.equal(gadItemMaxScore('6.1'), 0.67)
+  assert.equal(gadItemMaxScore('6.3'), 0.66)
+  assert.equal(gadItemMaxScore('unknown'), 0)
+
+  assert.equal(gadScoreValueLabel(0), '0')
+  assert.equal(gadScoreValueLabel(0.5), '0.5')
+  assert.equal(gadScoreValueLabel(1), '1')
+  assert.equal(gadScoreValueLabel(2), '2')
+  assert.equal(gadScoreValueLabel(0.33), '0.33')
+  assert.equal(gadScoreValueLabel(0.67), '0.67')
+})
+
+test('the instruction banner uses the reference wording', () => {
+  assert.equal(
+    GAD_SCORE_UI_INSTRUCTION,
+    'Use the comments box to explain your answer and note any gender issues you identified. ' +
+      'Points for each answer are shown on the buttons.',
+  )
 })

@@ -1,10 +1,23 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <button class="back" @click="$router.push('/rps-revision-requests')">← Back to Revision Requests</button>
-      <h2>Forward Revision Request</h2>
-      <p class="subtitle">Review the returning office's remarks, set the deadline, and forward to the proponent.</p>
-    </div>
+    <!-- The same proposal header every other proposal page uses. This page's action
+         (setting the deadline and forwarding) stays in the form below. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      :show-download="false"
+      @back="router.push('/rps-revision-requests')"
+    />
+    <p class="subtitle">
+      <template v-if="isOvcrigeRejection">
+        OVCRIGE rejected this proposal and returned it to ORPS. Review the reason and forward the
+        rejection to the proponent.
+      </template>
+      <template v-else>
+        Review the returning office's remarks, set the deadline, and forward to the proponent.
+      </template>
+    </p>
 
     <p v-if="loading" class="muted">Loading...</p>
     <p v-else-if="error" class="error">{{ error }}</p>
@@ -30,7 +43,7 @@
               <div><label>Status</label><span>{{ proposalStatusLabel(proposal.status) || '—' }}</span></div>
             </div>
             <div class="remarks">
-              <label>Revision remarks</label>
+              <label>{{ isOvcrigeRejection ? 'Rejection remarks' : 'Revision remarks' }}</label>
               <p>{{ proposal.returnRemarks || proposal.remarks || 'No remarks provided.' }}</p>
             </div>
           </div>
@@ -63,11 +76,11 @@
             </div>
           </div>
 
-          <div class="card">
+          <div v-if="!isOvcrigeRejection" class="card">
             <SectionRemarksEditor v-model="sectionRemarks" />
           </div>
 
-          <div class="card">
+          <div v-if="!isOvcrigeRejection" class="card">
             <h3>Set Revision Deadline</h3>
             <label class="field-label">Deadline for resubmission</label>
             <input type="date" v-model="deadline" />
@@ -75,22 +88,48 @@
           </div>
 
           <div class="card">
-            <h3>RPS Note (optional)</h3>
-            <textarea v-model="notes" placeholder="Add any additional instructions for the proponent..."></textarea>
+            <h3>{{ isOvcrigeRejection ? 'ORPS Note (optional)' : 'RPS Note (optional)' }}</h3>
+            <textarea
+              v-model="notes"
+              :placeholder="isOvcrigeRejection
+                ? 'Add any note that should accompany the rejection sent to the proponent...'
+                : 'Add any additional instructions for the proponent...'"
+            ></textarea>
           </div>
 
-          <button class="btn btn-primary" :disabled="submitting || !deadline" @click="forward">
+          <button
+            v-if="isOvcrigeRejection"
+            class="btn btn-danger"
+            :disabled="submitting"
+            @click="finalizeRejection"
+          >
+            {{ submitting ? 'Forwarding...' : 'Forward Rejection to Proponent' }}
+          </button>
+          <button
+            v-else
+            class="btn btn-primary"
+            :disabled="submitting || !deadline"
+            @click="forward"
+          >
             {{ submitting ? 'Forwarding...' : 'Forward to Proponent' }}
           </button>
           <p v-if="success" class="success">{{ success }}</p>
           <p v-if="submitError" class="error">{{ submitError }}</p>
         </div>
 
-        <div class="side">
-          <SubmissionHistory :proposal-id="proposal.id" />
-        </div>
       </div>
+
+      <!-- Full width: a 360px side column was what made the history feel crammed. -->
+      <SubmissionHistory :proposal-id="proposal.id" />
     </template>
+
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
   </div>
 </template>
 
@@ -98,6 +137,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
@@ -108,6 +150,7 @@ import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserDataStore()
+const { dialogState, showConfirm } = useDialog()
 
 const proposal = ref({})
 const loading = ref(false)
@@ -117,6 +160,17 @@ const notes = ref('')
 const submitting = ref(false)
 const success = ref('')
 const submitError = ref('')
+
+/**
+ * OVCRIGE rejecting a proposal sends it here as RETURNED_TO_RPS with
+ * return_kind=REJECTION. ORPS completes the rejection and is the office that informs
+ * the proponent; the revision-forward form is not shown for this kind of return.
+ */
+const isOvcrigeRejection = computed(
+  () =>
+    String(proposal.value.status || '').toUpperCase() === 'RETURNED_TO_RPS' &&
+    String(proposal.value.returnKind || '').toUpperCase() === 'REJECTION',
+)
 
 // RPS's own per-section remarks, plus the remarks already recorded by the
 // reviewing office that returned the proposal.
@@ -198,6 +252,38 @@ async function forward() {
   }
 }
 
+async function finalizeRejection() {
+  if (submitting.value) return
+  const confirmed = await showConfirm(
+    `Forward the rejection of "${proposal.value.projectTitle || 'this proposal'}" to the ` +
+      'proponent? The proposal will be closed as rejected.',
+    {
+      title: 'Forward Rejection to Proponent',
+      type: 'danger',
+      confirmText: 'Forward Rejection',
+    },
+  )
+  if (!confirmed) return
+  submitting.value = true
+  submitError.value = ''
+  success.value = ''
+  try {
+    await api.put(`/api/proposals/${proposal.value.id}/finalize-rejection`, {
+      remarks: notes.value || null,
+    })
+    success.value = 'Rejection forwarded to the proponent.'
+    setTimeout(() => router.push('/rps-revision-requests'), 1200)
+  } catch (err) {
+    console.error(err)
+    submitError.value =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      'Failed to forward the rejection.'
+  } finally {
+    submitting.value = false
+  }
+}
+
 onMounted(fetchProposal)
 
 // Vue Router reuses this component when only the id changes, so the route id is watched:
@@ -215,13 +301,8 @@ watch(() => route.params.id, () => fetchProposal())
   font-size: 22px;
   color: #1f2937;
 }
-.back {
-  background: none;
-  border: none;
-  color: #4f46e5;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 0;
+.page-header > .back-button {
+  margin-bottom: 8px;
 }
 .subtitle {
   color: #6b7280;
@@ -230,7 +311,7 @@ watch(() => route.params.id, () => fetchProposal())
 }
 .layout {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -353,8 +434,5 @@ textarea {
 }
 .muted {
   color: #6b7280;
-}
-.side {
-  min-width: 0;
 }
 </style>

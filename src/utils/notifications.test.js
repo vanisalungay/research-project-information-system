@@ -150,7 +150,15 @@ test('the sidebar toggle is the only collapse mechanism and keeps the route stat
 test('the unread count is refreshed from the shared store', () => {
   assert.match(LAYOUT, /useNotificationStore/)
   assert.match(LAYOUT, /notificationStore\.refresh\(userId\)/)
-  assert.match(LAYOUT, /route\.fullPath/)
+})
+
+test('the shell opens the live stream for the signed-in account and closes it on logout', () => {
+  assert.match(LAYOUT, /notificationStore\.connect\(userId\)/)
+  assert.match(LAYOUT, /notificationStore\.disconnect\(\)/)
+  const STORE = read('../stores/notifications.js')
+  assert.match(STORE, /createNotificationStream/)
+  assert.match(STORE, /notifications-changed/)
+  assert.match(STORE, /streamState/)
 })
 
 /* ===== Header ===== */
@@ -186,12 +194,14 @@ test('the header logo is the system favicon, not a drawn mark', () => {
   assert.ok(FAVICON.readUInt16LE(4) >= 1)
 })
 
-test('the notification control shows real data and opens the existing page', () => {
+test('the notification control shows the real unread count and opens the existing page', () => {
   assert.match(HEADER, /const openNotifications = \(\) => \{\s*router\.push\('\/notifications'\)/)
   assert.match(HEADER, /v-if="notificationStore\.hasUnread"/)
   assert.match(HEADER, /notificationStore\.unreadCount/)
-  // No hardcoded badge: the dot is the only indicator and it is conditional.
-  assert.doesNotMatch(HEADER, /class="notif-dot"[^>]*>\s*\d/)
+  assert.match(HEADER, /unreadBadgeLabel\(notificationStore\.unreadCount\)/)
+  assert.match(HEADER, /class="notif-badge"/)
+  // No hardcoded number: the badge is computed and capped by the shared rule.
+  assert.doesNotMatch(HEADER, /class="notif-badge"[^>]*>\s*\d/)
 })
 
 test('the account control shows the signed-in user and keeps the dropdown', () => {

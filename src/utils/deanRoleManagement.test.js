@@ -4,10 +4,10 @@
  * The Dean role has a dedicated page (Dean Role Management) and the per-row Manage Dean
  * Role action on User Accounts, both reusing the existing Dean screen and endpoint.
  *
- * Pinned here: User Accounts offers Manage Dean Role beside Reset Password on a Dean's
- * row, the Dean account is still listed there, the dedicated page is an administrator page
- * in the sidebar, it is role-restricted on both the route and the backend, and it reuses
- * the existing Dean screen and endpoint instead of reimplementing them.
+ * Pinned here: the Dean Role Management table has exactly one management action per active
+ * appointment - Manage Dean - which opens the modal with the Dean's details and Replace Dean.
+ * Revocation is automatic on replacement; the old separate Replace Dean / View Dean Details /
+ * Revoke buttons are gone.
  *
  * Run with: npm test
  */
@@ -23,15 +23,15 @@ const NAV = read('../components/NavMenu.vue')
 const ROUTER = read('../router/index.js')
 const USERS = read('../views/Admin/UserAccounts.vue')
 const PAGE = read('../views/Admin/DeanRoleManagement.vue')
-const MODAL = read('../views/Admin/DeanAccountsModal.vue')
 const CREATE_MODAL = read('../views/Admin/CreateUserModal.vue')
-const REPLACE_MODAL = read('../views/Admin/ReplaceDeanModal.vue')
+const MANAGE_MODAL = read('../views/Admin/ManageDeanModal.vue')
+const FLOW = read('../views/Admin/ManageDeanFlow.vue')
 const SECURITY = read('../../backend/src/main/java/com/rpis/backend/config/SecurityConfig.java')
 
 test('the Manage Dean Role action is on User Accounts, beside its other actions', () => {
   assert.ok(USERS.includes('Manage Dean Role'), 'the Dean action is offered on the row')
   assert.ok(USERS.includes('@click="openDeanModal(user)"'), 'and opens the Dean screen')
-  assert.ok(USERS.includes('ReplaceDeanModal'), 'the screen it opens is the replacement screen')
+  assert.ok(USERS.includes('ManageDeanFlow'), 'the screen it opens is the shared Manage Dean flow')
   assert.ok(USERS.includes('dean-manage-btn'), 'with its own button style')
   // Reset Password is untouched and still offered for every row, the Dean's included.
   assert.ok(USERS.includes('Reset Password'), 'Reset Password stays')
@@ -97,21 +97,27 @@ test('the page lists Dean appointments (current and former) and reuses existing 
     'and the required description',
   )
 
-  // The header offers account creation through the existing form; the replacement action
-  // lives on every ACTIVE row.
-  assert.ok(PAGE.includes('+ Create Dean Account'), 'the header offers Create Dean Account')
+  // The header offers account creation through the existing form.
+  assert.ok(PAGE.includes('Create Dean account'), 'the header offers Create Dean account')
   assert.ok(!PAGE.includes('Refresh'), 'the Refresh button is removed')
-  assert.ok(PAGE.includes('Manage Dean Role'), 'an ACTIVE row offers Manage Dean Role')
-  assert.ok(PAGE.includes('openManage'), 'which opens the replacement screen')
-  assert.ok(PAGE.includes('ReplaceDeanModal'), 'the replacement screen is reused')
+
+  // One management action per ACTIVE appointment.
+  assert.ok(PAGE.includes('class="manage-btn"'), 'an ACTIVE row offers the Manage button')
+  assert.ok(PAGE.includes('@click="openManage(row)"'), 'which opens the modal')
+  assert.ok(PAGE.includes('ManageDeanFlow'), 'the modal is the shared Manage Dean flow')
+  assert.ok(!PAGE.includes('ReplaceDeanModal'), 'the old replacement screen is not in the table')
+  assert.ok(!PAGE.includes('View Dean Details'), 'the old details action is removed')
+  assert.ok(!PAGE.includes('>Replace Dean<') && !PAGE.includes('>Revoke<'),
+    'the old per-row actions are not in the table')
+
+  // Revocation is automatic on replacement: the page has no standalone Revoke action.
+  assert.ok(!PAGE.includes('@revoke='), 'the modal has no revoke action')
+  assert.ok(!PAGE.includes('ConfirmDialog'), 'no revoke confirmation dialog remains')
+  assert.ok(!PAGE.includes('api.delete('), 'the page never calls the standalone revoke endpoint')
 
   // The history and the replacement come from the Dean management API, never the
   // account-creation endpoint.
   assert.ok(PAGE.includes("/api/users/deans/assignments"), 'the history is read from the API')
-  assert.ok(
-    !PAGE.includes('/api/users/admin/create'),
-    'the page does not call the account-creation endpoint itself',
-  )
 
   // The account is created by the existing form, through the existing endpoint.
   assert.ok(
@@ -129,64 +135,192 @@ test('the page lists Dean appointments (current and former) and reuses existing 
   assert.ok(CREATE_MODAL.includes('cred-password'), 'and displays the temporary password')
   assert.ok(CREATE_MODAL.includes('RPIS_COLLEGES'), 'with the real college list')
 
-  // The table shows the current and former appointments with the required columns.
-  for (const column of ['Dean Name', 'Email', 'Assigned College / Department', 'Designation',
-    'Status', 'Date Assigned', 'Date Revoked', 'Actions']) {
-    assert.ok(PAGE.includes(`<th>${column}</th>`), `the table shows ${column}`)
+  // The compact table shows the current and former appointments with the seven
+  // reference columns, in order.
+  const headers = ['DEAN', 'COLLEGE / DEPARTMENT', 'DESIGNATION', 'STATUS', 'ASSIGNED',
+    'REVOKED', 'ACTION']
+  let lastHeader = -1
+  for (const column of headers) {
+    const columnAt = PAGE.indexOf(`>${column}</th>`)
+    assert.ok(columnAt > -1, `the table shows ${column}`)
+    assert.ok(columnAt > lastHeader, `${column} keeps the reference column order`)
+    lastHeader = columnAt
   }
-  assert.ok(PAGE.includes('View Dean Details'), 'the details action stays on every row')
   assert.ok(
     PAGE.includes("{ value: 'ACTIVE'") && PAGE.includes("{ value: 'REVOKED'") &&
       PAGE.includes("{ value: 'ALL'"),
     'the Active / Revoked / All filters are offered',
   )
   assert.ok(PAGE.includes('setFilter'), 'and switch the list')
-  assert.ok(PAGE.includes('No Dean accounts yet'), 'an empty state is provided')
+  assert.ok(PAGE.includes('No matching Dean accounts found.'),
+    'a search empty state is provided')
+  assert.ok(PAGE.includes('No revoked Dean accounts.'), 'and a revoked empty state')
   assert.ok(PAGE.includes('Loading Dean assignments'), 'a loading state is provided')
   assert.ok(PAGE.includes('could not be loaded'), 'an error state is provided')
   assert.ok(PAGE.includes('success-banner'), 'and success feedback')
 })
 
-test('the Dean Role Management form offers the five colleges under User Role Authority', () => {
+test('the Dean Role Management form scrolls its own fields and offers the five colleges', () => {
   assert.match(PAGE, /college-authority/, 'the page opens the form in college-authority mode')
-  assert.match(CREATE_MODAL, /v-if="collegeAuthority"/, 'the form has a college-authority control')
-  assert.match(CREATE_MODAL, /id="collegeAuthority"/, 'a dedicated college control exists')
+  assert.match(CREATE_MODAL, /const deanMode = computed\(\(\) => props\.collegeAuthority\)/,
+    'the Dean presentation is selected by the college-authority mode')
+  assert.match(CREATE_MODAL, /id="deanCollege"/, 'a dedicated Assigned college control exists')
   assert.match(
     CREATE_MODAL,
-    /<option value="" disabled>Select College<\/option>/,
-    'with a Select College placeholder',
+    /<option value="" disabled>Select the college this Dean endorses for<\/option>/,
+    'with the required placeholder',
   )
   assert.match(CREATE_MODAL, /v-for="college in colleges"/, 'the options are the colleges')
   assert.match(CREATE_MODAL, /RPIS_COLLEGES/, 'reusing the one college list')
   // The college is written to the field the backend DTO stores, never to the role.
   assert.match(
     CREATE_MODAL,
-    /id="collegeAuthority"[\s\S]*?v-model="user\.assignedCollege"/,
+    /id="deanCollege"[\s\S]*?v-model="user\.assignedCollege"/,
     'the selected college is bound to assignedCollege',
   )
+  // The role is fixed to the Dean account this page creates.
+  assert.match(CREATE_MODAL, /id="deanRole"[\s\S]*?:value="deanRoleLabel"[\s\S]*?readonly/,
+    'the Dean role is displayed as a fixed, read-only value')
   // The standard role dropdown (the User Accounts form) keeps the seven system roles.
   assert.match(CREATE_MODAL, /<option value="RPS_STAFF">/, 'the standard role list is intact')
 })
 
-test('the replacement screen limits candidates to the faculty of the managed unit', () => {
-  assert.match(
-    REPLACE_MODAL,
-    /No eligible replacement Dean found/,
-    'a clear empty state is offered when nobody is eligible',
+test('Manage Dean is the one management action, and it opens the modal', () => {
+  // The modal is opened for the clicked appointment and shows that Dean's real data.
+  assert.match(PAGE, /openManage\(assignment\)/)
+  assert.match(PAGE, /managedAssignment\.value = assignment/)
+  assert.match(PAGE, /<ManageDeanFlow[\s\S]*?:assignment="managedAssignment"/)
+  assert.match(PAGE, /@changed="onDeanReplaced"/)
+  assert.ok(!PAGE.includes('@revoke='), 'replacement is the only management action')
+
+  // Replace Dean hands off, through the shared flow, to the Create Dean Account form
+  // locked to the appointment's college and identified by the appointment being replaced.
+  assert.match(FLOW, /<ManageDeanModal[\s\S]*?:assignment="assignment"/)
+  assert.match(FLOW, /:initial-college="assignment\.assignedCollege \|\| ''"/)
+  assert.match(FLOW, /lock-college/)
+  assert.match(FLOW, /:replacement-assignment-id="assignment\.id"/)
+
+  assert.ok(!PAGE.includes('revokeTarget'), 'no standalone revoke state remains')
+  assert.match(PAGE, /row\.statusKey === 'ACTIVE'/, 'only an active appointment is managed')
+})
+
+test('the redesigned page has filter counts, search and a dynamic footer', () => {
+  // Filter pills carry a count badge next to each label, derived from the records.
+  assert.ok(PAGE.includes('class="filter-pill"'), 'the pills are offered')
+  assert.ok(PAGE.includes('class="filter-count"'), 'with a count badge')
+  assert.ok(PAGE.includes('{{ filterCounts[option.value] }}'), 'and the real count')
+  assert.ok(PAGE.includes('const filterCounts = computed'), 'computed from the API records')
+  assert.ok(PAGE.includes('aria-pressed'), 'the selected filter is exposed to assistive tech')
+
+  // Search covers name, email and college, case-insensitively, on the loaded records.
+  assert.ok(PAGE.includes('Search name, email or college...'), 'the reference placeholder')
+  assert.ok(PAGE.includes('v-model="search"'), 'the input filters as the user types')
+  assert.ok(PAGE.includes("String(assignment.name || '').toLowerCase().includes(term)"))
+  assert.ok(PAGE.includes("String(assignment.email || '').toLowerCase().includes(term)"))
+  assert.ok(PAGE.includes("String(assignment.assignedCollege || '').toLowerCase().includes(term)"))
+
+  // The footer count is derived, never hardcoded.
+  assert.ok(PAGE.includes('Showing {{ rows.length }} of {{ filteredTotal }} dean records'))
+  assert.ok(!/Showing \d+ of \d+ dean records/.test(PAGE), 'no sample count is hardcoded')
+
+  // The Dean identity, college code, status and dates all come from real data.
+  assert.ok(PAGE.includes('initialsFromName(assignment.name)'), 'initials come from the name')
+  assert.ok(PAGE.includes('collegeDisplayParts(assignment.assignedCollege)'),
+    'the college name/code split is shared')
+  assert.ok(PAGE.includes('row.college.abbreviation'), 'the code badge is conditional')
+  assert.ok(PAGE.includes('deanAssignmentStatusLabel(row.status)'), 'the status is dynamic')
+  assert.ok(PAGE.includes('formatDate(assignment.dateAssigned)'),
+    'assigned is the appointment date, not the account creation date')
+  assert.ok(PAGE.includes('formatDate(assignment.dateRevoked)'), 'revoked is the real date')
+  assert.ok(PAGE.includes("month: 'short'"), 'one consistent date format')
+
+  // One truthful API read supplies every view; the page is unpaginated.
+  assert.ok(PAGE.includes("params: { status: 'ALL' }"), 'the records are read once')
+  assert.ok(PAGE.includes('class="table-card"'), 'the table lives in one rounded card')
+  assert.ok(PAGE.includes('class="table-footer"'), 'the footer is part of the card')
+  assert.ok(PAGE.includes('class="search-box"'), 'the search field is compact')
+})
+
+test('the table columns follow the selected filter', () => {
+  // Active: the REVOKED column is dropped, the ACTION column stays.
+  assert.match(PAGE, /v-if="filter !== 'ACTIVE'"[\s\S]*?REVOKED<\/th>/)
+  assert.match(PAGE, /v-if="filter !== 'ACTIVE'"[\s\S]*?\{\{ row\.revokedLabel \}\}/,
+    'and no revoked date is rendered for an active row')
+
+  // Revoked: the ACTION column is dropped, the REVOKED date stays.
+  assert.match(PAGE, /v-if="filter !== 'REVOKED'"[\s\S]*?ACTION<\/th>/)
+  assert.match(PAGE, /v-if="filter !== 'REVOKED'"[\s\S]*?class="action-cell"/,
+    'and no action cell is rendered for a revoked row')
+
+  // All keeps both columns, and the state rows span whatever is rendered.
+  assert.match(PAGE, /filter\.value === 'ALL' \? 7 : 6/)
+  assert.ok(PAGE.includes(':colspan="columnCount"'), 'the state rows span the visible columns')
+  assert.ok(!PAGE.includes('colspan="7"'), 'no hardcoded span remains')
+  assert.match(PAGE, /row\.statusKey === 'ACTIVE'/,
+    'the Manage button is still gated on an active appointment')
+})
+
+test('the Manage Dean modal contains the details and the single management action', () => {
+  assert.ok(MANAGE_MODAL.includes('Manage Dean'), 'the reference title')
+  assert.ok(
+    MANAGE_MODAL.includes('Manage the account and assignment of this college dean.'),
+    'the reference subtitle',
   )
-  assert.match(
-    REPLACE_MODAL,
-    /\/api\/users\/deans\/candidates/,
-    'candidates come from the Dean management API',
-  )
-  assert.match(
-    REPLACE_MODAL,
-    /college: college\.value/,
-    'the request is scoped to the unit being managed',
-  )
-  assert.match(
-    REPLACE_MODAL,
-    /candidate\.name }} — \{\{ candidate\.email/,
-    'each candidate shows its full name and institutional email',
-  )
+  assert.ok(MANAGE_MODAL.includes('class="md-header-icon"'), 'the graduation-cap icon container')
+  assert.ok(MANAGE_MODAL.includes('aria-label="Close manage dean"'), 'the close icon is labelled')
+
+  // The real values, not sample data.
+  assert.ok(MANAGE_MODAL.includes('initialsFromName(deanName.value)'), 'initials come from the name')
+  assert.ok(MANAGE_MODAL.includes('{{ deanName || \'—\' }}'), 'the actual name is shown')
+  assert.ok(MANAGE_MODAL.includes('{{ email || \'—\' }}'), 'email comes from the selection')
+  assert.ok(MANAGE_MODAL.includes('collegeDisplayParts(raw)'), 'the college name/code split is shared')
+  assert.ok(MANAGE_MODAL.includes('{{ designation || \'—\' }}'), 'designation is shown')
+  assert.ok(MANAGE_MODAL.includes('{{ roleLabel }}'), 'role is shown')
+  assert.ok(MANAGE_MODAL.includes('{{ dateAssigned }}'), 'date assigned is shown')
+  assert.ok(MANAGE_MODAL.includes('/api/users/${props.assignment.userId}'), 'the account is read')
+
+  // Replacement is the single management action; revocation is part of it.
+  assert.ok(MANAGE_MODAL.includes('Replace Dean'), 'Replace Dean is offered')
+  assert.ok(MANAGE_MODAL.includes('@click="$emit(\'replace\')"'), 'and emits the replacement intent')
+  assert.ok(!MANAGE_MODAL.includes("$emit('revoke')"), 'no standalone revoke is offered')
+  assert.ok(!MANAGE_MODAL.includes('md-revoke'), 'no revoke button is rendered')
+  assert.match(MANAGE_MODAL, /class="md-action md-replace btn-primary"/)
+
+  // The dialog contract: centred, rounded, scrollable body, accessible.
+  assert.match(MANAGE_MODAL, /\.md-modal \{[\s\S]*?max-height: 90vh/)
+  assert.match(MANAGE_MODAL, /\.md-body \{[\s\S]*?overflow-y: auto/)
+  assert.ok(MANAGE_MODAL.includes('role="dialog"'))
+  assert.ok(MANAGE_MODAL.includes('aria-modal="true"'))
+  assert.ok(MANAGE_MODAL.includes('onKeydown'), 'Escape and Tab are handled')
+  assert.ok(MANAGE_MODAL.includes('document.body.style.overflow = \'hidden\''),
+    'background scroll is locked')
+})
+
+test('the replacement form is locked to the appointment college', () => {
+  assert.match(CREATE_MODAL, /lockCollege: \{ type: Boolean, default: false \}/)
+  assert.match(CREATE_MODAL, /replacementAssignmentId: \{ type: \[Number, String\], default: null \}/)
+  assert.match(CREATE_MODAL, /const isReplacement = computed/)
+  assert.match(CREATE_MODAL, /id="deanCollege"[\s\S]*?readonly/)
+  assert.ok(CREATE_MODAL.includes('Fixed to the college of the Dean being replaced'),
+    'the lock is explained')
+  assert.match(CREATE_MODAL, /api\.post\('\/api\/users\/deans\/replacement'/)
+  assert.match(CREATE_MODAL, /assignmentId: Number\(props\.replacementAssignmentId\)/)
+  assert.match(CREATE_MODAL, /emit\('created', \{[\s\S]*?replacement: isReplacement\.value/,
+    'the page knows the creation completed a replacement')
+})
+
+test('both administration screens use the one shared Manage Dean flow', () => {
+  // The same components and the same replacement workflow: no screen keeps its own
+  // duplicate Manage Dean implementation.
+  assert.ok(USERS.includes("import ManageDeanFlow from '@/views/Admin/ManageDeanFlow.vue'"))
+  assert.ok(PAGE.includes("import ManageDeanFlow from '@/views/Admin/ManageDeanFlow.vue'"))
+  assert.ok(FLOW.includes("import ManageDeanModal from '@/views/Admin/ManageDeanModal.vue'"))
+  assert.ok(FLOW.includes("import CreateUserModal from '@/views/Admin/CreateUserModal.vue'"))
+  assert.match(FLOW, /lock-role/)
+  assert.match(FLOW, /lock-college/)
+  assert.match(FLOW, /college-authority/)
+  assert.ok(!exists('../views/Admin/DeanAccountsModal.vue'),
+    'the unused legacy Dean modal is removed rather than kept as a third implementation')
+  assert.ok(!exists('../views/Admin/ReplaceDeanModal.vue'),
+    'the User Accounts-only candidate picker is folded into the shared flow')
 })

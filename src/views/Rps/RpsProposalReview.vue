@@ -17,7 +17,7 @@
     <!-- Error -->
     <div v-else-if="error" style="text-align:center;padding:60px;">
       <p style="color:#dc2626;">{{ error }}</p>
-      <button class="btn-secondary" @click="goBack" style="margin-top:12px;padding:10px 20px;">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" style="margin-top:12px;" />
     </div>
 
     <div v-else class="proposal-layout">
@@ -51,7 +51,14 @@
 
           <div class="review-section">
             <h4>Reviewer Name</h4>
-            <input type="text" v-model="reviewerName" placeholder="Enter your full name" class="reviewer-input" />
+            <input
+              type="text"
+              v-model="reviewerName"
+              placeholder="Dela Cruz, Juan, M., Jr."
+              class="reviewer-input"
+              @blur="reviewerName = formatPersonName(reviewerName)"
+            />
+            <PersonNameHint />
           </div>
 
           <div class="review-section">
@@ -141,7 +148,10 @@
 
 <script>
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
+import { formatPersonName } from '@/utils/personName'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
@@ -157,7 +167,7 @@ import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: 'RpsProposalReview',
-  components: { ConfirmDialog, SdgChecklist, ProposalFieldSection, ProposalReviewHeader },
+  components: { BackButton, ConfirmDialog, PersonNameHint, SdgChecklist, ProposalFieldSection, ProposalReviewHeader },
   data() {
     return {
       proposal: {},
@@ -216,6 +226,7 @@ export default {
     await this.loadFieldRemarks()
   },
   methods: {
+    formatPersonName,
     statusTone,
     proposalStatusLabel,
 
@@ -304,10 +315,11 @@ export default {
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
     },
     async saveReviewerInfo() {
+      this.reviewerName = formatPersonName(this.reviewerName.trim())
       try {
         await api.put(`/api/proposals/${this.$route.params.id}/reviewer-info`, null, {
           params: {
-            reviewedBy: this.reviewerName.trim(),
+            reviewedBy: this.reviewerName,
             reviewedByPosition: this.reviewerPosition
           }
         })
@@ -316,6 +328,8 @@ export default {
       }
     },
     async endorseProposal() {
+      // A second click while the request is in flight must not start another one.
+      if (this.actionLoading) return
       if (!this.canPerformAction) {
         await this._showAlert('Please complete the reviewer accountability section before endorsing.', { type: 'warning', title: 'Reviewer Info Required' })
         return
@@ -336,7 +350,10 @@ export default {
         this.proposal.status = 'ENDORSED'
       } catch (err) {
         console.error(err)
-        this.errorMessage = 'Failed to endorse proposal. Please try again.'
+        // Prefer the reason the server returned (an ineligible status, a conflict);
+        // fall back to the generic message only when there is none.
+        this.errorMessage = err?.response?.data?.error
+          || 'Failed to endorse proposal. Please try again.'
         this.showError = true
       } finally {
         this.actionLoading = false
@@ -443,9 +460,11 @@ export default {
 </script>
 
 <style scoped>
-* {
-  margin: 0;
-  padding: 0;
+/* Only the box model, never a blanket margin/padding reset: a scoped `*` rule also
+   matches the root of the shared ProposalReviewHeader child component and used to strip
+   its padding, making this page's header look different from every other entry point. */
+.proposal-page,
+.proposal-page * {
   box-sizing: border-box;
 }
 

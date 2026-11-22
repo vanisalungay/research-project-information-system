@@ -1,5 +1,7 @@
 package com.rpis.backend.controller;
 
+import com.rpis.backend.model.PriorityAgenda;
+import com.rpis.backend.model.PriorityAgendaSet;
 import com.rpis.backend.model.User;
 import com.rpis.backend.repository.PriorityAgendaSetRepository;
 import com.rpis.backend.repository.UserRepository;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,8 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Authorization of the Priority Agenda master data, exercised through the real Spring
  * Security filter chain: an anonymous caller cannot read the configuration, an
  * authenticated proponent can read the active framework and the label lookup but can
- * never create a framework or edit an agenda through a direct API request, and an
- * administrator (RPS_ADMIN / RPS_STAFF) still can.
+ * never create, deactivate or edit anything through a direct API request, and an
+ * RPS administrator still can.
  * <p>
  * Runs against the isolated {@code rpis_test} database only.
  */
@@ -158,7 +161,7 @@ class PriorityAgendaSecurityTest {
 
     @Test
     void anAdministratorCanManageTheFrameworksAndAgendas() throws Exception {
-        for (String role : List.of("RPS_ADMIN", "RPS_STAFF")) {
+        for (String role : List.of("RPS_ADMIN")) {
             String token = tokenService.generateToken(
                     user(role + " Manager", role.toLowerCase() + "@msunaawan.edu.ph", role).getId(), role);
             String framework = "MSUN RIDE " + role;
@@ -202,6 +205,71 @@ class PriorityAgendaSecurityTest {
                             .filter(set -> Boolean.TRUE.equals(set.getActive())).count(),
                     "only one framework may be active");
         }
+    }
+
+    /**
+     * The program-level deactivation: the framework itself stops being the one new
+     * proposals use, while the framework row and every agenda in it stay untouched.
+     */
+    @Test
+    void aProgramCanBeDeactivatedWithoutTouchingItsAgendas() throws Exception {
+        String token = tokenService.generateToken(
+                user("RPS Admin", "rps.admin@msunaawan.edu.ph", "RPS_ADMIN").getId(), "RPS_ADMIN");
+        PriorityAgendaSet active = agendaSetRepository.findFirstByActiveTrue().orElseThrow();
+        Long setId = active.getId();
+        int agendaCount = active.getAgendas().size();
+        List<Boolean> agendaStatuses = active.getAgendas().stream()
+                .map(PriorityAgenda::getActive).toList();
+
+        mockMvc.perform(put("/api/priority-agendas/sets/" + setId + "/deactivate")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false))
+                .andExpect(jsonPath("$.frameworkName").value(active.getFrameworkName()));
+
+        // No framework is active for new proposals: the Proponent form gets its empty state.
+        mockMvc.perform(get("/api/priority-agendas/active")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frameworkName").value(nullValue()))
+                .andExpect(jsonPath("$.agendas.length()").value(0));
+
+        // The program and every agenda row are preserved, with their statuses unchanged.
+        PriorityAgendaSet reloaded = agendaSetRepository.findById(setId).orElseThrow();
+        assertEquals(false, reloaded.getActive(), "only the program-level flag changes");
+        assertEquals(active.getFrameworkName(), reloaded.getFrameworkName());
+        assertEquals(active.getCoverageStartYear(), reloaded.getCoverageStartYear());
+        assertEquals(active.getCoverageEndYear(), reloaded.getCoverageEndYear());
+        assertEquals(agendaCount, reloaded.getAgendas().size(), "no agenda is deleted");
+        assertEquals(agendaStatuses,
+                reloaded.getAgendas().stream().map(PriorityAgenda::getActive).toList(),
+                "individual agenda statuses are untouched");
+        assertEquals(agendaCount, jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM priority_agendas WHERE agenda_set_id = ?",
+                        Integer.class, setId),
+                "the agenda rows still exist in the database");
+
+        // It can be activated again, still without touching the agendas.
+        mockMvc.perform(put("/api/priority-agendas/sets/" + setId + "/activate")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+        assertEquals(agendaStatuses,
+                agendaSetRepository.findById(setId).orElseThrow().getAgendas().stream()
+                        .map(PriorityAgenda::getActive).toList(),
+                "reactivation does not change the agenda statuses either");
+    }
+
+    @Test
+    void aProponentCannotDeactivateAProgram() throws Exception {
+        Long setId = agendaSetRepository.findFirstByActiveTrue().orElseThrow().getId();
+
+        mockMvc.perform(put("/api/priority-agendas/sets/" + setId + "/deactivate")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isForbidden());
+
+        assertEquals(true, agendaSetRepository.findById(setId).orElseThrow().getActive(),
+                "a refused caller cannot deactivate the program");
     }
 
     @Test

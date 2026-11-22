@@ -1,15 +1,19 @@
 <template>
   <section class="submission-history">
     <div class="sh-header">
-      <h3>Submission &amp; Revision History</h3>
+      <div class="sh-heading">
+        <h3>Submission &amp; Revision History</h3>
+        <p class="sh-subtitle">Oldest first, with the current version marked.</p>
+      </div>
       <span v-if="versions.length" class="sh-count">{{ versions.length }} version{{ versions.length > 1 ? 's' : '' }}</span>
     </div>
 
-    <p v-if="loading" class="sh-muted">Loading history...</p>
-    <p v-else-if="error" class="sh-muted">{{ error }}</p>
-    <p v-else-if="versions.length === 0" class="sh-muted">
-      No submission history recorded yet.
-    </p>
+    <p v-if="loading" class="sh-state">Loading history...</p>
+    <p v-else-if="error" class="sh-state sh-state-error">{{ error }}</p>
+    <div v-else-if="versions.length === 0" class="sh-state sh-empty">
+      <span class="sh-empty-title">No history yet</span>
+      <p>No submission history has been recorded for this proposal.</p>
+    </div>
 
     <div v-else class="sh-timeline">
       <div
@@ -25,26 +29,34 @@
 
         <div class="sh-card">
           <div class="sh-card-top">
-            <div class="sh-version-label">{{ versionLabel(v) }}</div>
-            <span v-if="isCurrent(v)" class="sh-current-badge">Current</span>
+            <div class="sh-version-block">
+              <span class="sh-version-label">Version {{ versionNumber(v) }}</span>
+              <span class="sh-activity">{{ activityLabel(v) }}</span>
+            </div>
+            <div class="sh-badges">
+              <span v-if="v.status" class="status sh-status" :class="statusTone(v.status)">
+                {{ proposalStatusLabel(v.status) }}
+              </span>
+              <span v-if="isCurrent(v)" class="sh-current-badge">Current</span>
+            </div>
           </div>
 
           <div class="sh-meta-grid">
             <div class="sh-meta">
-              <span class="sh-meta-label">Document ID</span>
-              <span class="sh-meta-value">{{ v.documentId || '—' }}</span>
-            </div>
-            <div class="sh-meta">
-              <span class="sh-meta-label">Status</span>
-              <span class="sh-meta-value">{{ proposalStatusLabel(v.status) || '—' }}</span>
+              <span class="sh-meta-label">Submission Date &amp; Time</span>
+              <span class="sh-meta-value">{{ formatDateTime(v.submissionDate) }}</span>
             </div>
             <div class="sh-meta">
               <span class="sh-meta-label">Submitted By</span>
               <span class="sh-meta-value">{{ v.submittedByName || '—' }}</span>
             </div>
             <div class="sh-meta">
-              <span class="sh-meta-label">Submission Date</span>
-              <span class="sh-meta-value">{{ formatDate(v.submissionDate) }}</span>
+              <span class="sh-meta-label">Document ID</span>
+              <span class="sh-meta-value">{{ v.documentId || '—' }}</span>
+            </div>
+            <div v-if="v.revisionDate" class="sh-meta">
+              <span class="sh-meta-label">Revision Date &amp; Time</span>
+              <span class="sh-meta-value">{{ formatDateTime(v.revisionDate) }}</span>
             </div>
           </div>
 
@@ -116,6 +128,7 @@ import api from '@/utils/api'
 // percentage, so a version recorded with a legacy "50%" and one with "50" both show "50%".
 import { formatTimeDevoted } from '@/utils/personnelTime'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+import { statusTone } from '@/utils/statusTone.js'
 
 const props = defineProps({
   proposalId: { type: [Number, String], required: true }
@@ -264,23 +277,31 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
-function versionLabel(v) {
-  const n = v.versionNumber
-  if (!n || n <= 1) return `Version ${n || 1} – Original Submission`
-  const revisedOn = v.revisionDate ? ` — Revised on ${formatDate(v.revisionDate)}` : ''
-  return `Version ${n} – ${ordinal(n - 1)} Revision${revisedOn}`
+function versionNumber(v) {
+  const n = Number(v.versionNumber)
+  return Number.isFinite(n) && n > 0 ? n : 1
+}
+
+/** The activity this version records, derived only from its saved version number. */
+function activityLabel(v) {
+  const n = versionNumber(v)
+  return n <= 1 ? 'Original Submission' : `${ordinal(n - 1)} Revision`
 }
 
 function isCurrent(v) {
   return Boolean(v.isCurrent)
 }
 
-function formatDate(dateString) {
-  if (!dateString) return '—'
-  return new Date(dateString).toLocaleDateString('en-US', {
+function formatDateTime(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
   })
 }
 
@@ -654,19 +675,33 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 10px 18px;
   margin: 0;
-  padding: 14px 18px;
+  padding: 18px 22px;
   background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
+}
+
+.sh-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .sh-header h3 {
   margin: 0;
-  font-size: var(--fs-base, 1rem);
+  font-size: var(--fs-lg, 1.125rem);
   font-weight: 700;
   letter-spacing: -0.005em;
   text-transform: none;
   color: #ffffff;
+}
+
+.sh-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.4;
 }
 
 .sh-count {
@@ -686,12 +721,43 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   font-style: normal;
 }
 
+/* Loading / error / empty share one calm, padded state inside the card. */
+.sh-state {
+  margin: 0;
+  padding: 28px 22px;
+  color: #6b6b8c;
+  font-size: var(--fs-sm, 0.875rem);
+}
+
+.sh-state-error {
+  color: #b42318;
+}
+
+.sh-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.sh-empty-title {
+  font-size: var(--fs-base, 1rem);
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+.sh-empty p {
+  margin: 0;
+  color: #6b6b8c;
+  font-size: var(--fs-sm, 0.875rem);
+}
+
 .sh-timeline {
-  padding: 18px;
+  padding: 22px;
 }
 
 .sh-item {
-  gap: 14px;
+  gap: 16px;
 }
 
 .sh-dot {
@@ -712,10 +778,13 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-card {
+  flex: 1;
+  min-width: 0;
   background: #ffffff;
   border: 1px solid #e4e4f2;
   border-radius: var(--radius-lg, 12px);
-  padding: 16px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
   box-shadow: 0 2px 8px rgba(38, 35, 66, 0.04);
 }
 
@@ -724,10 +793,60 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   background: #ffffff;
 }
 
+.sh-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 18px;
+  margin-bottom: 0;
+}
+
+.sh-version-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
 .sh-version-label {
-  font-size: var(--fs-base, 1rem);
+  font-size: var(--fs-lg, 1.125rem);
   font-weight: 700;
   color: #1c1a3c;
+}
+
+.sh-activity {
+  font-size: var(--fs-sm, 0.875rem);
+  color: #6b6b8c;
+}
+
+.sh-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Geometry only; the `.is-*` colours come from assets/status.css. */
+.sh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sh-current-badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--status-approved-bg, #e7f7ec);
+  color: var(--status-approved-text, #15803d);
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Label above value, never inline: the two can never run together. */
@@ -753,9 +872,31 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   overflow-wrap: anywhere;
 }
 
+/* As many readable columns as fit, never a fixed four in a narrow area. */
+.sh-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px 28px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed #e8e8f5;
+}
+
+.sh-remarks {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 8px);
+}
+
+.sh-remarks p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 .sh-btn {
-  margin-top: 12px;
-  padding: 8px 14px;
+  margin-top: 16px;
+  padding: 9px 16px;
   border: 1px solid #d8d8ec;
   border-radius: var(--radius-md, 8px);
   background: #ffffff;

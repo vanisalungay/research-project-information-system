@@ -134,9 +134,11 @@
             </li>
           </ul>
 
-          <button class="btn btn-return" @click="goReturnRevision">Return for Revision</button>
+          <button class="btn btn-return" :disabled="submitting" @click="goReturnRevision">
+            {{ submitting ? 'Returning...' : 'Return for Revision' }}
+          </button>
 
-          <button class="btn btn-cancel">Cancel</button>
+          <button class="btn btn-cancel" :disabled="submitting">Cancel</button>
 
           <div class="info-box">
             Your remarks will be sent to RPS, who will set the deadline and forward the request to the proponent.
@@ -145,17 +147,15 @@
       </div>
     </div>
 
-    <!-- CONFIRMATION MODAL -->
-    <div v-if="showConfirmModal" class="modal-overlay">
-      <div class="modal-box">
-        <h3>Return this proposal for revision?</h3>
+    <!-- CONFIRMATION DIALOG (the shared RPIS dialog) -->
+    <ConfirmDialog
+      v-if="dialogState.show"
+      v-bind="dialogState"
+      @confirm="dialogState.onConfirm"
+      @cancel="dialogState.onCancel"
+      @close="dialogState.show = false"
+    />
 
-        <div class="modal-actions">
-          <button class="btn btn-cancel" @click="cancelReturn">Cancel</button>
-          <button class="btn btn-return" @click="confirmReturn">Confirm</button>
-        </div>
-      </div>
-    </div>
     <!-- SUCCESS MESSAGE -->
     <div v-if="showSuccessMessage" class="success-toast">
       ✔ Done: Proposal returned for revision.
@@ -173,6 +173,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { useUserDataStore } from '@/stores/userData'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useDialog } from '@/composables/useDialog'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
 import { toSectionRemarkPayload } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -182,6 +184,7 @@ import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserDataStore()
+const { dialogState, showConfirm } = useDialog()
 
 const proposal = ref({})
 const loading = ref(false)
@@ -195,7 +198,6 @@ const sectionRemarks = ref({})
 const fieldRemarksResponse = ref(null)
 const fieldRemarks = computed(() => Object.values(buildFieldRemarkIndex(fieldRemarksResponse.value)).flat())
 
-const showConfirmModal = ref(false)
 const showSuccessMessage = ref(false)
 const showError = ref(false)
 const submitting = ref(false)
@@ -224,16 +226,30 @@ const isFormValid = computed(() => {
   )
 })
 
-const goReturnRevision = () => {
+/** The proposal as it should be named in the confirmation dialog. */
+const proposalLabel = () => {
+  const title = proposal.value.projectTitle || 'this proposal'
+  const id = proposal.value.documentId || proposal.value.proposalCode || proposal.value.id
+  return id ? `"${title}" (${id})` : `"${title}"`
+}
+
+const goReturnRevision = async () => {
+  if (submitting.value) return
   if (!isFormValid.value) {
     showError.value = true
     setTimeout(() => (showError.value = false), 2000)
     return
   }
-  showConfirmModal.value = true
+  const confirmed = await showConfirm(
+    `Return ${proposalLabel()} for revision? Your comments and field remarks will be sent to ` +
+      'RPS, who will set the deadline and forward the request to the proponent.',
+    { title: 'Return for Revision', type: 'warning', confirmText: 'Return for Revision' },
+  )
+  if (!confirmed) return
+  await submitReturn()
 }
 
-const confirmReturn = async () => {
+const submitReturn = async () => {
   if (submitting.value) return
   submitting.value = true
   try {
@@ -244,7 +260,6 @@ const confirmReturn = async () => {
       remarks: revisionComment.value.trim(),
       sectionRemarks: toSectionRemarkPayload(sectionRemarks.value)
     })
-    showConfirmModal.value = false
     showSuccessMessage.value = true
     setTimeout(() => {
       showSuccessMessage.value = false
@@ -252,15 +267,10 @@ const confirmReturn = async () => {
     }, 2000)
   } catch (err) {
     console.error(err)
-    showConfirmModal.value = false
     loadError.value = 'Failed to return proposal for revision.'
   } finally {
     submitting.value = false
   }
-}
-
-const cancelReturn = () => {
-  showConfirmModal.value = false
 }
 
 onMounted(async () => {
@@ -442,6 +452,11 @@ textarea:focus {
   margin-top: 10px;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* INFO BOX */
 .info-box {
   background: #fff8d6;
@@ -449,31 +464,6 @@ textarea:focus {
   font-size: 12px;
   border-radius: 8px;
   margin-top: 12px;
-}
-/* MODAL OVERLAY */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-/* MODAL BOX */
-.modal-box {
-  background: white;
-  padding: 25px;
-  width: 380px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
 }
 
 /* SUCCESS MESSAGE */

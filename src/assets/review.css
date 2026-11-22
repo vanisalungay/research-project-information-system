@@ -18,17 +18,23 @@
 /* ===== Page ===== */
 .rv-page {
   display: grid;
+  /* minmax(0, 1fr) rather than the implicit auto track: a wide table inside a field
+     section must not stretch the whole page past the viewport on a phone, which
+     previously also pushed the header's right side off-screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5, 20px);
   width: 100%;
+  min-width: 0;
 }
 
 /* ===== Header ===== */
+/* Three explicit areas: navigation, proposal identification, actions. The grid keeps
+   them aligned on wide screens and lets each wrap without overlapping the title. */
 .rv-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4, 16px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-4, 16px) var(--space-5, 20px);
   padding: var(--space-5, 20px) var(--space-6, 24px);
   background: #ffffff;
   border: 1px solid #e4e4f2;
@@ -36,11 +42,13 @@
   box-shadow: 0 6px 18px rgba(38, 35, 66, 0.06);
 }
 
-.rv-header-main {
+.rv-header-nav {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-4, 16px);
-  flex: 1 1 320px;
+  align-items: center;
+  min-height: 38px;
+}
+
+.rv-identification {
   min-width: 0;
 }
 
@@ -88,8 +96,25 @@
 }
 
 .rv-id {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
   font-size: var(--fs-sm, 0.875rem);
   color: #5b5b7a;
+  overflow-wrap: anywhere;
+}
+
+.rv-id-label {
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a8aa8;
+}
+
+.rv-id-value {
   overflow-wrap: anywhere;
 }
 
@@ -139,8 +164,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  margin-left: auto;
 }
 
 .rv-download {
@@ -343,14 +368,27 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .rv-header {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .rv-header-main {
-    flex-direction: column;
+  .rv-header-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .rv-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .rv-header-nav {
+    justify-content: flex-start;
   }
 
   .rv-header-actions {

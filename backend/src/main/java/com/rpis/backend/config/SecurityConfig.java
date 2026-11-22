@@ -112,6 +112,11 @@ public class SecurityConfig {
                         // proponent can never read an unpublished call from here.
                         .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/available").authenticated()
 
+                        // The full published Call for Proposals listing behind the dashboard
+                        // View All action: open, scheduled and closed calls. The service
+                        // still hides drafts and cancelled calls.
+                        .requestMatchers(HttpMethod.GET, "/api/proposal-announcements/proponent-calls").authenticated()
+
                         // Cooperating Agency directory (section 02 of the Create Proposal
                         // form): any authenticated user may read it, but only an
                         // administrator (the RPS roles that manage the master data) may
@@ -147,6 +152,27 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-revision")
                         .hasAnyRole(UserRoles.REC, UserRoles.OVCRIGE, UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/forward-revision")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
+
+                        // OVCRIGE rejection is a hand-off to ORPS, not a final decision.
+                        // The generic /reject path closes the proposal and notifies the
+                        // Proponent, so OVCRIGE is deliberately excluded from it; only ORPS
+                        // can finalize the rejection.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/reject-to-rps")
+                        .hasRole(UserRoles.OVCRIGE)
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/finalize-rejection")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/reject")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF, UserRoles.REC, UserRoles.OVCAF)
+
+                        // RPS review actions. Recording the reviewer's accountability and
+                        // endorsing the reviewed proposal to OVCRIGE belong to the office
+                        // that performs the review; the service additionally requires the
+                        // proposal to still be in the submitted state and keeps the
+                        // transition idempotent.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/reviewer-info")
+                        .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/endorse")
                         .hasAnyRole(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)
 
                         // Make a Copy of a rejected proposal: proponent-only. The service

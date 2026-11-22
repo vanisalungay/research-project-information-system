@@ -29,9 +29,11 @@
         <input
           type="text"
           v-model="name"
-          placeholder="Enter your full name"
+          placeholder="Dela Cruz, Juan, M., Jr."
           required
+          @blur="name = formatPersonName(name)"
         />
+        <PersonNameHint />
 
         <label>ID Number</label>
         <input
@@ -49,25 +51,35 @@
           required
         />
 
+        <PasswordRequirements
+          id="password-requirements"
+          :password="password"
+          :confirm="confirmPassword"
+        />
+
         <div class="half-inputs">
           <div>
             <label>Password</label>
-            <input
-              type="password"
+            <PasswordInput
               v-model="password"
               placeholder="Create a password"
+              autocomplete="new-password"
+              aria-describedby="password-hint password-requirements"
               required
             />
+            <PasswordFieldHint id="password-hint" kind="new" />
           </div>
 
           <div>
             <label>Confirm Password</label>
-            <input
-              type="password"
+            <PasswordInput
               v-model="confirmPassword"
               placeholder="Confirm your password"
+              autocomplete="new-password"
+              aria-describedby="confirmPassword-hint"
               required
             />
+            <PasswordFieldHint id="confirmPassword-hint" kind="confirm" />
           </div>
         </div>
 
@@ -78,7 +90,7 @@
           </label>
         </div>
 
-        <button class="register-btn">
+        <button class="register-btn" type="submit" :disabled="!passwordReady">
           Create Account
         </button>
 
@@ -100,10 +112,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PasswordRequirements from '@/components/PasswordRequirements.vue'
+import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
+import { formatPersonName } from '@/utils/personName'
+import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -116,7 +134,18 @@ const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 
+/** The submit button stays disabled until the password and its confirmation are valid. */
+const passwordReady = computed(() => passwordFormReady(password.value, confirmPassword.value))
+
 const handleRegister = async () => {
+  name.value = formatPersonName(name.value)
+
+  const policyMessage = passwordPolicyMessage(password.value)
+  if (policyMessage) {
+    await showAlert(policyMessage, { type: 'error', title: 'Password Requirements' })
+    return
+  }
+
   if (password.value !== confirmPassword.value) {
     await showAlert('Passwords do not match', { type: 'error', title: 'Password Mismatch' })
     return
@@ -231,6 +260,13 @@ const handleRegister = async () => {
   background: #1b44d6;
 }
 
+.register-btn:disabled,
+.register-btn:disabled:hover {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #2452ff;
+}
+
 .signin-link {
   text-align: center;
   margin-top: 20px;
@@ -244,5 +280,49 @@ const handleRegister = async () => {
 
 .signin-link a:hover {
   text-decoration: underline;
+}
+
+/* ========== RESPONSIVE ==========
+   The page previously kept its 40/60 split and a fixed 420px form at every
+   width, so the form (and the password checklist) ran off a phone screen. */
+@media (max-width: 900px) {
+  .register-wrapper {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .left-panel {
+    width: 100%;
+    padding: 28px 20px;
+  }
+
+  .right-panel {
+    width: 100%;
+    padding: 32px 20px;
+  }
+
+  .register-form {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .half-inputs {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .left-panel {
+    padding: 24px 18px;
+  }
+
+  .right-panel {
+    padding: 24px 18px;
+  }
+
+  .welcome {
+    font-size: 1.6rem;
+  }
 }
 </style>

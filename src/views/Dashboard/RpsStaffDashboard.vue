@@ -124,7 +124,7 @@
         <div v-else-if="error" class="panel-state error-text">{{ error }}</div>
         <div v-else-if="endorsedProposals.length === 0" class="panel-state">No endorsed proposals found.</div>
         <ul v-else class="item-list">
-          <li v-for="prop in endorsedProposals.slice(0, 5)" :key="prop.id" class="item">
+          <li v-for="prop in endorsedPreview" :key="prop.id" class="item">
             <div class="item-main">
               <div class="item-title">{{ prop.projectTitle || 'Untitled' }}</div>
               <div class="item-meta">
@@ -210,7 +210,7 @@
         <div v-else-if="revisionRequests.length === 0" class="panel-state">No revision requests found.</div>
         <ul v-else class="item-list">
           <li
-            v-for="prop in revisionRequests.slice(0, 5)"
+            v-for="prop in revisionPreview"
             :key="prop.id"
             class="item"
             :class="{ urgent: isOverdue(prop) }"
@@ -275,7 +275,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="prop in filteredBudget.slice(0, 5)" :key="prop.id">
+            <tr v-for="prop in filteredBudgetPreview" :key="prop.id">
               <td class="cell-id">{{ prop.documentId || prop.proposalCode || '—' }}</td>
               <td class="cell-title">{{ prop.projectTitle || 'Untitled' }}</td>
               <td>{{ prop.projectLeader || prop.proponent?.name || 'N/A' }}</td>
@@ -295,12 +295,21 @@
         </table>
       </div>
     </section>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/notifications"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
+import { latestProposalSnippets } from '@/utils/dashboardProposals'
 import { announcementStatus } from '@/utils/announcementStatus'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
@@ -350,9 +359,6 @@ const proposals = ref([])
 const isLoading = ref(true)
 const error = ref(null)
 
-// Preserve the existing dashboard's record limit for the awaiting-action table.
-const AWAITING_LIMIT = 3
-
 // Status sets mirror the existing pages' filters (Revision / Endorsed / Budget).
 const REVISION_STATUSES = ['RETURNED_TO_RPS', 'RPS_RETURNED']
 const ENDORSED_STATUSES = ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
@@ -365,7 +371,19 @@ const revisionRequests = computed(() => byStatus(REVISION_STATUSES))
 const endorsedProposals = computed(() => byStatus(ENDORSED_STATUSES))
 const budgetProposals = computed(() => byStatus(BUDGET_STATUSES))
 const pendingReviewList = computed(() => byStatus(PENDING_STATUSES))
-const awaitingAction = computed(() => pendingReviewList.value.slice(0, AWAITING_LIMIT))
+
+// Every preview below shows the five latest records of its authorized set; the full
+// arrays above remain the source for the panel counts. Each uses the event it represents:
+// submission, RPS endorsement, the revision request, and the latest budget status change.
+const endorsedPreview = computed(() =>
+  latestProposalSnippets(endorsedProposals.value, { dateField: 'endorsedAt' }),
+)
+const revisionPreview = computed(() =>
+  latestProposalSnippets(revisionRequests.value, { dateField: 'returnedAt' }),
+)
+const awaitingAction = computed(() =>
+  latestProposalSnippets(pendingReviewList.value, { dateField: 'submittedAt' }),
+)
 
 // Budget category filters mirror the existing Budget Processing page. The chip text is
 // the canonical proposal label; the map keeps the raw stored value used to filter.
@@ -382,6 +400,9 @@ const filteredBudget = computed(() => {
   const status = budgetStatusMap[budgetFilter.value]
   return budgetProposals.value.filter(p => p.status === status)
 })
+const filteredBudgetPreview = computed(() =>
+  latestProposalSnippets(filteredBudget.value, { dateField: 'updatedAt' }),
+)
 
 // The status label comes from the one shared formatter (utils/statusLabel.js via
 // proposalStatusLabel), and the colour from the shared statusTone() helper, so the same

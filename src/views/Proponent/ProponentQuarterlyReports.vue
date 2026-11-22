@@ -1,7 +1,7 @@
 <template>
   <div class="qpr-page">
     <div class="page-header">
-      <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
+      <BackButton fallback="/proposals" />
       <div>
         <h1>Quarterly Progress Reports</h1>
         <p class="subtitle">{{ project?.projectTitle || 'Project' }}</p>
@@ -171,6 +171,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
@@ -494,12 +495,6 @@ onMounted(async () => {
   font-size: 14px;
 }
 /* Layout only; the action colours come from assets/actions.css. */
-.back-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
 .stages-card {
   background: #fff;
   border: 1px solid #e2e8f0;

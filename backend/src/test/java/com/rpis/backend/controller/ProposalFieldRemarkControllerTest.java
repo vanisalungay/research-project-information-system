@@ -9,6 +9,7 @@ import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.CooperatingAgencyService;
 import com.rpis.backend.service.NotificationService;
+import com.rpis.backend.service.ProposalNotificationPolicy;
 import com.rpis.backend.service.PriorityAgendaService;
 import com.rpis.backend.service.ProposalAnnouncementService;
 import com.rpis.backend.service.ProposalReviewService;
@@ -35,7 +36,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -63,7 +65,7 @@ class ProposalFieldRemarkControllerTest {
         ProposalSectionRemarkService remarkService =
                 new ProposalSectionRemarkService(remarkRepository, userRepository, currentUser);
         ProposalService proposalService = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), mock(ProposalAnnouncementService.class),
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class), remarkService, currentUser,
                 mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
         ProposalController controller = new ProposalController(proposalService,

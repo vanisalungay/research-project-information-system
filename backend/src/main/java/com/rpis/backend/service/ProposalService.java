@@ -7,6 +7,9 @@ import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
+import com.rpis.backend.util.NotificationEvent;
+import com.rpis.backend.util.NotificationTypes;
+import com.rpis.backend.util.PersonNameFormatter;
 import com.rpis.backend.util.ProposalStatus;
 import com.lowagie.text.pdf.PdfReader;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,6 +56,7 @@ public class ProposalService {
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ProposalNotificationPolicy proposalNotificationPolicy;
     private final ProposalAnnouncementService proposalAnnouncementService;
     private final ProposalVersionService proposalVersionService;
     private final ProposalSectionRemarkService proposalSectionRemarkService;
@@ -209,16 +214,16 @@ public class ProposalService {
             (byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1 };
 
     /**
-     * Largest accepted Special Order document, in megabytes. An official SO is a
-     * scanned document, which is routinely larger than the 10 MB form attachments;
-     * 25 MB is the intended ceiling and every deployment can override it without a
-     * code change. It is deliberately below the servlet's multipart ceiling
+     * Largest accepted Special Order document, in megabytes. It matches the 10 MB
+     * ceiling of the other form attachments and the size shown beside the upload
+     * control; every deployment can override it without a code change. It is
+     * deliberately below the servlet's multipart ceiling
      * ({@code spring.servlet.multipart.max-file-size}) so a file between this limit
      * and the container ceiling is answered here with a readable 400 instead of an
      * opaque 413.
      */
-    @Value("${rpis.special-order.max-size-mb:25}")
-    private long specialOrderMaxSizeMb = 25;
+    @Value("${rpis.special-order.max-size-mb:10}")
+    private long specialOrderMaxSizeMb = 10;
 
     public static final String SPECIAL_ORDER_NUMBER_REQUIRED_MESSAGE =
             "A Special Order (SO) number is required to approve this proposal.";
@@ -325,6 +330,70 @@ public class ProposalService {
      * supplied by the frontend is ignored for non-privileged callers.
      */
     public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status, List<String> statusIn) {
+        return getProposalsForCurrentUser(requestedProponentId, status, statusIn, (String) null);
+    }
+
+    /** Backwards-compatible shorthand for the original submission-date ordering. */
+    public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn, boolean sortBySubmittedAt) {
+        return getProposalsForCurrentUser(requestedProponentId, status, statusIn,
+                sortBySubmittedAt ? "submittedAt" : null);
+    }
+
+    /**
+     * As above, optionally ordered by the workflow event date the caller names.
+     * <p>
+     * Sorting is server-side so every client gets the same order regardless of how
+     * much of the list it fetched. The order is newest event first; records with no
+     * date for that event sort last, and the proposal id (descending) is the stable
+     * tie-breaker. It is opt-in (`sort=<field>`) so other callers keep the
+     * repository's default order.
+     */
+    public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn, String sort) {
+        List<Proposal> proposals = new ArrayList<>(
+                loadProposalsForCurrentUser(requestedProponentId, status, statusIn));
+        Comparator<Proposal> ordering = orderingFor(sort);
+        if (ordering != null) {
+            proposals.sort(ordering);
+        }
+        return proposals;
+    }
+
+    /**
+     * The supported list orderings, each keyed by the actual event timestamp it sorts by:
+     * submission, RPS endorsement, the reviewing office's return, RPS's forward to the
+     * proponent, the latest workflow change, or creation. An unrecognised value is ignored
+     * instead of failing the list request.
+     */
+    private static Comparator<Proposal> orderingFor(String sort) {
+        if (sort == null) {
+            return null;
+        }
+        return switch (sort.trim()) {
+            case "submittedAt" -> newestFirst(Proposal::getSubmittedAt);
+            case "endorsedAt" -> newestFirst(Proposal::getEndorsedAt);
+            case "returnedAt" -> newestFirst(Proposal::getReturnedAt);
+            case "revisionForwardedAt" -> newestFirst(Proposal::getRevisionForwardedAt);
+            case "updatedAt" -> newestFirst(Proposal::getUpdatedAt);
+            case "createdAt" -> newestFirst(Proposal::getCreatedAt);
+            default -> null;
+        };
+    }
+
+    /**
+     * Newest timestamp first; records with no timestamp sort last; the proposal id
+     * (descending) breaks ties so equal timestamps keep a stable order.
+     */
+    private static Comparator<Proposal> newestFirst(
+            java.util.function.Function<Proposal, LocalDateTime> timestamp) {
+        return Comparator
+                .comparing(timestamp, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Proposal::getId, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private List<Proposal> loadProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn) {
         String normalizedStatus = ProposalStatus.normalize(status);
         List<String> normalizedStatuses = ProposalStatus.withForReviewAliases(statusIn);
         // A filter for either submission spelling must return both the current and the
@@ -411,6 +480,11 @@ public class ProposalService {
             proposal.setProponent(resolveOwnerForNewProposal(request));
         }
 
+        // The status the proposal had before this save. Notifications are raised only for
+        // a real transition, so re-saving an already submitted draft (an attachment, a
+        // late field edit) cannot send the "submitted" or any later notification twice.
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+
         // Validate the requested status after the access/ownership checks but before any
         // write. An unsupported value (for example a typo sent by a client or integration)
         // is a request error, so it fails with the controller's readable 400 instead of
@@ -496,7 +570,9 @@ public class ProposalService {
         // Standard properties
         proposal.setProgramTitle(request.getProgramTitle());
         proposal.setProjectTitle(request.getProjectTitle());
-        proposal.setProjectLeader(request.getProjectLeader());
+        // Person names are stored in the one RPIS format (see PersonNameFormatter), so a
+        // client that bypasses the browser cannot save an all-uppercase or lowercase name.
+        proposal.setProjectLeader(PersonNameFormatter.format(request.getProjectLeader()));
         proposal.setProjectLeaderSex(request.getProjectLeaderSex());
         // Project duration is selected by the proponent (12, 24 or 36 months). It is
         // validated server-side (not only by the frontend dropdown) so a modified API
@@ -565,7 +641,7 @@ public class ProposalService {
         // revision form, an integration) preserves what was already stored; an explicit
         // empty string still clears a field the proponent emptied.
         if (request.getSubmittedByName() != null) {
-            proposal.setSubmittedByName(request.getSubmittedByName());
+            proposal.setSubmittedByName(PersonNameFormatter.format(request.getSubmittedByName()));
         }
         if (request.getSubmittedByDesignation() != null) {
             proposal.setSubmittedByDesignation(request.getSubmittedByDesignation());
@@ -574,7 +650,7 @@ public class ProposalService {
             proposal.setSubmittedByDate(request.getSubmittedByDate());
         }
         if (request.getEndorsedByName() != null) {
-            proposal.setEndorsedByName(request.getEndorsedByName());
+            proposal.setEndorsedByName(PersonNameFormatter.format(request.getEndorsedByName()));
         }
         if (request.getEndorsedByDesignation() != null) {
             proposal.setEndorsedByDesignation(request.getEndorsedByDesignation());
@@ -668,6 +744,15 @@ public class ProposalService {
             }
         } else if (proposal.getStatus() == null) {
             proposal.setStatus(ProposalStatus.DRAFT);
+        }
+
+        // Record the actual submission event. It is written only when this save moves the
+        // proposal into FOR REVIEW from a non-submitted state (a brand-new submission or a
+        // revision resubmission), so editing an already submitted proposal, an attachment
+        // upload, or a later review action never rewrites the original submission date.
+        if (ProposalStatus.isForReview(proposal.getStatus())
+                && !ProposalStatus.isForReview(previousStatus)) {
+            proposal.setSubmittedAt(LocalDateTime.now());
         }
 
         // Dates parsing
@@ -873,10 +958,16 @@ public class ProposalService {
             proposalSectionRemarkService.closeActiveRound(proposal);
         }
 
-        // Send system notification for submissions
-        notifySubscribedRoles(
-                proposal,
-                "Proposal Update: " + proposal.getProjectTitle());
+        // Notify only when this save actually moved the proposal to a new status. A
+        // resubmission gets its own wording so it is not reported as a brand-new proposal.
+        // Both submission spellings are the same workflow state.
+        boolean statusChanged = requestedStatus != null
+                && !requestedStatus.equals(previousStatus)
+                && !(ProposalStatus.isForReview(requestedStatus)
+                        && ProposalStatus.isForReview(previousStatus));
+        if (statusChanged) {
+            proposalNotificationPolicy.notifyForStatus(proposal, isRevisionResubmission);
+        }
 
         return proposal;
     }
@@ -978,13 +1069,64 @@ public class ProposalService {
         String storedStatus = ProposalStatus.requireSupportedStatus(upper);
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if (storedStatus.equals(previousStatus)) {
+            // A retried or repeated request must not create a second notification for the
+            // same transition.
+            return proposal;
+        }
         proposal.setStatus(storedStatus);
+        if ("ENDORSED".equals(storedStatus)) {
+            // The generic transition is the same workflow event as the dedicated
+            // endorsement endpoint, so the endorsement date is recorded here too.
+            proposal.setEndorsedAt(LocalDateTime.now());
+        }
+        recordStatusChange(proposal, previousStatus, storedStatus, null);
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
+    }
+
+    /**
+     * RPS endorses a submitted proposal to OVCRIGE.
+     *
+     * <p>The proposal row is locked for the duration of the transaction, so a repeated
+     * click (or two concurrent requests) is serialized: the second request sees the
+     * already stored {@code ENDORSED} status and returns without writing a second
+     * notification. Only the existing submitted state ({@code FOR REVIEW}, or the legacy
+     * {@code SUBMITTED} spelling) may be endorsed - any other status is refused instead of
+     * silently advancing a proposal that is not awaiting RPS's decision. The notification
+     * that tells OVCRIGE about the endorsement is written in the same transaction as the
+     * status change, so a failure leaves neither a partial status nor a stray notification
+     * behind.
+     *
+     * @param id the proposal the RPS has reviewed
+     * @return the saved proposal, now at {@code ENDORSED}
+     */
+    @Transactional
+    public Proposal endorseToOvcrige(Long id) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + id));
+        currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("ENDORSED".equals(previousStatus)) {
+            // A retried or repeated submission is a no-op, not a second transition.
+            return proposal;
+        }
+        if (!ProposalStatus.isForReview(previousStatus)) {
+            throw new IllegalArgumentException(
+                    "Only a proposal submitted for RPS review can be endorsed to OVCRIGE; its current status is "
+                            + (previousStatus == null ? "unknown" : previousStatus) + ".");
+        }
+        proposal.setStatus("ENDORSED");
+        proposal.setEndorsedAt(LocalDateTime.now());
+        recordStatusChange(proposal, previousStatus, "ENDORSED", null);
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyForStatus(saved);
+        return saved;
     }
 
     /**
@@ -1004,7 +1146,7 @@ public class ProposalService {
     @Transactional
     public Proposal saveProposalDirect(Proposal proposal) {
         proposal = proposalRepository.save(proposal);
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
         return proposal;
     }
 
@@ -1130,7 +1272,7 @@ public class ProposalService {
             recordStatusChange(proposal, "FOR_OC_APPROVAL", targetStatus, normalisedNotes);
 
             Proposal saved = proposalRepository.save(proposal);
-            notifySubscribedRoles(saved, null);
+            proposalNotificationPolicy.notifyForStatus(saved);
             if (previousPath != null && !previousPath.isBlank()
                     && (storedPath != null || removeSoFile)) {
                 deleteStoredSpecialOrderAfterCommit(previousPath);
@@ -1201,6 +1343,11 @@ public class ProposalService {
         }
 
         String previousPath = proposal.getSoFilePath();
+        String previousFileName = proposal.getSoFileName();
+        String previousSoNumber = proposal.getSoNumber() == null
+                ? null
+                : proposal.getSoNumber().trim();
+        Boolean previousNeedsBudget = proposal.getNeedsBudget();
         boolean keepsStoredFile = previousPath != null && !previousPath.isBlank() && !removeSoFile;
         if (normalisedSoNumber.isEmpty() && soBytes == null && !keepsStoredFile) {
             throw new IllegalArgumentException(SPECIAL_ORDER_DRAFT_EMPTY_MESSAGE);
@@ -1225,11 +1372,28 @@ public class ProposalService {
         }
 
         try {
-            proposal.setSoNumber(normalisedSoNumber.isEmpty() ? null : normalisedSoNumber);
-            proposal.setNeedsBudget(needsBudget);
+            String newSoNumber = normalisedSoNumber.isEmpty() ? null : normalisedSoNumber;
+            // An omitted budget classification must not wipe an earlier choice; the SO
+            // draft form may legitimately send only the notes or a file on a later save.
+            Boolean newNeedsBudget = needsBudget != null ? needsBudget : previousNeedsBudget;
+            String newFileName = previousFileName;
             if (storedPath != null) {
-                proposal.setSoFileName(specialOrderDisplayName(soFile, soFormat));
-                proposal.setSoFilePath(storedPath);
+                newFileName = specialOrderDisplayName(soFile, soFormat);
+            } else if (removeSoFile) {
+                newFileName = null;
+            }
+            String newPath = storedPath != null ? storedPath : (removeSoFile ? null : previousPath);
+
+            boolean numberChanged = !Objects.equals(previousSoNumber, newSoNumber);
+            boolean budgetChanged = !Objects.equals(previousNeedsBudget, newNeedsBudget);
+            boolean fileChanged = storedPath != null
+                    || (removeSoFile && previousPath != null && !previousPath.isBlank());
+
+            proposal.setSoNumber(newSoNumber);
+            proposal.setNeedsBudget(newNeedsBudget);
+            if (storedPath != null) {
+                proposal.setSoFileName(newFileName);
+                proposal.setSoFilePath(newPath);
             } else if (removeSoFile) {
                 proposal.setSoFileName(null);
                 proposal.setSoFilePath(null);
@@ -1239,10 +1403,12 @@ public class ProposalService {
             } else if (draftExisted) {
                 proposal.setRemarks(null);
             }
-            // Deliberately no soUploadedAt and no status/notification change: the draft
-            // is not an OC approval.
+            // Deliberately no soUploadedAt and no status change: the draft is not an OC
+            // approval. It may still notify OVCAF that a meaningful draft changed.
 
             Proposal saved = proposalRepository.save(proposal);
+            notifyOvcafOfMeaningfulDraftChange(saved, numberChanged, budgetChanged, fileChanged,
+                    newNeedsBudget);
             if (previousPath != null && !previousPath.isBlank() && !previousPath.equals(storedPath)
                     && (storedPath != null || removeSoFile)) {
                 deleteStoredSpecialOrderAfterCommit(previousPath);
@@ -1256,15 +1422,56 @@ public class ProposalService {
         }
     }
 
+    /**
+     * Tells OVCAF about a Special Order draft only when something that matters changed:
+     * the SO number, the document, or the budget routing. An identical re-save and a
+     * notes-only edit produce nothing. OVCAF is skipped entirely when the proposal is
+     * classified without a budget, because Finance has no action on it.
+     */
+    private void notifyOvcafOfMeaningfulDraftChange(Proposal saved, boolean numberChanged,
+            boolean budgetChanged, boolean fileChanged, Boolean afterBudget) {
+        if (!numberChanged && !budgetChanged && !fileChanged) {
+            return;
+        }
+        // Only a proposal that is still routed to OVCAF needs the draft update. Switching
+        // to "without budget" removes Finance from the route, so it is not a task for them.
+        if (!Boolean.TRUE.equals(afterBudget)) {
+            return;
+        }
+
+        String soNumber = saved.getSoNumber() == null || saved.getSoNumber().isBlank()
+                ? "not set"
+                : saved.getSoNumber();
+        String routing = Boolean.TRUE.equals(saved.getNeedsBudget())
+                ? "with budget"
+                : Boolean.FALSE.equals(saved.getNeedsBudget())
+                        ? "without budget"
+                        : "budget classification not set";
+        String document = saved.getSoFilePath() != null && !saved.getSoFilePath().isBlank()
+                ? "document attached"
+                : "no document attached";
+
+        String message = "The Chancellor's Office updated the Special Order draft for \""
+                + saved.getProjectTitle() + "\" (SO No. " + soNumber + "; " + routing + "; "
+                + document + "). Final approval is still pending. The proposal becomes "
+                + "available to OVCAF after the Chancellor's Office completes final approval.";
+
+        NotificationEvent event = NotificationEvent.soDraftChanged(
+                numberChanged || budgetChanged, fileChanged);
+        notificationService.notifyRoles(List.of(UserRoles.OVCAF), message,
+                "Special Order Draft Updated", NotificationTypes.SPECIAL_ORDER_DRAFT,
+                saved.getId(), event);
+    }
+
     /** Largest accepted Special Order document in bytes. */
     public long getSpecialOrderMaxBytes() {
-        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 10;
         return megabytes * 1024 * 1024;
     }
 
     /** The readable reason shown when the SO document exceeds the configured limit. */
     public String getSpecialOrderMaxSizeMessage() {
-        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 25;
+        long megabytes = specialOrderMaxSizeMb > 0 ? specialOrderMaxSizeMb : 10;
         return "The Special Order document must be " + megabytes + " MB or smaller.";
     }
 
@@ -1380,7 +1587,7 @@ public class ProposalService {
     public Proposal updateReviewerInfo(Long id, String reviewedBy, String reviewedByPosition) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
-        proposal.setReviewedBy(reviewedBy);
+        proposal.setReviewedBy(PersonNameFormatter.format(reviewedBy));
         proposal.setReviewedByPosition(reviewedByPosition);
         return proposalRepository.save(proposal);
     }
@@ -1402,6 +1609,7 @@ public class ProposalService {
                                       List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         // A return from a reviewing office goes to RPS first, never directly to the
         // Proponent. RPS is the only party that can forward the request and set the
         // revision deadline.
@@ -1409,8 +1617,9 @@ public class ProposalService {
         proposal.setRemarks(remarks);
         proposal.setReturnRemarks(remarks);
         proposal.setReturnedByOffice(returnedByOffice);
+        proposal.setReturnKind("REVISION");
         proposal.setReturnedByUserId(returnedByUserId);
-        proposal.setReturnedByName(returnedByName);
+        proposal.setReturnedByName(PersonNameFormatter.format(returnedByName));
         proposal.setReturnedAt(LocalDateTime.now());
         // Reset any previous forward/deadline metadata so a fresh return restarts the flow.
         proposal.setRevisionDeadline(null);
@@ -1418,6 +1627,7 @@ public class ProposalService {
         proposal.setRevisionForwardedByName(null);
         proposal.setRevisionForwardedByUserId(null);
         proposal.setRevisionNotes(null);
+        recordStatusChange(proposal, previousStatus, "RETURNED_TO_RPS", remarks);
         proposal = proposalRepository.save(proposal);
 
         // Persist the per-section remarks for this revision round (if any).
@@ -1425,7 +1635,7 @@ public class ProposalService {
                 proposal, sectionRemarks, returnedByOffice, returnedByUserId, returnedByName);
 
         // Notify RPS to review and forward the revision request.
-        notifySubscribedRoles(proposal, null);
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
     }
@@ -1456,13 +1666,137 @@ public class ProposalService {
                 : truncate(remarks.trim(), 2000);
 
         proposal.setStatus("REC_APPROVED");
+        proposal.setReturnKind(null);
         if (normalisedRemarks != null) {
             proposal.setRemarks(normalisedRemarks);
         }
         recordStatusChange(proposal, "FOR_OC_APPROVAL", "REC_APPROVED", normalisedRemarks);
 
         Proposal saved = proposalRepository.save(proposal);
-        notifySubscribedRoles(saved, null);
+        // The status is REC_APPROVED so OVCRIGE can act on it, but the event is a return
+        // from the Chancellor's Office - not an REC recommendation - and the proponent
+        // must not be told the proposal was approved.
+        proposalNotificationPolicy.notifyOvcrigeReturned(saved, normalisedRemarks);
+        return saved;
+    }
+
+    /**
+     * The statuses in which OVCRIGE still owns the proposal and may reject it back to
+     * ORPS. Once a proposal has been forwarded to OVCAF or the Chancellor's Office it
+     * has left OVCRIGE's stage and can no longer be rejected from this action.
+     */
+    private static final Set<String> OVCRIGE_REJECTABLE_STATUSES = Set.of(
+            "ENDORSED", "UNDER_REVIEW", "REC_APPROVED", "OVC_APPROVED");
+
+    /**
+     * OVCRIGE rejects a proposal by returning it to ORPS (RPS), not by closing it.
+     *
+     * <p>The target is the existing {@code RETURNED_TO_RPS} state - the same state a
+     * reviewing office uses to hand a record back to ORPS. The rejection reason is
+     * stored in both {@code remarks} and {@code return_remarks}, the transition is
+     * written to {@code proposal_status_history}, and only ORPS is notified. The
+     * Proponent is deliberately not notified here: ORPS reviews the rejection and
+     * forwards the final decision through {@link #finalizeRejection(Long, String)}.
+     *
+     * <p>The row is locked so a repeated click (or two concurrent requests) cannot
+     * create a second history row or a duplicate ORPS notification.
+     */
+    @Transactional
+    public Proposal rejectToRps(Long proposalId, String remarks) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("RETURNED_TO_RPS".equals(previousStatus)) {
+            // A retried request must not produce a second ORPS notification.
+            return proposal;
+        }
+        if (previousStatus == null || !OVCRIGE_REJECTABLE_STATUSES.contains(previousStatus)) {
+            throw new IllegalStateException(
+                    "Only a proposal still in OVCRIGE review can be rejected and returned to ORPS.");
+        }
+
+        String reason = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
+        Long actorId = currentUser.requireUserId();
+        String actorName = userRepository.findById(actorId).map(User::getName).orElse(null);
+
+        proposal.setStatus("RETURNED_TO_RPS");
+        if (reason != null) {
+            proposal.setRemarks(reason);
+            proposal.setReturnRemarks(reason);
+        }
+        proposal.setReturnedByOffice("OVCRIGE");
+        proposal.setReturnKind("REJECTION");
+        proposal.setReturnedByUserId(actorId);
+        proposal.setReturnedByName(PersonNameFormatter.format(actorName));
+        proposal.setReturnedAt(LocalDateTime.now());
+        // A fresh return restarts the revision-forward metadata; no deadline is set here.
+        proposal.setRevisionDeadline(null);
+        proposal.setRevisionForwardedAt(null);
+        proposal.setRevisionForwardedByName(null);
+        proposal.setRevisionForwardedByUserId(null);
+        proposal.setRevisionNotes(null);
+
+        recordStatusChange(proposal, previousStatus, "RETURNED_TO_RPS", reason);
+
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyRpsRejectionReturned(saved, reason);
+        return saved;
+    }
+
+    /**
+     * ORPS completes an OVCRIGE rejection by closing the proposal and informing the
+     * Proponent. Only a proposal returned to ORPS by OVCRIGE can be finalized this way;
+     * a revision return continues through the existing forward-revision workflow.
+     *
+     * <p>The OVCRIGE reason is preserved in {@code return_remarks}; an optional ORPS
+     * note is appended to {@code remarks} so the Proponent's notification carries the
+     * full explanation. The transition is recorded in the proposal's status history.
+     */
+    @Transactional
+    public Proposal finalizeRejection(Long proposalId, String remarks) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
+        currentUser.requireAccessTo(proposal);
+
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("REJECTED".equals(previousStatus)) {
+            // Idempotent: a retried ORPS confirmation must not notify the Proponent twice.
+            return proposal;
+        }
+        String returnKind = proposal.getReturnKind() == null
+                ? null
+                : proposal.getReturnKind().trim();
+        if (!"RETURNED_TO_RPS".equals(previousStatus)
+                || !"REJECTION".equalsIgnoreCase(returnKind)) {
+            throw new IllegalStateException(
+                    "This proposal is not awaiting ORPS processing of an OVCRIGE rejection.");
+        }
+
+        String note = remarks == null || remarks.isBlank() ? null : truncate(remarks.trim(), 2000);
+        String ovcrigeReason = proposal.getReturnRemarks();
+        if (ovcrigeReason == null || ovcrigeReason.isBlank()) {
+            ovcrigeReason = proposal.getRemarks();
+        }
+        String finalRemarks;
+        if (ovcrigeReason == null || ovcrigeReason.isBlank()) {
+            finalRemarks = note;
+        } else if (note == null) {
+            finalRemarks = ovcrigeReason;
+        } else {
+            finalRemarks = ovcrigeReason + "\n\nORPS note: " + note;
+        }
+
+        proposal.setStatus("REJECTED");
+        if (finalRemarks != null) {
+            proposal.setRemarks(finalRemarks);
+        }
+        recordStatusChange(proposal, previousStatus, "REJECTED", finalRemarks);
+
+        Proposal saved = proposalRepository.save(proposal);
+        // The existing REJECTED rule notifies the Proponent only; ORPS is the sender.
+        proposalNotificationPolicy.notifyForStatus(saved);
         return saved;
     }
 
@@ -1524,6 +1858,11 @@ public class ProposalService {
                                                String remarks, List<SectionRemarkDTO> sectionRemarks) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
+        if ("REJECTION".equalsIgnoreCase(proposal.getReturnKind())) {
+            throw new IllegalStateException(
+                    "This proposal was rejected by OVCRIGE and must be finalized, not forwarded as a revision.");
+        }
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
         LocalDateTime deadlineLdt = parseDeadline(deadline);
 
         // If no office return was recorded yet (RPS returning directly), capture the
@@ -1531,8 +1870,9 @@ public class ProposalService {
         if (proposal.getReturnRemarks() == null || proposal.getReturnRemarks().isBlank()) {
             proposal.setReturnRemarks(remarks);
             proposal.setReturnedByOffice("RPS");
+            proposal.setReturnKind("REVISION");
             proposal.setReturnedByUserId(forwardedByUserId);
-            proposal.setReturnedByName(forwardedByName);
+            proposal.setReturnedByName(PersonNameFormatter.format(forwardedByName));
             if (proposal.getReturnedAt() == null) {
                 proposal.setReturnedAt(LocalDateTime.now());
             }
@@ -1542,12 +1882,13 @@ public class ProposalService {
         proposal.setRevisionDeadline(deadlineLdt);
         proposal.setRevisionForwardedAt(LocalDateTime.now());
         proposal.setRevisionForwardedByUserId(forwardedByUserId);
-        proposal.setRevisionForwardedByName(forwardedByName);
+        proposal.setRevisionForwardedByName(PersonNameFormatter.format(forwardedByName));
         proposal.setRevisionNotes(notes);
 
         // Keep the proponent-facing remarks in sync with the office's original remarks so
         // the revision history continues to capture them.
         proposal.setRemarks(proposal.getReturnRemarks());
+        recordStatusChange(proposal, previousStatus, "RPS_RETURNED", proposal.getRemarks());
 
         proposal = proposalRepository.save(proposal);
 
@@ -1556,16 +1897,28 @@ public class ProposalService {
         proposalSectionRemarkService.recordForwardRemarks(
                 proposal, sectionRemarks, "RPS", forwardedByUserId, forwardedByName);
 
-        // Notify the Proponent of the revision request + deadline.
+        // Notify the Proponent of the revision request, the deadline and the feedback.
+        // The same deadline is the idempotency key: pressing Forward twice cannot write
+        // the same revision request again, while setting a new deadline is a new event.
         if (proposal.getProponent() != null) {
+            String deadlineText = deadlineLdt != null
+                    ? deadlineLdt.toLocalDate().toString()
+                    : "not set";
+            String feedback = proposal.getRemarks() == null || proposal.getRemarks().isBlank()
+                    ? ""
+                    : " Remarks: " + proposal.getRemarks().trim();
             notificationService.createNotification(
                     proposal.getProponent().getId(),
                     "Your proposal \"" + proposal.getProjectTitle()
-                            + "\" has been returned for revision. Deadline: "
-                            + (deadlineLdt != null ? deadlineLdt.toLocalDate().toString() : "—"),
-                    "Revision Required",
-                    "REVISION",
-                    proposal.getId());
+                            + "\" has been returned for revision. Please review the remarks and "
+                            + "make the necessary corrections. Deadline: " + deadlineText + "."
+                            + feedback,
+                    "Proposal Returned for Revision",
+                    NotificationTypes.REVISION,
+                    proposal.getId(), null,
+                    NotificationEvent.STATUS_UPDATED.withDedupeKey(
+                            "proposal:" + proposal.getId() + ":revision-forwarded:" + deadlineText),
+                    "PROPONENT");
         }
 
         return proposal;
@@ -1726,6 +2079,8 @@ public class ProposalService {
             requireAddressPart(request.getAddressBarangay(), "Barangay");
             validateAddressHierarchy(request);
         }
+
+        validateSiteCountries(request);
 
         if (request.getContactType() == null && request.getContactValue() == null) {
             return;
@@ -1970,6 +2325,31 @@ public class ProposalService {
                 request.getAddressDistrict(), request.getAddressMunicipality());
         if (problem != null) {
             throw new IllegalArgumentException(problem);
+        }
+    }
+
+    /**
+     * Sites of Implementation are Philippine-only.
+     *
+     * <p>The form offers only the Philippines, but a request can arrive from a client
+     * that skips the browser, so every submitted site is checked again before the
+     * proposal is accepted. A blank country means the Philippines, exactly like the
+     * Address section. No other site part is validated here: the existing location
+     * data drives the dropdowns, and adding new rules to unrelated site fields would
+     * change their requirements.</p>
+     */
+    static void validateSiteCountries(ProposalRequest request) {
+        if (request == null || request.getSites() == null) {
+            return;
+        }
+        int position = 1;
+        for (ProposalRequest.SiteDTO site : request.getSites()) {
+            String country = trimToNull(site == null ? null : site.getCountry());
+            if (country != null && !PhilippineAddressCatalog.PHILIPPINES.equalsIgnoreCase(country)) {
+                throw new IllegalArgumentException(
+                        "Site " + position + ": only the Philippines is accepted as the country.");
+            }
+            position += 1;
         }
     }
 
@@ -2714,262 +3094,4 @@ public class ProposalService {
         }
     }
 
-    private void notifySubscribedRoles(Proposal proposal, String message) {
-        String status = proposal.getStatus();
-        if (status == null) {
-            return;
-        }
-
-        for (User user : recipientsFor(proposal, status)) {
-            String role = user.getRole();
-
-            switch (status) {
-                // Newly submitted proposal -> notify RPS staff/admins to check.
-                // Both spellings mean the same submission (legacy rows keep SUBMITTED).
-                case ProposalStatus.FOR_REVIEW:
-                case ProposalStatus.LEGACY_SUBMITTED:
-                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "New proposal submitted for review: \"" + proposal.getProjectTitle() + "\"",
-                                "New Proposal Submitted",
-                                "PROPOSAL_UPDATE",
-                                proposal.getId());
-                    }
-                    break;
-
-                // RPS endorsed it to OVCRIGE -> notify OVCRIGE to review & coordinate
-                case "ENDORSED":
-                    if ("OVCRIGE".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal has been endorsed to OVCRIGE: \"" + proposal.getProjectTitle() + "\"",
-                                "Proposal Endorsed",
-                                "ENDORSEMENT",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCRIGE forwarded to REC -> notify REC to conduct technical/merit evaluation
-                case "UNDER_REVIEW":
-                    if ("REC".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Proposal awaiting REC review and evaluation: \"" + proposal.getProjectTitle() + "\"",
-                                "Review Request",
-                                "REVIEW_REQUEST",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC approved & recommended -> notify OVCRIGE to prepare chancellor final
-                // approval list
-                case "REC_APPROVED":
-                    if ("OVCRIGE".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "REC has evaluated and recommended proposal for approval: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Proposal Approved by REC",
-                                "APPROVAL",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCRIGE forwarded to OVCAF -> notify OVCAF to review & endorse
-                case "FOR_OVCAF_APPROVAL":
-                    if ("OVCAF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is ready for your review and endorsement: \"" + proposal.getProjectTitle()
-                                        + "\"",
-                                "Proposal for OVCAF Review",
-                                "ENDORSEMENT",
-                                proposal.getId());
-                    }
-                    break;
-
-                // OVCAF endorsed to OC -> notify OC (Chancellor) for final approval
-                case "FOR_OC_APPROVAL":
-                    if ("OC".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is ready for your final approval: \"" + proposal.getProjectTitle() + "\"",
-                                "Final Approval Required",
-                                "APPROVAL",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Returned by a reviewing office -> notify RPS to review and forward.
-                case "RETURNED_TO_RPS":
-                    if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal was returned for revision and awaits your review and forwarding: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Revision Request Received",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC returned for revision -> notify proponent to revise
-                case "REC_REVISION":
-                case "REVISION":
-                    // RPS returned for revision -> notify proponent to revise
-                case "RPS_RETURNED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Your proposal \"" + proposal.getProjectTitle()
-                                        + "\" has been returned for revision. Please check feedback.",
-                                "Revision Required",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // REC rejected or Chancellor rejected -> notify proponent
-                case "REC_REJECTED":
-                case "REJECTED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Your proposal \"" + proposal.getProjectTitle() + "\" has been rejected.",
-                                "Proposal Rejected",
-                                "REJECTION",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Final approved by Chancellor -> notify proponent & OVCAF (Finance) to
-                // authorize budget. The Chancellor's WITHOUT BUDGET classification
-                // approves the proposal for immediate implementation, so Finance is not
-                // asked to endorse a budget it was told does not apply. A record that is
-                // merely missing the classification keeps the previous behaviour.
-                case "APPROVED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Congratulations! Your proposal \"" + proposal.getProjectTitle()
-                                        + "\" has received final approval by the Chancellor.",
-                                "Proposal Approved",
-                                "APPROVAL",
-                                proposal.getId());
-                    } else if ("OVCAF".equals(role) && !Boolean.FALSE.equals(proposal.getNeedsBudget())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "A proposal is approved and ready for budget endorsement: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Budget Endorsement Required",
-                                "FUNDING",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Budget ready for release -> notify OVCAF (Finance)
-                case "READY_FOR_RELEASE":
-                    if ("OVCAF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget processing requested for proposal: \"" + proposal.getProjectTitle() + "\"",
-                                "Budget Processing Request",
-                                "FUNDING",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Funds released -> notify proponent & RPS (RII/DARES) to monitor
-                // implementation
-                case "RELEASED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Implementation funds have been successfully released for your project: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Funds Released",
-                                "FUNDING",
-                                proposal.getId());
-                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Funds released. Ready for implementation monitoring: \"" + proposal.getProjectTitle()
-                                        + "\"",
-                                "Implementation Monitoring",
-                                "PROPOSAL_UPDATE",
-                                proposal.getId());
-                    }
-                    break;
-
-                // Returned by OVCAF -> notify proponent & RPS
-                case "RETURNED":
-                    if (proposal.getProponent() != null && proposal.getProponent().getId().equals(user.getId())) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget release request for your proposal \"" + proposal.getProjectTitle()
-                                        + "\" was returned.",
-                                "Budget Request Returned",
-                                "REVISION",
-                                proposal.getId());
-                    } else if ("RPS_ADMIN".equals(role) || "RPS_STAFF".equals(role)) {
-                        notificationService.createNotification(
-                                user.getId(),
-                                "Budget release was returned by Finance Office for proposal: \""
-                                        + proposal.getProjectTitle() + "\"",
-                                "Budget Request Returned",
-                                "REVISION",
-                                proposal.getId());
-                    }
-                    break;
-            }
-        }
-    }
-
-    /**
-     * The accounts a proposal status change actually concerns.
-     *
-     * <p>This is the fix for the measured write-path bottleneck. The previous
-     * implementation started from {@code userRepository.findAll()}, so every status
-     * change loaded <em>every</em> account in the system and iterated all of them just
-     * to find the two or three that matched. With the 518-account load-test data set
-     * that was ~500 rows of loading per proposal write, and it grows linearly with the
-     * user table - exactly the wrong shape for a university-wide system.
-     *
-     * <p>Behaviour is unchanged: the same statuses still notify the same accounts,
-     * because the switch inside {@link #notifySubscribedRoles} is untouched and each
-     * case still re-checks the role. This method only narrows the candidate set, so a
-     * role that is not returned here can never receive a notification it received
-     * before - and the proponent is included for the statuses whose case tests for
-     * them.
-     */
-    private List<User> recipientsFor(Proposal proposal, String status) {
-        switch (status) {
-            case ProposalStatus.FOR_REVIEW, ProposalStatus.LEGACY_SUBMITTED,
-                    "RETURNED_TO_RPS", "RELEASED", "RETURNED":
-                return userRepository.findByRoleIn(List.of("RPS_ADMIN", "RPS_STAFF"));
-            case "ENDORSED", "REC_APPROVED":
-                return userRepository.findByRoleIn(List.of("OVCRIGE"));
-            case "UNDER_REVIEW":
-                return userRepository.findByRoleIn(List.of("REC"));
-            case "FOR_OVCAF_APPROVAL", "READY_FOR_RELEASE":
-                return userRepository.findByRoleIn(List.of("OVCAF"));
-            case "APPROVED": {
-                // Notifies the proponent and Finance.
-                List<User> recipients = new ArrayList<>(userRepository.findByRoleIn(List.of("OVCAF")));
-                if (proposal.getProponent() != null) {
-                    recipients.add(proposal.getProponent());
-                }
-                return recipients;
-            }
-            default: {
-                // The revision/rejection statuses notify only the proponent; a status
-                // not listed at all notifies nobody.
-                if (proposal.getProponent() != null) {
-                    return List.of(proposal.getProponent());
-                }
-                return List.of();
-            }
-        }
-    }
 }

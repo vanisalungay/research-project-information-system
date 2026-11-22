@@ -694,3 +694,164 @@
     margin-left: 0;
   }
 }
+
+/* --- Shared pagination footer ---
+   The Dean endorsement list pages its already-filtered result set. The control matches
+   the rest of the system: a neutral bordered button, the range on the left and the page
+   indicator between Previous and Next. */
+.end-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.end-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.end-page-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dfe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2f3248;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.end-page-btn:hover:not(:disabled) {
+  background: #f6f7fb;
+  border-color: #cdd3e3;
+}
+
+.end-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.end-page-btn:focus-visible {
+  outline: 2px solid var(--ui-focus-color, #2452ff);
+  outline-offset: 2px;
+}
+
+/* --- Dean request review layout ---
+   The review page uses the available content width: the request summary stays full
+   width, and the decision / approval work sits beside the audit history instead of
+   stacking under it. Below 980px the two columns collapse back to one. */
+.end-page--review .end-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.end-page--review .end-review-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.end-page--review .end-review-stack > .end-card + .end-card {
+  margin-top: 0;
+}
+
+@media (max-width: 980px) {
+  .end-page--review .end-review-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Issued letter version history ---
+   The current letter, then every preserved earlier revision with its own view/download
+   action. The current revision is tinted and badged so it can never be confused with a
+   superseded one. */
+.end-version-history {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.end-version-title {
+  margin: 0 0 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.end-version-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.end-version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  flex-wrap: wrap;
+}
+
+.end-version-row.is-current {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.end-version-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.end-version-number {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.end-version-badge {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.end-version-superseded {
+  margin-left: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.end-version-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.end-version-actions .end-btn {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+}

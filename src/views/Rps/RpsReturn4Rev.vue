@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <!-- Back -->
-    <button class="back" @click="$router.push('fundviewprop')">← Back to Evaluation</button>
+    <BackButton label="Back to Evaluation" to="/fundviewprop" />
 
     <h1>Return Proposal for Revision</h1>
     <p class="subtitle">Provide feedback and set deadline for resubmission</p>
@@ -134,8 +134,11 @@
 </template>
 
 <script>
+import BackButton from '@/components/BackButton.vue'
+
 export default {
   name: 'ReturnProposalForRevision',
+  components: { BackButton },
   data() {
     return {
       comments: '',
@@ -211,12 +214,7 @@ export default {
 }
 
 /* Back */
-.back {
-  background: none;
-  border: none;
-  color: #2563eb;
-  cursor: pointer;
-  font-size: 14px;
+.page > .back-button {
   margin-bottom: 12px;
 }
 

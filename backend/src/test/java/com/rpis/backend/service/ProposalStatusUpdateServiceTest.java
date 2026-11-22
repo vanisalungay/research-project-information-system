@@ -44,7 +44,7 @@ class ProposalStatusUpdateServiceTest {
         proposalRepository = mock(ProposalRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), mock(ProposalAnnouncementService.class),
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class), mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class),
                 mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));

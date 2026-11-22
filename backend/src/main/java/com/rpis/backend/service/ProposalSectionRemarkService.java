@@ -370,7 +370,12 @@ public class ProposalSectionRemarkService {
         if (userId != null) {
             User user = userRepository.findById(userId).orElse(null);
             if (user != null) {
-                return new Actor(user.getRole(), user.getId(), user.getName());
+                // The session's selected role, not the account's primary one: a Proponent
+                // who is also a Dean writes remarks in the role they signed in as.
+                String role = currentUser.getRole() != null
+                        ? currentUser.getRole()
+                        : user.getRole();
+                return new Actor(role, user.getId(), user.getName());
             }
         }
         return new Actor(fallbackRole, fallbackId, fallbackName);

@@ -2,6 +2,7 @@ package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.EndorsementDecisionRequest;
 import com.rpis.backend.dto.EndorsementEventResponse;
+import com.rpis.backend.dto.EndorsementLetterVersionResponse;
 import com.rpis.backend.dto.EndorsementLinkRequest;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
@@ -118,6 +119,38 @@ public class EndorsementController {
             @PathVariable Long id,
             @RequestParam(name = "download", defaultValue = "false") boolean download) {
         EndorsementRequestService.StoredLetter letter = endorsementService.loadLetter(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.CONTENT_DISPOSITION, (download ? "attachment" : "inline")
+                        + "; filename=\"" + letter.fileName() + "\"")
+                .contentLength(letter.stored().size())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(letter.stored().content()));
+    }
+
+    /**
+     * The preserved versions of an issued letter, newest first. The current version is
+     * flagged so the review screen can distinguish it from the revisions before it. The
+     * same visibility rule as the letter itself applies.
+     */
+    @GetMapping("/{id}/document/versions")
+    public ResponseEntity<List<EndorsementLetterVersionResponse>> documentVersions(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(endorsementService.letterVersions(id));
+    }
+
+    /**
+     * One preserved version of the letter - the same PDF that was issued at the time.
+     * Older versions stay viewable and downloadable after a reissue; nothing is
+     * overwritten or deleted.
+     */
+    @GetMapping("/{id}/document/versions/{versionId}")
+    public ResponseEntity<InputStreamResource> documentVersion(
+            @PathVariable Long id,
+            @PathVariable Long versionId,
+            @RequestParam(name = "download", defaultValue = "false") boolean download) {
+        EndorsementRequestService.StoredLetter letter =
+                endorsementService.loadLetterVersion(id, versionId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .header(HttpHeaders.CONTENT_DISPOSITION, (download ? "attachment" : "inline")

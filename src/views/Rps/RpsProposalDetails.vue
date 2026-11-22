@@ -18,13 +18,13 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- Not found: the id was given but no such proposal is readable by this account -->
     <div v-else-if="notFound" class="error-state">
       <p>This proposal could not be found, or it is not available to your account.</p>
-      <button class="btn-primary" @click="goBack">Back to Budget Processing</button>
+      <BackButton label="Back to Budget Processing" :navigate="false" @click="goBack" />
     </div>
 
     <!-- Content -->
@@ -104,7 +104,14 @@
             <div class="reviewer-info">
               <div class="info-item">
                 <label>Reviewer Name</label>
-                <input type="text" v-model="reviewerName" class="reviewer-input" placeholder="Enter your full name" />
+                <input
+                  type="text"
+                  v-model="reviewerName"
+                  class="reviewer-input"
+                  placeholder="Dela Cruz, Juan, M., Jr."
+                  @blur="reviewerName = formatPersonName(reviewerName)"
+                />
+                <PersonNameHint />
               </div>
               <div class="info-item">
                 <label>Position</label>
@@ -143,7 +150,7 @@
     <div v-else class="error-state">
       <p>No proposal details to show.</p>
       <button class="btn-primary" @click="load">Retry</button>
-      <button class="back-btn" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <ConfirmDialog v-if="dialogState.show" v-bind="dialogState" @confirm="dialogState.onConfirm"
@@ -155,9 +162,12 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
+import { formatPersonName } from '@/utils/personName'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import SdgChecklist from '@/components/SdgChecklist.vue'
@@ -271,6 +281,7 @@ const onRemarkRemoved = (remarkId) => {
 }
 
 const saveReviewerInfo = async () => {
+  reviewerName.value = formatPersonName(reviewerName.value)
   try {
     await api.put(`/api/proposals/${proposal.value.id}/reviewer-info`, null, {
       params: {
@@ -306,7 +317,7 @@ watch(() => route.params.id ?? route.query.id ?? null, () => load())
 
 /** Back returns to the previous page, and falls back to the budget list when there is none. */
 const goBack = () => {
-  if (typeof window !== 'undefined' && window.history.length > 1) {
+  if (typeof window !== 'undefined' && window.history.state?.back) {
     window.history.back()
     return
   }
@@ -389,27 +400,6 @@ const formatReviewerPosition = (position) => {
   align-items: flex-start;
   gap: 16px;
   flex: 1;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-top: 4px;
-}
-
-.back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
 }
 
 .header-info {

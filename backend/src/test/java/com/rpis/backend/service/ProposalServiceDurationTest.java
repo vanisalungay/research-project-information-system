@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -44,7 +45,7 @@ class ProposalServiceDurationTest {
         NotificationService notificationService = mock(NotificationService.class);
         ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
         ProposalVersionService versionService = mock(ProposalVersionService.class);
-        service = new ProposalService(proposalRepository, userRepository, notificationService,
+        service = new ProposalService(proposalRepository, userRepository, notificationService, new ProposalNotificationPolicy(notificationService),
                 announcementService, versionService, mock(ProposalSectionRemarkService.class),
                 new CurrentUser(), mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class), new LocalUploadStorage("uploads"));
 

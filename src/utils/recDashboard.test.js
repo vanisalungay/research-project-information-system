@@ -88,12 +88,16 @@ test('every statistic is bound to real data, never typed into the template', () 
   }
 })
 
-test('the dashboard reads the same endpoints it always did', () => {
+test('the dashboard reads its proposals and leaves notifications to the shared store', () => {
   assert.match(DASHBOARD, /api\.get\('\/api\/proposals'\)/, 'proposals come from the same endpoint')
+  assert.ok(
+    !DASHBOARD.includes('/api/notifications'),
+    'notifications are read once by the shared store, not fetched again here',
+  )
   assert.match(
     DASHBOARD,
-    /api\.get\(`\/api\/notifications\?userId=\$\{user\.id\}`\)/,
-    'notifications come from the same endpoint',
+    /import NotificationPreview from '@\/components\/NotificationPreview\.vue'/,
+    'the dashboard uses the shared notification preview',
   )
 })
 
@@ -101,11 +105,14 @@ test('the dashboard keeps every route it links to', () => {
   const paths = routePaths()
   const names = routeNames()
 
-  // Path targets.
-  for (const path of ['/rec-notif', '/assigned-proposals']) {
-    assert.ok(DASHBOARD.includes(`router.push('${path}')`), `the dashboard must still push ${path}`)
-    assert.ok(paths.has(path), `${path} is not a route in router/index.js`)
-  }
+  // Path targets. "View all" is a preview prop, not a push in this component.
+  assert.ok(
+    DASHBOARD.includes('view-all-to="/rec-notif"'),
+    'the preview must still link to the REC notifications page',
+  )
+  assert.ok(paths.has('/rec-notif'), '/rec-notif is not a route in router/index.js')
+  assert.ok(DASHBOARD.includes("router.push('/assigned-proposals')"))
+  assert.ok(paths.has('/assigned-proposals'), '/assigned-proposals is not a route')
 
   // Named targets.
   for (const name of ['RecReviewForm', 'RecMeetingDetails']) {
@@ -151,24 +158,16 @@ test('the proposal table keeps its columns, cells and formatted status text', ()
   assert.ok(DASHBOARD.includes('No submitted proposals.'), 'the table needs its empty state')
 })
 
-test('the notifications keep their message, date and order', () => {
+test('the notifications use the shared, live preview', () => {
   assert.match(
     DASHBOARD,
-    /v-for="notification in notifications\.slice\(0,5\)"/,
-    'the notifications must keep their order and their limit',
+    /<NotificationPreview[\s\S]{0,200}view-all-to="\/rec-notif"[\s\S]{0,200}empty-text="No notifications\."/,
+    'the preview must keep its route and empty state',
   )
-  assert.match(
-    DASHBOARD,
-    /\{\{ notification\.message \}\}/,
-    'the notification message must be shown unchanged',
+  assert.ok(
+    !DASHBOARD.includes('formatDate(notification.createdAt)'),
+    'the timestamp is rendered by the shared RelativeTime component',
   )
-  assert.match(
-    DASHBOARD,
-    /\{\{ formatDate\(notification\.createdAt\) \}\}/,
-    'the notification timestamp must be shown unchanged',
-  )
-  assert.ok(DASHBOARD.includes('No notifications.'), 'the notifications need their empty state')
-  assert.match(DASHBOARD, /@click="goToNotifications"/, 'the notifications action must be kept')
 })
 
 test('the status pill tones are chosen from the record status', () => {

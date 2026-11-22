@@ -8,8 +8,6 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import NoNavLayout from '../layouts/NoNavLayout.vue'
 
 import Dashboard from '../views/Dashboard/Index.vue'
-import Notification from '../views/Notifications/Notification.vue'
-import NotificationsHub from '../views/Notifications/Index.vue'
 import NotificationPage from '../views/Notifications/NotificationPage.vue'
 
 /* Auth */
@@ -36,10 +34,8 @@ import PriorityAgendas from '@/views/Admin/PriorityAgendas.vue'
 /* OVCRIGE */
 import OvcReviewProposal from '../views/Ovc/OvcReviewProposal.vue'
 import OvcSubmittedProposal from '../views/Ovc/OvcSubmittedProposal.vue'
-import OvcEndorsedProposal from '../views/Ovc/OvcEndorsedProposal.vue'
 import OvcAssignReviewer from '../views/Ovc/OvcAssignReviewer.vue'
 import OvcReturn4Revision from '../views/Ovc/OvcReturn4Revision.vue'
-import OvcNotifications from '../views/Notifications/OvcNotifications.vue'
 
 /* RPS */
 import RpsAdminDashboard from '@/views/Dashboard/RpsAdminDashboard.vue'
@@ -52,20 +48,16 @@ import RpsEndorsedPro from '@/views/Rps/RpsEndorsedPro.vue'
 import RpsProposalDetails from '../views/Rps/RpsProposalDetails.vue'
 import RpsNotificationDetails from '../views/Notifications/RpsNotificationDetails.vue'
 import RpsProposalReview from '../views/Rps/RpsProposalReview.vue'
-import RpsRevResultViewer from '../views/Rps/RpsRevResultViewer.vue'
 import RpsBudgetProcessing from '../views/Rps/RpsBudgetProcessing.vue'
 import RpsBudgetRelease from '../views/Rps/RpsBudgetRelease.vue'
 import RpsProposalMonitoringDetails from '../views/Rps/RpsProposalMonitoringDetails.vue'
 import RpsProposalMonitoring from '@/views/Rps/RpsProposalMonitoring.vue'
-import RpsAdminNotification from '../views/Notifications/RpsAdminNotification.vue'
-import RpsStaffNotification from '../views/Notifications/RpsStaffNotification.vue'
 import RpsRevisionRequests from '@/views/Rps/RpsRevisionRequests.vue'
 import RpsForwardRevision from '@/views/Rps/RpsForwardRevision.vue'
 
 /* OVCAF */
 import OvcafDashboard from '../views/Dashboard/OvcafDashboard.vue'
 import OvcafValidate from '../views/Ovcaf/OvcafValidate.vue'
-import OvcafNotification from '../views/Notifications/OvcafNotification.vue'
 import OvcafProposalInbox from '../views/Ovcaf/OvcafProposalInbox.vue'
 import OvcafReports from '../views/Ovcaf/OvcafReports.vue'
 import OvcafProposalDetails from '../views/Ovcaf/OvcafProposalDetails.vue'
@@ -75,7 +67,6 @@ import OvcafFinancialValidation from '../views/Ovcaf/OvcafFinancialValidation.vu
 import OCDashboard from '../views/Dashboard/OCDashboard.vue'
 import OCFinalApproval from '../views/Oc/OCFinalApproval.vue'
 import OcDetailedProposal from '../views/Oc/OcDetailedProposal.vue'
-import OCNotifications from '../views/Notifications/OCNotifications.vue'
 
 /* REC */
 import RecDashboard from '../views/Dashboard/RecDashboard.vue'
@@ -85,10 +76,10 @@ import RecMeetingDetails from '../views/Rec/RecMeetingDetails.vue'
 import RecRejectProposal from '../views/Rec/RecRejectProposal.vue'
 import RecReturn4Revision from '../views/Rec/RecReturn4Revision.vue'
 import RecDetailedProp from '../views/Rec/RecDetailedProp.vue'
-import RecNotification from '../views/Notifications/RecNotification.vue'
 
 /* PROPONENT */
 import ProponentDashboard from '../views/Dashboard/ProponentDashboard.vue'
+import ProponentCalls from '../views/Proponent/ProponentCalls.vue'
 import ProponentRevision from '@/views/Proponent/ProponentRevision.vue'
 import ProponentProposals from '@/views/Proponent/ProponentProposals.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
@@ -96,7 +87,6 @@ import ProponentFeedback from '@/views/Proponent/ProponentFeedback.vue'
 import ProponentSubmitRev from '@/views/Proponent/ProponentSubmitRev.vue'
 import ProponentPropDetails from '../views/Proponent/ProponentPropDetails.vue'
 import ProponentDetiailedProp from '../views/Proponent/ProponentDetiailedProp.vue'
-import ProponentNotifications from '../views/Notifications/ProponentNotifications.vue'
 import ProponentAnnouncementDetails from '@/views/Proponent/ProponentAnnouncementDetails.vue'
 import ProponentProposalMonitoring from '@/views/Proponent/ProponentProposalMonitoring.vue'
 import ProponentQuarterlyReports from '@/views/Proponent/ProponentQuarterlyReports.vue'
@@ -123,7 +113,9 @@ const routes = [
       { path: 'home', component: Dashboard },
       { path: 'manage-profile', component: ProfileSettings },
       { path: 'profile-info', component: ProfileInformation },
-      { path: 'manage-notifications', component: Notification },
+      // The old placeholder page had no save handler. Profile Settings is the one
+      // place notification preferences are actually persisted.
+      { path: 'manage-notifications', redirect: '/manage-profile' },
 
       { path: '/user-accounts', name: 'UserAccounts', component: UserAccounts },
       { path: '/dean-role-management', name: 'DeanRoleManagement', component: DeanRoleManagement },
@@ -136,7 +128,9 @@ const routes = [
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
       { path: 'notification/:id', name: 'NotificationDetails', component: RpsNotificationDetails },
       { path: 'proposal/:id/review', name: 'ProposalReview', component: RpsProposalReview },
-      { path: 'review-viewer/:id', name: 'ReviewResultViewer', component: RpsRevResultViewer },
+      // Kept as a route for old links/bookmarks; it renders the same canonical proposal
+      // details page (and therefore the same header and history) as every other entry.
+      { path: 'review-viewer/:id', name: 'ReviewResultViewer', component: RpsProposalDetails },
 
       { path: 'budget-processing', name: 'BudgetProcessing', component: RpsBudgetProcessing },
       { path: 'budgetrelease', name: 'BudgetRelease', component: RpsBudgetRelease },
@@ -179,7 +173,9 @@ const routes = [
       { path: 'review-prop', component: OvcReviewProposal },
       { path: 'review-prop/:id', name: 'OvcReviewProposal', component: OvcReviewProposal },
       { path: 'submit-proposals', component: OvcSubmittedProposal },
-      { path: 'endorsed-proposals', component: OvcEndorsedProposal },
+      // The sidebar's "Endorsed Proposals" page is the same complete RPS-endorsed
+      // pipeline list as the dashboard's View All: the old OC-only page is gone.
+      { path: 'endorsed-proposals', component: OvcSubmittedProposal },
       { path: 'ovc-quarterly-reports', name: 'OvcQuarterlyReports', component: QuarterlyReportsMaster },
       { path: 'assign-reviewer', component: OvcAssignReviewer },
       { path: 'assign-reviewer/:id', name: 'OvcAssignReviewer', component: OvcAssignReviewer },
@@ -204,6 +200,11 @@ const routes = [
 
       // ================= PROPONENT =================
       { path: 'proponent-dashboard', component: ProponentDashboard },
+      {
+        path: 'proponent-calls',
+        name: 'ProponentCalls',
+        component: ProponentCalls,
+      },
       { path: 'proponent-notification', component: NotificationPage },
       {
         path: 'proponent-announcement/:id',
@@ -239,7 +240,11 @@ const routes = [
       { path: 'evalCriteria', component: ProponentEvalCriteria },
       { path: 'proponent-feedback', component: ProponentFeedback },
       { path: 'submit-revision/:id?', component: ProponentSubmitRev },
-      { path: 'proponent-prop-details/:id?', component: ProponentPropDetails },
+      {
+        path: 'proponent-prop-details/:id?',
+        name: 'ProponentPropDetails',
+        component: ProponentPropDetails,
+      },
       {
         path: 'detailed-proposal',
         name: 'ProponentDetiailedProp',

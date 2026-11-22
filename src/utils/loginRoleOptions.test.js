@@ -135,6 +135,20 @@ test('a role is selected by default', () => {
   )
 })
 
+test('the sign-in request normalizes the typed address and the role', () => {
+  // The typed and the pasted address must be the same request: the store removes case,
+  // surrounding whitespace and invisible characters before posting.
+  const store = readFileSync(STORE_FILE, 'utf8')
+  assert.match(store, /import \{ normalizeEmailInput \} from '@\/utils\/institutionalEmail'/)
+  assert.match(store, /email: normalizeEmailInput\(email\)/)
+  assert.match(store, /role: String\(role \?\? ''\)\.trim\(\)\.toUpperCase\(\)/)
+  assert.match(
+    loginSource(),
+    /@blur="email = normalizeEmailInput\(email\)"/,
+    'the field itself is normalized when it loses focus',
+  )
+})
+
 test('the form asks for an address on the domain the backend accepts', () => {
   const placeholder = loginSource().match(/placeholder="([^"]*@[^"]*)"/)
 

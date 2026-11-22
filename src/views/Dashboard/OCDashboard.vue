@@ -61,6 +61,15 @@
         <header class="dash-section-head">
           <span class="dash-section-icon" v-html="icons.proposals"></span>
           <h3 class="dash-section-title">Proposals for Final Approval</h3>
+          <div class="dash-section-actions">
+            <router-link v-if="!showAll && forFinalApproval.length > 5" class="end-btn is-link"
+              :to="{ path: '/oc-dashboard', query: { view: 'all' } }">
+              View all
+            </router-link>
+            <router-link v-else-if="showAll" class="end-btn is-link" to="/oc-dashboard">
+              Show latest five
+            </router-link>
+          </div>
         </header>
 
         <div v-if="forFinalApproval.length > 0" class="end-table-scroll">
@@ -69,13 +78,13 @@
               <tr>
                 <th>Proposal Title</th>
                 <th>Proponent</th>
-                <th>Date Endorsed</th>
+                <th>Date Submitted</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in forFinalApproval" :key="p.id">
+              <tr v-for="p in visibleForFinalApproval" :key="p.id">
                 <td class="cell-title">{{ p.title }}</td>
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
@@ -104,6 +113,15 @@
         <header class="dash-section-head">
           <span class="dash-section-icon" v-html="icons.funds"></span>
           <h3 class="dash-section-title">Approved &amp; Budget-Forwarded Proposals</h3>
+          <div class="dash-section-actions">
+            <router-link v-if="!showAll && approvedProposals.length > 5" class="end-btn is-link"
+              :to="{ path: '/oc-dashboard', query: { view: 'all' } }">
+              View all
+            </router-link>
+            <router-link v-else-if="showAll" class="end-btn is-link" to="/oc-dashboard">
+              Show latest five
+            </router-link>
+          </div>
         </header>
 
         <div v-if="approvedProposals.length > 0" class="end-table-scroll">
@@ -112,13 +130,13 @@
               <tr>
                 <th>Proposal Title</th>
                 <th>Proponent</th>
-                <th>Date</th>
+                <th>Date Submitted</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in approvedProposals" :key="p.id">
+              <tr v-for="p in visibleApprovedProposals" :key="p.id">
                 <td class="cell-title">{{ p.title }}</td>
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
@@ -140,20 +158,30 @@
         </p>
       </section>
     </template>
+
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/oc-notification"
+      empty-text="No notifications."
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import { latestProposalSnippets, sortProposalsNewestFirst } from '@/utils/dashboardProposals'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { isSoDraft } from '@/utils/soDraft.js'
 
 const router = useRouter()
+const route = useRoute()
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -192,6 +220,30 @@ const forFinalApproval = ref([])
 const approvedProposals = ref([])
 const isLoading = ref(true)
 
+/**
+ * The dashboard shows the five latest proposals in each section. "View all" opens the
+ * same dashboard in its full-listing view (`?view=all`), so every authorized proposal
+ * remains reachable; the statistic cards always use the complete lists.
+ *
+ * Both sections order by the actual submission date. `fallbackDateFields: []` makes the
+ * order fall back only to the submission field itself: a record without one sorts last
+ * instead of silently being ordered by an unrelated timestamp such as the last edit.
+ */
+const showAll = computed(() => route.query.view === 'all')
+const SUBMITTED_DATE_OPTIONS = { dateField: 'submittedAt', fallbackDateFields: [] }
+const forFinalApprovalPreview = computed(() =>
+  latestProposalSnippets(forFinalApproval.value, SUBMITTED_DATE_OPTIONS),
+)
+const approvedProposalsPreview = computed(() =>
+  latestProposalSnippets(approvedProposals.value, SUBMITTED_DATE_OPTIONS),
+)
+const visibleForFinalApproval = computed(() =>
+  showAll.value ? forFinalApproval.value : forFinalApprovalPreview.value,
+)
+const visibleApprovedProposals = computed(() =>
+  showAll.value ? approvedProposals.value : approvedProposalsPreview.value,
+)
+
 /** The fields the draft badge and the document generator read from a list row. */
 const soFields = (p) => ({
   soNumber: p.soNumber,
@@ -208,9 +260,14 @@ const loadDashboard = async () => {
     // Only proposals that are actually awaiting the Chancellor can be acted on.
     // REC_APPROVED and OVC_APPROVED belong to OVCRIGE's queue - listing them here
     // produced rows whose action buttons could only fail.
+    //
+    // `sort=submittedAt` is applied by the API before the response is returned, so the
+    // order is the same for the five-item preview and for the full listing. The
+    // frontend sort below repeats the same rule on the raw timestamps; it is not a
+    // substitute for the server order.
     const [pendingRes, approvedRes] = await Promise.all([
-      api.get('/api/proposals?statusIn=FOR_OC_APPROVAL'),
-      api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED'),
+      api.get('/api/proposals?statusIn=FOR_OC_APPROVAL&sort=submittedAt'),
+      api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED&sort=submittedAt'),
     ])
 
     const pendingData = Array.isArray(pendingRes.data) ? pendingRes.data : []
@@ -220,24 +277,29 @@ const loadDashboard = async () => {
     stats.value.sentToOvcaf = approvedData.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
     stats.value.approved = approvedData.length
 
-    forFinalApproval.value = pendingData.map(p => ({
+    // Keep the raw submission timestamp alongside the display date: the five-item
+    // preview and the full-listing view both order by the moment the proposal was
+    // actually submitted.
+    forFinalApproval.value = sortProposalsNewestFirst(pendingData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
-      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      date: p.submittedAt?.substring(0, 10) || 'N/A',
       status: p.status,
+      submittedAt: p.submittedAt,
       ...soFields(p),
-    }))
+    })), SUBMITTED_DATE_OPTIONS)
 
-    approvedProposals.value = approvedData.map(p => ({
+    approvedProposals.value = sortProposalsNewestFirst(approvedData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
-      date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
+      date: p.submittedAt?.substring(0, 10) || 'N/A',
       status: p.status,
       badgeClass: p.status === 'FOR_OVCAF_APPROVAL' ? 'budget' : 'approved',
+      submittedAt: p.submittedAt,
       ...soFields(p),
-    }))
+    })), SUBMITTED_DATE_OPTIONS)
   } catch (error) {
     console.error('Failed to load Chancellor dashboard:', error)
   } finally {

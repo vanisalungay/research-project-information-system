@@ -149,6 +149,9 @@ for f in \
   migration-add-field-level-remarks.sql \
   migration-add-notification-fields.sql \
   migration-add-notification-preferences.sql \
+  migration-add-notification-preferences-configured.sql \
+  migration-add-notification-dedupe-key.sql \
+  migration-add-revision-deadline-index.sql \
   migration-add-priority-agendas.sql \
   migration-add-proposal-address-contact.sql \
   migration-add-proposal-announcement-link.sql \
@@ -171,19 +174,28 @@ for f in \
   migration-rename-dean-role.sql \
   migration-add-must-change-password.sql \
   migration-add-token-version.sql \
+  migration-add-user-roles.sql \
   migration-add-dean-assignments.sql \
+  migration-fix-institutional-email-domain.sql \
   migration-add-gad-checklist.sql \
   migration-add-activity-logs.sql \
   migration-add-endorsement-document-code-unique.sql \
+  migration-add-endorsement-letter-versions.sql \
   migration-add-proposal-needs-budget.sql \
   migration-add-performance-indexes.sql \
   migration-01-db-audit-integrity.sql \
   migration-02-db-audit-dedupe.sql \
   migration-03-db-audit-status-history.sql \
+  migration-add-proposal-submitted-at.sql \
+  migration-add-proposal-endorsed-at.sql \
   migration-norm-01-relational-integrity.sql \
   migration-norm-02-relational-observability.sql \
   migration-norm-03-fk-consolidation.sql \
-  migration-norm-04-proposal-status-fks.sql
+  migration-norm-04-proposal-status-fks.sql \
+  migration-widen-notification-type-check.sql \
+  migration-add-notification-recipient-role.sql \
+  migration-widen-activity-log-checks.sql \
+  migration-add-proposal-return-kind.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"
@@ -248,6 +260,23 @@ constraint, enum or trigger exists on the role columns), it also renames the rol
 audit columns that are displayed to users, and it ends with the verification query whose
 counts must all be 0. A database provisioned from scratch by the current code needs
 nothing: new Dean accounts are created as `DEAN`.
+
+### Note on `migration-widen-notification-type-check.sql`
+
+`chk_notifications_type` was introduced by `migration-01-db-audit-integrity.sql` with
+the notification types that existed then. A `NOT VALID` CHECK still applies to every
+new row, so the types added later (`PROPOSAL_ENDORSED`, `QUARTERLY_REPORT`,
+`PROJECT_COMPLETION`, `DEAN_ASSIGNMENT`, `SPECIAL_ORDER_DRAFT`,
+`REVISION_DEADLINE_REMINDER`) could not be stored: the insert failed and rolled back
+the whole workflow transaction. The endorsement to OVCRIGE answered 409 for that
+reason.
+
+The migration replaces the constraint with the full `NotificationTypes` vocabulary. It
+is idempotent, touches no notification row, and keeps the constraint `NOT VALID` for
+the same reason as the original (unchanged historical rows are not re-validated). It
+must be applied together with the build that introduced the newer types;
+`NotificationTypeConstraintCoverageTest` keeps the SQL list and the Java constants in
+step.
 
 ---
 
@@ -521,7 +550,31 @@ operation.
 
 ---
 
-## 11. Deployment checklist
+## 11. Real-time notifications (SSE) and multiple instances
+
+Notification rows are always persisted. The live bell/badge uses a Server-Sent Events
+stream (`GET /api/notifications/stream`) authenticated with the ordinary Bearer token.
+The emitter registry is **in memory**, so it is correct for the single-instance
+deployment this repository describes.
+
+If the application is scaled to more than one instance:
+
+- an event committed on instance A is pushed only to streams connected to A;
+- streams connected to instance B still learn about it from the client's periodic
+  reconciliation (90 seconds while visible) and the focus/visibility/online refresh;
+- a load balancer with **sticky sessions** keeps a browser's stream on one instance and
+  is the smallest change;
+- a shared broker (for example Redis pub/sub) is the alternative if sticky sessions are
+  not available.
+
+Do not disable persistence or rely on the stream as the source of truth. A client that
+was offline when an event occurred receives the row on its next list refresh or
+reconnect. Do not add a broker or sticky-session requirement unless the deployment
+actually runs multiple instances.
+
+---
+
+## 12. Deployment checklist
 
 - [ ] Database backed up (`pg_dump`).
 - [ ] Upload directory backed up, with a manifest.

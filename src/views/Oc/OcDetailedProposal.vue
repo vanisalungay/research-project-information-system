@@ -1,6 +1,6 @@
 <template>
   <div class="proposal-view">
-    <div class="back" @click="$router.go(-1)">← Back</div>
+    <BackButton fallback="/oc-dashboard" />
     <br />
     <h1>Community Development Program 2024</h1>
 
@@ -243,6 +243,7 @@ Review of Literature -->
 
 <script setup>
 // This component is read-only, no props or reactive data needed.
+import BackButton from '@/components/BackButton.vue'
 </script>
 
 <style scoped>

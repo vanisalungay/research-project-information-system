@@ -1,5 +1,8 @@
 package com.rpis.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.rpis.backend.util.NotificationTimestampSerializer;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,7 +12,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", uniqueConstraints = @UniqueConstraint(
+        name = "ux_notifications_user_dedupe", columnNames = {"user_id", "dedupe_key"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,6 +35,16 @@ public class Notification {
 
     @Column(name = "type")
     private String type;
+
+    /**
+     * The role this notification is for - the recipient's role context at the time it was
+     * raised (for example {@code DEAN} for a new endorsement request, {@code PROPONENT}
+     * for an approval). A multi-role account therefore sees only the notifications of the
+     * role it signed in as. Null on a legacy row whose context could not be recovered
+     * safely; the API only serves such a row to a single-role account.
+     */
+    @Column(name = "recipient_role", length = 50)
+    private String recipientRole;
 
     /**
      * The record this notification is about, interpreted by {@link #type}: the proposal
@@ -78,10 +92,31 @@ public class Notification {
     @Transient
     private String proposalDocumentId;
 
+    /**
+     * Computed (not persisted) proposal id this notification should open, filled by the
+     * notification service on read. It is the same value as {@link #proposalId} for a
+     * proposal-workflow row, the proposal behind the endorsement request for an
+     * {@code ENDORSEMENT} row (whose {@code proposalId} is polymorphic), and null when the
+     * linked proposal no longer exists. Clients resolve navigation from this field when it
+     * is present so a stale or endorsement-request id is never opened as a proposal.
+     */
+    @Transient
+    private Long linkedProposalId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    /**
+     * Idempotency key for generated notifications (currently the revision deadline
+     * reminder). Ordinary notifications leave this null; PostgreSQL allows many nulls
+     * in the unique (user_id, dedupe_key) index.
+     */
+    @JsonIgnore
+    @Column(name = "dedupe_key", length = 200)
+    private String dedupeKey;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
+    @JsonSerialize(using = NotificationTimestampSerializer.class)
     private LocalDateTime createdAt;
 }

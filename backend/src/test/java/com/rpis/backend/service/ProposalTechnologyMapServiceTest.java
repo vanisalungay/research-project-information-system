@@ -32,7 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
+
 import com.rpis.backend.storage.LocalUploadStorage;
 
 /**
@@ -64,7 +65,7 @@ class ProposalTechnologyMapServiceTest {
         service = new ProposalService(
                 proposalRepository,
                 mock(UserRepository.class),
-                mock(NotificationService.class),
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class),
                 mock(ProposalAnnouncementService.class),
                 mock(ProposalVersionService.class),
                 mock(ProposalSectionRemarkService.class),

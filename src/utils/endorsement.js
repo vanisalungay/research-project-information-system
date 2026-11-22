@@ -21,6 +21,8 @@ import {
   MAX_PROGRAM_TITLE_LENGTH,
   isCreatingProgramTitle,
 } from './programTitleOptions.js'
+import { formatPersonName } from './personName.js'
+import { fundingProgramDisplayName } from './fundingProgram.js'
 import { formatTimestamp } from './timestamps.js'
 import { statusTone } from './statusTone.js'
 import { statusLabel } from './statusLabel.js'
@@ -187,12 +189,12 @@ export function endorsementTab(value) {
   return ENDORSEMENT_TABS.find((tab) => tab.id === id)
 }
 
-/** Label of a funding program (call type) as reported by the backend. */
+/**
+ * Label of a funding program (call type) as reported by the backend. IFP is shown as
+ * its complete name "Internally Funded Proposal"; the stored key stays "IFP".
+ */
 export function fundingProgramLabel(request) {
-  const label = request?.fundingProgramLabel
-  if (label) return label
-  const program = String(request?.fundingProgram ?? '').trim()
-  return program || 'Unspecified funding program'
+  return fundingProgramDisplayName(request?.fundingProgram, request?.fundingProgramLabel)
 }
 
 /**
@@ -373,10 +375,10 @@ export function validateRejection(form = {}) {
   return errors
 }
 
-/** The payload of an approval, trimmed. */
+/** The payload of an approval, trimmed and in the standard person-name format. */
 export function buildApprovalPayload(form = {}) {
   return {
-    endorserName: String(form.endorserName ?? '').trim(),
+    endorserName: formatPersonName(String(form.endorserName ?? '').trim()),
     endorserDesignation: String(form.endorserDesignation ?? '').trim(),
     endorsementDate: String(form.endorsementDate ?? '').trim(),
   }
@@ -453,6 +455,27 @@ export async function fetchEndorsementDocument(id, { download = false } = {}) {
     params: download ? { download: true } : {},
     responseType: 'blob',
   })
+  return response.data
+}
+
+/**
+ * The preserved versions of an issued letter, newest first. The current version is
+ * flagged; older versions remain viewable and downloadable after a reissue.
+ */
+export async function fetchEndorsementLetterVersions(id) {
+  const response = await api.get(`${ENDORSEMENTS_ENDPOINT}/${id}/document/versions`)
+  return Array.isArray(response.data) ? response.data : []
+}
+
+/** One preserved letter version as a Blob, for preview or download. */
+export async function fetchEndorsementLetterVersion(id, versionId, { download = false } = {}) {
+  const response = await api.get(
+    `${ENDORSEMENTS_ENDPOINT}/${id}/document/versions/${versionId}`,
+    {
+      params: download ? { download: true } : {},
+      responseType: 'blob',
+    },
+  )
   return response.data
 }
 

@@ -28,13 +28,15 @@ const STORE = read('../stores/userData.js')
 const CREDENTIALS = read('../../backend/src/main/java/com/rpis/backend/service/InstitutionalCredentialsService.java')
 const USER_SERVICE = read('../../backend/src/main/java/com/rpis/backend/service/UserService.java')
 const CONTROLLER = read('../../backend/src/main/java/com/rpis/backend/controller/UserController.java')
+const DEAN_SERVICE = read('../../backend/src/main/java/com/rpis/backend/service/DeanAccountService.java')
 const FILTER = read('../../backend/src/main/java/com/rpis/backend/config/TokenAuthenticationFilter.java')
 const ENTITY = read('../../backend/src/main/java/com/rpis/backend/model/User.java')
 
 test('the modal no longer asks for an email or a password', () => {
   assert.ok(!MODAL.includes('v-model="user.email"'), 'the email is never typed')
   assert.ok(!MODAL.includes('v-model="user.password"'), 'the password is never typed')
-  assert.ok(MODAL.includes('id="email" :value="generatedEmail"'), 'the email is read-only')
+  assert.match(MODAL, /id="email"[\s\S]{0,80}?:value="generatedEmail"/,
+    'the email is read-only')
   assert.ok(MODAL.includes('institutionalEmail'), 'and previews the naming rule')
   assert.ok(MODAL.includes("role: user.value.role"), 'the role is still chosen by the administrator')
 })
@@ -42,21 +44,21 @@ test('the modal no longer asks for an email or a password', () => {
 test('the modal shows the credentials the backend returned, once', () => {
   assert.ok(MODAL.includes('body.temporaryPassword'), 'the temporary password comes from the response')
   assert.ok(MODAL.includes('body.email'), 'so does the address')
-  assert.ok(MODAL.includes('v-if="created"'), 'and only after a successful creation')
+  assert.ok(MODAL.includes('adm-created'), 'and only after a successful creation')
   assert.ok(MODAL.includes('const copy ='), 'with a copy button per credential')
   assert.ok(MODAL.includes('const copyBoth ='), 'and one for both')
-  assert.ok(MODAL.includes("emit('created')"), 'the list behind the modal is refreshed')
+  assert.ok(MODAL.includes("emit('created',"), 'the list behind the modal is refreshed')
   assert.ok(MODAL.includes('if (isLoading.value) return'), 'a double submit cannot create two accounts')
 })
 
 test('the backend is the authority for the address and the password', () => {
-  assert.ok(CREDENTIALS.includes('"@msunawaan.edu.ph"'), 'the canonical domain')
+  assert.ok(CREDENTIALS.includes('"@msunaawan.edu.ph"'), 'the canonical domain')
   assert.ok(CREDENTIALS.includes('temporaryPasswordFor(String fullName)'),
     'the password is derived from the name, in one place')
   assert.ok(CREDENTIALS.includes('TEMPORARY_PASSWORD_SUFFIX = "123"'), 'and ends with 123')
   assert.ok(USER_SERVICE.includes('temporaryPasswordFor('),
     'the standard account-creation path uses that one rule')
-  assert.ok(CONTROLLER.includes('temporaryPasswordFor('),
+  assert.ok(DEAN_SERVICE.includes('temporaryPasswordFor('),
     'and so does the Dean path, without repeating it')
   assert.ok(CREDENTIALS.includes('availableEmailFor'), 'the uniqueness loop')
   assert.ok(USER_SERVICE.includes('createStaffAccountWithGeneratedCredentials'), 'wired into creation')

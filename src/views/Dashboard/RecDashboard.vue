@@ -121,48 +121,23 @@
       </section>
 
       <!-- Notifications -->
-      <aside class="dash-section">
-        <header class="dash-section-head">
-          <span class="dash-section-icon" v-html="icons.bell"></span>
-          <h3 class="dash-section-title">Notifications</h3>
-        </header>
-
-        <ul v-if="notifications.length" class="dash-notes">
-          <li
-            v-for="notification in notifications.slice(0,5)"
-            :key="notification.id"
-            class="dash-note dash-note--clickable"
-            @click="openNotification(notification)"
-          >
-            <span class="dash-note-icon" v-html="icons.bell"></span>
-            <div class="dash-note-body">
-              <p class="dash-note-text">{{ notification.message }}</p>
-              <div class="dash-note-foot">
-                <span class="dash-note-date">
-                  {{ formatDate(notification.createdAt) }}
-                </span>
-              </div>
-            </div>
-          </li>
-        </ul>
-
-        <p v-else class="dash-empty">No notifications.</p>
-
-        <button class="section-link notif-view-all" @click="goToNotifications">
-          <span>View All</span>
-          <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
-        </button>
-      </aside>
+      <NotificationPreview
+        class="dash-section"
+        title="Notifications"
+        :limit="5"
+        view-all-to="/rec-notif"
+        empty-text="No notifications."
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
+import { latestProposalSnippets } from '@/utils/dashboardProposals'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { UserRole } from '@/stores/userData'
-import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
@@ -208,12 +183,9 @@ const icons = {
 const router = useRouter()
 
 const proposals = ref([])
-const notifications = ref([])
 
 const latestProposals = computed(() =>
-  [...proposals.value]
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 5)
+  latestProposalSnippets(proposals.value, { dateField: 'createdAt' }),
 )
 
 const totalAssigned = computed(() =>
@@ -240,52 +212,20 @@ const loadDashboard = async () => {
     const proposalRes = await api.get('/api/proposals')
     const allProposals = proposalRes.data || []
 
-    // Get current user
-    const stored = localStorage.getItem('user_data')
-    if (stored) {
-      const user = JSON.parse(atob(stored))
-
-      // Filter proposals assigned to this REC user
-      // Assuming proposals have an 'assignedTo' field or similar
-      // For now, show all UNDER_REVIEW proposals
-      proposals.value = allProposals.filter(p =>
+    // Filter proposals assigned to this REC user
+    // Assuming proposals have an 'assignedTo' field or similar
+    // For now, show all UNDER_REVIEW proposals
+    proposals.value = allProposals.filter(p =>
         p.status === 'UNDER_REVIEW' ||
         p.status === 'REC_APPROVED' ||
         p.status === 'REC_REJECTED'
       )
-
-      // Load notifications
-      const notifRes = await api.get(`/api/notifications?userId=${user.id}`)
-      notifications.value = notifRes.data || []
-    }
   } catch (err) {
     console.error(err)
   }
 }
 
-const formatDate = (date) => {
-  return new Date(date).toLocaleString()
-}
-
 onMounted(loadDashboard)
-
-const goToNotifications = () => {
-  router.push('/rec-notif')
-}
-
-/**
- * Where a notification opens: the exact proposal it carries, on this role's proposal page
- * (/rec-prop?id=...). The id is the saved record reference - never the notification title -
- * and a notification with no reference has no destination.
- */
-const notificationDestination = (notification) =>
-  proposalNotificationDestination(notification, UserRole.REC)
-
-/** Opens the proposal a notification is about. Navigation only - the read state is untouched. */
-const openNotification = (notification) => {
-  const destination = notificationDestination(notification)
-  if (destination) router.push(destination)
-}
 
 const goToAssigned = () => {
   router.push('/assigned-proposals')

@@ -148,3 +148,23 @@ test('the layout is driven by responsive rules, not by fixed widths', () => {
   )
 })
 
+test('the Call for Proposals section has View All and a five-call preview', () => {
+  assert.match(DASHBOARD, /to="\/proponent-calls"/, 'the View All action is in the call section')
+  assert.match(DASHBOARD, /View All/)
+  assert.match(DASHBOARD, /slice\(0, 5\)/, 'the dashboard preview is capped at five')
+  assert.match(DASHBOARD, /additionalCalls/, 'the remaining preview calls are rendered')
+  assert.ok(ROUTER.includes("path: 'proponent-calls'"), 'the listing route exists')
+})
+
+test('the full Call for Proposals page reuses the published-call endpoint and filters', () => {
+  const page = read(
+    fileURLToPath(new URL('../views/Proponent/ProponentCalls.vue', import.meta.url)),
+  )
+  assert.ok(page.includes('PROPONENT_CALLS_ENDPOINT'), 'the page uses the published-call endpoint')
+  assert.ok(page.includes('filteredCalls'), 'search and status filtering are applied')
+  assert.ok(page.includes("value=\"Open\""), 'Open calls are offered in the filter')
+  assert.ok(page.includes("value=\"Scheduled\""), 'Scheduled calls are offered in the filter')
+  assert.ok(page.includes("value=\"Closed\""), 'Closed calls are offered in the filter')
+  assert.ok(page.includes('/proponent-announcement/'), 'each call opens its existing details page')
+})
+

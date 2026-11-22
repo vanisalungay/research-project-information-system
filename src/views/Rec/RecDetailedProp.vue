@@ -18,14 +18,14 @@
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
       <button class="btn-primary" @click="loadProposal">Retry</button>
-      <button class="back-btn btn-secondary" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- MISSING ID / NOT FOUND: said out loud instead of an empty page -->
     <div v-else-if="missingId || notFound" class="error-state">
       <p v-if="missingId">No proposal was selected. Open one from the proposal list.</p>
       <p v-else>This proposal could not be found, or it is not available to your account.</p>
-      <button class="btn-primary" @click="goBack">Back to Proposals</button>
+      <BackButton label="Back to Proposals" :navigate="false" @click="goBack" />
     </div>
 
     <!-- CONTENT: the field sections in the wide column, the summary cards beside them. -->
@@ -74,6 +74,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import SdgChecklist from '@/components/SdgChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
+import BackButton from '@/components/BackButton.vue'
 import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -258,7 +259,7 @@ const quickRows = computed(() => [
  * be declared inside onMounted, so the template's @click had no handler at all.
  */
 const goBack = () => {
-  if (typeof window !== 'undefined' && window.history.length > 1) {
+  if (typeof window !== 'undefined' && window.history.state?.back) {
     window.history.back()
     return
   }
@@ -281,19 +282,6 @@ const goBack = () => {
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
-}
-
-/* Layout only; .back-btn is a neutral cancel-style button (assets/actions.css). */
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
 }
 
 .header-info {

@@ -77,8 +77,15 @@ test('the RPS, OVCAF and Chancellor roles open the proposal on their own page', 
   })
 })
 
+test('the Proponent opens the proposal details page', () => {
+  assert.deepEqual(proposalNotificationDestination({ proposalId: 3 }, 'PROPONENT'), {
+    name: 'ProponentPropDetails',
+    params: { id: 3 },
+  })
+})
+
 test('a role without a proposal page never gets a destination', () => {
-  for (const role of ['PROPONENT', 'DEAN', undefined, 'UNKNOWN']) {
+  for (const role of ['DEAN', undefined, 'UNKNOWN']) {
     assert.equal(
       proposalNotificationDestination({ proposalId: 3 }, role),
       null,
@@ -110,37 +117,24 @@ test('the two target routes exist and are the ones the dashboards use', () => {
   )
 })
 
-test('both dashboards wire the click without touching the notification data', () => {
-  for (const [name, source, role] of [
-    ['REC', REC_DASHBOARD, 'UserRole.REC'],
-    ['OVCRIGE', OVCRIGE_DASHBOARD, 'UserRole.OVCRIGE'],
+test('both dashboards use the shared notification preview', () => {
+  for (const [name, source] of [
+    ['REC', REC_DASHBOARD],
+    ['OVCRIGE', OVCRIGE_DASHBOARD],
   ]) {
     assert.match(
       source,
-      /import \{ proposalNotificationDestination \} from '@\/utils\/proposalNotificationTarget'/,
-      `the ${name} dashboard must import the shared rule`,
-    )
-    assert.ok(
-      source.includes(`proposalNotificationDestination(notification, ${role})`),
-      `the ${name} dashboard must resolve the destination for its role`,
+      /import NotificationPreview from '@\/components\/NotificationPreview\.vue'/,
+      `the ${name} dashboard must use the shared preview`,
     )
     assert.match(
       source,
-      /class="dash-note dash-note--clickable"/,
-      `the ${name} notification must carry the clickable class`,
+      /<NotificationPreview[\s\S]{0,220}view-all-to=/,
+      `the ${name} dashboard must render the preview with its View all target`,
     )
-    assert.match(
-      source,
-      /@click="openNotification\(notification\)"/,
-      `the ${name} notification must open the proposal on click`,
-    )
-
-    // The message and the timestamp are shown unchanged, and nothing marks a notification
-    // as read (navigation only).
-    assert.match(source, /\{\{ notification\.message \}\}/, `the ${name} message must be kept`)
     assert.ok(
-      !source.includes('/read'),
-      `the ${name} dashboard must not change the read state on click`,
+      !source.includes('userId=4'),
+      `the ${name} dashboard must not use a hardcoded notification user id`,
     )
   }
 })

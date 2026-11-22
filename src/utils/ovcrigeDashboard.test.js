@@ -84,12 +84,30 @@ test('every statistic is bound to real data, never typed into the template', () 
   }
 })
 
-test('the dashboard reads the same endpoints it always did', () => {
+test('the dashboard reads its proposals and leaves notifications to the shared store', () => {
   assert.match(DASHBOARD, /api\.get\('\/api\/proposals'/, 'proposals come from the same endpoint')
   assert.match(
     DASHBOARD,
-    /api\.get\(\s*'\/api\/notifications\?userId=4'\s*\)/,
-    'notifications come from the same endpoint',
+    /sort: 'submittedAt'/,
+    'the list must be ordered by the server on the real submission date',
+  )
+  assert.match(
+    DASHBOARD,
+    /statusIn: \[\.\.\.OVCRIGE_DASHBOARD_FETCH_STATUSES\]/,
+    'the request must use the shared OVCRIGE status set, not an inline list',
+  )
+  assert.ok(
+    !DASHBOARD.includes("'FOR REVIEW'") && !DASHBOARD.includes("'APPROVED'"),
+    'not-yet-endorsed and finished proposals must not be requested for this table',
+  )
+  assert.ok(
+    !DASHBOARD.includes('/api/notifications'),
+    'notifications are read once by the shared store, with no hardcoded user id',
+  )
+  assert.match(
+    DASHBOARD,
+    /import NotificationPreview from '@\/components\/NotificationPreview\.vue'/,
+    'the dashboard uses the shared notification preview',
   )
 
   // The statistics are still filtered from the records the endpoint returns.
@@ -106,9 +124,11 @@ test('the dashboard reads the same endpoints it always did', () => {
 test('the dashboard keeps every route it links to', () => {
   const paths = routePaths()
 
-  // Path targets, with the dynamic part removed for the comparison.
+  // Path targets, with the dynamic part removed for the comparison. The notification
+  // "View all" is a preview prop rather than a push in this component.
+  assert.ok(DASHBOARD.includes('view-all-to="/notifications"'))
+  assert.ok(paths.has('/notifications'), '/notifications is not a route in router/index.js')
   for (const [target, route] of [
-    ["router.push('/notifications')", '/notifications'],
     ["router.push('/submit-proposals')", '/submit-proposals'],
     ['router.push(`/review-prop/${id}`)', '/review-prop/:id'],
   ]) {
@@ -139,8 +159,8 @@ test('the proposal table keeps its columns, cells and status text', () => {
   )
   assert.match(
     DASHBOARD,
-    /\{\{ proposal\.createdAt\?\.substring\(0, 10\) \}\}/,
-    'the submission date cell must be kept',
+    /\{\{ proposalSubmittedAt\(proposal\)\?\.substring\(0, 10\) \|\| '—' \}\}/,
+    'the submission date cell must read the submission event, not the row creation time',
   )
 
   // The status shown goes through the shared proposal label, so a newly submitted
@@ -151,12 +171,21 @@ test('the proposal table keeps its columns, cells and status text', () => {
     'the status pill must use the shared proposal status label',
   )
 
-  // The action keeps its handler and the list keeps its limit.
+  // The action keeps its handler and the preview keeps the shared, sorted five-item limit.
   assert.match(DASHBOARD, /@click="goToReview\(proposal\.id\)"/, 'the Review action must be kept')
   assert.match(
     DASHBOARD,
-    /v-for="proposal in proposals\.slice\(0, 5\)"/,
-    'the proposals must keep their order and their limit',
+    /v-for="proposal in latestEndorsed"/,
+    'the table must render the latest-five preview',
+  )
+  assert.ok(
+    DASHBOARD.includes("from '@/utils/dashboardProposals'"),
+    'the preview must use the shared dashboard proposal limit',
+  )
+  assert.match(
+    DASHBOARD,
+    /latestProposalSnippets\(\s*proposals\.value\.filter\(isOvcrigePipelineProposal\),\s*\{ dateField: 'submittedAt', fallbackDateFields: \['createdAt'\] \},?\s*\)/,
+    'the preview must be newest-first by the real submission date and only show the pipeline',
   )
 
   // The loading and empty states are the real ones, not placeholder text.
@@ -164,24 +193,16 @@ test('the proposal table keeps its columns, cells and status text', () => {
   assert.ok(DASHBOARD.includes('No proposals found.'), 'the table needs its empty state')
 })
 
-test('the notifications keep their message, date and order', () => {
+test('the notifications use the shared, live preview', () => {
   assert.match(
     DASHBOARD,
-    /v-for="notification in notifications\.slice\(0, 5\)"/,
-    'the notifications must keep their order and their limit',
+    /<NotificationPreview[\s\S]{0,220}view-all-to="\/notifications"[\s\S]{0,220}empty-text="No notifications\."/,
+    'the preview must keep its route and empty state',
   )
-  assert.match(
-    DASHBOARD,
-    /\{\{ notification\.message \}\}/,
-    'the notification message must be shown unchanged',
+  assert.ok(
+    !DASHBOARD.includes('createdAt?.substring(0, 16)'),
+    'the timestamp is rendered by the shared RelativeTime component',
   )
-  assert.match(
-    DASHBOARD,
-    /\{\{ notification\.createdAt\?\.substring\(0, 16\) \}\}/,
-    'the notification timestamp must be shown unchanged',
-  )
-  assert.ok(DASHBOARD.includes('No notifications.'), 'the notifications need their empty state')
-  assert.match(DASHBOARD, /@click="goToNotifications"/, 'the notifications action must be kept')
 })
 
 test('the status pill tones are chosen from the record status', () => {

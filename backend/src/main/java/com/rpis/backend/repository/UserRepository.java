@@ -14,6 +14,50 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
+    /**
+     * The account whose stored address matches the normalized one, ignoring case and
+     * surrounding whitespace. This is what makes a typed address and a pasted one resolve
+     * to the same account: the column may have been written before normalization existed,
+     * so the comparison is done case-insensitively on the stored value as well.
+     */
+    @Query("SELECT u FROM User u WHERE LOWER(TRIM(u.email)) = :email")
+    Optional<User> findByNormalizedEmail(@Param("email") String email);
+
+    /**
+     * Accounts that hold the role through either the primary column or the
+     * {@code user_roles} assignment table. The primary-column branch keeps a legacy row
+     * usable even before its assignment rows have been read; the assignment branch is what
+     * makes an additional role (a Proponent appointed Dean) discoverable everywhere.
+     */
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.roleAssignments r "
+            + "WHERE (UPPER(u.role) = :role OR UPPER(r) = :role) AND u.status = :status "
+            + "ORDER BY u.name")
+    List<User> findByAssignedRoleAndStatusOrderByNameAsc(
+            @Param("role") String role, @Param("status") String status);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.roleAssignments r "
+            + "WHERE (UPPER(u.role) = :role OR UPPER(r) = :role) "
+            + "AND UPPER(u.assignedCollege) = UPPER(:college) AND u.status = :status "
+            + "ORDER BY u.name")
+    List<User> findByAssignedRoleAndCollegeAndStatusOrderByNameAsc(
+            @Param("role") String role, @Param("college") String college,
+            @Param("status") String status);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.roleAssignments r "
+            + "WHERE (UPPER(u.role) = :role OR UPPER(r) = :role) "
+            + "AND u.assignedCollege IS NULL AND u.status = :status "
+            + "ORDER BY u.name")
+    List<User> findByAssignedRoleWithoutCollegeAndStatusOrderByNameAsc(
+            @Param("role") String role, @Param("status") String status);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.roleAssignments r "
+            + "WHERE UPPER(u.role) = :role OR UPPER(r) = :role ORDER BY u.name")
+    List<User> findByAssignedRoleOrderByNameAsc(@Param("role") String role);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.roleAssignments r "
+            + "WHERE UPPER(u.role) IN :roles OR UPPER(r) IN :roles")
+    List<User> findByAnyAssignedRoleIn(@Param("roles") List<String> roles);
+
     List<User> findByStatus(String status);
 
     List<User> findByRoleAndStatus(String role, String status);

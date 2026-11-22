@@ -48,15 +48,16 @@ class ProposalFieldRegistryCoverageTest {
             // the proponent can edit a reference again (and its italics survive)
             "referencesJson",
             // return-for-revision routing metadata
-            "returnedByOffice", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
+            "returnedByOffice", "returnKind", "returnedByName", "returnedByUserId", "returnedAt", "returnRemarks",
             "revisionDeadline", "revisionForwardedAt", "revisionForwardedByName",
             "revisionForwardedByUserId", "revisionNotes",
             // the Dean endorsement this proposal was submitted under: a structural link to
             // the endorsement record (the endorsement letter itself is reviewed in the
             // Certifications section), not a field of the proposal form
             "endorsementRequestId",
-            // timestamps
-            "createdAt", "updatedAt",
+            // timestamps: when the draft row was first saved, when it last changed and
+            // when it was actually submitted (the last one drives the RPS submitted list)
+            "createdAt", "updatedAt", "submittedAt", "endorsedAt",
             // the audited status transitions (who moved the proposal, when and why):
             // workflow history rather than proposal content, so it has no remark control
             "statusHistory",

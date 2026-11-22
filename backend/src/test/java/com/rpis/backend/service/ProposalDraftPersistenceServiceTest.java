@@ -85,7 +85,7 @@ class ProposalDraftPersistenceServiceTest {
         ProposalAnnouncementService announcementService = mock(ProposalAnnouncementService.class);
         versionService = mock(ProposalVersionService.class);
         service = new ProposalService(proposalRepository, userRepository,
-                mock(NotificationService.class), announcementService, versionService,
+                mock(NotificationService.class), mock(ProposalNotificationPolicy.class), announcementService, versionService,
                 mock(ProposalSectionRemarkService.class), new CurrentUser(),
                 mock(CooperatingAgencyService.class), mock(PriorityAgendaService.class),
                 new LocalUploadStorage("uploads"));
@@ -374,6 +374,35 @@ class ProposalDraftPersistenceServiceTest {
         assertEquals(1, saved.getLogFrames().size(), "log frames must not be deleted");
         assertEquals(1, saved.getPersonnel().size(), "personnel must not be deleted");
         assertEquals(1, saved.getOtherProjects().size(), "other projects must not be deleted");
+    }
+
+    @Test
+    void aSentSiteKeepsItsLocationAndAcceptsAMissingDistrict() {
+        Proposal draft = existingDraft();
+        draft.getSites().add(new ProposalSite(null, draft, "Philippines",
+                "Caraga", "Agusan del Norte", "First District", "Butuan City", "Barangay 1"));
+
+        ProposalRequest.SiteDTO site = new ProposalRequest.SiteDTO();
+        site.setCountry("Philippines");
+        site.setRegion("Northern Mindanao");
+        site.setProvince("Misamis Oriental");
+        site.setDistrict(null);
+        site.setMunicipality("Naawan");
+        site.setBarangay("Balintad");
+
+        ProposalRequest request = request("DRAFT");
+        request.setSites(List.of(site));
+
+        Proposal saved = service.saveProposal(request, PROPOSAL_ID);
+
+        assertEquals(1, saved.getSites().size());
+        ProposalSite stored = saved.getSites().get(0);
+        assertEquals("Philippines", stored.getCountry());
+        assertEquals("Northern Mindanao", stored.getRegion());
+        assertEquals("Misamis Oriental", stored.getProvince());
+        assertNull(stored.getDistrict(), "a missing district must be accepted");
+        assertEquals("Naawan", stored.getMunicipality());
+        assertEquals("Balintad", stored.getBarangay());
     }
 
     @Test

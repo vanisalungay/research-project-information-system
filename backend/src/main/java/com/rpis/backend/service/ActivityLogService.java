@@ -16,7 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -40,11 +39,12 @@ import java.util.Locale;
  *       history. No query in this class can return somebody else's rows.</li>
  * </ul>
  *
- * <p>Recording never breaks the operation it describes: the insert runs in its own
- * transaction and every failure is caught and logged. The alternative - joining the
- * caller's transaction - would turn a full disk or a lock timeout into a failed
- * account creation, and a database that refuses audit rows must not become a
- * database that refuses work.
+ * <p>Recording joins the caller's transaction: the activity row and the administrative
+ * change commit together, so the log never reports an action that was rolled back. A
+ * refused audit insert therefore fails the operation too - which is why the allowed
+ * action/module vocabulary is kept in step with the database CHECK constraints by
+ * {@code ActivityLogConstraintCoverageTest}, and why the new values are added by a
+ * migration before the code that writes them is deployed.
  *
  * <p>Nothing sensitive is ever recorded. Callers pass the account or object name
  * and the change that was made; a password, a temporary password, a token and a
@@ -96,7 +96,9 @@ public class ActivityLogService {
             entry.setStatus(status == null ? ActivityLog.STATUS_SUCCESS : status);
             activityLogRepository.save(entry);
         } catch (Exception e) {
-            // Deliberately swallowed: an audit write must never fail the work it records.
+            // The row is written in the caller's transaction, so this normally means the
+            // action is about to roll back with it. The reason is logged rather than lost;
+            // the vocabulary is kept valid by the migration + coverage test above.
             log.warn("Could not record the activity '{}' ({}): {}", action, module, e.getMessage());
         }
     }

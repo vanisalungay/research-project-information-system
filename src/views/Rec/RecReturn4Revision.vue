@@ -141,7 +141,7 @@
     <!-- ERROR STATE -->
     <div v-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-secondary" @click="goBack">Go Back</button>
+      <BackButton fallback="/return-proposals" />
     </div>
 
     <!-- CONFIRMATION MODAL -->
@@ -171,6 +171,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { useUserDataStore } from '@/stores/userData'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
 import { toSectionRemarkPayload } from '@/utils/proposalSections'
@@ -313,9 +314,6 @@ const cancelReturn = () => {
   showConfirmModal.value = false
 }
 
-const goBack = () => {
-  window.history.back()
-}
 </script>
 
 <style>

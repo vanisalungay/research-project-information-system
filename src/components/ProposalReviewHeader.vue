@@ -3,26 +3,27 @@
        title, the proposal id, the workflow status and the download action. The page keeps
        its own handlers; it only borrows the chrome. -->
   <header class="rv-header">
-    <div class="rv-header-main">
-      <button type="button" class="rv-back" @click="$emit('back')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Back
-      </button>
+    <!-- 1. Navigation: always its own area, so the standard Back control cannot
+         compete with the title for space. -->
+    <nav class="rv-header-nav" aria-label="Proposal navigation">
+      <BackButton :navigate="false" @click="$emit('back')" />
+    </nav>
 
-      <div class="rv-heading">
-        <h1 class="rv-title">{{ title || 'Proposal Details' }}</h1>
-        <div class="rv-heading-meta">
-          <span v-if="documentId" class="rv-id">ID: {{ documentId }}</span>
-          <span v-if="status" class="rv-status" :class="tone">{{ statusLabel }}</span>
-        </div>
+    <!-- 2. Identification: the title is the page's primary heading, with the saved
+         reference and workflow status as secondary metadata beneath it. -->
+    <div class="rv-identification">
+      <h1 class="rv-title">{{ title || 'Proposal Details' }}</h1>
+      <div v-if="documentId || status" class="rv-heading-meta">
+        <span v-if="documentId" class="rv-id">
+          <span class="rv-id-label">Proposal ID</span>
+          <span class="rv-id-value">{{ documentId }}</span>
+        </span>
+        <span v-if="status" class="rv-status" :class="tone">{{ statusLabel }}</span>
       </div>
     </div>
 
+    <!-- 3. Actions: the page's own controls in one aligned group, then Download. -->
     <div class="rv-header-actions">
-      <!-- The role's own review actions render here, unchanged. -->
       <slot name="actions" />
       <button v-if="showDownload" type="button" class="rv-download" :disabled="downloadLoading"
         @click="$emit('download')">
@@ -40,6 +41,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import BackButton from '@/components/BackButton.vue'
 
 // The stylesheet the .rv-* markup needs. It is imported here, by the component that renders
 // that markup, because the pages use this component directly - importing it only in the page

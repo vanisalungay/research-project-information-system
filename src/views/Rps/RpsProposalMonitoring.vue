@@ -196,7 +196,7 @@
           <footer class="card-footer">
             <div class="submitted">
               <span class="submitted-label">Submitted</span>
-              <span class="submitted-date">{{ formatDate(prop.createdAt) }}</span>
+              <span class="submitted-date">{{ formatDate(prop.submittedAt) }}</span>
             </div>
             <button
               type="button"
@@ -267,9 +267,8 @@ export default {
         result = result.filter(p => proposalStatusMatches(p.status, this.selectedStatus))
       }
 
-      result.sort((a, b) => {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-      })
+      // No client-side sort: the server returns the list newest submission first, and
+      // re-sorting here would also lose its id tie-breaker and missing-date handling.
 
       return result
     }
@@ -280,7 +279,7 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals')
+        const res = await api.get('/api/proposals', { params: { sort: 'submittedAt' } })
         const rows = Array.isArray(res.data) ? res.data : []
         const validRows = rows.filter((p) => p && typeof p === 'object' && !Array.isArray(p))
         if (validRows.length !== rows.length) {

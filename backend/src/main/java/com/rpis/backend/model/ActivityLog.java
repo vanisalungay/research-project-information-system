@@ -48,10 +48,25 @@ public class ActivityLog {
     public static final String ACTION_CALL_UPDATED = "CALL_UPDATED";
     public static final String ACTION_CALL_OPENED = "CALL_OPENED";
     public static final String ACTION_CALL_CLOSED = "CALL_CLOSED";
+    public static final String ACTION_CALL_DELETED = "CALL_DELETED";
     public static final String ACTION_SETTINGS_UPDATED = "SETTINGS_UPDATED";
+    public static final String ACTION_PASSWORD_RESET = "PASSWORD_RESET";
+    public static final String ACTION_DEAN_ASSIGNED = "DEAN_ASSIGNED";
+    public static final String ACTION_DEAN_REPLACED = "DEAN_REPLACED";
+    public static final String ACTION_DEAN_REVOKED = "DEAN_REVOKED";
+    public static final String ACTION_FRAMEWORK_CREATED = "FRAMEWORK_CREATED";
+    public static final String ACTION_FRAMEWORK_UPDATED = "FRAMEWORK_UPDATED";
+    public static final String ACTION_FRAMEWORK_ACTIVATED = "FRAMEWORK_ACTIVATED";
+    public static final String ACTION_FRAMEWORK_DEACTIVATED = "FRAMEWORK_DEACTIVATED";
+    public static final String ACTION_AGENDA_CREATED = "AGENDA_CREATED";
+    public static final String ACTION_AGENDA_UPDATED = "AGENDA_UPDATED";
+    public static final String ACTION_AGENDA_ACTIVATED = "AGENDA_ACTIVATED";
+    public static final String ACTION_AGENDA_DEACTIVATED = "AGENDA_DEACTIVATED";
 
     // ---- Modules -----------------------------------------------------------------
     public static final String MODULE_USER_ACCOUNTS = "User Accounts";
+    public static final String MODULE_DEAN_ROLE_MANAGEMENT = "Dean Role Management";
+    public static final String MODULE_PRIORITY_AGENDA = "Priority Agenda";
     public static final String MODULE_PROFILE = "Profile";
     public static final String MODULE_CALLS_FOR_PROPOSAL = "Calls for Proposal";
     public static final String MODULE_SYSTEM_SETTINGS = "System Settings";

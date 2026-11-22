@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.rpis.backend.service.UserService;
 import com.rpis.backend.util.DatabaseSafetyGuard;
+import com.rpis.backend.util.RpisTimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,20 @@ import javax.sql.DataSource;
 public class RpisBackendApplication {
 
 	public static void main(String[] args) {
+		// Pin the institution's zone before Hibernate, Jackson or any LocalDateTime.now()
+		// call can read the host's default. The notification serializer uses the same zone
+		// to emit an explicit offset in the API response.
+		String configuredZone = System.getenv().getOrDefault("RPIS_TIME_ZONE", "Asia/Manila");
+		try {
+			RpisTimeZone.use(configuredZone);
+		} catch (RuntimeException invalidZone) {
+			log.warn("Ignoring invalid RPIS_TIME_ZONE '{}'; keeping the JVM default ({}).",
+					configuredZone, RpisTimeZone.zone());
+		}
+		// The Hikari connection-init SQL interpolates this property. Set the resolved
+		// (validated) zone so a malformed environment value can never reach SQL and the
+		// Java clock and the database session always agree.
+		System.setProperty("rpis.time-zone", RpisTimeZone.zone().getId());
 		SpringApplication.run(RpisBackendApplication.class, args);
 	}
 

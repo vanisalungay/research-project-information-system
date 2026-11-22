@@ -10,4 +10,14 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findByUserOrderByCreatedAtDesc(User user);
+
+    /** The notifications of one role of an account, newest first. */
+    List<Notification> findByUserAndRecipientRoleIgnoreCaseOrderByCreatedAtDesc(
+            User user, String recipientRole);
+
+    /** Legacy rows written before the role column existed. */
+    List<Notification> findByUserAndRecipientRoleIsNullOrderByCreatedAtDesc(User user);
+
+    /** True when a generated notification with this idempotency key already exists. */
+    boolean existsByUserIdAndDedupeKey(Long userId, String dedupeKey);
 }

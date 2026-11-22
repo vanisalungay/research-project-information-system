@@ -5,7 +5,7 @@
  *
  *   src/views/Admin/UserAccounts.vue       the list, the search and the page header
  *   src/views/Admin/CreateUserModal.vue    the standard Create Account form
- *   src/views/Admin/DeanAccountsModal.vue  the Dean role management screen
+ *   src/views/Admin/ManageDeanFlow.vue     the shared Dean management flow
  *
  * Three things were wrong here, and each of them is checked below:
  *
@@ -39,7 +39,7 @@ const read = (path) => readFileSync(fileURLToPath(new URL(path, import.meta.url)
 
 const USER_ACCOUNTS = read('../views/Admin/UserAccounts.vue')
 const CREATE_MODAL = read('../views/Admin/CreateUserModal.vue')
-const DEAN_MODAL = read('../views/Admin/DeanAccountsModal.vue')
+const MANAGE_FLOW = read('../views/Admin/ManageDeanFlow.vue')
 const USER_STORE = read('../stores/userData.js')
 const BACKEND_ROLES = read('../../backend/src/main/java/com/rpis/backend/model/UserRoles.java')
 
@@ -79,14 +79,14 @@ test('the User Role Authority field is a dropdown that starts unselected', () =>
   // A placeholder is shown until a role is chosen...
   assert.match(
     CREATE_MODAL,
-    /<select[^>]*\bid="role"[\s\S]*?<option value="" disabled>Select User Role<\/option>/,
+    /<select[^>]*\bid="role"[\s\S]*?<option value="" disabled>Select a role<\/option>/,
     'the dropdown offers an unselected placeholder first',
   )
   // ...nothing is preselected in the form state, so that placeholder really shows...
   assert.match(
     CREATE_MODAL,
-    /role: props\.initialRole \|\| '',/,
-    'the form must not default to a role the administrator did not choose',
+    /role: props\.initialRole \|\| \(props\.collegeAuthority \? UserRole\.DEAN : ''\),/,
+    'the standard form starts unselected; only the Dean appointment fixes the role',
   )
   // ...and creating without a role is refused before the request is sent.
   assert.match(
@@ -186,7 +186,7 @@ test('the Dean fields are shown, validated and sent for the Dean role only', () 
   )
   assert.match(
     CREATE_MODAL,
-    /isDean\.value && !user\.value\.assignedCollege/,
+    /isDean\.value && !props\.lockCollege && !user\.value\.assignedCollege/,
     'a Dean without an assigned college must be refused with a message',
   )
 
@@ -255,8 +255,8 @@ test('the Dean row keeps its account and its per-row actions, including the Dean
   assert.match(USER_ACCOUNTS, /dean-manage-btn/, 'with its own button style')
   assert.match(
     USER_ACCOUNTS,
-    /ReplaceDeanModal/,
-    'and it reuses the Dean replacement screen',
+    /ManageDeanFlow/,
+    'and it reuses the same Manage Dean flow as Dean Role Management',
   )
   assert.match(
     USER_ACCOUNTS,
@@ -274,29 +274,61 @@ test('the Dean row keeps its account and its per-row actions, including the Dean
   // in the list.
   assert.match(USER_ACCOUNTS, /u\.name \|\| ''\)\.toLowerCase\(\)\.includes\(keyword\)/)
   assert.match(USER_ACCOUNTS, /u\.email \|\| ''\)\.toLowerCase\(\)\.includes\(keyword\)/)
-  assert.match(USER_ACCOUNTS, /u\.role \|\| ''\)\.toLowerCase\(\)\.includes\(keyword\)/)
+  assert.match(USER_ACCOUNTS, /rolesOf\(u\)\.join\(' '\)\.toLowerCase\(\)\.includes\(keyword\)/)
 })
 
-test('the Dean screen manages an existing account and never creates one', () => {
-  // The form only renders for an account that already exists, so there is exactly one
-  // place in the application where a Dean account can be created: the standard form.
-  assert.match(DEAN_MODAL, /<form v-if="form\.userId"/, 'the Dean form must require an account')
-  assert.ok(
-    !/deanPassword/.test(DEAN_MODAL),
-    'the Dean screen must not ask for a password: it never creates an account',
+test('a multi-role account is shown with every role it holds', () => {
+  // A Proponent who was also appointed Dean keeps one account and both roles. The table
+  // renders the API's roles list rather than the single primary role, and the Dean action
+  // is offered because the account holds DEAN among its roles.
+  assert.match(USER_ACCOUNTS, /const rolesOf = \(user\) =>/)
+  assert.match(USER_ACCOUNTS, /v-for="role in rolesOf\(user\)"/)
+  assert.match(USER_ACCOUNTS, /Array\.isArray\(user\?\.roles\)/)
+  assert.match(
+    USER_ACCOUNTS,
+    /rolesOf\(user\)\.some\(\(role\) => String\(role\)\.toUpperCase\(\) === UserRole\.DEAN\)/,
+    'the Manage Dean action is driven by the roles list, not only the primary role',
   )
-  assert.ok(
-    !/Create Dean Account/.test(DEAN_MODAL),
-    'the Dean screen must not offer a create action',
-  )
-  assert.ok(
-    !/password:/.test(DEAN_MODAL),
-    'the Dean screen must never send a password for an existing account',
-  )
-  assert.match(DEAN_MODAL, /userId: form\.userId/, 'every save must be an update')
+  assert.match(USER_ACCOUNTS, /\{\{ roleLabels\(selectedUser\) \}\}/,
+    'the reset dialog lists every role as well')
 
-  // Editing the scope and revoking the role are still there, so no capability was lost
-  // when the page button was removed.
-  assert.match(DEAN_MODAL, /@click="edit\(dean\)"/, 'the Dean scope must stay editable')
-  assert.match(DEAN_MODAL, /@click="revoke\(dean\)"/, 'the Dean role must stay revocable')
+  // The Dean's status comes from the appointment table, so it reads Active / Revoked
+  // exactly as Dean Role Management does, rather than the account status wording.
+  assert.match(USER_ACCOUNTS, /user\.deanStatus/)
+  assert.match(USER_ACCOUNTS, /deanAssignmentStatusLabel\(user\.deanStatus\)/)
+  assert.match(USER_ACCOUNTS, /user\.deanStatus !== 'REVOKED'/,
+    'a closed appointment offers no Manage action')
+})
+
+test('a reused account is reported without inventing credentials', () => {
+  // The backend answers accountReused when it linked the Dean role to the person's
+  // existing account. The form must not show an empty or fake temporary password.
+  assert.match(CREATE_MODAL, /reused: Boolean\(body\.accountReused\)/)
+  assert.match(CREATE_MODAL, /created\.reused \? 'Existing account reused' : 'Account created'/)
+  assert.match(CREATE_MODAL, /v-if="!created\.reused"/)
+  assert.match(CREATE_MODAL, /reused: created\.value\.reused/)
+  // The preview says the account is reused, not that the address is numbered.
+  assert.match(CREATE_MODAL, /that account is\s+reused/)
+})
+
+test('a revoked Dean stays visible as Dean (Revoked), never as an invented Proponent', () => {
+  // The API returns active roles in `roles` and historical roles in `revokedRoles`; a
+  // Dean-only account has no active role after revocation and no Proponent fallback.
+  assert.match(USER_ACCOUNTS, /const revokedRolesOf = \(user\) =>/)
+  assert.match(USER_ACCOUNTS, /v-for="role in revokedRolesOf\(user\)"/)
+  assert.match(USER_ACCOUNTS, /role-revoked/)
+  assert.match(USER_ACCOUNTS, /\{\{ formatRole\(role\) \}\} \(Revoked\)/)
+  assert.match(USER_ACCOUNTS, /revokedRolesOf\(u\)\.join\(' '\)\.toLowerCase\(\)\.includes\(keyword\)/)
+  // No fallback turns the historical primary value into an active role when the API
+  // returned a roles array at all.
+  assert.match(USER_ACCOUNTS, /if \(Array\.isArray\(user\?\.roles\)\) return user\.roles\.filter\(Boolean\)/)
+  // The status column uses the appointment status for any account with Dean history.
+  assert.match(USER_ACCOUNTS, /v-if="user\.deanStatus"/)
+})
+
+test('the shared Manage Dean flow owns the replacement workflow', () => {
+  assert.match(MANAGE_FLOW, /<ManageDeanModal/)
+  assert.match(MANAGE_FLOW, /<CreateUserModal/)
+  assert.match(MANAGE_FLOW, /replacement-assignment-id/)
+  assert.match(MANAGE_FLOW, /emit\('changed', info\)/)
 })

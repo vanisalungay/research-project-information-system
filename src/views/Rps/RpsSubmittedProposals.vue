@@ -54,12 +54,28 @@
         </svg>
         <span>Endorsed Proposals</span>
       </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="category-btn"
+        :class="{ active: activeCategory === 'rejected' }"
+        :aria-selected="activeCategory === 'rejected'"
+        @click="activeCategory = 'rejected'"
+      >
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <span>Rejected Proposals</span>
+      </button>
     </div>
 
     <!-- ACTIVE CATEGORY CONTENT -->
     <div class="hub-body">
       <KeepAlive>
-        <component :is="activePanel" />
+        <component :is="activePanel" :key="activeCategory" v-bind="activePanelProps" />
       </KeepAlive>
     </div>
   </div>
@@ -77,11 +93,20 @@ const panels = {
   all: RpsSubmittedProposalsPanel,
   revision: RpsRevisionRequestsPanel,
   endorsed: RpsEndorsedProPanel,
+  rejected: RpsSubmittedProposalsPanel,
 }
 
 const activeCategory = ref('all')
 
 const activePanel = computed(() => panels[activeCategory.value] || panels.all)
+
+/**
+ * The Rejected category reuses the Submitted Proposals table, but the panel asks the
+ * API for RETURNED_TO_RPS rows and keeps only the ones returned by OVCRIGE.
+ */
+const activePanelProps = computed(() =>
+  activeCategory.value === 'rejected' ? { category: 'rejected' } : {},
+)
 
 // Heading + description for each category, driven by the same selected-category
 // state used by the category buttons and the content switcher.
@@ -97,6 +122,10 @@ const categoryMeta = {
   endorsed: {
     title: 'Endorsed Proposals',
     description: 'Review and manage proposals endorsed through the existing RPS process.',
+  },
+  rejected: {
+    title: 'Rejected Proposals',
+    description: 'Review proposals rejected by OVCRIGE and returned to ORPS for processing.',
   },
 }
 

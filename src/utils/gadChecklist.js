@@ -24,6 +24,11 @@ export const GAD_SECTION_INSTRUCTION =
 /** Instruction shown under the checklist title. */
 export const GAD_CHECKLIST_INSTRUCTION = "Note: Put an 'X' mark on the appropriate box."
 
+/** The compact instruction banner above the score cards. */
+export const GAD_SCORE_UI_INSTRUCTION =
+  'Use the comments box to explain your answer and note any gender issues you identified. ' +
+  'Points for each answer are shown on the buttons.'
+
 /** The three mutually exclusive response options (the official 2a / 2b / 2c columns). */
 export const GAD_RESPONSE_OPTIONS = [
   { key: 'NO', label: 'No', sub: '2a' },
@@ -314,6 +319,24 @@ export function gadItemScore(checklist, itemKey) {
   const response = checklist?.responses?.[itemKey]
   if (!GAD_RESPONSE_KEYS.has(response)) return null
   return GAD_SCALES[item.scale][response]
+}
+
+/** The highest score a single item can earn, from its own configured scale. */
+export function gadItemMaxScore(itemKey) {
+  const item = gadItem(itemKey)
+  if (!item) return 0
+  return Math.max(...Object.values(GAD_SCALES[item.scale] || { YES: 0 }))
+}
+
+/**
+ * A compact score label for the scoring buttons ("0", "0.5", "1", "0.33", ...).
+ * The two-decimal display stays on the subtotal and total; the buttons use the
+ * configured value without trailing zeros, as the reference layout does.
+ */
+export function gadScoreValueLabel(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '0'
+  return String(Math.round((number + Number.EPSILON) * 100) / 100)
 }
 
 /** The subtotal of one criterion (the sum of its answered items, bounded by the maximum 2). */

@@ -13,7 +13,7 @@
     <!-- Selected project: report history -->
     <template v-else-if="selectedProject">
       <div class="sub-header">
-        <button class="back-btn btn-secondary" @click="selectedProject = null">← All Projects</button>
+        <BackButton label="All Projects" :navigate="false" @click="selectedProject = null" />
         <div>
           <h2>{{ selectedProject.projectTitle }}</h2>
           <p class="subtitle">SO Number: {{ selectedProject.soNumber || 'N/A' }}</p>
@@ -145,8 +145,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
@@ -155,6 +157,8 @@ import { hasTerminalReportContent } from '@/utils/terminalReport'
 import { statusTone } from '@/utils/statusTone.js'
 import { reportStatusLabel } from '@/utils/statusCatalog.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
+
+const route = useRoute()
 
 const projects = ref([])
 const loading = ref(true)
@@ -174,12 +178,26 @@ async function fetchProjects() {
   try {
     const res = await api.get('/api/quarterly-reports/eligible-projects')
     projects.value = res.data || []
+    await openRequestedProject()
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load projects.'
   } finally {
     loading.value = false
   }
 }
+
+/**
+ * A notification opens this page with `?proposalId=...`; open that project's report
+ * history instead of leaving the user on the master list.
+ */
+async function openRequestedProject() {
+  const requested = Number(route.query.proposalId)
+  if (!Number.isInteger(requested) || requested <= 0) return
+  const target = projects.value.find((p) => Number(p.id) === requested)
+  if (target) await openProject(target)
+}
+
+watch(() => route.query.proposalId, openRequestedProject)
 
 async function openProject(p) {
   selectedProject.value = p
@@ -296,12 +314,6 @@ onMounted(fetchProjects)
   font-size: 18px;
 }
 /* Layout only; the action colours are global (assets/actions.css). */
-.back-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
 .state {
   background: #fff;
   border: 1px solid #e2e8f0;

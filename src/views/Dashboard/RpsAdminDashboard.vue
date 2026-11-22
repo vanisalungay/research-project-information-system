@@ -114,6 +114,13 @@
       </div>
     </div>
 
+    <NotificationPreview
+      title="Notifications"
+      :limit="5"
+      view-all-to="/notifications"
+      empty-text="No notifications."
+    />
+
     <!-- Success Toast -->
     <div v-if="showToast" class="toast" :class="toastType">
       {{ toastMessage }}
@@ -124,6 +131,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 
 const users = ref([])
 const isLoading = ref(true)

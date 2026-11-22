@@ -1,9 +1,7 @@
 <template>
   <div class="page">
     <div class="back-link">
-      <router-link to="/oc-dashboard" class="back-btn btn-secondary">
-        <span class="back-arrow">&#8592;</span> Back to Dashboard
-      </router-link>
+      <BackButton label="Back to Dashboard" to="/oc-dashboard" />
       <button v-if="proposal.id" class="btn-download" :disabled="downloadLoading" @click="downloadDetails">
         {{ downloadLoading ? 'Preparing…' : 'Download Proposal Details' }}
       </button>
@@ -18,8 +16,7 @@
     <!-- Error -->
     <div v-else-if="error" class="card center">
       <p class="error-text">{{ error }}</p>
-      <button class="btn-secondary" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to
-        Dashboard</button>
+      <BackButton label="Back to Dashboard" to="/oc-dashboard" style="margin-top:12px;" />
     </div>
 
     <!-- Proposal Content -->
@@ -85,41 +82,38 @@
 
       <!-- RIGHT COLUMN -->
       <div class="right-col">
-        <!-- Status Timeline -->
+        <!-- Status Timeline: the real audited status transitions, newest first. The
+             entries are built from GET /api/proposals/{id}/status-history in
+             utils/proposalTimeline.js, which orders by the raw event timestamp (never a
+             formatted date) with the history id breaking same-instant ties. The current
+             stage, which is not itself a recorded event, stays on top while the proposal
+             is still waiting for the Chancellor. -->
         <div class="card">
           <h3>Approval Trail</h3>
           <div class="timeline">
-            <div class="timeline-item done">
-              <div class="dot"></div>
-              <div>
-                <p class="tl-title">RPS / RII DARES</p>
-                <p class="tl-desc">Endorsed</p>
-                <small>{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</small>
-              </div>
-            </div>
-            <div class="timeline-item done">
-              <div class="dot"></div>
-              <div>
-                <p class="tl-title">REC Evaluation</p>
-                <p class="tl-desc">Completed</p>
-                <small>{{ proposal.updatedAt?.substring(0, 10) || 'N/A' }}</small>
-              </div>
-            </div>
-            <div class="timeline-item done">
-              <div class="dot"></div>
-              <div>
-                <p class="tl-title">OVCRIGE</p>
-                <p class="tl-desc">Forwarded to OC</p>
-                <small>{{ proposal.updatedAt?.substring(0, 10) || 'N/A' }}</small>
-              </div>
-            </div>
-            <div class="timeline-item current">
+            <div v-if="atOc" class="timeline-item current">
               <div class="dot pulse"></div>
               <div>
                 <p class="tl-title">Office of the Chancellor</p>
                 <p class="tl-desc">Pending Final Decision</p>
               </div>
             </div>
+            <div
+              v-for="entry in approvalTrail"
+              :key="entry.key"
+              class="timeline-item"
+              :class="entry.state === 'active' ? 'current' : 'done'"
+            >
+              <div class="dot" :class="{ pulse: entry.state === 'active' }"></div>
+              <div>
+                <p class="tl-title">{{ entry.label }}</p>
+                <p class="tl-desc">{{ entry.detail || (entry.state === 'active' ? 'In Progress' : 'Completed') }}</p>
+                <small v-if="formatTrailTime(entry.timestamp)">{{ formatTrailTime(entry.timestamp) }}</small>
+                <small v-if="entry.actorName" class="tl-actor">by {{ entry.actorName }}</small>
+                <p v-if="entry.remarks" class="tl-remarks">{{ entry.remarks }}</p>
+              </div>
+            </div>
+            <p v-if="historyError" class="tl-error">{{ historyError }}</p>
           </div>
         </div>
 
@@ -201,28 +195,53 @@
               <input type="text" v-model="soNumber" class="so-input" placeholder="e.g., SO-2026-001" />
             </div>
             <div class="so-field">
-              <label class="so-label">SO Document (PDF/DOC)</label>
+              <label class="so-label" for="soFileInput">Special Order Attachment</label>
+              <p class="so-field-help">
+                Upload the issued Special Order (SO) document or its supporting attachment.
+              </p>
+              <!-- The upload rules are stated before a file is chosen, never only after
+                   an error: formats, the 10 MB ceiling and what the document is. -->
+              <div id="soFileInstructions" class="so-instructions">
+                <p class="so-instructions-title">Attachment Instructions</p>
+                <ul class="so-instructions-list">
+                  <li>Accepted file formats: <strong>PDF, DOC, DOCX</strong></li>
+                  <li>Maximum file size: <strong>10 MB</strong></li>
+                  <li>
+                    Upload the official signed Special Order. A document is optional when the
+                    SO number above is recorded, but one attachment at a time is kept.
+                  </li>
+                </ul>
+              </div>
               <div class="file-upload-wrapper">
-                <input type="file" ref="soFileInput" class="so-file-input" accept=".pdf,.doc,.docx"
-                  @change="handleSoFileChange" />
+                <input id="soFileInput" type="file" ref="soFileInput" class="so-file-input"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  aria-describedby="soFileInstructions" @change="handleSoFileChange" />
                 <div class="file-display" v-if="soFile">
                   <span class="file-icon">📄</span>
                   <span class="file-name">{{ soFile.name }}</span>
-                  <button type="button" class="file-remove" @click="removeSoFile">&times;</button>
+                  <span class="file-size">{{ formatFileSize(soFile.size) }}</span>
+                  <button type="button" class="file-remove" title="Remove the selected file"
+                    @click="removeSoFile">&times;</button>
                 </div>
+                <p v-if="soFileError" class="so-file-error" role="alert">{{ soFileError }}</p>
                 <!-- A document saved by an earlier draft is kept on the proposal until
                      it is replaced or explicitly removed. -->
-                <div class="file-display saved-file" v-else-if="savedSoFileName && !removeSavedSoFile">
-                  <span class="file-icon">📄</span>
-                  <span class="file-name">{{ savedSoFileName }}</span>
-                  <span class="saved-tag">Saved draft</span>
-                  <button type="button" class="file-link" @click="downloadSavedSoFile">Download</button>
-                  <button type="button" class="file-remove" title="Remove the saved SO document"
-                    @click="markSavedSoFileRemoved">&times;</button>
-                </div>
-                <p v-else-if="removeSavedSoFile" class="saved-file-note">
-                  The saved SO document will be removed when you save.
-                </p>
+                <template v-if="!soFile">
+                  <div class="file-display saved-file" v-if="savedSoFileName && !removeSavedSoFile">
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">{{ savedSoFileName }}</span>
+                    <span class="saved-tag">Saved draft</span>
+                    <button type="button" class="file-link" @click="downloadSavedSoFile">Download</button>
+                    <button type="button" class="file-remove" title="Remove the saved SO document"
+                      @click="markSavedSoFileRemoved">&times;</button>
+                  </div>
+                  <p v-else-if="removeSavedSoFile" class="saved-file-note">
+                    The saved SO document will be removed when you save.
+                  </p>
+                  <p v-if="savedSoFileName && !removeSavedSoFile" class="file-replace-note">
+                    Choosing a new file above replaces the saved draft document.
+                  </p>
+                </template>
               </div>
             </div>
           </div>
@@ -321,6 +340,7 @@
 
 <script>
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -329,12 +349,27 @@ import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { isSoDraft, soDraftFileLabel, draftSnapshot } from '@/utils/soDraft'
+import { buildProposalTimeline } from '@/utils/proposalTimeline.js'
 
 // Mirrors the server's Special Order rules (rpis.special-order.max-size-mb in the
-// backend configuration). The server remains authoritative; checking here as well
-// reports an invalid file before a request is sent.
-const SO_MAX_BYTES = 25 * 1024 * 1024
+// backend configuration). The server remains authoritative and validates the real
+// bytes; the same extension, media-type and size rules are checked here so an invalid
+// file is reported next to the control before any request is sent.
+const SO_MAX_MB = 10
+const SO_MAX_BYTES = SO_MAX_MB * 1024 * 1024
 const SO_EXTENSIONS = ['pdf', 'doc', 'docx']
+// The media types the backend accepts for those extensions (plus a missing or generic
+// type, which browsers report for some Word files). The backend additionally verifies
+// the file signature, so a renamed file is still refused there.
+const SO_MEDIA_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/zip',
+  'application/x-zip-compressed',
+])
+const SO_FORMAT_MESSAGE = 'Unsupported file format. Please upload a PDF, DOC, or DOCX file.'
+const SO_SIZE_MESSAGE = `File exceeds the ${SO_MAX_MB} MB limit. Please select a smaller file.`
 
 // An in-progress budget classification, remembered per proposal and per browser tab so a page
 // refresh does not lose the Chancellor's selection. It is only a convenience: the classification
@@ -385,9 +420,13 @@ export default {
       needsBudget: null,
       soNumber: '',
       soFile: null,
+      soFileError: '',
       soUploading: false,
       approvalError: '',
       returnError: '',
+      // Audited status transitions for the Approval Trail, newest first from the API.
+      statusHistory: [],
+      historyError: '',
       // SO draft state
       draftSaving: false,
       draftError: '',
@@ -407,6 +446,15 @@ export default {
   computed: {
     remarkIndex() {
       return buildFieldRemarkIndex(this.remarksResponse)
+    },
+    /**
+     * The Approval Trail: recorded status transitions plus the workflow milestones the
+     * card has always shown, ordered newest first by the raw event timestamp. The
+     * builder also keeps every history row that is not folded into a milestone, so no
+     * recorded event is dropped by the display.
+     */
+    approvalTrail() {
+      return buildProposalTimeline(this.proposal, this.statusHistory)
     },
     /** True only while the proposal is still waiting for the Chancellor. */
     atOc() {
@@ -455,6 +503,7 @@ export default {
   },
   async mounted() {
     await this.loadProposal()
+    await this.loadStatusHistory()
     await this.loadFieldRemarks()
   },
   methods: {
@@ -465,6 +514,43 @@ export default {
     // function - which crashed the confirmation dialog when the Approve button
     // opened it.
     isSoDraft,
+    /**
+     * The audited status transitions of this proposal. The endpoint already returns
+     * them newest first; the timeline builder re-sorts by the raw timestamp so the
+     * display never depends on the order a formatted date string happened to produce.
+     */
+    async loadStatusHistory() {
+      if (!this.proposal.id) return
+      try {
+        const res = await api.get(`/api/proposals/${this.proposal.id}/status-history`)
+        this.statusHistory = Array.isArray(res.data) ? res.data : []
+        this.historyError = ''
+      } catch (err) {
+        console.error(err)
+        this.statusHistory = []
+        this.historyError = 'Unable to load the recorded approval events.'
+      }
+    },
+    /** Date AND time, so events recorded on the same day are visibly ordered. */
+    formatTrailTime(value) {
+      if (!value) return ''
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return ''
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    },
+    /** A readable size for the selected attachment (e.g. "1.4 MB"). */
+    formatFileSize(bytes) {
+      const size = Number(bytes)
+      if (!Number.isFinite(size) || size <= 0) return '0 KB'
+      if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+      return `${Math.max(1, Math.round(size / 1024))} KB`
+    },
     async loadFieldRemarks() {
       if (!this.proposal.id) return
       try {
@@ -543,6 +629,7 @@ export default {
             : null
       this.chancellorNotes = draft ? this.proposal.remarks || '' : ''
       this.soFile = null
+      this.soFileError = ''
       this.removeSavedSoFile = false
       this.draftError = ''
       this.draftMessage = ''
@@ -557,7 +644,9 @@ export default {
       this.approvalError = ''
       this.draftError = ''
       this.draftMessage = ''
-      // A newly picked file replaces the stored draft document.
+      this.soFileError = ''
+      // A newly picked file replaces the stored draft document; the note beside the
+      // saved draft says so before the file is chosen.
       this.removeSavedSoFile = false
       if (!file) {
         this.soFile = null
@@ -569,19 +658,36 @@ export default {
       if (!SO_EXTENSIONS.includes(extension)) {
         this.soFile = null
         event.target.value = ''
-        this.approvalError = 'Invalid file format. Please upload the Special Order as a PDF, DOC or DOCX file.'
+        this.soFileError = SO_FORMAT_MESSAGE
+        return
+      }
+      // A declared media type must be one the backend accepts. An empty or generic
+      // type is allowed because some browsers report it for Word files; the server
+      // still checks the file signature before storing anything.
+      const mediaType = String(file.type || '').trim().toLowerCase()
+      if (mediaType && mediaType !== 'application/octet-stream' && !SO_MEDIA_TYPES.has(mediaType)) {
+        this.soFile = null
+        event.target.value = ''
+        this.soFileError = SO_FORMAT_MESSAGE
         return
       }
       if (file.size > SO_MAX_BYTES) {
         this.soFile = null
         event.target.value = ''
-        this.approvalError = 'The Special Order document must be 25 MB or smaller.'
+        this.soFileError = SO_SIZE_MESSAGE
+        return
+      }
+      if (file.size === 0) {
+        this.soFile = null
+        event.target.value = ''
+        this.soFileError = 'The selected file is empty. Please choose a valid file.'
         return
       }
       this.soFile = file
     },
     removeSoFile() {
       this.soFile = null
+      this.soFileError = ''
       this.approvalError = ''
       this.draftError = ''
       this.draftMessage = ''
@@ -591,6 +697,7 @@ export default {
     },
     markSavedSoFileRemoved() {
       this.removeSavedSoFile = true
+      this.soFileError = ''
       this.draftError = ''
       this.draftMessage = ''
     },
@@ -688,7 +795,7 @@ export default {
         const status = err.response?.status
         let errorMsg = err.response?.data?.error || err.response?.data?.message
         if (!errorMsg && status === 413) {
-          errorMsg = 'The Special Order document is too large for the server. The maximum accepted size is 25 MB.'
+          errorMsg = `The Special Order document is too large for the server. The maximum accepted size is ${SO_MAX_MB} MB.`
         }
         if (!errorMsg) {
           errorMsg = err.message || 'Unknown error occurred.'
@@ -770,6 +877,9 @@ export default {
           this.proposal = res.data
           this.applyProposalPrefill()
         }
+        // The action just recorded a transition, so the Approval Trail must re-read
+        // the audited history instead of showing the state before the action.
+        await this.loadStatusHistory()
       } catch (err) {
         console.error('Refreshing the proposal after the action failed:', err)
       }
@@ -839,7 +949,7 @@ export default {
         const status = err.response?.status
         let errorMsg = err.response?.data?.error || err.response?.data?.message
         if (!errorMsg && status === 413) {
-          errorMsg = 'The Special Order document is too large for the server. The maximum accepted size is 25 MB.'
+          errorMsg = `The Special Order document is too large for the server. The maximum accepted size is ${SO_MAX_MB} MB.`
         }
         if (!errorMsg) {
           errorMsg = err.message || 'Unknown error occurred.'
@@ -932,28 +1042,6 @@ export default {
   margin: -8px 0 16px;
 }
 
-/* Layout only; .btn-secondary supplies the neutral colour. */
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.back-btn:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.back-arrow {
-  font-size: 16px;
-  line-height: 1;
-}
 
 .center {
   text-align: center;
@@ -1138,6 +1226,30 @@ textarea:focus {
 .timeline-item small {
   font-size: 11px;
   color: #94a3b8;
+}
+
+/* Who recorded the event and why; both come from the audited history row. */
+.tl-actor {
+  display: block;
+  margin-top: 2px;
+}
+
+.tl-remarks {
+  margin: 6px 0 0 !important;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569 !important;
+  font-size: 11.5px !important;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.tl-error {
+  margin: 6px 0 0 !important;
+  font-size: 12px !important;
+  color: #b45309 !important;
 }
 
 /* Budget Options */
@@ -1444,6 +1556,74 @@ textarea:focus {
 
 .so-label .required {
   color: #dc2626;
+}
+
+/* What the attachment is, then the rules - both visible before a file is chosen. */
+.so-field-help {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #64748b;
+  text-align: left;
+}
+
+.so-instructions {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border: 1px solid #dbeafe;
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  background: #f8faff;
+}
+
+.so-instructions-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+}
+
+.so-instructions-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.so-instructions-list li + li {
+  margin-top: 2px;
+}
+
+.so-file-error {
+  margin: 8px 0 0 !important;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c !important;
+  font-size: 12.5px !important;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* The selected file's size sits beside its name. */
+.file-size {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #166534;
+  white-space: nowrap;
+}
+
+.file-replace-note {
+  margin: 8px 0 0 !important;
+  font-size: 11.5px !important;
+  color: #64748b !important;
+  text-align: left;
 }
 
 .so-input {

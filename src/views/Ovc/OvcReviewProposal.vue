@@ -19,7 +19,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-secondary" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- Content -->
@@ -66,56 +66,22 @@
           <div class="sidebar-card">
             <h3>Status Timeline</h3>
             <ul class="timeline">
-              <li>
-                <span class="dot completed"></span>
-                <div>
-                  <strong>Proposal Submitted</strong>
-                  <small>{{ formatDate(proposal.createdAt) }}</small>
-                </div>
-              </li>
-              <li v-if="proposal.status !== 'SUBMITTED'" :class="{ active: proposal.status === 'ENDORSED' }">
-                <span class="dot"
-                  :class="{ completed: ['ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status) }"></span>
-                <div>
-                  <strong>RPS Endorsed</strong>
-                  <small>{{ proposal.status === 'ENDORSED' || ['UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL',
-                    'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status) ? 'Completed' : 'Pending' }}</small>
-                </div>
-              </li>
               <li
-                v-if="['UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status)"
-                :class="{ active: proposal.status === 'UNDER_REVIEW' }">
-                <span class="dot"
-                  :class="{ completed: ['REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status) }"></span>
+                v-for="entry in timeline"
+                :key="entry.key"
+                :class="{ active: entry.state === 'active' }"
+              >
+                <span class="dot" :class="{ completed: entry.state === 'completed' }"></span>
                 <div>
-                  <strong>Forwarded to REC</strong>
-                  <small>{{ ['REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL',
-                    'APPROVED'].includes(proposal.status) ? 'Completed' : 'In Progress' }}</small>
-                </div>
-              </li>
-              <li v-if="['REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status)"
-                :class="{ active: proposal.status === 'REC_APPROVED' }">
-                <span class="dot"
-                  :class="{ completed: ['FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status) }"></span>
-                <div>
-                  <strong>REC Approved</strong>
-                  <small>{{ ['FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status) ?
-                    'Completed' : 'Current' }}</small>
-                </div>
-              </li>
-              <li v-if="['FOR_OC_APPROVAL', 'APPROVED'].includes(proposal.status)"
-                :class="{ active: proposal.status === 'FOR_OC_APPROVAL' }">
-                <span class="dot" :class="{ completed: proposal.status === 'APPROVED' }"></span>
-                <div>
-                  <strong>Forwarded to Chancellor</strong>
-                  <small>{{ proposal.status === 'APPROVED' ? 'Completed' : 'In Progress' }}</small>
-                </div>
-              </li>
-              <li v-if="proposal.status === 'APPROVED'" class="active">
-                <span class="dot completed"></span>
-                <div>
-                  <strong>Final Approval</strong>
-                  <small>Completed</small>
+                  <strong>{{ entry.label }}</strong>
+                  <small v-if="formatTimelineTime(entry.timestamp)">
+                    {{ formatTimelineTime(entry.timestamp) }}
+                  </small>
+                  <small v-else>{{ entry.detail }}</small>
+                  <small v-if="entry.actorName" class="timeline-actor">
+                    by {{ entry.actorName }}
+                  </small>
+                  <p v-if="entry.remarks" class="timeline-remarks">{{ entry.remarks }}</p>
                 </div>
               </li>
             </ul>
@@ -135,7 +101,7 @@
             <button class="btn-action btn-warning" @click="returnForRevision" :disabled="actionLoading">
               {{ actionLoading ? 'Processing...' : 'Return for Revision' }}
             </button>
-            <button class="btn-action btn-danger" @click="rejectProposal" :disabled="actionLoading">
+            <button v-if="canReject" class="btn-action btn-danger" @click="rejectProposal" :disabled="actionLoading">
               {{ actionLoading ? 'Processing...' : 'Reject Proposal' }}
             </button>
           </div>
@@ -217,8 +183,11 @@ import SdgChecklist from '@/components/SdgChecklist.vue'
 import GadChecklist from '@/components/GadChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+import BackButton from '@/components/BackButton.vue'
 import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
+import { isOvcrigeRejectable } from '@/utils/ovcrigeProposals'
+import { buildProposalTimeline } from '@/utils/proposalTimeline'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -235,6 +204,9 @@ const showError = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
+/** Reject is only offered while the proposal is still in OVCRIGE's review stages. */
+const canReject = computed(() => isOvcrigeRejectable(proposal.value))
+
 const hasPriorityAgendas = computed(() => {
   if (!proposal.value.priorityAgendas) return false
   return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
@@ -243,6 +215,7 @@ const hasPriorityAgendas = computed(() => {
 const loadProposal = async () => {
   loading.value = true
   error.value = null
+  statusHistory.value = []
   try {
     const proposalId = route.params.id
     if (!proposalId) {
@@ -251,10 +224,17 @@ const loadProposal = async () => {
     }
     const res = await api.get(`/api/proposals/${proposalId}`)
     proposal.value = res.data
-    await loadFieldRemarks()
+    await Promise.all([loadFieldRemarks(), loadStatusHistory(proposalId)])
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to load proposal details.'
+    const status = err?.response?.status
+    if (status === 404) {
+      error.value = 'This proposal is no longer available. It may have been removed.'
+    } else if (status === 403) {
+      error.value = 'You no longer have access to this proposal.'
+    } else {
+      error.value = 'Failed to load proposal details.'
+    }
   } finally {
     loading.value = false
   }
@@ -264,6 +244,21 @@ const loadProposal = async () => {
 const remarksResponse = ref(null)
 const remarksError = ref('')
 const remarkIndex = computed(() => buildFieldRemarkIndex(remarksResponse.value))
+
+// ===== Audited status history =====
+const statusHistory = ref([])
+const timeline = computed(() => buildProposalTimeline(proposal.value, statusHistory.value))
+
+const loadStatusHistory = async (proposalId) => {
+  try {
+    const res = await api.get(`/api/proposals/${proposalId}/status-history`)
+    statusHistory.value = Array.isArray(res.data) ? res.data : []
+  } catch (err) {
+    // The review page must still render if the audit history cannot be read.
+    console.error(err)
+    statusHistory.value = []
+  }
+}
 
 const loadFieldRemarks = async () => {
   try {
@@ -309,7 +304,21 @@ onMounted(loadProposal)
 // opening another proposal, or Back/Forward between two, reloads the right record.
 watch(() => route.params.id, () => loadProposal())
 
+/** The proposal as it should be named in a confirmation dialog. */
+const proposalLabel = () => {
+  const title = proposal.value.projectTitle || 'this proposal'
+  const id = proposal.value.documentId || proposal.value.proposalCode || proposal.value.id
+  return id ? `"${title}" (${id})` : `"${title}"`
+}
+
 const forwardToRec = async () => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Forward ${proposalLabel()} to the Research Evaluation Committee (REC) for evaluation? ` +
+      'The proposal will leave the OVCRIGE queue and move to REC review.',
+    { title: 'Forward to REC', type: 'warning', confirmText: 'Forward to REC' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id
@@ -326,6 +335,13 @@ const forwardToRec = async () => {
 }
 
 const forwardToOc = async () => {
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Approve REC's recommendation for ${proposalLabel()} and forward it to the Office of the ` +
+      'Chancellor for final approval? The proposal will no longer be awaiting an OVCRIGE decision.',
+    { title: 'Approve & Forward to OC', type: 'warning', confirmText: 'Approve & Forward' },
+  )
+  if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id
@@ -347,21 +363,27 @@ const returnForRevision = () => {
 }
 
 const rejectProposal = async () => {
-  const confirmed = await showConfirm('Are you sure you want to reject this proposal?', {
-    title: 'Reject Proposal',
-    type: 'danger',
-    confirmText: 'Reject'
-  })
+  if (actionLoading.value) return
+  const confirmed = await showConfirm(
+    `Reject ${proposalLabel()} and return it to ORPS? ORPS will review the rejection and ` +
+      'inform the proponent. The proposal is not closed as rejected until ORPS processes it.',
+    {
+      title: 'Reject and Return to ORPS',
+      type: 'danger',
+      confirmText: 'Return to ORPS',
+    },
+  )
   if (!confirmed) return
   actionLoading.value = true
   try {
     const proposalId = route.params.id
-    await api.put(`/api/proposals/${proposalId}/reject`)
-    successMessage.value = 'Proposal has been rejected.'
+    await api.put(`/api/proposals/${proposalId}/reject-to-rps`, { remarks: null })
+    successMessage.value = 'Proposal rejected and returned to ORPS for processing.'
     showSuccess.value = true
-    proposal.value.status = 'REJECTED'
+    proposal.value.status = 'RETURNED_TO_RPS'
   } catch (err) {
-    errorMessage.value = 'Failed to reject proposal. Please try again.'
+    errorMessage.value =
+      err?.response?.data?.error || 'Failed to reject proposal. Please try again.'
     showError.value = true
   } finally {
     actionLoading.value = false
@@ -418,7 +440,12 @@ const reviewRows = computed(() => [
 ])
 
 const goBack = () => {
-  router.back()
+  // Previous page when there is one; the OVCRIGE submission list for a direct URL.
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    router.back()
+    return
+  }
+  router.push('/submit-proposals')
 }
 
 const formatDate = (dateString) => {
@@ -427,6 +454,23 @@ const formatDate = (dateString) => {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
+  })
+}
+
+/**
+ * The timeline orders by the raw timestamp; this only formats it for display. Showing
+ * the time of day makes two events recorded on the same day visibly ordered.
+ */
+const formatTimelineTime = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
   })
 }
 
@@ -907,6 +951,26 @@ const formatReviewerPosition = (position) => {
 .timeline li small {
   font-size: 12px;
   color: #64748b;
+}
+
+.timeline li.active .dot {
+  background: #4f46e5;
+}
+
+.timeline li .timeline-actor {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.timeline-remarks {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #475569;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* ACTION CARD */

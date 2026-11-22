@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,17 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     @Query("SELECT p FROM Proposal p WHERE p.status IN :statuses")
     List<Proposal> findByStatusIn(@Param("statuses") List<String> statuses);
+
+    /**
+     * Proposals whose revision deadline falls inside the reminder window. Used only by
+     * the scheduled reminder job; the partial index on revision_deadline keeps it cheap.
+     */
+    @Query("SELECT p FROM Proposal p WHERE p.revisionDeadline IS NOT NULL "
+            + "AND p.revisionDeadline > :from AND p.revisionDeadline <= :until "
+            + "AND p.status IN :statuses AND p.proponent IS NOT NULL")
+    List<Proposal> findRevisionDeadlinesDue(@Param("from") LocalDateTime from,
+            @Param("until") LocalDateTime until,
+            @Param("statuses") List<String> statuses);
 
     /**
      * Loads a proposal while holding a row-level write lock for the duration of the

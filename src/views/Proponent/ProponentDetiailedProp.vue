@@ -3,12 +3,7 @@
     <!-- HEADER -->
     <header class="page-header">
       <div class="header-left">
-        <button class="back-btn" @click="$router.go(-1)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back
-        </button>
+        <BackButton fallback="/proposals" />
         <div class="header-info">
           <h1>{{ proposal.projectTitle || 'Proposal Details' }}</h1>
           <div class="header-meta">
@@ -54,7 +49,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-secondary" @click="$router.go(-1)">Go Back</button>
+      <BackButton fallback="/proposals" />
     </div>
 
     <!-- Content -->
@@ -796,6 +791,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { budgetDocumentName } from '@/utils/budgetDocument'
 import { downloadUploadedFile } from '@/utils/fileDownload'
@@ -1049,25 +1045,8 @@ const formatReviewerPosition = (position) => {
   min-width: 0;
 }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
+.page-header .back-button {
   margin-top: 4px;
-}
-
-.back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
 }
 
 .header-info {

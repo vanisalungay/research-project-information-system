@@ -166,44 +166,13 @@
         </section>
 
         <!-- ===================== NOTIFICATIONS ===================== -->
-        <aside class="dash-section">
-          <header class="dash-section-head">
-            <span class="dash-section-icon" v-html="icons.bell"></span>
-            <h3 class="dash-section-title">Notifications</h3>
-            <div class="dash-section-actions">
-              <router-link class="section-link" to="/notifications">
-                <span>View all</span>
-                <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
-              </router-link>
-            </div>
-          </header>
-
-          <p v-if="notifications.length === 0" class="dash-empty">No notifications.</p>
-
-          <ul v-else class="dash-notes">
-            <li
-              v-for="notification in notifications.slice(0, 5)"
-              :key="notification.id"
-              class="dash-note dash-note--clickable"
-              :class="{ 'dash-note--unread': isUnreadNotification(notification) }"
-              @click="openNotification(notification)"
-            >
-              <span class="dash-note-icon" v-html="icons.bell"></span>
-              <div class="dash-note-body">
-                <p class="dash-note-title">{{ notification.title || 'Notification' }}</p>
-                <p class="dash-note-text">{{ notification.message }}</p>
-                <div class="dash-note-foot">
-                  <span class="dash-note-date">
-                    {{ formatEndorsementTimestamp(notification.createdAt) }}
-                  </span>
-                  <span v-if="isUnreadNotification(notification)" class="end-badge is-pending">
-                    Unread
-                  </span>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </aside>
+        <NotificationPreview
+          class="dash-section"
+          title="Notifications"
+          :limit="5"
+          view-all-to="/notifications"
+          empty-text="No notifications."
+        />
         </div>
       </template>
     </div>
@@ -212,15 +181,11 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
-import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { useUserDataStore } from '@/stores/userData'
-import { useNotificationStore } from '@/stores/notifications'
 import { useDeanAttentionStore } from '@/stores/deanAttention'
-import { isUnreadNotification } from '@/utils/notifications.js'
-import { notificationDestination } from '@/utils/notificationTarget'
 import {
   ENDORSEMENT_STATUS,
   endorsementStatusLabel,
@@ -229,38 +194,9 @@ import {
   formatEndorsementTimestamp,
 } from '@/utils/endorsement.js'
 
-const router = useRouter()
 const userStore = useUserDataStore()
-const notificationStore = useNotificationStore()
 const deanAttentionStore = useDeanAttentionStore()
 const displayName = computed(() => userStore.user?.name || 'Dean')
-
-/**
- * The Dean's notifications, newest first. They come from the shared store the shell already
- * fills (the same records the notifications page and the header bell read), so the
- * dashboard never fetches a second copy.
- */
-const notifications = computed(() => notificationStore.recent)
-
-/**
- * Opens the resource a notification is about. The destination is resolved from the record
- * itself - never from its text - and a notification with no destination only marks itself
- * read. Marking read is best effort and never blocks the navigation, exactly as the
- * notifications page does.
- */
-const openNotification = async (notification) => {
-  if (!notification) return
-  if (isUnreadNotification(notification)) {
-    try {
-      await api.put(`/api/notifications/${notification.id}/read`)
-    } catch (err) {
-      // Best effort: the navigation below still runs.
-    }
-  }
-  const destination = notificationDestination(notification, userStore.user?.role)
-  if (destination) router.push(destination)
-  notificationStore.refresh(userStore.user?.id ?? null)
-}
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon

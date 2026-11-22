@@ -53,12 +53,39 @@
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>
-              <span class="role-badge" :class="getRoleClass(user.role)">
-                {{ formatRole(user.role) }}
-              </span>
+              <div class="role-list">
+                <span
+                  v-for="role in rolesOf(user)"
+                  :key="role"
+                  class="role-badge"
+                  :class="getRoleClass(role)"
+                >
+                  {{ formatRole(role) }}
+                </span>
+                <!-- A role the account no longer holds is still part of its record: a
+                     revoked Dean assignment is shown as Dean (Revoked), never replaced by
+                     a role the account never had. -->
+                <span
+                  v-for="role in revokedRolesOf(user)"
+                  :key="`revoked-${role}`"
+                  class="role-badge role-revoked"
+                >
+                  {{ formatRole(role) }} (Revoked)
+                </span>
+              </div>
             </td>
             <td>
-              <span class="status-badge" :class="statusTone(user.status)">
+              <!-- For a Dean, the status is the appointment's, from the same row Dean Role
+                   Management reads: Active or Revoked, never a different word for the same
+                   state. Other accounts keep the account status. -->
+              <span
+                v-if="user.deanStatus"
+                class="status-badge"
+                :class="user.deanStatus === 'ACTIVE' ? 'dean-status-active' : 'dean-status-revoked'"
+              >
+                {{ deanAssignmentStatusLabel(user.deanStatus) }}
+              </span>
+              <span v-else class="status-badge" :class="statusTone(user.status)">
                 {{ accountStatusLabel(user.status) || 'Active' }}
               </span>
             </td>
@@ -71,7 +98,7 @@
                    granted when the account is created, through the standard Create
                    Account flow above. -->
               <button
-                v-if="isDean(user)"
+                v-if="isDean(user) && user.deanStatus !== 'REVOKED'"
                 class="dean-manage-btn btn-edit"
                 @click="openDeanModal(user)"
               >
@@ -93,59 +120,143 @@
       @created="loadUsers"
     />
 
-    <!-- Manage Dean Role for one existing Dean account, opened from that account's row:
-         replace the sitting Dean with a new appointment, keeping the previous as history. -->
-    <ReplaceDeanModal
+    <!-- Manage Dean for one existing Dean account, opened from that account's row. This is
+         the same shared flow Dean Role Management uses: the same details dialog and the
+         same Replace Dean workflow, so the two modules cannot behave differently. -->
+    <ManageDeanFlow
       v-if="showDeanModal && selectedAssignment"
       :assignment="selectedAssignment"
       @close="closeDeanModal"
-      @replaced="loadUsers"
+      @changed="onDeanChanged"
     />
 
-    <!-- Reset Password Modal -->
-    <div v-if="showResetModal" class="modal-overlay" @click.self="closeResetModal">
-      <div class="modal-box">
-        <h3>Reset Password</h3>
-
-        <div class="user-info">
-          <p><strong>User:</strong> {{ selectedUser?.name }}</p>
-          <p><strong>Email:</strong> {{ selectedUser?.email }}</p>
-          <p><strong>Role:</strong> {{ formatRole(selectedUser?.role) }}</p>
-        </div>
-
-        <div class="form-group">
-          <label>New Password</label>
-          <input
-            v-model="newPassword"
-            type="password"
-            placeholder="Enter new temporary password"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label>Confirm Password</label>
-          <input
-            v-model="confirmPassword"
-            type="password"
-            placeholder="Confirm new password"
-            class="form-input"
-          />
-        </div>
-
-        <p v-if="resetError" class="error-text">{{ resetError }}</p>
-        <p v-if="resetSuccess" class="success-text">{{ resetSuccess }}</p>
-
-        <div class="modal-actions">
-          <button class="cancel-btn btn-secondary" @click="closeResetModal">Cancel</button>
+    <!-- Reset Password Modal: the same compact dialog language as Create user account. -->
+    <div v-if="showResetModal" class="adm-overlay" @click.self="closeResetModal">
+      <div
+        class="adm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reset-password-title"
+      >
+        <header class="adm-header">
+          <span class="adm-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="15" r="4" />
+              <path d="m11 12 8-8" />
+              <path d="m18 5 2 2" />
+              <path d="m15 8 2 2" />
+            </svg>
+          </span>
+          <div class="adm-heading">
+            <h2 id="reset-password-title">Reset password</h2>
+            <p>Generate a temporary password for this user to regain access.</p>
+          </div>
           <button
-            class="confirm-btn btn-primary"
-            @click="resetPassword"
+            type="button"
+            class="adm-close"
+            aria-label="Close reset password modal"
             :disabled="resetLoading"
+            @click="closeResetModal"
           >
-            {{ resetLoading ? 'Resetting...' : 'Reset Password' }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
+        </header>
+
+        <div class="adm-body">
+          <p v-if="resetError" class="adm-error" role="alert">{{ resetError }}</p>
+          <p v-if="resetSuccess" class="adm-success" role="status">{{ resetSuccess }}</p>
+
+          <section class="adm-panel" aria-labelledby="reset-account-title">
+            <h3 id="reset-account-title" class="adm-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21a8 8 0 0 0-16 0" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>Selected account</span>
+            </h3>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Full name</span>
+              <span class="adm-credential-value">{{ selectedUser?.name || '—' }}</span>
+            </div>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Email</span>
+              <span class="adm-credential-value">{{ selectedUser?.email || '—' }}</span>
+            </div>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Role</span>
+              <span class="adm-credential-value">{{ roleLabels(selectedUser) }}</span>
+            </div>
+          </section>
+
+          <div class="adm-field">
+            <label for="resetNewPassword">New temporary password</label>
+            <PasswordInput
+              id="resetNewPassword"
+              v-model="newPassword"
+              placeholder="Enter a temporary password"
+              class="adm-input"
+              autocomplete="new-password"
+              aria-describedby="resetNewPassword-hint reset-password-requirements"
+            />
+            <PasswordFieldHint id="resetNewPassword-hint" kind="new" />
+          </div>
+
+          <div class="adm-field">
+            <label for="resetConfirmPassword">Confirm password</label>
+            <PasswordInput
+              id="resetConfirmPassword"
+              v-model="confirmPassword"
+              placeholder="Confirm the temporary password"
+              class="adm-input"
+              autocomplete="new-password"
+              aria-describedby="resetConfirmPassword-hint"
+            />
+            <PasswordFieldHint id="resetConfirmPassword-hint" kind="confirm" />
+          </div>
+
+          <PasswordRequirements
+            id="reset-password-requirements"
+            :password="newPassword"
+            :confirm="confirmPassword"
+          />
+
+          <p class="adm-hint">
+            The password changes immediately. Share it securely with the user; they can
+            change it later from Account Settings.
+          </p>
         </div>
+
+        <footer class="adm-footer">
+          <button
+            type="button"
+            class="adm-btn adm-btn--secondary"
+            :disabled="resetLoading"
+            @click="closeResetModal"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="adm-btn adm-btn--primary"
+            :disabled="resetLoading || !resetPasswordValid"
+            @click="resetPassword"
+          >
+            <span v-if="resetLoading" class="adm-spinner" aria-hidden="true"></span>
+            <span>{{ resetLoading ? 'Resetting…' : 'Reset password' }}</span>
+            <svg v-if="!resetLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="8" cy="15" r="4" />
+              <path d="m11 12 8-8" />
+              <path d="m18 5 2 2" />
+            </svg>
+          </button>
+        </footer>
       </div>
     </div>
   </div>
@@ -153,12 +264,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import '@/assets/adminModal.css'
 import api from '@/utils/api'
 import { UserRole } from '@/stores/userData'
 import CreateUserModal from '@/views/Admin/CreateUserModal.vue'
-import ReplaceDeanModal from '@/views/Admin/ReplaceDeanModal.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PasswordRequirements from '@/components/PasswordRequirements.vue'
+import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
+import ManageDeanFlow from '@/views/Admin/ManageDeanFlow.vue'
 import { statusTone } from '@/utils/statusTone.js'
-import { accountStatusLabel } from '@/utils/statusCatalog.js'
+import { accountStatusLabel, deanAssignmentStatusLabel } from '@/utils/statusCatalog.js'
+import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const users = ref([])
 const showModal = ref(false)
@@ -179,15 +295,40 @@ const resetError = ref('')
 const resetSuccess = ref('')
 const resetLoading = ref(false)
 
+// The reset button waits for a password that satisfies every requirement and a
+// matching confirmation; the server re-validates the same policy.
+const resetPasswordValid = computed(() => passwordFormReady(newPassword.value, confirmPassword.value))
+
 const filteredUsers = computed(() => {
   const keyword = search.value.toLowerCase().trim()
   if (!keyword) return users.value
   return users.value.filter(u =>
     (u.name || '').toLowerCase().includes(keyword) ||
     (u.email || '').toLowerCase().includes(keyword) ||
-    (u.role || '').toLowerCase().includes(keyword)
+    rolesOf(u).join(' ').toLowerCase().includes(keyword) ||
+    revokedRolesOf(u).join(' ').toLowerCase().includes(keyword)
   )
 })
+
+/**
+ * Every role the account holds. The API returns the primary role first and the full
+ * assignment set; older payloads carry only `role`, which is treated as a one-role list.
+ */
+const rolesOf = (user) => {
+  if (Array.isArray(user?.roles)) return user.roles.filter(Boolean)
+  // Older payloads carry only the primary role. The primary column is historical, so it
+  // is used only when the API sent no roles list at all.
+  return user?.role ? [user.role] : []
+}
+
+const revokedRolesOf = (user) => (
+  Array.isArray(user?.revokedRoles) ? user.revokedRoles.filter(Boolean) : []
+)
+
+const roleLabels = (user) => [
+  ...rolesOf(user).map(formatRole),
+  ...revokedRolesOf(user).map((role) => `${formatRole(role)} (Revoked)`),
+].join(', ') || 'No active role'
 
 const formatRole = (role) => {
   const roleMap = {
@@ -232,8 +373,8 @@ const loadUsers = async () => {
   }
 }
 
-/** True when the account holds the Dean role (the canonical `DEAN` value). */
-const isDean = (user) => String(user?.role || '').toUpperCase() === UserRole.DEAN
+/** True when the account holds the Dean role, even as one of several roles. */
+const isDean = (user) => rolesOf(user).some((role) => String(role).toUpperCase() === UserRole.DEAN)
 
 /**
  * Opens the Manage Dean Role screen for the account of the clicked row: the sitting Dean
@@ -241,27 +382,34 @@ const isDean = (user) => String(user?.role || '').toUpperCase() === UserRole.DEA
  * started) is preferred; an account-level fallback is used if it cannot be read.
  */
 const openDeanModal = async (user) => {
-  selectedAssignment.value = {
-    userId: user.id,
-    name: user.name,
-    email: user.email,
-    assignedCollege: user.assignedCollege || null,
-    designation: user.designation || 'Dean',
-    dateAssigned: null,
-  }
-  showDeanModal.value = true
   try {
+    // Replacement is addressed by the ACTIVE appointment id, not just the account, so
+    // the workflow opens only once that appointment has been loaded.
     const response = await api.get('/api/users/deans/assignments', { params: { status: 'ACTIVE' } })
     const match = (response.data || []).find((a) => String(a.userId) === String(user.id))
-    if (match) selectedAssignment.value = match
-  } catch (error) {
-    console.error('Could not load the Dean appointment', error)
+    if (!match) {
+      error.value = 'No active Dean appointment was found for this account.'
+      return
+    }
+    selectedAssignment.value = match
+    showDeanModal.value = true
+  } catch (requestError) {
+    console.error('Could not load the Dean appointment', requestError)
+    error.value = 'The Dean appointment could not be loaded. Please try again.'
   }
 }
 
 const closeDeanModal = () => {
   showDeanModal.value = false
   selectedAssignment.value = null
+}
+
+/**
+ * The shared flow completed a replacement. Reload the list behind it; the flow keeps its
+ * credentials panel open so the administrator can hand them over.
+ */
+const onDeanChanged = async () => {
+  await loadUsers()
 }
 
 const openResetModal = (user) => {
@@ -291,8 +439,9 @@ const resetPassword = async () => {
     return
   }
 
-  if (newPassword.value.length < 6) {
-    resetError.value = 'Password must be at least 6 characters.'
+  const policyMessage = passwordPolicyMessage(newPassword.value)
+  if (policyMessage) {
+    resetError.value = policyMessage
     return
   }
 
@@ -311,8 +460,13 @@ const resetPassword = async () => {
       closeResetModal()
     }, 2000)
   } catch (err) {
-    console.error('Failed to reset password:', err)
-    resetError.value = 'Failed to reset password. Please try again.'
+    // The error object carries the reset request body; log only the HTTP status.
+    console.error('Password reset request failed.', err?.response?.status ?? 'no response')
+    const body = err?.response?.data
+    resetError.value =
+      (typeof body === 'string' && body.trim()) ||
+      body?.error ||
+      'Failed to reset password. Please try again.'
   } finally {
     resetLoading.value = false
   }
@@ -444,6 +598,29 @@ td {
   text-align: center;
   color: #94a3b8;
   padding: 30px;
+}
+
+.role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* A role the account no longer holds: visible for the record, visually inactive. */
+.role-revoked {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+}
+
+.dean-status-active {
+  background: #e8f7ee;
+  color: #16794a;
+}
+
+.dean-status-revoked {
+  background: #fdf0ef;
+  color: #b42318;
 }
 
 .role-badge {

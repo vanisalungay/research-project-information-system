@@ -1,7 +1,7 @@
 <template>
   <div class="end-page end-page--fluid dash-page">
     <!-- ===================== HEADER ===================== -->
-    <section class="dash-banner">
+    <section class="dash-banner ovc-banner">
       <span class="dash-avatar" aria-hidden="true" v-html="icons.office"></span>
       <div class="dash-banner-text">
         <h2 class="dash-banner-title">OVCRIGE Dashboard</h2>
@@ -10,20 +10,9 @@
         </p>
       </div>
     </section>
-    <!-- SIDEBAR -->
-    <!-- <aside class="sidebar">
-      <h3 class="sidebar-title">Menu</h3>
-
-      <ul class="menu">
-        <li class="active">Dashboard</li>
-        <li>Submitted Proposals</li>
-        <li>Endorsed Proposal</li>
-        <li>Notifications</li>
-      </ul>
-    </aside> -->
 
     <!-- ===================== STATISTICS ===================== -->
-    <section class="dash-stats">
+    <section class="dash-stats ovc-stats">
       <div class="dash-stat dash-stat--blue">
         <div class="dash-stat-head">
           <span class="dash-stat-icon" v-html="icons.endorsed"></span>
@@ -58,9 +47,9 @@
     </section>
 
     <!-- ===================== PROPOSALS + NOTIFICATIONS ===================== -->
-    <div class="dash-row dash-row--main">
+    <div class="dash-row dash-row--main ovc-main">
       <!-- Latest Endorsed Proposals -->
-      <section class="dash-section">
+      <section class="dash-section ovc-panel ovc-proposals">
         <header class="dash-section-head">
           <span class="dash-section-icon" v-html="icons.proposals"></span>
           <h3 class="dash-section-title">Latest Endorsed Proposals</h3>
@@ -72,7 +61,12 @@
           </div>
         </header>
 
-        <div class="end-table-scroll">
+        <div
+          class="end-table-scroll ovc-table-scroll"
+          role="region"
+          aria-label="Latest endorsed proposals"
+          tabindex="0"
+        >
           <table class="end-table ovc-table">
             <thead>
               <tr>
@@ -92,32 +86,30 @@
                 </td>
               </tr>
 
-              <tr v-else-if="proposals.length === 0">
+              <tr v-else-if="latestEndorsed.length === 0">
                 <td colspan="6" class="ovc-empty">
                   No proposals found.
                 </td>
               </tr>
 
-              <tr v-for="proposal in proposals.slice(0, 5)" :key="proposal.id">
+              <tr v-for="proposal in latestEndorsed" :key="proposal.id">
                 <td class="cell-id">
                   {{ proposal.documentId || proposal.proposalCode || '—' }}
                 </td>
-                <td class="cell-title">{{ proposal.projectTitle }}</td>
-                <td>
+                <td class="cell-title">
+                  <span class="ovc-title-text" :title="proposal.projectTitle">{{ proposal.projectTitle }}</span>
+                </td>
+                <td class="cell-proponent">
                   {{ proposal.projectLeader || proposal.proponent?.name || '-' }}
                 </td>
-                <td class="cell-id">
-                  {{ proposal.createdAt?.substring(0, 10) }}
+                <td class="cell-date">
+                  {{ proposalSubmittedAt(proposal)?.substring(0, 10) || '—' }}
                 </td>
-                <td>
-                  <span class="end-badge" :class="statusTone(proposal.status)">
-                    {{ proposalStatusLabel(proposal.status) }}
-                  </span>
+                <td class="cell-status">
+                  <span class="end-badge" :class="statusTone(proposal.status)">{{ proposalStatusLabel(proposal.status) }}</span>
                 </td>
                 <td class="text-right">
-                  <button class="end-btn is-view row-btn" @click="goToReview(proposal.id)">
-                    REVIEW
-                  </button>
+                  <button class="end-btn is-view row-btn" @click="goToReview(proposal.id)">REVIEW</button>
                 </td>
               </tr>
             </tbody>
@@ -126,54 +118,30 @@
       </section>
 
       <!-- Notifications -->
-      <aside class="dash-section">
-        <header class="dash-section-head">
-          <span class="dash-section-icon" v-html="icons.bell"></span>
-          <h3 class="dash-section-title">Notifications</h3>
-        </header>
-
-        <ul class="dash-notes">
-          <li v-if="loading" class="dash-empty">
-            Loading...
-          </li>
-
-          <li v-else-if="notifications.length === 0" class="dash-empty">
-            No notifications.
-          </li>
-
-          <li
-            v-for="notification in notifications.slice(0, 5)"
-            :key="notification.id"
-            class="dash-note dash-note--clickable"
-            @click="openNotification(notification)"
-          >
-            <span class="dash-note-icon" v-html="icons.bell"></span>
-            <div class="dash-note-body">
-              <p class="dash-note-text">{{ notification.message }}</p>
-              <div class="dash-note-foot">
-                <span class="dash-note-date">
-                  {{ notification.createdAt?.substring(0, 16) }}
-                </span>
-              </div>
-            </div>
-          </li>
-        </ul>
-
-        <button class="section-link notif-view-all" @click="goToNotifications">
-          <span>View All</span>
-          <span class="section-link-arrow" aria-hidden="true">&rarr;</span>
-        </button>
-      </aside>
+      <section class="dash-section ovc-panel ovc-notifications-panel">
+        <NotificationPreview
+          compact
+          title="Notifications"
+          :limit="5"
+          view-all-to="/notifications"
+          empty-text="No notifications."
+        />
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { UserRole } from '@/stores/userData'
-import { proposalNotificationDestination } from '@/utils/proposalNotificationTarget'
+import { latestProposalSnippets } from '@/utils/dashboardProposals'
+import {
+  OVCRIGE_DASHBOARD_FETCH_STATUSES,
+  isOvcrigePipelineProposal,
+  proposalSubmittedAt,
+} from '@/utils/ovcrigeProposals'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
@@ -234,17 +202,33 @@ const stats = ref({
 })
 
 const proposals = ref([])
-const notifications = ref([])
+
+/**
+ * The preview shows the five latest proposals that are in OVCRIGE's pipeline, newest
+ * submission first. The full array remains the source of the statistic cards; this only
+ * removes proposals that have not been endorsed to OVCRIGE (and finished projects) from
+ * the table, and shortens it to five.
+ */
+const latestEndorsed = computed(() =>
+  latestProposalSnippets(
+    proposals.value.filter(isOvcrigePipelineProposal),
+    { dateField: 'submittedAt', fallbackDateFields: ['createdAt'] },
+  ),
+)
 
 const loading = ref(true)
 
 const loadDashboard = async () => {
   try {
-    // Fetch proposals relevant to OVCRIGE workflow
-    // Use proper params serialization for array parameters
+    // Fetch proposals relevant to the OVCRIGE workflow. Ordering is done by the server
+    // on the real submission event (submitted_at), so a record's last edit or the order
+    // the rows happen to be stored in can never decide what appears first. The returned
+    // statuses are included only because the "For Revision" card counts them; the table
+    // itself is filtered to the pipeline below.
     const proposalResponse = await api.get('/api/proposals', {
       params: {
-        statusIn: ['FOR REVIEW', 'SUBMITTED', 'ENDORSED', 'UNDER_REVIEW', 'REC_APPROVED', 'FOR_OVCAF_APPROVAL', 'FOR_OC_APPROVAL', 'APPROVED']
+        statusIn: [...OVCRIGE_DASHBOARD_FETCH_STATUSES],
+        sort: 'submittedAt'
       },
       paramsSerializer: {
         indexes: null // array format: statusIn=a&statusIn=b&statusIn=c
@@ -269,14 +253,6 @@ const loadDashboard = async () => {
       p => p.status === 'REVISION' || p.status === 'REC_REVISION'
     ).length
 
-    // Notification endpoint
-    // Replace userId later using logged in user
-    const notifResponse = await api.get(
-      '/api/notifications?userId=4'
-    )
-
-    notifications.value = notifResponse.data
-
   } catch (error) {
     console.log(error)
   } finally {
@@ -287,24 +263,6 @@ const loadDashboard = async () => {
 onMounted(() => {
   loadDashboard()
 })
-
-const goToNotifications = () => {
-  router.push('/notifications')
-}
-
-/**
- * Where a notification opens: the exact proposal it carries, on this role's proposal page
- * (/review-prop/:id). The id is the saved record reference - never the notification title -
- * and a notification with no reference has no destination.
- */
-const notificationDestination = (notification) =>
-  proposalNotificationDestination(notification, UserRole.OVCRIGE)
-
-/** Opens the proposal a notification is about. Navigation only - the read state is untouched. */
-const openNotification = (notification) => {
-  const destination = notificationDestination(notification)
-  if (destination) router.push(destination)
-}
 
 const goToEndorsed = () => {
   router.push('/submit-proposals')
@@ -327,9 +285,131 @@ const goToReview = id => {
 
 /* The banner avatar carries an icon injected with v-html, so it is reached through :deep(). */
 .dash-avatar :deep(svg) {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   stroke-width: 1.8;
+}
+
+/* ===== Banner =====
+   A compact content-area heading: the shared branded gradient and gold hairline stay,
+   with a tighter vertical rhythm so it reads as a section heading, not a hero block. */
+.dash-banner.ovc-banner {
+  padding: 18px 22px;
+  gap: 16px;
+  border-radius: 14px;
+}
+
+.ovc-banner .dash-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.ovc-banner .dash-banner-title {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+
+.ovc-banner .dash-banner-sub {
+  font-size: 0.8375rem;
+  line-height: 1.45;
+  max-width: 72ch;
+}
+
+/* ===== Statistic cards =====
+   Four in one row on wide screens, two-up then one-up as space tightens. The count is the
+   dominant element; the icon sits in a small tinted container beside the label. */
+.dash-stats.ovc-stats {
+  gap: 14px;
+}
+
+.dash-stat {
+  min-height: 104px;
+  padding: 16px;
+  gap: 10px;
+  justify-content: space-between;
+  border-radius: 12px;
+}
+
+.dash-stat:hover {
+  border-color: #d5dcf2;
+}
+
+.dash-stat .dash-stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.dash-stat .dash-stat-icon :deep(svg) {
+  width: 17px;
+  height: 17px;
+}
+
+.dash-stat .dash-stat-label {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.dash-stat .dash-stat-value {
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 1024px) {
+  .ovc-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .ovc-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .ovc-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ===== Panels =====
+   The proposal panel gets the larger share because the table needs horizontal room; the
+   notification panel gets the remaining third. Both reuse the shared .dash-section shell
+   (background, border, shadow and dark theme) and only tighten its spacing. */
+.dash-row--main.ovc-main {
+  align-items: stretch;
+}
+
+.dash-section.ovc-panel {
+  padding: 18px;
+  gap: 14px;
+}
+
+.ovc-proposals,
+.ovc-notifications-panel {
+  min-width: 0;
+}
+
+/* Keep the table's own scrollbar from forcing the panel (and the page) wider. */
+.ovc-table-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1599px) {
+  .ovc-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1600px) {
+  .ovc-main {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
 }
 
 /* ===== Section links (the "View All" controls) ===== */
@@ -337,7 +417,7 @@ const goToReview = id => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 6px;
+  padding: 4px 8px;
   border-radius: 8px;
   background: transparent;
   color: #315bff;
@@ -363,28 +443,59 @@ const goToReview = id => {
   line-height: 1;
 }
 
-/* The notifications card keeps its action on its own row, at the start. */
-.notif-view-all {
-  align-self: flex-start;
+/* ===== Endorsed proposals table =====
+   Fixed column widths keep the title readable and stop the status/action columns from
+   being squeezed. When the panel is narrower than the 880px six-column minimum, the table
+   scrolls inside .end-table-scroll; the page itself never scrolls sideways. */
+.end-page--fluid .ovc-table {
+  width: 100%;
+  min-width: 800px;
+  table-layout: fixed;
 }
 
-/* ===== Status pills =====
-   Geometry and tone colours are shared: assets/status.css paints `.is-approved`,
-   `.is-returned`, `.is-rejected`, `.is-pending`, `.is-info`, `.is-progress` and `.is-neutral`
-   from the same tokens, so this page cannot drift from the rest of RPIS. */
+.ovc-table {
+  font-size: 0.8125rem;
+}
 
-/* ===== Endorsed proposals table =====
-   The shared .end-table is used as it is; only the header band, the row alignment and the
-   compact row action are set here so the table lines up with the button beside it. */
 .ovc-table th {
   background: #f6f7fd;
   color: #1c1a3c;
+  padding: 10px;
+  font-size: 0.7rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
+.ovc-table th:nth-child(1) {
+  width: 17%;
+}
+
+.ovc-table th:nth-child(2) {
+  width: 24%;
+}
+
+.ovc-table th:nth-child(3) {
+  width: 14%;
+}
+
+.ovc-table th:nth-child(4) {
+  width: 13%;
+}
+
+.ovc-table th:nth-child(5) {
+  width: 21%;
+}
+
+.ovc-table th:nth-child(6) {
+  width: 11%;
+}
+
 .ovc-table td {
+  padding: 9px 10px;
   vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .ovc-table tbody tr:hover td {
@@ -396,15 +507,48 @@ const goToReview = id => {
   text-align: right;
 }
 
+.cell-id {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: #5b6484;
+}
+
+/* Long formatted ids break at their hyphens instead of widening the column. */
+.ovc-table td:nth-child(1) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The submitted date is one token and never wraps. */
+.ovc-table td:nth-child(4) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .cell-title {
   font-weight: 600;
   color: #1c1a3c;
 }
 
-.cell-id {
-  font-size: 0.8125rem;
-  color: #5b6484;
-  white-space: nowrap;
+/* At most two lines per title; the full text stays in the DOM and in the title tooltip. */
+.ovc-title-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.cell-proponent {
+  font-size: 0.78rem;
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.ovc-table .end-badge {
+  padding: 2px 7px;
+  font-size: 0.656rem;
 }
 
 .ovc-empty {
@@ -413,13 +557,31 @@ const goToReview = id => {
   color: #78809a;
 }
 
-/* A table row action is smaller than a page action. */
+/* A table row action is smaller than a page action and never wraps. */
 .row-btn {
-  padding: 7px 14px;
-  font-size: 0.8125rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 /* ===== Small screens ===== */
+@media (max-width: 720px) {
+  .dash-banner.ovc-banner {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .ovc-banner .dash-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ovc-banner .dash-banner-title {
+    font-size: 1.2rem;
+  }
+}
+
 @media (max-width: 560px) {
   .section-link {
     margin-left: 0;

@@ -69,19 +69,42 @@ test('the title, subtitle and both endpoints are unchanged', () => {
   )
 
   assert.ok(
-    DASHBOARD.includes("api.get('/api/proposals?statusIn=FOR_OC_APPROVAL')"),
-    'the pending fetch must contain only the status the Chancellor can act on',
+    DASHBOARD.includes("api.get('/api/proposals?statusIn=FOR_OC_APPROVAL&sort=submittedAt')"),
+    'the pending fetch must contain only the status the Chancellor can act on, sorted by submission',
   )
   assert.ok(
     DASHBOARD.includes(
-      "api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED')",
+      "api.get('/api/proposals?statusIn=FOR_OVCAF_APPROVAL&statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED&sort=submittedAt')",
     ),
-    'the approved fetch must keep its status filters',
+    'the approved fetch must keep its status filters and sort by submission',
   )
 })
 
+test('both lists order by the actual submission date, newest first', () => {
+  // The server owns the order: the API is asked to sort by submittedAt, and the
+  // displayed date is that same field - never the last-modified time.
+  assert.equal(
+    (DASHBOARD.match(/&sort=submittedAt'\)/g) || []).length,
+    2,
+    'both list requests must ask the API to sort by submittedAt',
+  )
+  assert.ok(DASHBOARD.includes("date: p.submittedAt?.substring(0, 10) || 'N/A'"),
+    'the displayed date must be the actual submission date')
+  assert.ok(!DASHBOARD.includes('date: p.updatedAt'),
+    'the last-modified time must not be shown as the submission date')
+  assert.equal(
+    (DASHBOARD.match(/dateField: 'submittedAt', fallbackDateFields: \[\]/g) || []).length,
+    1,
+    'the shared ordering rule must be configured once with only the submission field',
+  )
+  assert.ok(DASHBOARD.includes('sortProposalsNewestFirst(pendingData.map(p => ({'),
+    'the pending list must be ordered newest first')
+})
+
 test('the tables keep their columns, cells and actions', () => {
-  for (const header of ['Proposal Title', 'Proponent', 'Date Endorsed', 'Date', 'Status', 'Action']) {
+  assert.equal((DASHBOARD.match(/>Date Submitted<\/th>/g) || []).length, 2,
+    'both tables must label the column with the date they actually show')
+  for (const header of ['Proposal Title', 'Proponent', 'Status', 'Action']) {
     assert.ok(DASHBOARD.includes(`>${header}</th>`), `the "${header}" column must be kept`)
   }
   for (const binding of ['{{ p.title }}', '{{ p.adviser }}', '{{ p.date }}', '{{ proposalStatusLabel(p.status) }}']) {

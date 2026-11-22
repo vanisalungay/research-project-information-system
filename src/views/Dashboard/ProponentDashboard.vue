@@ -33,6 +33,11 @@
           <span v-if="activeCall" class="end-badge" :class="activeCallTone">
             {{ activeCallStatus }}
           </span>
+          <div class="dash-section-actions">
+            <router-link class="end-btn is-link" to="/proponent-calls">
+              View All →
+            </router-link>
+          </div>
         </header>
 
         <template v-if="callsLoading">
@@ -96,6 +101,23 @@
             </router-link>
             <router-link class="end-btn is-primary" to="/proposals">Start a Proposal</router-link>
           </div>
+
+          <!-- The rest of the five-call dashboard preview. The full list is one click
+               away through View All, which opens every published call (open,
+               scheduled and closed). -->
+          <ul v-if="additionalCalls.length" class="dash-call-more">
+            <li v-for="call in additionalCalls" :key="call.id">
+              <router-link class="dash-call-more-link" :to="`/proponent-announcement/${call.id}`">
+                <span class="dash-call-more-title">{{ call.name }}</span>
+                <span class="dash-call-more-meta">
+                  <span class="end-badge" :class="statusTone(announcementStatus(call))">
+                    {{ announcementStatus(call) }}
+                  </span>
+                  <span class="dash-call-more-date">{{ callDeadlineLabel(call) }}</span>
+                </span>
+              </router-link>
+            </li>
+          </ul>
         </template>
       </section>
 
@@ -285,55 +307,12 @@
         </template>
       </section>
 
-      <section class="dash-section">
-        <header class="dash-section-head">
-          <span class="dash-section-icon" v-html="icons.bell"></span>
-          <h3 class="dash-section-title">Recent notifications</h3>
-          <span v-if="unreadCount > 0" class="end-badge is-pending">
-            {{ unreadBadgeLabel(unreadCount) }} unread
-          </span>
-          <div class="dash-section-actions">
-            <router-link class="end-btn is-link" to="/notifications">View all</router-link>
-          </div>
-        </header>
-
-        <template v-if="notificationsLoading">
-          <span v-for="n in 3" :key="n" class="dash-skeleton dash-skeleton--row"></span>
-        </template>
-
-        <p v-else-if="recentNotificationsList.length === 0" class="dash-empty">
-          You have no notifications yet. Calls for Proposal, review decisions and deadline
-          reminders will appear here.
-        </p>
-
-        <ul v-else class="dash-notes">
-          <li
-            v-for="notification in recentNotificationsList"
-            :key="notification.id"
-            class="dash-note"
-            :class="{ 'dash-note--unread': isUnreadNotification(notification) }"
-          >
-            <span class="dash-note-icon" v-html="icons.bell"></span>
-            <span class="dash-note-body">
-              <span class="dash-note-title">{{ notification.title }}</span>
-              <p class="dash-note-text">{{ notification.message }}</p>
-              <span class="dash-note-foot">
-                <span class="dash-note-date">{{ formatTimestamp(notification.createdAt) }}</span>
-                <span v-if="isUnreadNotification(notification)" class="end-badge is-pending">
-                  Unread
-                </span>
-              </span>
-            </span>
-            <router-link
-              class="end-btn is-link dash-note-action"
-              to="/notifications"
-              :aria-label="`Open the notifications page for: ${notification.title}`"
-            >
-              Open
-            </router-link>
-          </li>
-        </ul>
-      </section>
+      <NotificationPreview
+        title="Recent notifications"
+        :limit="5"
+        view-all-to="/notifications"
+        empty-text="You have no notifications yet. Calls for Proposal, review decisions and deadline reminders will appear here."
+      />
     </div>
   </div>
 </template>
@@ -344,6 +323,7 @@ import { computed, onMounted, ref } from 'vue'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import NotificationPreview from '@/components/NotificationPreview.vue'
 import { useNotificationStore } from '@/stores/notifications'
 import { useUserDataStore } from '@/stores/userData'
 import { announcementStatus } from '@/utils/announcementStatus'
@@ -365,7 +345,7 @@ import {
   fundingProgramLabel,
   issuedLetterCount,
 } from '@/utils/endorsement.js'
-import { isUnreadNotification, unreadBadgeLabel } from '@/utils/notifications.js'
+import { unreadBadgeLabel } from '@/utils/notifications.js'
 import { PROPOSAL_SUMMARY_BUCKETS, proposalSummaryCounts } from '@/utils/proposalSummary.js'
 import { statusTone } from '@/utils/statusTone.js'
 import {
@@ -375,7 +355,6 @@ import {
   revisionDaysLeft,
   revisionDaysLeftLabel,
 } from '@/utils/revisionDeadline.js'
-import { formatTimestamp } from '@/utils/timestamps.js'
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -454,7 +433,12 @@ const endorsementsError = ref('')
  * The order is the same rule the Create Proposal workflow uses, and the list itself is the
  * backend's (`/available` never returns a draft, closed or expired call).
  */
-const activeCall = computed(() => sortCallsForDisplay(calls.value)[0] ?? null)
+const sortedCalls = computed(() => sortCallsForDisplay(calls.value))
+const activeCall = computed(() => sortedCalls.value[0] ?? null)
+// The dashboard preview is at most five calls: the featured one plus four compact
+// rows. The full listing at /proponent-calls is never limited.
+const previewCalls = computed(() => sortedCalls.value.slice(0, 5))
+const additionalCalls = computed(() => previewCalls.value.slice(1))
 const activeCallStatus = computed(() => announcementStatus(activeCall.value))
 
 /** The call's badge tone, from the one shared status mapping. */
@@ -515,9 +499,7 @@ const recentEndorsements = computed(() => endorsements.value.slice(0, 3))
  * Notifications come from the shared store: the shell already reads them for the bell and
  * the sidebar badge, so the dashboard shows the same records without a second request.
  */
-const recentNotificationsList = computed(() => notificationStore.recent)
 const unreadCount = computed(() => notificationStore.unreadCount)
-const notificationsLoading = computed(() => notificationStore.loading)
 
 /** The readable reason a request failed, or the fallback sentence. */
 const failureMessage = (reason, fallback) => reason?.response?.data?.error || fallback
@@ -578,3 +560,55 @@ async function load() {
 onMounted(load)
 </script>
 
+
+<style scoped>
+/* The dashboard preview shows the featured call plus up to four compact rows. */
+.dash-call-more {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px dashed #e2e6f2;
+  display: grid;
+  gap: 6px;
+}
+
+.dash-call-more-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e8ebf5;
+  border-radius: 9px;
+  color: #1c1a3c;
+  text-decoration: none;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.dash-call-more-link:hover {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.dash-call-more-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.dash-call-more-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dash-call-more-date {
+  color: #6b7190;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+</style>

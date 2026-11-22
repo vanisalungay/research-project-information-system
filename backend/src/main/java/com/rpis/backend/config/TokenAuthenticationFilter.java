@@ -59,7 +59,10 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 // A token is accepted only for the account generation it was issued for.
                 // Signing out increments the stored version, so the token presented on
                 // the next request no longer matches and the session is over.
-                if (user == null || user.getTokenVersion() != parsed.tokenVersion()) {
+                boolean currentGeneration =
+                        user != null && user.getTokenVersion() == parsed.tokenVersion();
+
+                if (!currentGeneration) {
                     // A browser may still hold a token that no longer matches (a sign-out
                     // from another tab, or a token revoked on another device). Public
                     // endpoints - sign-in above all - must stay usable so it can recover;
@@ -71,7 +74,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                 "Your session has ended. Please sign in again.");
                         return;
                     }
-                } else {
+                } else if (user.hasRole(parsed.role())) {
+                    // The token is only a claim. The account must still hold the role it
+                    // names: removing a role (for example revoking the Dean role) therefore
+                    // takes effect on the next request instead of waiting for the token to
+                    // expire.
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             parsed.userId(), // Principal
                             null,            // Credentials
@@ -94,9 +101,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         // the password-change endpoint and the authentication endpoints. This is the
         // server-side half of the rule: the client redirect is a convenience, and without this
         // a temporary password could be used against every other API.
-        if (authenticatedUser != null
-                && Boolean.TRUE.equals(authenticatedUser.getMustChangePassword())
-                && !isAllowedWhileChangingPassword(request)) {
+        if (requiresPasswordChange(authenticatedUser) && !isAllowedWhileChangingPassword(request)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/plain");
             response.getWriter().write(
@@ -130,6 +135,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                     || "/actuator/health".equals(path);
         }
         return false;
+    }
+
+    /** True when the authenticated account is still holding a temporary password. */
+    private boolean requiresPasswordChange(User account) {
+        return account != null && Boolean.TRUE.equals(account.getMustChangePassword());
     }
 
     /**

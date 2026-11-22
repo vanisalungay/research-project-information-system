@@ -30,7 +30,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -45,9 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * one administrator cannot read another's history, no other role reaches the API at
  * all, and the page's search, filters, pagination and details work.
  *
- * <p>Runs against the isolated {@code rpis_test} database. An entry is written in its
- * own transaction, so the table is cleared at the start of every test instead of
- * relying on the test transaction's rollback.
+ * <p>Runs against the isolated {@code rpis_test} database. Rows recorded by other test
+ * classes or earlier runs may already be committed, so the table is cleared at the start
+ * of every test instead of relying on this test's rollback alone.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -178,6 +181,164 @@ class ActivityLogTest {
                         .value(ActivityLog.MODULE_CALLS_FOR_PROPOSAL))
                 .andExpect(jsonPath("$.content[0].description")
                         .value("Created a call for proposal"));
+    }
+
+    @Test
+    void resettingAUsersPasswordRecordsTheResetWithoutThePassword() throws Exception {
+        User target = account(UserRoles.PROPONENT, "Password Reset Target");
+        String newPassword = "Reset-Pass-9Z!";
+
+        mockMvc.perform(withToken(put("/api/users/" + target.getId()), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("password", newPassword))))
+                .andExpect(status().isOk());
+
+        entityManager.clear();
+        MvcResult result = mockMvc.perform(withToken(get("/api/activity-logs"), adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].action").value(ActivityLog.ACTION_PASSWORD_RESET))
+                .andExpect(jsonPath("$.content[0].module").value(ActivityLog.MODULE_USER_ACCOUNTS))
+                .andExpect(jsonPath("$.content[0].description").value("Reset a user's password"))
+                .andReturn();
+
+        assertFalse(result.getResponse().getContentAsString().contains(newPassword),
+                "the reset password must never be written to the activity log");
+    }
+
+    @Test
+    void deanActionsAreRecordedUnderDeanRoleManagement() throws Exception {
+        MvcResult created = mockMvc.perform(withToken(post("/api/users/admin/create"), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Activity Dean",
+                                "role", UserRoles.DEAN,
+                                "designation", "Dean"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        // Flush the role assignment before detaching, so the revoke request sees it.
+        entityManager.flush();
+        entityManager.clear();
+
+        long deanId = objectMapper.readTree(created.getResponse().getContentAsString())
+                .path("user").path("id").asLong();
+
+        mockMvc.perform(withToken(get("/api/activity-logs"), adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].action").value(ActivityLog.ACTION_DEAN_ASSIGNED))
+                .andExpect(jsonPath("$.content[0].module")
+                        .value(ActivityLog.MODULE_DEAN_ROLE_MANAGEMENT))
+                .andExpect(jsonPath("$.content[0].description")
+                        .value("Created a Dean account (institution-wide)"));
+
+        mockMvc.perform(withToken(delete("/api/users/deans/" + deanId), adminToken))
+                .andExpect(status().isOk());
+        entityManager.clear();
+
+        mockMvc.perform(withToken(get("/api/activity-logs"), adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content[0].action").value(ActivityLog.ACTION_DEAN_REVOKED))
+                .andExpect(jsonPath("$.content[0].module")
+                        .value(ActivityLog.MODULE_DEAN_ROLE_MANAGEMENT))
+                .andExpect(jsonPath("$.content[0].description")
+                        .value("Revoked the Dean role from Activity Dean"));
+    }
+
+    @Test
+    void priorityAgendaActionsAreRecordedInTheActivityLog() throws Exception {
+        String framework = "Activity Framework " + SEQUENCE.incrementAndGet();
+
+        MvcResult created = mockMvc.perform(withToken(post("/api/priority-agendas/sets"), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "frameworkName", framework,
+                                "coverageStartYear", 2031,
+                                "coverageEndYear", 2034))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long setId = objectMapper.readTree(created.getResponse().getContentAsString())
+                .path("id").asLong();
+
+        // Edit the framework.
+        mockMvc.perform(withToken(put("/api/priority-agendas/sets/" + setId), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "frameworkName", framework,
+                                "coverageStartYear", 2031,
+                                "coverageEndYear", 2035))))
+                .andExpect(status().isOk());
+
+        // Activate it.
+        mockMvc.perform(withToken(
+                        put("/api/priority-agendas/sets/" + setId + "/activate"), adminToken))
+                .andExpect(status().isOk());
+
+        // Add an agenda.
+        MvcResult itemCreated = mockMvc.perform(
+                        withToken(post("/api/priority-agendas/sets/" + setId + "/items"), adminToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(Map.of(
+                                        "name", "Activity Agenda " + SEQUENCE.get(),
+                                        "subLabel", "Sector"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long itemId = objectMapper.readTree(itemCreated.getResponse().getContentAsString())
+                .path("id").asLong();
+
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("name", "Activity Agenda Renamed " + SEQUENCE.get());
+        item.put("subLabel", "Sector");
+        item.put("description", "Edited in the activity log test");
+        item.put("displayOrder", 0);
+        item.put("active", true);
+
+        // Edit the agenda, then deactivate it, then activate it again.
+        mockMvc.perform(withToken(put("/api/priority-agendas/items/" + itemId), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isOk());
+
+        item.put("active", false);
+        mockMvc.perform(withToken(put("/api/priority-agendas/items/" + itemId), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isOk());
+
+        item.put("active", true);
+        mockMvc.perform(withToken(put("/api/priority-agendas/items/" + itemId), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isOk());
+
+        // Deactivate the whole framework.
+        mockMvc.perform(withToken(
+                        put("/api/priority-agendas/sets/" + setId + "/deactivate"), adminToken))
+                .andExpect(status().isOk());
+
+        MvcResult log = mockMvc.perform(
+                        withToken(get("/api/activity-logs").param("size", "50"), adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String body = log.getResponse().getContentAsString();
+        assertTrue(body.contains("\"totalElements\":8"),
+                "exactly the eight expected actions must be recorded: " + body);
+
+        for (String action : new String[] {
+                ActivityLog.ACTION_FRAMEWORK_CREATED,
+                ActivityLog.ACTION_FRAMEWORK_UPDATED,
+                ActivityLog.ACTION_FRAMEWORK_ACTIVATED,
+                ActivityLog.ACTION_AGENDA_CREATED,
+                ActivityLog.ACTION_AGENDA_UPDATED,
+                ActivityLog.ACTION_AGENDA_DEACTIVATED,
+                ActivityLog.ACTION_AGENDA_ACTIVATED,
+                ActivityLog.ACTION_FRAMEWORK_DEACTIVATED }) {
+            assertTrue(body.contains("\"" + action + "\""), action + " must be recorded");
+        }
+        assertEquals(8,
+                count(body, "\"module\":\"" + ActivityLog.MODULE_PRIORITY_AGENDA + "\""),
+                "all eight actions belong to the central Priority Agenda module");
     }
 
     @Test
@@ -322,6 +483,17 @@ class ActivityLogTest {
         entityManager.clear();
         mockMvc.perform(withToken(get("/api/notifications"), proponentToken))
                 .andExpect(status().isOk());
+    }
+
+    /** Counts non-overlapping occurrences in the serialized page. */
+    private static int count(String haystack, String needle) {
+        int count = 0;
+        int from = 0;
+        while ((from = haystack.indexOf(needle, from)) >= 0) {
+            count += 1;
+            from += needle.length();
+        }
+        return count;
     }
 
     private long readId(MvcResult result, int index) throws Exception {

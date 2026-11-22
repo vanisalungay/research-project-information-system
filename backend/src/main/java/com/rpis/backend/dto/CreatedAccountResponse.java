@@ -30,17 +30,31 @@ public class CreatedAccountResponse {
     /** True when the account must replace this password at first login. */
     private boolean mustChangePassword;
 
+    /**
+     * True when an existing account was reused (the person already had an account with
+     * this institutional address) instead of a new account being created. A reused
+     * account keeps its password, so {@link #temporaryPassword} is null and the client
+     * must not present credentials that were never issued.
+     */
+    private boolean accountReused;
+
     /** Builds the response, never serializing the stored hash. */
     public static CreatedAccountResponse of(
             User user, String email, String temporaryPassword, boolean emailAdjusted) {
+        return of(user, email, temporaryPassword, emailAdjusted, false);
+    }
+
+    public static CreatedAccountResponse of(User user, String email, String temporaryPassword,
+            boolean emailAdjusted, boolean accountReused) {
         CreatedAccountResponse response = new CreatedAccountResponse();
-        if (user != null) {
-            user.setPassword(null);
-        }
+        // The password field is WRITE_ONLY on the entity, so the stored hash is never
+        // serialized; do NOT null it here. Mutating the account would mark a managed row
+        // dirty and, inside a surrounding transaction, fail the not-null column.
         response.setUser(user);
         response.setEmail(email);
         response.setTemporaryPassword(temporaryPassword);
         response.setEmailAdjusted(emailAdjusted);
+        response.setAccountReused(accountReused);
         response.setMustChangePassword(user != null && Boolean.TRUE.equals(user.getMustChangePassword()));
         return response;
     }
