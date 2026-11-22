@@ -3,6 +3,7 @@ package com.rpis.backend.service;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,5 +70,75 @@ class InstitutionalCredentialsServiceTest {
                 () -> InstitutionalCredentialsService.temporaryPasswordFor("   "));
         assertThrows(IllegalArgumentException.class,
                 () -> InstitutionalCredentialsService.temporaryPasswordFor(null));
+    }
+
+    @Test
+    void theStandardLastFirstNameOrderIsUnderstood() {
+        // The form asks for "Dela Cruz, Juan, M., Jr."; the given names still come first
+        // in the address and the whole surname is used by the password.
+        assertEquals("jdelacruz123",
+                InstitutionalCredentialsService.temporaryPasswordFor("Dela Cruz, Juan, M., Jr."));
+        assertEquals("xbagares123",
+                InstitutionalCredentialsService.temporaryPasswordFor("Bagares, Xarzha Maurine"));
+        assertEquals("mdelacruz123",
+                InstitutionalCredentialsService.temporaryPasswordFor("De La Cruz, Maria Clara"));
+        // Middle initial omitted: the third component is then the suffix.
+        assertEquals("jdelacruz123",
+                InstitutionalCredentialsService.temporaryPasswordFor("Dela Cruz, Juan, Jr."));
+    }
+
+    @Test
+    void theStandardOrderDerivesTheAddressFromItsComponents() {
+        assertEquals("juan.delacruz",
+                InstitutionalCredentialsService.localPart("Dela Cruz, Juan"));
+        assertEquals("juanm.delacruz",
+                InstitutionalCredentialsService.localPart("Dela Cruz, Juan, M., Jr."));
+        assertEquals("xarzhamaurine.bagares",
+                InstitutionalCredentialsService.localPart("Bagares, Xarzha Maurine"));
+        // A simple surname resolves the same way in either order.
+        assertEquals(InstitutionalCredentialsService.localPart("Juan Santos"),
+                InstitutionalCredentialsService.localPart("Santos, Juan"));
+    }
+
+    @Test
+    void aCompoundSurnameDerivesTheSameAddressInEitherOrder() {
+        // The Dean form asks for "First Name Last Name". The surname particles keep
+        // "Dela Cruz" whole, so the same person gets the same address and password whether
+        // the name is entered in the Dean form's order or the standard comma order.
+        assertEquals("juan.delacruz",
+                InstitutionalCredentialsService.localPart("Juan Dela Cruz"));
+        assertEquals("juan.delacruz",
+                InstitutionalCredentialsService.localPart("Dela Cruz, Juan"));
+        assertEquals("jdelacruz123",
+                InstitutionalCredentialsService.temporaryPasswordFor("Juan Dela Cruz"));
+        assertEquals("maria.delacruz",
+                InstitutionalCredentialsService.localPart("Maria Dela Cruz"));
+        assertEquals("liza.delacruz",
+                InstitutionalCredentialsService.localPart("Liza De La Cruz"));
+        // Case never reaches the address.
+        assertEquals("juan.delacruz",
+                InstitutionalCredentialsService.localPart("JUAN DELA CRUZ"));
+    }
+
+    @Test
+    void generatedAddressesUseTheCorrectUniversityDomain() {
+        assertEquals("@msunaawan.edu.ph", InstitutionalCredentialsService.INSTITUTIONAL_DOMAIN);
+        assertEquals("xarzhamaurine.bagares@msunaawan.edu.ph",
+                InstitutionalCredentialsService.emailFor("Xarzha Maurine Bagares"));
+        assertTrue(InstitutionalCredentialsService.isInstitutionalAddress(
+                "vanisa.lungay@msunaawan.edu.ph"));
+        assertFalse(InstitutionalCredentialsService.isInstitutionalAddress(
+                "vanisa.lungay@msunawaan.edu.ph"),
+                "the retired misspelling must no longer be accepted for an account");
+    }
+
+    @Test
+    void aSimpleFirstAndLastNameIsStillReadAsGivenThenSurname() {
+        assertEquals("juan.santos",
+                InstitutionalCredentialsService.localPart("Juan Santos"));
+        assertEquals("jsantos123",
+                InstitutionalCredentialsService.temporaryPasswordFor("Juan Santos"));
+        assertEquals("xarzhamaurine.bagares",
+                InstitutionalCredentialsService.localPart("Xarzha Maurine Bagares"));
     }
 }

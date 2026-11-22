@@ -33,6 +33,11 @@
           <span v-if="activeCall" class="end-badge" :class="activeCallTone">
             {{ activeCallStatus }}
           </span>
+          <div class="dash-section-actions">
+            <router-link class="end-btn is-link" to="/proponent-calls">
+              View All →
+            </router-link>
+          </div>
         </header>
 
         <template v-if="callsLoading">
@@ -96,6 +101,23 @@
             </router-link>
             <router-link class="end-btn is-primary" to="/proposals">Start a Proposal</router-link>
           </div>
+
+          <!-- The rest of the five-call dashboard preview. The full list is one click
+               away through View All, which opens every published call (open,
+               scheduled and closed). -->
+          <ul v-if="additionalCalls.length" class="dash-call-more">
+            <li v-for="call in additionalCalls" :key="call.id">
+              <router-link class="dash-call-more-link" :to="`/proponent-announcement/${call.id}`">
+                <span class="dash-call-more-title">{{ call.name }}</span>
+                <span class="dash-call-more-meta">
+                  <span class="end-badge" :class="statusTone(announcementStatus(call))">
+                    {{ announcementStatus(call) }}
+                  </span>
+                  <span class="dash-call-more-date">{{ callDeadlineLabel(call) }}</span>
+                </span>
+              </router-link>
+            </li>
+          </ul>
         </template>
       </section>
 
@@ -411,7 +433,12 @@ const endorsementsError = ref('')
  * The order is the same rule the Create Proposal workflow uses, and the list itself is the
  * backend's (`/available` never returns a draft, closed or expired call).
  */
-const activeCall = computed(() => sortCallsForDisplay(calls.value)[0] ?? null)
+const sortedCalls = computed(() => sortCallsForDisplay(calls.value))
+const activeCall = computed(() => sortedCalls.value[0] ?? null)
+// The dashboard preview is at most five calls: the featured one plus four compact
+// rows. The full listing at /proponent-calls is never limited.
+const previewCalls = computed(() => sortedCalls.value.slice(0, 5))
+const additionalCalls = computed(() => previewCalls.value.slice(1))
 const activeCallStatus = computed(() => announcementStatus(activeCall.value))
 
 /** The call's badge tone, from the one shared status mapping. */
@@ -533,3 +560,55 @@ async function load() {
 onMounted(load)
 </script>
 
+
+<style scoped>
+/* The dashboard preview shows the featured call plus up to four compact rows. */
+.dash-call-more {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px dashed #e2e6f2;
+  display: grid;
+  gap: 6px;
+}
+
+.dash-call-more-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e8ebf5;
+  border-radius: 9px;
+  color: #1c1a3c;
+  text-decoration: none;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.dash-call-more-link:hover {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.dash-call-more-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.dash-call-more-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dash-call-more-date {
+  color: #6b7190;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+</style>

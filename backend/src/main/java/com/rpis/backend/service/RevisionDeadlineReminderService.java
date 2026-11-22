@@ -119,6 +119,7 @@ public class RevisionDeadlineReminderService {
         return notificationService.notifyUsers(
                 List.of(proponent), message, "Revision Deadline Reminder",
                 NotificationTypes.REVISION_DEADLINE_REMINDER, proposal.getId(),
-                NotificationEvent.REVISION_DEADLINE_REMINDER.withDedupeKey(dedupeKey)).size();
+                NotificationEvent.REVISION_DEADLINE_REMINDER.withDedupeKey(dedupeKey),
+                "PROPONENT").size();
     }
 }

@@ -92,6 +92,16 @@ public class PriorityAgendaController {
         return ResponseEntity.ok(priorityAgendaService.activateSet(id));
     }
 
+    /**
+     * Deactivates one whole framework / program for new submissions. The set and every
+     * agenda in it are preserved; only the program-level {@code active} flag changes, and
+     * no other framework is modified. Individual agenda statuses are not touched.
+     */
+    @PutMapping("/sets/{id}/deactivate")
+    public ResponseEntity<PriorityAgendaSet> deactivateSet(@PathVariable Long id) {
+        return ResponseEntity.ok(priorityAgendaService.deactivateSet(id));
+    }
+
     @PostMapping("/sets/{id}/items")
     public ResponseEntity<PriorityAgenda> addItem(
             @PathVariable Long id, @RequestBody PriorityAgendaItemRequest request) {

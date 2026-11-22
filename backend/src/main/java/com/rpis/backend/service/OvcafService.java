@@ -224,7 +224,8 @@ public class OvcafService {
                             + "The project becomes approved for implementation once the release is recorded.",
                     "Budget Approved",
                     NotificationTypes.APPROVAL,
-                    saved.getId(), null, NotificationEvent.STATUS_UPDATED);
+                    saved.getId(), null, NotificationEvent.STATUS_UPDATED,
+                    UserRoles.PROPONENT);
         }
         // Notify ORPS (both staff and administrator) for monitoring.
         notifyRps(saved,
@@ -324,10 +325,12 @@ public class OvcafService {
         if (saved.getProponent() != null) {
             notificationService.createNotification(
                     saved.getProponent().getId(),
-                    "Funds have been released for your project: \"" + saved.getProjectTitle() + "\"",
-                    "Funds Released",
-                    NotificationTypes.FUNDING,
-                    saved.getId(), null, NotificationEvent.STATUS_UPDATED);
+                    "Funds have been released for your project \"" + saved.getProjectTitle()
+                            + "\". It is now approved for implementation.",
+                    "Proposal Approved for Implementation",
+                    NotificationTypes.APPROVAL,
+                    saved.getId(), null, NotificationEvent.STATUS_UPDATED,
+                    UserRoles.PROPONENT);
         }
         notifyRps(saved,
                 "Funds released. Ready for implementation monitoring: \"" + saved.getProjectTitle() + "\"",
@@ -597,7 +600,7 @@ public class OvcafService {
                                     + "\" has been approved by OVCAF and is awaiting fund release. "
                                     + "The project becomes approved for implementation once the release is recorded.",
                             "Budget Approved", NotificationTypes.APPROVAL, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED);
+                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
                 }
                 // Notify ORPS that the budget cleared and the release is awaited.
                 notifyRps(proposal,
@@ -608,13 +611,17 @@ public class OvcafService {
                 if (proposal.getProponent() != null) {
                     notificationService.notifyUsers(List.of(proposal.getProponent()),
                             "Your proposal \"" + proposal.getProjectTitle()
-                                    + "\" has been returned by OVCAF for revision.",
-                            "Budget Revision Required", NotificationTypes.REVISION, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED);
+                                    + "\" has been returned by OVCAF for budget revision. "
+                                    + "Please review the remarks and resubmit."
+                                    + (proposal.getRemarks() == null || proposal.getRemarks().isBlank()
+                                            ? ""
+                                            : " Remarks: " + proposal.getRemarks().trim()),
+                            "Budget Revision Required", NotificationTypes.FUNDING, proposal.getId(),
+                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
                 }
                 notifyRps(proposal,
                         "Budget release was returned by OVCAF for proposal: \"" + proposal.getProjectTitle() + "\"",
-                        "Budget Request Returned", NotificationTypes.REVISION);
+                        "Budget Request Returned", NotificationTypes.FUNDING);
                 break;
             case "REJECTED":
                 if (proposal.getProponent() != null) {
@@ -622,7 +629,7 @@ public class OvcafService {
                             "Your proposal \"" + proposal.getProjectTitle()
                                     + "\" has been rejected by OVCAF.",
                             "Proposal Rejected", NotificationTypes.REJECTION, proposal.getId(),
-                            NotificationEvent.STATUS_UPDATED);
+                            NotificationEvent.STATUS_UPDATED, UserRoles.PROPONENT);
                 }
                 notifyRps(proposal,
                         "OVCAF rejected the proposal: \"" + proposal.getProjectTitle() + "\"",

@@ -8,7 +8,7 @@
           <p>Review approved budgets and processs fund release</p>
         </div>
       </div>
-            <button class="back-btn btn-secondary" @click="goBack">← Back</button>
+            <BackButton to="/budget-processing" />
 
     </header>
 
@@ -614,12 +614,7 @@
         </div>
 
         <div class="review-actions">
-          <button
-            class="done-btn btn-secondary"
-            @click="goBack"
-          >
-            Back
-          </button>
+          <BackButton to="/budget-processing" />
         </div>
 
       </div>
@@ -650,12 +645,7 @@
 
         <div class="review-actions">
 
-          <button
-            class="done-btn btn-secondary"
-            @click="goBack"
-          >
-            Back
-          </button>
+          <BackButton to="/budget-processing" />
 
         </div>
 
@@ -682,6 +672,7 @@
 </template>
 
 <script>
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
 import { statusTone } from '@/utils/statusTone.js'
@@ -689,7 +680,7 @@ import { statusLabel } from '@/utils/statusLabel.js'
 
 export default {
   name: "RpsBudgetRelease",
-  components: { ConfirmDialog },
+  components: { BackButton, ConfirmDialog },
 
   data() {
   return {
@@ -752,6 +743,14 @@ export default {
 
 
   methods: {
+    /**
+     * The page's own Back destination. It is also used after a successful return so the
+     * list is shown again; previously this method did not exist and the call was a no-op.
+     */
+    goBack() {
+      this.$router.push('/budget-processing');
+    },
+
     statusTone,
 
     statusLabel,
@@ -892,17 +891,6 @@ export default {
   border-radius: 8px;
   margin-bottom: 16px;
 }
-.back-btn{
-  border:none;
-  padding:10px 18px;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-
-
-}
-
 .proposal-layout {
   display: grid;
   grid-template-columns: 1fr 300px;

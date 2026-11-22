@@ -1,0 +1,495 @@
+/* =============================================================================
+   Shared administrator modal language
+   -----------------------------------------------------------------------------
+   Used by the Create user account modal and the Reset password modal so the two
+   screens are one component family: compact white dialog, navy icon tile, title +
+   description header, hairline dividers, 38px fields, a pale information panel,
+   and a fixed footer with a secondary/primary button pair.
+   ========================================================================== */
+
+.adm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(3px);
+}
+
+.adm-modal {
+  display: flex;
+  flex-direction: column;
+  width: 404px;
+  max-width: calc(100vw - 24px);
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid #e5e8f1;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 48px -16px rgba(20, 24, 50, 0.32),
+    0 8px 18px -10px rgba(20, 24, 50, 0.18);
+}
+
+/* Header ------------------------------------------------------------------ */
+.adm-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 14px 16px 13px;
+  border-bottom: 1px solid #eceef5;
+}
+
+.adm-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #262342;
+  color: #ffd000;
+}
+
+.adm-header-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.adm-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #1c1a3c;
+}
+
+.adm-heading p {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #777d91;
+}
+
+.adm-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #8a8fa3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.adm-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.adm-close:hover {
+  background: #f2f3f9;
+  color: #262342;
+}
+
+.adm-close:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+/* Body -------------------------------------------------------------------- */
+.adm-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.adm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 14px 16px 16px;
+}
+
+.adm-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.adm-body::-webkit-scrollbar-thumb {
+  background: #d7dbe8;
+  border-radius: 999px;
+}
+
+.adm-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.adm-error svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.adm-success {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #a7f3d0;
+  border-radius: 9px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.adm-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.adm-input,
+.adm-select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid #d7dbe8;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.adm-select {
+  padding-right: 32px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8298' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+}
+
+.adm-input::placeholder {
+  color: #9aa1b4;
+}
+
+.adm-input:focus,
+.adm-select:focus {
+  outline: none;
+  border-color: #315bff;
+  box-shadow: 0 0 0 3px rgba(49, 91, 255, 0.14);
+}
+
+.adm-input:disabled,
+.adm-select:disabled {
+  background: #f4f6fb;
+  color: #8a90a3;
+  cursor: not-allowed;
+}
+
+.adm-hint {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #7b8298;
+}
+
+.adm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+/* Created-for-you panel --------------------------------------------------- */
+.adm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e4e9f4;
+  border-radius: 13px;
+  background: #f5f7fc;
+}
+
+.adm-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #315bff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.adm-panel-title svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.adm-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.adm-panel-field > label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.adm-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 35px;
+  padding: 0 10px;
+  border: 1px dashed #c7cede;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.adm-preview svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.adm-preview span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-preview input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.adm-preview input::placeholder {
+  color: #9aa1b4;
+}
+
+.adm-preview .adm-preview-muted {
+  color: #9aa1b4;
+}
+
+/* Footer ------------------------------------------------------------------ */
+.adm-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #eceef5;
+  background: #ffffff;
+}
+
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.adm-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.adm-btn--secondary {
+  border: 1px solid #d7dbe8;
+  background: #ffffff;
+  color: #334155;
+}
+
+.adm-btn--secondary:hover:not(:disabled) {
+  background: #f6f7fb;
+}
+
+.adm-btn--primary {
+  border: 1px solid #262342;
+  background: #262342;
+  color: #ffffff;
+}
+
+.adm-btn--primary:hover:not(:disabled) {
+  background: #1c1a3c;
+  border-color: #1c1a3c;
+}
+
+.adm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.adm-btn:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+.adm-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: adm-spin 0.8s linear infinite;
+}
+
+@keyframes adm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Created credentials ----------------------------------------------------- */
+.adm-created {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adm-created-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1a3c;
+}
+
+.adm-created-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.adm-credential-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid #e4e9f4;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.adm-credential-label {
+  flex: 0 0 auto;
+  color: #7b8298;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adm-credential-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #1c1a3c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.adm-copy-message {
+  margin: 0;
+  color: #16794a;
+  font-size: 11px;
+}
+
+@media (max-width: 480px) {
+  .adm-modal {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    border-radius: 15px;
+  }
+
+  .adm-header {
+    padding: 13px 14px 12px;
+  }
+
+  .adm-body {
+    padding: 13px 14px 14px;
+  }
+
+  .adm-footer {
+    padding: 10px 14px 13px;
+  }
+
+  .adm-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -94,7 +94,7 @@ class PasswordSecurityPostgresTest {
     @Test
     void registrationStoresAHashAndNeverThePlainPassword() throws Exception {
         requireTestDatabase();
-        String raw = "proponentpassword1234";
+        String raw = "ProponentPass1!";
 
         User created = userService.createUser(newUser(uniqueEmail("register"), raw, "PROPONENT", "PENDING"));
 
@@ -124,12 +124,15 @@ class PasswordSecurityPostgresTest {
         User admin = userRepository.save(newUser(uniqueEmail("admin"), "irrelevant", "RPS_ADMIN", "APPROVED"));
 
         DeanAccountRequest request = new DeanAccountRequest();
-        request.setName("Dean Password Test");
-        request.setEmail(uniqueEmail("dean"));
-        request.setPassword(raw);
+        request.setName("Dean" + SEQUENCE.incrementAndGet() + " Password");
         request.setAssignedCollege("College of Science and Technology");
 
-        User dean = deanAccountService.save(request, admin.getId(), "RPS_ADMIN");
+        // The service generates the temporary password (the browser never chooses it) and
+        // stores only its BCrypt hash.
+        DeanAccountService.ProvisionedDean provisioned =
+                deanAccountService.save(request, admin.getId(), "RPS_ADMIN");
+        User dean = provisioned.user();
+        raw = provisioned.temporaryPassword();
 
         String stored = storedPassword(dean.getId());
         assertFalse(raw.equals(stored), "the stored value must not be the plain password");
@@ -144,12 +147,12 @@ class PasswordSecurityPostgresTest {
                 newUser(uniqueEmail("change"), "originalpassword", "RPS_STAFF", "APPROVED"));
 
         User update = new User();
-        update.setPassword("replacementpassword");
+        update.setPassword("ReplacementPass1!");
         userService.updateUser(created.getId(), update);
 
         String stored = storedPassword(created.getId());
         assertTrue(passwordService.isHashed(stored));
-        assertTrue(passwordService.verify(stored, "replacementpassword").matches(),
+        assertTrue(passwordService.verify(stored, "ReplacementPass1!").matches(),
                 "the new password must work");
         assertFalse(passwordService.verify(stored, "originalpassword").matches(),
                 "the old password must stop working");
@@ -217,7 +220,7 @@ class PasswordSecurityPostgresTest {
     @Test
     void aPendingOrRejectedAccountIsReportedOnlyWhenThePasswordIsCorrect() throws Exception {
         requireTestDatabase();
-        String raw = "pendingpassword1234";
+        String raw = "PendingPass1!";
         String pendingEmail = uniqueEmail("pending");
         userService.createUser(newUser(pendingEmail, raw, "PROPONENT", "PENDING"));
 

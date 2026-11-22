@@ -11,14 +11,12 @@
                 <div v-else-if="!proposal" class="card empty-state-box">
                     <p class="empty-title">Proposal Not Found</p>
                     <p class="empty-desc">The proposal you are attempting to validate cannot be found.</p>
-                    <router-link to="/ovcaf/inbox" class="btn btn-primary" style="margin-top:1rem">Back to
-                        Inbox</router-link>
+                    <BackButton label="Back to Inbox" to="/ovcaf/inbox" style="margin-top:1rem" />
                 </div>
 
                 <div v-else>
                     <div class="action-bar">
-                        <router-link :to="`/ovcaf/proposals/${proposal.id}`" class="btn btn-secondary btn-sm">← Back to
-                            Details</router-link>
+                        <BackButton label="Back to Details" :to="`/ovcaf/proposals/${proposal.id}`" />
                     </div>
 
                     <div class="validation-layout">
@@ -299,6 +297,7 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '@/utils/api';
+import BackButton from '@/components/BackButton.vue';
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
 import OvcafProposalDetails from './OvcafProposalDetails.vue';
 import { budgetDocumentName, budgetDocumentPath } from '@/utils/budgetDocument';

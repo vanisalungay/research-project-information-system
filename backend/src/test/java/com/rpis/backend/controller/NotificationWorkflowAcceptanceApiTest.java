@@ -193,7 +193,7 @@ class NotificationWorkflowAcceptanceApiTest {
                 .andExpect(status().isOk());
 
         assertEquals(1, count(rpsStaff, NotificationTypes.REVISION, "Revision Request Received"));
-        assertEquals(0, count(proponent, NotificationTypes.REVISION, "Revision Required"),
+        assertEquals(0, count(proponent, NotificationTypes.REVISION, "Proposal Returned for Revision"),
                 "an office return goes to RPS first; the Proponent learns when RPS forwards it");
     }
 
@@ -204,23 +204,30 @@ class NotificationWorkflowAcceptanceApiTest {
 
         assertEquals(1, count(rpsAdmin, NotificationTypes.PROPOSAL_UPDATE, "New Proposal Submitted"));
         assertEquals(1, count(rpsStaff, NotificationTypes.PROPOSAL_UPDATE, "New Proposal Submitted"));
+        assertEquals(1, count(proponent, NotificationTypes.PROPOSAL_SUBMISSION, "Proposal Submitted"));
         assertEquals(0, count(ovcrige, NotificationTypes.PROPOSAL_UPDATE, "New Proposal Submitted"));
 
         mockMvc.perform(put("/api/proposals/{id}/endorse", proposalId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + rpsStaffToken))
                 .andExpect(status().isOk());
         assertEquals(1, count(ovcrige, NotificationTypes.PROPOSAL_ENDORSED, "Proposal Endorsed"));
+        assertEquals(1, count(proponent, NotificationTypes.PROPOSAL_ENDORSED,
+                "Proposal Endorsed by RPS"));
 
         // Repeating the same transition is a no-op, not a second notification.
         mockMvc.perform(put("/api/proposals/{id}/endorse", proposalId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + rpsStaffToken))
                 .andExpect(status().isOk());
         assertEquals(1, count(ovcrige, NotificationTypes.PROPOSAL_ENDORSED, "Proposal Endorsed"));
+        assertEquals(1, count(proponent, NotificationTypes.PROPOSAL_ENDORSED,
+                "Proposal Endorsed by RPS"));
 
         mockMvc.perform(put("/api/proposals/{id}/forward-to-rec", proposalId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcrigeToken))
                 .andExpect(status().isOk());
         assertEquals(1, count(rec, NotificationTypes.REVIEW_REQUEST, "REC Office Review Request"));
+        assertEquals(1, count(proponent, NotificationTypes.REVIEW_REQUEST,
+                "Proposal Forwarded to REC"));
 
         mockMvc.perform(post("/api/proposals/{id}/reviews?reviewerId={reviewerId}", proposalId,
                                 rec.getId())
@@ -229,12 +236,14 @@ class NotificationWorkflowAcceptanceApiTest {
                         .content("{\"decision\":\"APPROVED\"}"))
                 .andExpect(status().isCreated());
         assertEquals(1, count(ovcrige, NotificationTypes.APPROVAL, "Proposal Approved by REC"));
-        assertEquals(1, count(proponent, NotificationTypes.APPROVAL, "Proposal Evaluated"));
+        assertEquals(1, count(proponent, NotificationTypes.APPROVAL, "Proposal Approved by REC"));
 
         mockMvc.perform(put("/api/proposals/{id}/forward-to-oc", proposalId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcrigeToken))
                 .andExpect(status().isOk());
         assertEquals(1, count(oc, NotificationTypes.APPROVAL, "Final Approval Required"));
+        assertEquals(1, count(proponent, NotificationTypes.APPROVAL,
+                "Proposal Forwarded to the Office of the Chancellor"));
 
         MockMultipartFile file = new MockMultipartFile(
                 "soFile", "E2E-SO.pdf", "application/pdf", PDF);
@@ -249,6 +258,8 @@ class NotificationWorkflowAcceptanceApiTest {
                         }))
                 .andExpect(status().isOk());
         assertEquals(1, count(ovcaf, NotificationTypes.FUNDING, "Proposal for OVCAF Review"));
+        assertEquals(1, count(proponent, NotificationTypes.APPROVAL,
+                "Proposal Approved by the Chancellor"));
 
         OvcafValidationRequest validation = new OvcafValidationRequest();
         validation.setValidatedById(ovcaf.getId());
@@ -272,7 +283,8 @@ class NotificationWorkflowAcceptanceApiTest {
                                 proposalId, ovcaf.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))
                 .andExpect(status().isOk());
-        assertEquals(1, count(proponent, NotificationTypes.FUNDING, "Funds Released"));
+        assertEquals(1, count(proponent, NotificationTypes.APPROVAL,
+                "Proposal Approved for Implementation"));
         assertEquals(1, count(rpsStaff, NotificationTypes.PROPOSAL_UPDATE, "Implementation Monitoring"));
 
         // Read/unread state and the offset are part of the same persisted contract.
@@ -305,5 +317,79 @@ class NotificationWorkflowAcceptanceApiTest {
                 .andExpect(status().isOk());
         assertTrue(notificationRepository.findById(waiting.getId()).orElseThrow().getIsRead(),
                 "the read state must persist");
+    }
+
+    /**
+     * Person names submitted through the API are stored in the standard
+     * "Last Name, First Name, Middle Initial, Suffix" title case even when the client
+     * sends capitals or lower case, so a request that bypasses the browser cannot save
+     * an inconsistent name.
+     */
+    @Test
+    void submittedPersonNamesAreStoredInTheStandardFormat() throws Exception {
+        ProposalRequest request = submissionRequest();
+        request.setProjectLeader("DELA CRUZ, JUAN, M., JR.");
+        request.setSubmittedByName("juan dela cruz");
+        request.setEndorsedByName("DELA CRUZ, MARIA, M.");
+
+        MvcResult result = mockMvc.perform(post("/api/proposals")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertEquals("Dela Cruz, Juan, M., Jr.", body.get("projectLeader").asText());
+        assertEquals("Juan Dela Cruz", body.get("submittedByName").asText());
+        assertEquals("Dela Cruz, Maria, M.", body.get("endorsedByName").asText());
+
+        Proposal stored = proposalRepository.findById(body.get("id").asLong()).orElseThrow();
+        assertEquals("Dela Cruz, Juan, M., Jr.", stored.getProjectLeader());
+        assertEquals("Juan Dela Cruz", stored.getSubmittedByName());
+        assertEquals("Dela Cruz, Maria, M.", stored.getEndorsedByName());
+    }
+
+    /**
+     * Recording the reviewer and endorsing to OVCRIGE are RPS actions. Another office -
+     * and the Proponent - must be refused, and the refusal must leave the proposal
+     * untouched.
+     */
+    @Test
+    void onlyRpsMayEndorseToOvcrige() throws Exception {
+        Proposal proposal = proposalAt("FOR REVIEW", "RPS-only endorsement");
+
+        mockMvc.perform(put("/api/proposals/{id}/endorse", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcrigeToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/proposals/{id}/endorse", proposal.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + proponentToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/proposals/{id}/reviewer-info", proposal.getId())
+                        .param("reviewedBy", "E2E OVCRIGE")
+                        .param("reviewedByPosition", "RPS_STAFF")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcrigeToken))
+                .andExpect(status().isForbidden());
+
+        assertEquals("FOR REVIEW",
+                proposalRepository.findById(proposal.getId()).orElseThrow().getStatus());
+        assertEquals(0, count(ovcrige, NotificationTypes.PROPOSAL_ENDORSED, "Proposal Endorsed"));
+    }
+
+    /**
+     * Only the submitted state can be endorsed. A draft (or any later state) must be
+     * refused rather than advanced, and no notification may be written.
+     */
+    @Test
+    void aProposalThatIsNotAwaitingRpsReviewIsNotEndorsed() throws Exception {
+        Proposal draft = proposalAt("DRAFT", "Not yet submitted");
+
+        mockMvc.perform(put("/api/proposals/{id}/endorse", draft.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + rpsStaffToken))
+                .andExpect(status().isBadRequest());
+
+        assertEquals("DRAFT",
+                proposalRepository.findById(draft.getId()).orElseThrow().getStatus());
+        assertEquals(0, count(ovcrige, NotificationTypes.PROPOSAL_ENDORSED, "Proposal Endorsed"));
     }
 }

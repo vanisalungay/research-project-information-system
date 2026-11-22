@@ -46,8 +46,9 @@ class NotificationPreferencePolicyTest {
 
         assertFalse(policy.shouldNotify(user, NotificationTypes.PROPOSAL_UPDATE,
                 NotificationEvent.NEW_PROPOSAL));
-        assertFalse(policy.shouldNotify(user, NotificationTypes.PROPOSAL_ENDORSED,
-                NotificationEvent.STATUS_UPDATED));
+        assertTrue(policy.shouldNotify(user, NotificationTypes.PROPOSAL_ENDORSED,
+                NotificationEvent.STATUS_UPDATED),
+                "an RPS endorsement is a core lifecycle event");
         assertTrue(policy.shouldNotify(user, NotificationTypes.REVIEW_REQUEST,
                 NotificationEvent.NEW_PROPOSAL));
         assertTrue(policy.shouldNotify(user, NotificationTypes.REVISION,

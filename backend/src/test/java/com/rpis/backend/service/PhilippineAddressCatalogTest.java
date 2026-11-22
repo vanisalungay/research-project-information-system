@@ -62,8 +62,11 @@ class PhilippineAddressCatalogTest {
         assertNull(catalog.describeProblem("Northern Mindanao", "Misamis Oriental", "", "Naawan"));
         assertNull(catalog.describeProblem("Northern Mindanao", "Misamis Oriental", null, "Naawan"));
         assertNull(catalog.describeProblem("Region X \u2013 Northern Mindanao", "Misamis Oriental", "", "Naawan"));
-        // NCR is answered through its district instead of a province.
+        // NCR has no province; the district can still be supplied by a client that
+        // has it, but section 01 no longer asks for one and the city itself carries
+        // its district in the PSGC.
         assertNull(catalog.describeProblem("NCR", "", "First District", "City of Manila"));
+        assertNull(catalog.describeProblem("NCR", "", "", "City of Manila"));
     }
 
     @Test
@@ -88,13 +91,17 @@ class PhilippineAddressCatalogTest {
     }
 
     @Test
-    void theAreaLevelIsRequiredUnlessTheCityIsIndependent() {
-        // A region with provinces needs one of them.
+    void theAreaLevelIsRequiredUnlessTheCitySuppliesIt() {
+        // A region with provinces still needs one of them for a city that belongs
+        // to a province.
         assertEquals("Province is required for the address.",
                 catalog.describeProblem("Northern Mindanao", "", "", "Naawan"));
-        // A district-divided region needs a district.
-        assertEquals("District is required for the address.",
-                catalog.describeProblem("NCR", "", "", "City of Manila"));
+        // A district-divided region is complete without the district: the city
+        // itself identifies its district.
+        assertNull(catalog.describeProblem("NCR", "", "", "City of Manila"));
+        // A municipality that is not in the province-less region is still rejected.
+        assertEquals("Municipality / city \"Naawan\" does not belong to NCR.",
+                catalog.describeProblem("NCR", "", "", "Naawan"));
 
         // City of Isabela belongs to no province and no district, so it is complete
         // on its own - and it is not part of any of the region's provinces.

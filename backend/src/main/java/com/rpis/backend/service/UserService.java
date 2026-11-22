@@ -4,6 +4,9 @@ import com.rpis.backend.model.ActivityLog;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.UserRepository;
+import com.rpis.backend.util.EmailNormalizer;
+import com.rpis.backend.util.PasswordPolicy;
+import com.rpis.backend.util.PersonNameFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -61,7 +65,11 @@ public class UserService {
     }
 
     public java.util.Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        String normalized = EmailNormalizer.normalize(email);
+        if (normalized == null || normalized.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return userRepository.findByNormalizedEmail(normalized);
     }
 
     public List<User> getPendingUsers() {
@@ -70,13 +78,44 @@ public class UserService {
 
     public User createUser(User user) {
 
+        // The name is stored in the one RPIS format regardless of how the browser sent it.
+        if (user.getName() != null) {
+            user.setName(PersonNameFormatter.format(user.getName()));
+        }
+
+        // One normalized form for every address that enters the system, so the account that
+        // is created is the account the sign-in form later finds.
+        user.setEmail(EmailNormalizer.normalize(user.getEmail()));
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("An email address is required.");
+        }
         if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
             throw new IllegalArgumentException(
                     "Only MSU Naawan email addresses are allowed.");
         }
+        if (userRepository.findByNormalizedEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists.");
+        }
 
-        // The password arrives as plain text over the wire (as it must, to be usable)
-        // and is hashed here, so nothing but a BCrypt hash is ever stored.
+        String role = EmailNormalizer.normalizeRole(user.getRole());
+        if (role == null) {
+            throw new IllegalArgumentException("Select the account role.");
+        }
+        // Public registration is the Faculty Proponent path only. Every other role is
+        // provisioned by an administrator (the Dean through DeanAccountService), so a
+        // self-registered account can never choose its own authority.
+        if (!UserRoles.PROPONENT.equals(role)) {
+            throw new IllegalArgumentException(
+                    "Only a Faculty Proponent account may be registered here.");
+        }
+        user.setRole(role);
+        user.assignRole(role);
+
+        // The password arrives as plain text over the wire (as it must, to be usable).
+        // It must satisfy the shared policy before it is accepted, and it is hashed here,
+        // so nothing but a BCrypt hash is ever stored. A direct POST to this route cannot
+        // skip the check.
+        PasswordPolicy.requireValid(user.getPassword());
         user.setPassword(passwordService.hash(user.getPassword()));
 
         user.setStatus("PENDING");
@@ -97,12 +136,15 @@ public class UserService {
             throw new IllegalArgumentException("A full name is required.");
         }
 
+        // Format before deriving anything: the address and the temporary password are
+        // derived from the stored name, so they must agree with what is saved.
+        user.setName(PersonNameFormatter.format(user.getName()));
         String email = credentialsService.availableEmailFor(user.getName());
         boolean adjusted = !email.equalsIgnoreCase(
                 InstitutionalCredentialsService.emailFor(user.getName()));
         String temporaryPassword = InstitutionalCredentialsService.temporaryPasswordFor(user.getName());
 
-        user.setEmail(email);
+        user.setEmail(EmailNormalizer.normalize(email));
         user.setPassword(temporaryPassword);
         user.setMustChangePassword(true);
 
@@ -148,31 +190,19 @@ public class UserService {
     }
 
     /**
-     * The password policy a new password must satisfy: long enough, mixed case, a digit and a
-     * symbol, different from the current one, and typed the same way twice.
+     * The checks a password change adds on top of the shared policy: the two entries must
+     * match and the new password must differ from the current one.
+     *
+     * <p>The policy itself lives in {@link PasswordPolicy} so registration, the
+     * administrator's reset and this change all enforce the same rules.
      */
     static void validateNewPassword(String newPassword, String confirmPassword, String currentPassword) {
-        if (newPassword == null || newPassword.length() < 8) {
-            throw new IllegalArgumentException("The new password must be at least 8 characters long.");
-        }
+        PasswordPolicy.requireValid(newPassword);
         if (!newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("The new password and its confirmation do not match.");
         }
         if (newPassword.equals(currentPassword)) {
             throw new IllegalArgumentException("The new password must be different from the current one.");
-        }
-        boolean upper = false;
-        boolean lower = false;
-        boolean digit = false;
-        boolean symbol = false;
-        for (char c : newPassword.toCharArray()) {
-            if (Character.isUpperCase(c)) upper = true;
-            else if (Character.isLowerCase(c)) lower = true;
-            else if (Character.isDigit(c)) digit = true;
-            else symbol = true;
-        }
-        if (!upper || !lower || !digit || !symbol) {
-            throw new IllegalArgumentException("The new password must include an upper-case letter, a lower-case letter, a digit and a symbol.");
         }
     }
 
@@ -184,12 +214,20 @@ public class UserService {
 
     public User createStaffAccount(User user) {
 
+        if (user.getName() != null) {
+            user.setName(PersonNameFormatter.format(user.getName()));
+        }
+
+        user.setEmail(EmailNormalizer.normalize(user.getEmail()));
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("An email address is required.");
+        }
         if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
             throw new IllegalArgumentException(
                     "Only MSU Naawan email addresses are allowed.");
         }
 
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+        if (userRepository.findByNormalizedEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already exists.");
         }
 
@@ -199,7 +237,7 @@ public class UserService {
         // not an RPS administrator. UserController delegates the Dean role there, so this
         // guard is the backstop that keeps any other caller of this method from minting a
         // Dean. Everything else keeps working as before.
-        if (UserRoles.DEAN.equalsIgnoreCase(user.getRole())) {
+        if (user.hasRole(UserRoles.DEAN)) {
             throw new IllegalArgumentException(
                     "The Dean role is provisioned by the Dean account service, which only an "
                             + "RPS administrator may use.");
@@ -209,6 +247,12 @@ public class UserService {
         user.setStatus("APPROVED");
         user.setEmailVerified(true);
         user.setDateRegistered(java.time.LocalDate.now());
+        String role = EmailNormalizer.normalizeRole(user.getRole());
+        if (role == null) {
+            throw new IllegalArgumentException("Select the account role.");
+        }
+        user.setRole(role);
+        user.assignRole(role);
 
         return userRepository.save(user);
     }
@@ -254,7 +298,13 @@ public class UserService {
      * account's existence.
      */
     public LoginOutcome login(String email, String password, String role) {
-        User user = userRepository.findByEmail(email).orElse(null);
+        // Normalize once, before the lookup: the typed and the pasted address are the same
+        // input after this, whatever capitalization or surrounding space the browser sent.
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        String selectedRole = EmailNormalizer.normalizeRole(role);
+        User user = normalizedEmail == null || normalizedEmail.isBlank()
+                ? null
+                : userRepository.findByNormalizedEmail(normalizedEmail).orElse(null);
         if (user == null) {
             // Deliberately indistinguishable from a wrong password: the caller answers
             // 401 for both, so the endpoint cannot be used to discover which e-mail
@@ -266,7 +316,10 @@ public class UserService {
             return LoginOutcome.refused(LoginStatus.INVALID_CREDENTIALS);
         }
 
-        boolean roleMatches = user.getRole() != null && user.getRole().equalsIgnoreCase(role);
+        // The role the user selected on the sign-in page must be one the account holds.
+        // A Proponent who is also a Dean may sign in as either; a role the account does not
+        // hold is refused exactly like a wrong password.
+        boolean roleMatches = selectedRole != null && user.hasRole(selectedRole);
         PasswordService.Verification verification = passwordService.verify(user.getPassword(), password);
 
         if (!verification.matches() || !roleMatches) {
@@ -412,14 +465,26 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (updatedUser.getName() != null && !updatedUser.getName().trim().isEmpty()) {
-            user.setName(updatedUser.getName());
+            user.setName(PersonNameFormatter.format(updatedUser.getName()));
         }
         if (updatedUser.getEmail() != null && !updatedUser.getEmail().trim().isEmpty()) {
-            user.setEmail(updatedUser.getEmail());
+            String normalized = EmailNormalizer.normalize(updatedUser.getEmail());
+            if (!InstitutionalCredentialsService.isInstitutionalAddress(normalized)) {
+                throw new IllegalArgumentException(
+                        "Only MSU Naawan email addresses are allowed.");
+            }
+            userRepository.findByNormalizedEmail(normalized)
+                    .filter(other -> !other.getId().equals(user.getId()))
+                    .ifPresent(other -> {
+                        throw new IllegalArgumentException("Email already exists.");
+                    });
+            user.setEmail(normalized);
         }
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().trim().isEmpty()) {
-            // A password change always stores a fresh hash. The raw value is never
-            // written to the column, and it is not logged.
+            // Administrators reset passwords through this path. The new value must satisfy
+            // the same policy as a user-chosen one, so a direct API call cannot store a
+            // weak password. The raw value is never written to the column or logged.
+            PasswordPolicy.requireValid(updatedUser.getPassword());
             user.setPassword(passwordService.hash(updatedUser.getPassword()));
         }
         if (updatedUser.getDepartmentOffice() != null) {
@@ -456,25 +521,38 @@ public class UserService {
         User saved = userRepository.save(user);
         boolean ownProfile = saved.getId() != null
                 && saved.getId().equals(activityLogService.currentActorId());
-        activityLogService.success(
-                ownProfile ? ActivityLog.ACTION_PROFILE_UPDATED : ActivityLog.ACTION_ACCOUNT_UPDATED,
-                ownProfile ? ActivityLog.MODULE_PROFILE : ActivityLog.MODULE_USER_ACCOUNTS,
-                ownProfile ? "Changed administrator profile information"
-                        : "Updated an existing user account",
-                saved.getName() + " (" + saved.getEmail() + ") was updated with the role "
-                        + saved.getRole() + ".");
+        boolean passwordReset = updatedUser.getPassword() != null
+                && !updatedUser.getPassword().trim().isEmpty();
+        if (passwordReset && !ownProfile) {
+            // The administrator reset somebody else's password. Only the fact is recorded -
+            // the new value is never part of the description or the details.
+            activityLogService.success(ActivityLog.ACTION_PASSWORD_RESET,
+                    ActivityLog.MODULE_USER_ACCOUNTS, "Reset a user's password",
+                    "The password of " + saved.getName() + " (" + saved.getEmail()
+                            + ") was reset by the administrator.");
+        } else {
+            activityLogService.success(
+                    ownProfile ? ActivityLog.ACTION_PROFILE_UPDATED : ActivityLog.ACTION_ACCOUNT_UPDATED,
+                    ownProfile ? ActivityLog.MODULE_PROFILE : ActivityLog.MODULE_USER_ACCOUNTS,
+                    ownProfile ? "Changed administrator profile information"
+                            : "Updated an existing user account",
+                    saved.getName() + " (" + saved.getEmail() + ") was updated with the role "
+                            + saved.getRole() + ".");
+        }
         return saved;
     }
 
     private void createIfNotExist(String name, String email, String password, String role) {
-        if (userRepository.findByEmail(email).isEmpty()) {
+        String normalized = EmailNormalizer.normalize(email);
+        if (userRepository.findByNormalizedEmail(normalized).isEmpty()) {
             User user = new User();
             user.setName(name);
-            user.setEmail(email);
+            user.setEmail(normalized);
             // The demo accounts' published passwords are hashed like any other, so even
             // the development seed data never puts a readable password in the column.
             user.setPassword(passwordService.hash(password));
-            user.setRole(role);
+            user.setRole(EmailNormalizer.normalizeRole(role));
+            user.assignRole(role);
             user.setStatus("APPROVED");
             userRepository.save(user);
         }

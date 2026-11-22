@@ -46,6 +46,13 @@ public final class NotificationTypes {
     /** The RPS endorsed a proposal to OVCRIGE. {@code proposalId} is the proposal id. */
     public static final String PROPOSAL_ENDORSED = "PROPOSAL_ENDORSED";
 
+    /**
+     * The Proponent's confirmation that a new or revised proposal was submitted. This is
+     * a core lifecycle alert, not an optional "status update", so the preference policy
+     * always delivers it.
+     */
+    public static final String PROPOSAL_SUBMISSION = "PROPOSAL_SUBMISSION";
+
     /** A Call for Proposals publication or update. */
     public static final String PROPOSAL_ANNOUNCEMENT = "PROPOSAL_ANNOUNCEMENT";
 
@@ -80,6 +87,7 @@ public final class NotificationTypes {
             REJECTION,
             FUNDING,
             PROPOSAL_ENDORSED,
+            PROPOSAL_SUBMISSION,
             QUARTERLY_REPORT,
             PROJECT_COMPLETION,
             SPECIAL_ORDER_DRAFT,

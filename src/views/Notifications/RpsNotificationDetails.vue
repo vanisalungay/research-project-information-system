@@ -4,9 +4,7 @@
     <!-- Header -->
     <div class="header">
 
-      <button class="back-btn btn-secondary" @click="$router.back()">
-        ← Back
-      </button>
+      <BackButton fallback="/notifications" />
 
       <div>
         <h2>Notification Details</h2>
@@ -140,13 +138,14 @@
 </template>
 
 <script>
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
 export default {
   name: "RpsNotificationDetails",
-  components: { ConfirmDialog },
+  components: { BackButton, ConfirmDialog },
 
   data() {
     return {
@@ -227,14 +226,6 @@ export default {
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
-.back-btn{
-  padding:8px 16px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-  transition:.2s;
-}
-
 .card{
   background:#fff;
   border-radius:12px;

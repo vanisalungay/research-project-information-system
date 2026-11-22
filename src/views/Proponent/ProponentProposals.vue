@@ -42,6 +42,7 @@
 
     <ProponentSubmitProp3 ref="step3Ref" v-model="showCriteria" :proposalData="proposalData"
       :endorsement-request-id="endorsementRequestId" @back="goBackToStep2"
+      @reviewMissing="reviewMissingSections"
       @savedraft="handleSaveDraft" @goToStep="handleGoToStep" @update:modelValue="refreshOnClose" />
 
     <!-- FILTERS -->
@@ -513,6 +514,21 @@ const handleStep2Submit = (certificationData) => {
 const goBackToStep2 = () => {
   showCriteria.value = false
   showModal2.value = true
+}
+
+/**
+ * Review & Submit sends the proponent back to the details form when required
+ * fields are missing. The form lists every incomplete section (each clickable)
+ * and highlights the first field; the entered values are not reset.
+ */
+const reviewMissingSections = async () => {
+  mergeStep1Form(step1Ref.value?.getFormData?.())
+  showCriteria.value = false
+  showModal2.value = false
+  showCallModal.value = false
+  showModal.value = true
+  await nextTick()
+  await step1Ref.value?.showIncompleteSections?.()
 }
 
 const openCriteriaModal = () => {

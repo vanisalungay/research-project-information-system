@@ -411,14 +411,15 @@ test('the Approve action explains why it is unavailable', () => {
   assert.match(approveBlockedReason(pending, { hasSignature: false }), /electronic signature/)
 })
 
-test('a non-IFP call reports its program', () => {
+test('IFP is shown by its complete name and another program keeps its own label', () => {
   assert.equal(
     fundingProgramLabel({
       fundingProgram: 'IFP',
       fundingProgramLabel: 'Internally Funded Project Proposal (IFP)',
     }),
-    'Internally Funded Project Proposal (IFP)',
+    'Internally Funded Proposal',
   )
+  assert.equal(fundingProgramLabel({ fundingProgram: 'IFP' }), 'Internally Funded Proposal')
   assert.equal(fundingProgramLabel({ fundingProgram: 'EXTERNALLY_FUNDED' }), 'EXTERNALLY_FUNDED')
   assert.equal(fundingProgramLabel({}), 'Unspecified funding program')
 })

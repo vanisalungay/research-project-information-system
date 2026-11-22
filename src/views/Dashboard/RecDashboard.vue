@@ -135,6 +135,7 @@
 <script setup>
 import api from '@/utils/api'
 import NotificationPreview from '@/components/NotificationPreview.vue'
+import { latestProposalSnippets } from '@/utils/dashboardProposals'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { statusTone } from '@/utils/statusTone.js'
@@ -184,9 +185,7 @@ const router = useRouter()
 const proposals = ref([])
 
 const latestProposals = computed(() =>
-  [...proposals.value]
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 5)
+  latestProposalSnippets(proposals.value, { dateField: 'createdAt' }),
 )
 
 const totalAssigned = computed(() =>

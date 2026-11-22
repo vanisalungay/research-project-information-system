@@ -672,6 +672,7 @@ public class SyntheticTestDataSeeder implements ApplicationRunner {
             user.setEmail(EMAIL_LOCAL_PREFIX + "proponent." + pad(i, 4) + EMAIL_DOMAIN);
             user.setPassword(passwordHash());
             user.setRole("PROPONENT");
+            user.assignRole("PROPONENT");
             user.setStatus("APPROVED");
             user.setEmailVerified(true);
             user.setDepartmentOffice(DEPARTMENTS[i % DEPARTMENTS.length]);
@@ -688,6 +689,7 @@ public class SyntheticTestDataSeeder implements ApplicationRunner {
             dean.setEmail(EMAIL_LOCAL_PREFIX + "dean." + pad(i, 2) + EMAIL_DOMAIN);
             dean.setPassword(passwordHash());
             dean.setRole(UserRoles.DEAN);
+            dean.assignRole(UserRoles.DEAN);
             dean.setStatus("APPROVED");
             dean.setEmailVerified(true);
             dean.setDesignation("Dean");
@@ -729,6 +731,7 @@ public class SyntheticTestDataSeeder implements ApplicationRunner {
         user.setEmail(EMAIL_LOCAL_PREFIX + localPart + EMAIL_DOMAIN);
         user.setPassword(passwordHash());
         user.setRole(role);
+        user.assignRole(role);
         user.setStatus("APPROVED");
         user.setEmailVerified(true);
         user.setDepartmentOffice("Research and Publication Services");

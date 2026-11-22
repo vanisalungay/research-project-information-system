@@ -10,16 +10,14 @@
                 <div v-else-if="!proposal" class="card empty-state-box">
                     <p class="empty-title">Proposal Not Found</p>
                     <p class="empty-desc">The proposal you are trying to view does not exist or has been removed.</p>
-                    <router-link v-if="!embedded" to="/ovcaf/inbox" class="btn btn-primary"
-                        style="margin-top:1rem">Back to
-                        Inbox</router-link>
+                    <BackButton v-if="!embedded" label="Back to Inbox" to="/ovcaf/inbox"
+                        style="margin-top:1rem" />
                 </div>
 
                 <div v-else>
                     <!-- Action Bar -->
                     <div class="action-bar">
-                        <router-link v-if="!embedded" to="/ovcaf/inbox" class="btn btn-secondary btn-sm">← Back
-                            to Inbox</router-link>
+                        <BackButton v-if="!embedded" label="Back to Inbox" to="/ovcaf/inbox" />
                         <div class="action-bar-right">
                             <button type="button" class="btn btn-download"
                                 :disabled="downloadLoading || !fullProposal" @click="downloadProposal">
@@ -176,6 +174,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/utils/api';
+import BackButton from '@/components/BackButton.vue';
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue';
 import LineItemBudgetPreviewModal from '@/components/LineItemBudgetPreviewModal.vue';
 import { PROPOSAL_FIELD_SECTIONS } from '@/utils/proposalFields';

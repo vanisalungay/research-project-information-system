@@ -144,7 +144,9 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals?statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED&statusIn=RETURNED')
+        // These proposals are past the review workflow, where updatedAt moves with each
+        // budget status change, so the most recently processed record is first.
+        const res = await api.get('/api/proposals?statusIn=APPROVED&statusIn=READY_FOR_RELEASE&statusIn=RELEASED&statusIn=RETURNED&sort=updatedAt')
         this.proposals = Array.isArray(res.data) ? res.data : []
       } catch (err) {
         console.error('Failed to fetch budget proposals:', err)

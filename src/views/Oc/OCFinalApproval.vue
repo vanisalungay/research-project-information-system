@@ -1,9 +1,7 @@
 <template>
   <div class="page">
     <div class="back-link">
-      <router-link to="/oc-dashboard" class="back-btn btn-secondary">
-        <span class="back-arrow">&#8592;</span> Back to Dashboard
-      </router-link>
+      <BackButton label="Back to Dashboard" to="/oc-dashboard" />
       <button v-if="proposal.id" class="btn-download" :disabled="downloadLoading" @click="downloadDetails">
         {{ downloadLoading ? 'Preparing…' : 'Download Proposal Details' }}
       </button>
@@ -18,8 +16,7 @@
     <!-- Error -->
     <div v-else-if="error" class="card center">
       <p class="error-text">{{ error }}</p>
-      <button class="btn-secondary" @click="$router.push('/oc-dashboard')" style="margin-top:12px;">Back to
-        Dashboard</button>
+      <BackButton label="Back to Dashboard" to="/oc-dashboard" style="margin-top:12px;" />
     </div>
 
     <!-- Proposal Content -->
@@ -321,6 +318,7 @@
 
 <script>
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
@@ -932,28 +930,6 @@ export default {
   margin: -8px 0 16px;
 }
 
-/* Layout only; .btn-secondary supplies the neutral colour. */
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.back-btn:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.back-arrow {
-  font-size: 16px;
-  line-height: 1;
-}
 
 .center {
   text-align: center;

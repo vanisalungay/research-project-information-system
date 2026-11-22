@@ -43,23 +43,34 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
+        com.rpis.backend.model.User account = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             TokenService.ParsedToken parsed = tokenService.parseValid(token);
 
             if (parsed != null && parsed.userId() != null && parsed.role() != null) {
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        parsed.userId(), // Principal
-                        null,            // Credentials
-                        Collections.singletonList(
-                                new SimpleGrantedAuthority("ROLE_" + parsed.role().toUpperCase()))
-                );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                // The token is only a claim. The account must still exist and must still
+                // hold the role it names: removing a role (for example revoking the Dean
+                // role) therefore takes effect on the next request instead of waiting for
+                // the token to expire. One read serves both this check and the temporary
+                // password check below.
+                account = userRepository.findById(parsed.userId()).orElse(null);
+                if (account != null && account.hasRole(parsed.role())) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            parsed.userId(), // Principal
+                            null,            // Credentials
+                            Collections.singletonList(
+                                    new SimpleGrantedAuthority("ROLE_" + parsed.role().toUpperCase()))
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Authenticated request {} {} as user {} with role {}",
-                            request.getMethod(), request.getRequestURI(), parsed.userId(), parsed.role());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Authenticated request {} {} as user {} with role {}",
+                                request.getMethod(), request.getRequestURI(), parsed.userId(), parsed.role());
+                    }
+                } else {
+                    account = null;
                 }
             }
         }
@@ -68,7 +79,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         // the password-change endpoint and the authentication endpoints. This is the
         // server-side half of the rule: the client redirect is a convenience, and without this
         // a temporary password could be used against every other API.
-        if (requiresPasswordChange() && !isAllowedWhileChangingPassword(request)) {
+        if (requiresPasswordChange(account) && !isAllowedWhileChangingPassword(request)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/plain");
             response.getWriter().write(
@@ -80,15 +91,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /** True when the authenticated account is still holding a temporary password. */
-    private boolean requiresPasswordChange() {
-        org.springframework.security.core.Authentication authentication =
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
-            return false;
-        }
-        return userRepository.findById(userId)
-                .map(user -> Boolean.TRUE.equals(user.getMustChangePassword()))
-                .orElse(false);
+    private boolean requiresPasswordChange(com.rpis.backend.model.User account) {
+        return account != null && Boolean.TRUE.equals(account.getMustChangePassword());
     }
 
     /**

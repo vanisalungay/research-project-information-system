@@ -24,10 +24,16 @@
 
       <form class="login-form" @submit.prevent="handleLogin">
         <label>Email Address</label>
-        <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" />
+        <input
+          type="email"
+          v-model="email"
+          placeholder="you@msunaawan.edu.ph"
+          autocomplete="username"
+          @blur="email = normalizeEmailInput(email)"
+        />
 
         <label>Password</label>
-        <input type="password" v-model="password" placeholder="Enter your password" />
+        <PasswordInput v-model="password" placeholder="Enter your password" autocomplete="current-password" />
         <router-link to="/proponent-forgot-password"> Forgot password? </router-link>        <div class="remember">
           <input type="checkbox" id="remember" />
           <label for="remember">Remember me</label>
@@ -49,7 +55,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { UserRole, useUserDataStore } from '@/stores/userData'
+import { normalizeEmailInput } from '@/utils/institutionalEmail'
 
 const userStore = useUserDataStore()
 const router = useRouter()

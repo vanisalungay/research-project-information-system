@@ -1,10 +1,15 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <button class="back" @click="$router.push('/rps-revision-requests')">← Back to Revision Requests</button>
-      <h2>Forward Revision Request</h2>
-      <p class="subtitle">Review the returning office's remarks, set the deadline, and forward to the proponent.</p>
-    </div>
+    <!-- The same proposal header every other proposal page uses. This page's action
+         (setting the deadline and forwarding) stays in the form below. -->
+    <ProposalReviewHeader
+      :title="proposal.projectTitle"
+      :document-id="proposal.documentId || proposal.proposalCode"
+      :status="proposal.status"
+      :show-download="false"
+      @back="router.push('/rps-revision-requests')"
+    />
+    <p class="subtitle">Review the returning office's remarks, set the deadline, and forward to the proponent.</p>
 
     <p v-if="loading" class="muted">Loading...</p>
     <p v-else-if="error" class="error">{{ error }}</p>
@@ -86,10 +91,10 @@
           <p v-if="submitError" class="error">{{ submitError }}</p>
         </div>
 
-        <div class="side">
-          <SubmissionHistory :proposal-id="proposal.id" />
-        </div>
       </div>
+
+      <!-- Full width: a 360px side column was what made the history feel crammed. -->
+      <SubmissionHistory :proposal-id="proposal.id" />
     </template>
   </div>
 </template>
@@ -98,6 +103,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import { useUserDataStore } from '@/stores/userData'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import SectionRemarksEditor from '@/components/SectionRemarksEditor.vue'
@@ -215,13 +221,8 @@ watch(() => route.params.id, () => fetchProposal())
   font-size: 22px;
   color: #1f2937;
 }
-.back {
-  background: none;
-  border: none;
-  color: #4f46e5;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 0;
+.page-header > .back-button {
+  margin-bottom: 8px;
 }
 .subtitle {
   color: #6b7280;
@@ -230,7 +231,7 @@ watch(() => route.params.id, () => fetchProposal())
 }
 .layout {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -353,8 +354,5 @@ textarea {
 }
 .muted {
   color: #6b7280;
-}
-.side {
-  min-width: 0;
 }
 </style>

@@ -7,9 +7,7 @@
           <h2>Review Summary</h2>
         </div>
 
-        <button class="back-btn btn-secondary" @click="goBack">
-          ← Back
-        </button>
+        <BackButton label="Back to Endorsed Proposals" to="/rpsendorsed-prop" />
       </div>
 
     </header>
@@ -516,8 +514,10 @@
               <input
                 type="text"
                 v-model="reviewer.name"
-                placeholder="Enter your full name"
+                placeholder="Dela Cruz, Juan, M., Jr."
+                @blur="reviewer.name = formatPersonName(reviewer.name)"
               >
+              <PersonNameHint />
             </div>
 
             <div class="form-group">
@@ -688,12 +688,15 @@
 </template>
 
 <script>
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+import { formatPersonName } from '@/utils/personName'
 
 export default {
   name: "RpsProposalDetails",
-  components: { ConfirmDialog },
+  components: { BackButton, ConfirmDialog, PersonNameHint },
 
   data() {
     return {
@@ -734,6 +737,7 @@ export default {
   },
 
   methods: {
+    formatPersonName,
     _showDialog(message, options = {}) {
       return new Promise((resolve) => {
         this.dialog.type = options.type || 'info'
@@ -772,7 +776,7 @@ export default {
     },
 
     goBack(){
-      this.$router.push("riiendorsed-prop")
+      this.$router.push("/rpsendorsed-prop")
     },
 
     async downloadProposal() {
@@ -793,6 +797,8 @@ export default {
     },
 
     async submitReview() {
+      this.reviewer.name = formatPersonName(this.reviewer.name)
+
       if (!this.evaluation.recommendation) {
         await this._showAlert("Please select an Overall Recommendation.", { type: 'warning', title: 'Validation Error' });
         return;
@@ -906,15 +912,6 @@ export default {
   margin-bottom: 16px;
   
   
-}
-
-.back-btn{
-  border:none;
-  padding:10px 18px;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
 }
 
 .header-title {

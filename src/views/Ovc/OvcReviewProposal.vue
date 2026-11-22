@@ -19,7 +19,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-secondary" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- Content -->
@@ -217,6 +217,7 @@ import SdgChecklist from '@/components/SdgChecklist.vue'
 import GadChecklist from '@/components/GadChecklist.vue'
 import ProposalFieldSection from '@/components/ProposalFieldSection.vue'
 import { PROPOSAL_FIELD_SECTIONS, buildFieldRemarkIndex } from '@/utils/proposalFields'
+import BackButton from '@/components/BackButton.vue'
 import ProposalReviewHeader from '@/components/ProposalReviewHeader.vue'
 import ProposalReviewSidebar from '@/components/ProposalReviewSidebar.vue'
 
@@ -418,7 +419,12 @@ const reviewRows = computed(() => [
 ])
 
 const goBack = () => {
-  router.back()
+  // Previous page when there is one; the OVCRIGE submission list for a direct URL.
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    router.back()
+    return
+  }
+  router.push('/submit-proposals')
 }
 
 const formatDate = (dateString) => {

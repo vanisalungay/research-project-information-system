@@ -98,7 +98,7 @@
                 </td>
               </tr>
 
-              <tr v-for="proposal in proposals.slice(0, 5)" :key="proposal.id">
+              <tr v-for="proposal in latestEndorsed" :key="proposal.id">
                 <td class="cell-id">
                   {{ proposal.documentId || proposal.proposalCode || '—' }}
                 </td>
@@ -138,9 +138,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import { latestProposalSnippets } from '@/utils/dashboardProposals'
 import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
@@ -202,6 +203,15 @@ const stats = ref({
 })
 
 const proposals = ref([])
+
+/**
+ * The preview shows the five latest endorsed proposals. The full array remains the
+ * source of the statistic cards and of the "View All" page; this only shortens the
+ * table, newest first by the submission date the table displays.
+ */
+const latestEndorsed = computed(() =>
+  latestProposalSnippets(proposals.value, { dateField: 'createdAt' }),
+)
 
 const loading = ref(true)
 

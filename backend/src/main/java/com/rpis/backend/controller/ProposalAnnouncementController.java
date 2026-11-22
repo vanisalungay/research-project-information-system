@@ -66,6 +66,16 @@ public class ProposalAnnouncementController {
         return ResponseEntity.ok(announcementService.getAvailableAnnouncements());
     }
 
+    /**
+     * The complete published Call for Proposals list behind the dashboard's View All
+     * action: open, scheduled and closed calls, newest workflow first. Drafts and
+     * cancelled calls are never exposed.
+     */
+    @GetMapping("/proponent-calls")
+    public ResponseEntity<List<ProposalAnnouncement>> getProponentCalls() {
+        return ResponseEntity.ok(announcementService.getProponentCalls());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProposalAnnouncement> getAnnouncementById(@PathVariable Long id) {
         return ResponseEntity.ok(announcementService.getAnnouncementById(id));

@@ -35,6 +35,8 @@ public class NotificationPreferencePolicy {
             NotificationTypes.REJECTION,
             NotificationTypes.APPROVAL,
             NotificationTypes.FUNDING,
+            NotificationTypes.PROPOSAL_ENDORSED,
+            NotificationTypes.PROPOSAL_SUBMISSION,
             NotificationTypes.ENDORSEMENT);
 
     /**
@@ -44,7 +46,6 @@ public class NotificationPreferencePolicy {
      */
     private static final Set<String> OPTIONAL_TYPES = Set.of(
             NotificationTypes.PROPOSAL_UPDATE,
-            NotificationTypes.PROPOSAL_ENDORSED,
             NotificationTypes.SPECIAL_ORDER_DRAFT,
             NotificationTypes.REVISION_DEADLINE_REMINDER,
             NotificationTypes.EVALUATION_DEADLINE_REMINDER);

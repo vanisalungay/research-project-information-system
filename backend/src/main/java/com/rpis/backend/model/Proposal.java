@@ -380,6 +380,24 @@ public class Proposal {
     @Column(name = "revision_notes", columnDefinition = "TEXT")
     private String revisionNotes;
 
+    /**
+     * When the proponent actually submitted the proposal (or resubmitted a revision).
+     * This is deliberately separate from {@code created_at} (when the draft row was
+     * first saved) and from {@code updated_at} (which moves on any edit), so a list of
+     * submitted proposals can be ordered by the real submission event.
+     */
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    /**
+     * When RPS actually endorsed this proposal to OVCRIGE. Kept apart from
+     * {@code submitted_at} (when the proponent submitted it) and {@code updated_at}
+     * (which keeps moving through later offices), so the Endorsed Proposals list can be
+     * ordered by the real endorsement event.
+     */
+    @Column(name = "endorsed_at")
+    private LocalDateTime endorsedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

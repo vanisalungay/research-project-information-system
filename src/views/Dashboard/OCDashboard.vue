@@ -61,6 +61,15 @@
         <header class="dash-section-head">
           <span class="dash-section-icon" v-html="icons.proposals"></span>
           <h3 class="dash-section-title">Proposals for Final Approval</h3>
+          <div class="dash-section-actions">
+            <router-link v-if="!showAll && forFinalApproval.length > 5" class="end-btn is-link"
+              :to="{ path: '/oc-dashboard', query: { view: 'all' } }">
+              View all
+            </router-link>
+            <router-link v-else-if="showAll" class="end-btn is-link" to="/oc-dashboard">
+              Show latest five
+            </router-link>
+          </div>
         </header>
 
         <div v-if="forFinalApproval.length > 0" class="end-table-scroll">
@@ -75,7 +84,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in forFinalApproval" :key="p.id">
+              <tr v-for="p in visibleForFinalApproval" :key="p.id">
                 <td class="cell-title">{{ p.title }}</td>
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
@@ -104,6 +113,15 @@
         <header class="dash-section-head">
           <span class="dash-section-icon" v-html="icons.funds"></span>
           <h3 class="dash-section-title">Approved &amp; Budget-Forwarded Proposals</h3>
+          <div class="dash-section-actions">
+            <router-link v-if="!showAll && approvedProposals.length > 5" class="end-btn is-link"
+              :to="{ path: '/oc-dashboard', query: { view: 'all' } }">
+              View all
+            </router-link>
+            <router-link v-else-if="showAll" class="end-btn is-link" to="/oc-dashboard">
+              Show latest five
+            </router-link>
+          </div>
         </header>
 
         <div v-if="approvedProposals.length > 0" class="end-table-scroll">
@@ -118,7 +136,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in approvedProposals" :key="p.id">
+              <tr v-for="p in visibleApprovedProposals" :key="p.id">
                 <td class="cell-title">{{ p.title }}</td>
                 <td>{{ p.adviser }}</td>
                 <td class="cell-id">{{ p.date }}</td>
@@ -151,17 +169,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import '@/assets/dashboard.css'
 import '@/assets/endorsement.css'
 import api from '@/utils/api'
+import { latestProposalSnippets, sortProposalsNewestFirst } from '@/utils/dashboardProposals'
 import NotificationPreview from '@/components/NotificationPreview.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalActionLabel, proposalStatusLabel } from '@/utils/proposalStatus.js'
 import { isSoDraft } from '@/utils/soDraft.js'
 
 const router = useRouter()
+const route = useRoute()
 
 /**
  * The icons of the page. They are inline SVGs on purpose: the application ships no icon
@@ -200,6 +220,25 @@ const forFinalApproval = ref([])
 const approvedProposals = ref([])
 const isLoading = ref(true)
 
+/**
+ * The dashboard shows the five latest proposals in each section. "View all" opens the
+ * same dashboard in its full-listing view (`?view=all`), so every authorized proposal
+ * remains reachable; the statistic cards always use the complete lists.
+ */
+const showAll = computed(() => route.query.view === 'all')
+const forFinalApprovalPreview = computed(() =>
+  latestProposalSnippets(forFinalApproval.value, { dateField: 'updatedAt' }),
+)
+const approvedProposalsPreview = computed(() =>
+  latestProposalSnippets(approvedProposals.value, { dateField: 'updatedAt' }),
+)
+const visibleForFinalApproval = computed(() =>
+  showAll.value ? forFinalApproval.value : forFinalApprovalPreview.value,
+)
+const visibleApprovedProposals = computed(() =>
+  showAll.value ? approvedProposals.value : approvedProposalsPreview.value,
+)
+
 /** The fields the draft badge and the document generator read from a list row. */
 const soFields = (p) => ({
   soNumber: p.soNumber,
@@ -228,24 +267,30 @@ const loadDashboard = async () => {
     stats.value.sentToOvcaf = approvedData.filter(p => p.status === 'FOR_OVCAF_APPROVAL').length
     stats.value.approved = approvedData.length
 
-    forFinalApproval.value = pendingData.map(p => ({
+    // Keep the raw timestamps alongside the display date: the five-item preview and the
+    // full-listing view both order by the most recent workflow change.
+    forFinalApproval.value = sortProposalsNewestFirst(pendingData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
       date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
       status: p.status,
+      updatedAt: p.updatedAt,
+      createdAt: p.createdAt,
       ...soFields(p),
-    }))
+    })), { dateField: 'updatedAt' })
 
-    approvedProposals.value = approvedData.map(p => ({
+    approvedProposals.value = sortProposalsNewestFirst(approvedData.map(p => ({
       id: p.id,
       title: p.projectTitle || 'Untitled Proposal',
       adviser: p.projectLeader || p.proponent?.name || 'Unknown',
       date: p.updatedAt?.substring(0, 10) || p.createdAt?.substring(0, 10) || 'N/A',
       status: p.status,
       badgeClass: p.status === 'FOR_OVCAF_APPROVAL' ? 'budget' : 'approved',
+      updatedAt: p.updatedAt,
+      createdAt: p.createdAt,
       ...soFields(p),
-    }))
+    })), { dateField: 'updatedAt' })
   } catch (error) {
     console.error('Failed to load Chancellor dashboard:', error)
   } finally {

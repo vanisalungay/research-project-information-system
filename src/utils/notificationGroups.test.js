@@ -175,6 +175,7 @@ test('the backend delivers proposal-workflow rows to the RPS Admin too', () => {
     'REJECTION',
     'FUNDING',
     'PROPOSAL_ENDORSED',
+    'PROPOSAL_SUBMISSION',
   ]) {
     assert.ok(types.includes(`"${type}"`), `${type} is part of the shared workflow vocabulary`)
   }

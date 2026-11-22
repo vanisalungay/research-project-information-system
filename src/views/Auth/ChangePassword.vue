@@ -19,37 +19,32 @@
         <div class="cp-field">
           <label for="current">Current password</label>
           <div class="cp-row">
-            <input id="current" v-model="currentPassword" :type="reveal.current ? 'text' : 'password'"
-              autocomplete="current-password" :disabled="submitting" />
-            <button type="button" class="cp-toggle" @click="reveal.current = !reveal.current">
-              {{ reveal.current ? 'Hide' : 'Show' }}
-            </button>
+            <PasswordInput id="current" v-model="currentPassword" autocomplete="current-password"
+              aria-describedby="current-hint" :disabled="submitting" />
           </div>
+          <PasswordFieldHint id="current-hint" kind="current" />
         </div>
+
+        <PasswordRequirements id="password-requirements" :password="newPassword"
+          :confirm="confirmPassword" />
 
         <div class="cp-field">
           <label for="next">New password</label>
           <div class="cp-row">
-            <input id="next" v-model="newPassword" :type="reveal.next ? 'text' : 'password'"
-              autocomplete="new-password" :disabled="submitting" />
-            <button type="button" class="cp-toggle" @click="reveal.next = !reveal.next">
-              {{ reveal.next ? 'Hide' : 'Show' }}
-            </button>
+            <PasswordInput id="next" v-model="newPassword" autocomplete="new-password"
+              aria-describedby="new-hint password-requirements" :disabled="submitting" />
           </div>
+          <PasswordFieldHint id="new-hint" kind="new" />
         </div>
 
         <div class="cp-field">
           <label for="confirm">Confirm new password</label>
           <div class="cp-row">
-            <input id="confirm" v-model="confirmPassword" :type="reveal.confirm ? 'text' : 'password'"
-              autocomplete="new-password" :disabled="submitting" />
-            <button type="button" class="cp-toggle" @click="reveal.confirm = !reveal.confirm">
-              {{ reveal.confirm ? 'Hide' : 'Show' }}
-            </button>
+            <PasswordInput id="confirm" v-model="confirmPassword" autocomplete="new-password"
+              aria-describedby="confirm-hint" :disabled="submitting" />
           </div>
+          <PasswordFieldHint id="confirm-hint" kind="confirm" />
         </div>
-
-        <p v-if="hint" class="cp-hint">{{ hint }}</p>
 
         <button type="submit" class="cp-submit" :disabled="submitting || !isComplete">
           {{ submitting ? 'Saving...' : 'Change password' }}
@@ -60,11 +55,15 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import api from '@/utils/api'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PasswordRequirements from '@/components/PasswordRequirements.vue'
+import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
 import { dashboardForRole } from '@/utils/roleDashboard'
+import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
@@ -73,38 +72,37 @@ const userStore = useUserDataStore()
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
-const reveal = reactive({ current: false, next: false, confirm: false })
 
 const submitting = ref(false)
 const error = ref('')
 const success = ref('')
 
-/** Everything the form needs before it can be sent. */
+/**
+ * Everything the form needs before it can be sent: a current password, a new
+ * password that satisfies every listed requirement, and a matching confirmation.
+ */
 const isComplete = computed(
-  () => currentPassword.value !== '' && newPassword.value !== '' && confirmPassword.value !== '',
+  () => currentPassword.value !== '' && passwordFormReady(newPassword.value, confirmPassword.value),
 )
 
-/** The first thing wrong with the new password, or '' when it is acceptable. */
-const hint = computed(() => {
-  if (newPassword.value === '') return ''
-  if (newPassword.value.length < 8) return 'The new password must be at least 8 characters long.'
-  if (!/[A-Z]/.test(newPassword.value)) return 'Add at least one upper-case letter.'
-  if (!/[a-z]/.test(newPassword.value)) return 'Add at least one lower-case letter.'
-  if (!/[0-9]/.test(newPassword.value)) return 'Add at least one digit.'
-  if (!/[^A-Za-z0-9]/.test(newPassword.value)) return 'Add at least one symbol.'
-  if (confirmPassword.value !== '' && newPassword.value !== confirmPassword.value) {
-    return 'The new password and its confirmation do not match.'
-  }
-  return ''
-})
+/** The first unmet requirement, used only if the form is submitted without the button. */
+const hint = computed(() => passwordPolicyMessage(newPassword.value))
 
 const submit = async () => {
   if (submitting.value) return
   error.value = ''
   success.value = ''
 
+  if (currentPassword.value === '') {
+    error.value = 'Enter your current password.'
+    return
+  }
   if (hint.value) {
     error.value = hint.value
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    error.value = 'The new password and its confirmation do not match.'
     return
   }
 
@@ -188,6 +186,12 @@ const submit = async () => {
   gap: 8px;
 }
 
+/* The shared password control fills the row; its own eye button sits inside it. */
+.cp-row > .password-field {
+  flex: 1;
+  min-width: 0;
+}
+
 .cp-row input {
   flex: 1;
   min-width: 0;
@@ -203,18 +207,6 @@ const submit = async () => {
   outline: none;
   border-color: #315bff;
   box-shadow: 0 0 0 3px rgba(49, 91, 255, 0.12);
-}
-
-.cp-toggle {
-  padding: 0 12px;
-  border: 1px solid #d8d8ec;
-  border-radius: var(--radius-md, 8px);
-  background: #ffffff;
-  font-family: inherit;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  color: #262342;
-  cursor: pointer;
 }
 
 .cp-hint {
@@ -256,5 +248,18 @@ const submit = async () => {
 .cp-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* The card is centred inside the app shell; at phone width the default page and
+   card padding left too little room for the requirement checklist, so the spacing
+   is tightened without changing the layout. */
+@media (max-width: 480px) {
+  .cp-page {
+    padding: 28px 12px;
+  }
+
+  .cp-card {
+    padding: 20px 16px;
+  }
 }
 </style>

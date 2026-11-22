@@ -67,16 +67,46 @@ public class ProposalNotificationPolicy {
                         NotificationTypes.PROPOSAL_UPDATE, proposalId,
                         resubmission ? NotificationEvent.REVISION_SUBMITTED
                                 : NotificationEvent.NEW_PROPOSAL);
+                // The Proponent's own confirmation. It is the same submission event, so
+                // the two recipients share the event's preference/dedupe key.
+                notifyProponent(proposal,
+                        resubmission
+                                ? "Your revised proposal \"" + title
+                                        + "\" has been resubmitted successfully and is now with "
+                                        + "RPS for review."
+                                : "Your proposal \"" + title
+                                        + "\" has been submitted successfully and received by "
+                                        + "RPS for review.",
+                        resubmission ? "Proposal Resubmitted" : "Proposal Submitted",
+                        NotificationTypes.PROPOSAL_SUBMISSION,
+                        resubmission ? NotificationEvent.REVISION_SUBMITTED
+                                : NotificationEvent.NEW_PROPOSAL);
             }
-            case "ENDORSED" -> notificationService.notifyRoles(OVCRIGE,
-                    "A proposal has been endorsed to OVCRIGE: \"" + title + "\"",
-                    "Proposal Endorsed", NotificationTypes.PROPOSAL_ENDORSED, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
-            case "UNDER_REVIEW" -> notificationService.notifyRoles(REC,
-                    "Proposal awaiting REC review and evaluation (office-level request): \""
-                            + title + "\"",
-                    "REC Office Review Request", NotificationTypes.REVIEW_REQUEST, proposalId,
-                    NotificationEvent.NEW_PROPOSAL);
+            case "ENDORSED" -> {
+                notificationService.notifyRoles(OVCRIGE,
+                        "A proposal has been endorsed to OVCRIGE: \"" + title + "\"",
+                        "Proposal Endorsed", NotificationTypes.PROPOSAL_ENDORSED, proposalId,
+                        NotificationEvent.STATUS_UPDATED);
+                notifyProponent(proposal,
+                        "Your proposal \"" + title
+                                + "\" has been reviewed and endorsed by RPS. It has been "
+                                + "forwarded to OVCRIGE for review.",
+                        "Proposal Endorsed by RPS", NotificationTypes.PROPOSAL_ENDORSED,
+                        NotificationEvent.STATUS_UPDATED);
+            }
+            case "UNDER_REVIEW" -> {
+                notificationService.notifyRoles(REC,
+                        "Proposal awaiting REC review and evaluation (office-level request): \""
+                                + title + "\"",
+                        "REC Office Review Request", NotificationTypes.REVIEW_REQUEST, proposalId,
+                        NotificationEvent.NEW_PROPOSAL);
+                notifyProponent(proposal,
+                        "Your proposal \"" + title
+                                + "\" has been forwarded to the Research Ethics Committee (REC) "
+                                + "for review.",
+                        "Proposal Forwarded to REC", NotificationTypes.REVIEW_REQUEST,
+                        NotificationEvent.STATUS_UPDATED);
+            }
             case "REC_APPROVED" -> {
                 notificationService.notifyRoles(OVCRIGE,
                         "REC has evaluated and recommended proposal for approval: \"" + title + "\"",
@@ -84,19 +114,47 @@ public class ProposalNotificationPolicy {
                         NotificationEvent.STATUS_UPDATED);
                 notifyProponent(proposal,
                         "Your proposal \"" + title
-                                + "\" has been evaluated and recommended for approval. "
-                                + "It is now with OVCRIGE for coordination.",
-                        "Proposal Recommended for Approval", NotificationTypes.APPROVAL,
+                                + "\" has been approved by the Research Ethics Committee (REC) "
+                                + "and forwarded to OVCRIGE for coordination.",
+                        "Proposal Approved by REC", NotificationTypes.APPROVAL,
                         NotificationEvent.STATUS_UPDATED);
             }
-            case "FOR_OC_APPROVAL" -> notificationService.notifyRoles(OC,
-                    "A proposal is ready for your final approval: \"" + title + "\"",
-                    "Final Approval Required", NotificationTypes.APPROVAL, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
-            case "FOR_OVCAF_APPROVAL" -> notificationService.notifyRoles(OVCAF,
-                    "A proposal is ready for your review and endorsement: \"" + title + "\"",
-                    "Proposal for OVCAF Review", NotificationTypes.FUNDING, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
+            case "OVC_APPROVED" -> {
+                // The OVC review accepted the proposal. The Chancellor's Office is told when
+                // OVCRIGE actually forwards it (FOR_OC_APPROVAL), not here, so one action
+                // cannot produce two "Final Approval Required" rows.
+                notifyProponent(proposal,
+                        "Your proposal \"" + title
+                                + "\" has been approved by OVCRIGE and is ready to be forwarded "
+                                + "to the Office of the Chancellor.",
+                        "Proposal Approved by OVCRIGE", NotificationTypes.APPROVAL,
+                        NotificationEvent.STATUS_UPDATED);
+            }
+            case "FOR_OC_APPROVAL" -> {
+                notificationService.notifyRoles(OC,
+                        "A proposal is ready for your final approval: \"" + title + "\"",
+                        "Final Approval Required", NotificationTypes.APPROVAL, proposalId,
+                        NotificationEvent.STATUS_UPDATED);
+                notifyProponent(proposal,
+                        "Your proposal \"" + title
+                                + "\" has been forwarded to the Office of the Chancellor for "
+                                + "final approval.",
+                        "Proposal Forwarded to the Office of the Chancellor",
+                        NotificationTypes.APPROVAL, NotificationEvent.STATUS_UPDATED);
+            }
+            case "FOR_OVCAF_APPROVAL" -> {
+                notificationService.notifyRoles(OVCAF,
+                        "A proposal is ready for your review and endorsement: \"" + title + "\"",
+                        "Proposal for OVCAF Review", NotificationTypes.FUNDING, proposalId,
+                        NotificationEvent.STATUS_UPDATED);
+                notifyProponent(proposal,
+                        "Your proposal \"" + title
+                                + "\" has been approved by the Office of the Chancellor."
+                                + specialOrderSentence(proposal)
+                                + " It has been forwarded to OVCAF for financial validation.",
+                        "Proposal Approved by the Chancellor", NotificationTypes.APPROVAL,
+                        NotificationEvent.STATUS_UPDATED);
+            }
             case "RETURNED_TO_RPS" -> notificationService.notifyRoles(RPS,
                     "A proposal was returned for revision and awaits your review and forwarding: \""
                             + title + "\"",
@@ -104,18 +162,21 @@ public class ProposalNotificationPolicy {
                     NotificationEvent.STATUS_UPDATED);
             case "REC_REVISION", "REVISION", "RPS_RETURNED" -> notifyProponent(proposal,
                     "Your proposal \"" + title
-                            + "\" has been returned for revision. Please check feedback.",
-                    "Revision Required", NotificationTypes.REVISION,
+                            + "\" has been returned for revision. Please review the remarks "
+                            + "and make the necessary corrections."
+                            + remarksSentence(proposal),
+                    "Proposal Returned for Revision", NotificationTypes.REVISION,
                     NotificationEvent.STATUS_UPDATED);
             case "REC_REJECTED", "REJECTED" -> notifyProponent(proposal,
-                    "Your proposal \"" + title + "\" has been rejected.",
+                    "Your proposal \"" + title + "\" has been rejected."
+                            + remarksSentence(proposal),
                     "Proposal Rejected", NotificationTypes.REJECTION,
                     NotificationEvent.STATUS_UPDATED);
             case "APPROVED" -> {
                 notifyProponent(proposal,
-                        "Congratulations! Your proposal \"" + title
-                                + "\" has received final approval by the Chancellor.",
-                        "Proposal Approved", NotificationTypes.APPROVAL,
+                        "Your proposal \"" + title + "\" has been approved for implementation."
+                                + specialOrderSentence(proposal),
+                        "Proposal Approved for Implementation", NotificationTypes.APPROVAL,
                         NotificationEvent.STATUS_UPDATED);
                 if (!Boolean.FALSE.equals(proposal.getNeedsBudget())) {
                     notificationService.notifyRoles(OVCAF,
@@ -124,10 +185,18 @@ public class ProposalNotificationPolicy {
                             NotificationEvent.STATUS_UPDATED);
                 }
             }
-            case "READY_FOR_RELEASE" -> notificationService.notifyRoles(OVCAF,
-                    "Budget processing requested for proposal: \"" + title + "\"",
-                    "Budget Processing Request", NotificationTypes.FUNDING, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
+            case "READY_FOR_RELEASE" -> {
+                notificationService.notifyRoles(OVCAF,
+                        "Budget processing requested for proposal: \"" + title + "\"",
+                        "Budget Processing Request", NotificationTypes.FUNDING, proposalId,
+                        NotificationEvent.STATUS_UPDATED);
+                notifyProponent(proposal,
+                        "The budget for your proposal \"" + title
+                                + "\" has been approved. It is awaiting the release of funds "
+                                + "before implementation begins.",
+                        "Budget Approved", NotificationTypes.FUNDING,
+                        NotificationEvent.STATUS_UPDATED);
+            }
             case "RELEASED" -> {
                 notifyProponent(proposal,
                         "Implementation funds have been successfully released for your project: \""
@@ -141,12 +210,14 @@ public class ProposalNotificationPolicy {
             }
             case "RETURNED" -> {
                 notifyProponent(proposal,
-                        "Budget release request for your proposal \"" + title + "\" was returned.",
-                        "Budget Request Returned", NotificationTypes.REVISION,
+                        "The budget request for your proposal \"" + title
+                                + "\" was returned. Please review the remarks and resubmit."
+                                + remarksSentence(proposal),
+                        "Budget Request Returned", NotificationTypes.FUNDING,
                         NotificationEvent.STATUS_UPDATED);
                 notificationService.notifyRoles(RPS,
                         "Budget release was returned by Finance Office for proposal: \"" + title + "\"",
-                        "Budget Request Returned", NotificationTypes.REVISION, proposalId,
+                        "Budget Request Returned", NotificationTypes.FUNDING, proposalId,
                         NotificationEvent.STATUS_UPDATED);
             }
             default -> {
@@ -177,6 +248,25 @@ public class ProposalNotificationPolicy {
                 NotificationEvent.STATUS_UPDATED);
     }
 
+    /** " Special Order <number> has been issued." or '' when no SO is recorded. */
+    private static String specialOrderSentence(Proposal proposal) {
+        String soNumber = proposal == null ? null : proposal.getSoNumber();
+        if (soNumber == null || soNumber.isBlank()) {
+            return "";
+        }
+        return " Special Order " + soNumber.trim() + " has been issued.";
+    }
+
+    /** " Remarks: ..." or '' when the proposal carries no remarks. */
+    private static String remarksSentence(Proposal proposal) {
+        String remarks = proposal == null ? null : proposal.getRemarks();
+        if (remarks == null || remarks.isBlank()) {
+            return "";
+        }
+        String trimmed = remarks.trim();
+        return " Remarks: " + (trimmed.length() > 500 ? trimmed.substring(0, 500) + "..." : trimmed);
+    }
+
     private void notifyProponent(Proposal proposal, String message, String title, String type,
             NotificationEvent event) {
         User proponent = proposal.getProponent();
@@ -184,6 +274,6 @@ public class ProposalNotificationPolicy {
             return;
         }
         notificationService.notifyUsers(List.of(proponent), message, title, type,
-                proposal.getId(), event);
+                proposal.getId(), event, UserRoles.PROPONENT);
     }
 }

@@ -157,12 +157,21 @@ test('the proposal table keeps its columns, cells and status text', () => {
     'the status pill must use the shared proposal status label',
   )
 
-  // The action keeps its handler and the list keeps its limit.
+  // The action keeps its handler and the preview keeps the shared, sorted five-item limit.
   assert.match(DASHBOARD, /@click="goToReview\(proposal\.id\)"/, 'the Review action must be kept')
   assert.match(
     DASHBOARD,
-    /v-for="proposal in proposals\.slice\(0, 5\)"/,
-    'the proposals must keep their order and their limit',
+    /v-for="proposal in latestEndorsed"/,
+    'the table must render the latest-five preview',
+  )
+  assert.ok(
+    DASHBOARD.includes("from '@/utils/dashboardProposals'"),
+    'the preview must use the shared dashboard proposal limit',
+  )
+  assert.match(
+    DASHBOARD,
+    /latestProposalSnippets\(proposals\.value, \{ dateField: 'createdAt' \}\)/,
+    'the preview must be newest-first by the displayed submission date',
   )
 
   // The loading and empty states are the real ones, not placeholder text.

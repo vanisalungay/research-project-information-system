@@ -3,12 +3,9 @@ package com.rpis.backend.service;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalReview;
 import com.rpis.backend.model.User;
-import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.ProposalReviewRepository;
 import com.rpis.backend.repository.UserRepository;
-import com.rpis.backend.util.NotificationEvent;
-import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +19,8 @@ public class ProposalReviewService {
     private final ProposalReviewRepository reviewRepository;
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ProposalNotificationPolicy proposalNotificationPolicy;
+    private final com.rpis.backend.security.CurrentUser currentUser;
 
     public List<ProposalReview> getReviewsForProposal(Long proposalId) {
         Proposal proposal = proposalRepository.findById(proposalId)
@@ -37,10 +35,17 @@ public class ProposalReviewService {
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new IllegalArgumentException("Reviewer not found: " + reviewerId));
 
+        // A multi-role account reviews as the role it selected for this session. The
+        // account's primary role is only the fallback for a call that is not made by the
+        // authenticated reviewer themselves.
+        String reviewerRole = reviewerId.equals(currentUser.getUserId())
+                && currentUser.getRole() != null
+                ? currentUser.getRole()
+                : reviewer.getRole();
         ProposalReview review = new ProposalReview();
         review.setProposal(proposal);
         review.setReviewer(reviewer);
-        review.setReviewerRole(reviewer.getRole());
+        review.setReviewerRole(reviewerRole);
 
         // Copy scores
         review.setSoundnessSectorNeedScore(reviewInput.getSoundnessSectorNeedScore());
@@ -69,7 +74,7 @@ public class ProposalReviewService {
 
         // Update Proposal Status based on Review Decision
         String decision = reviewInput.getDecision().toUpperCase();
-        String role = reviewer.getRole().toUpperCase();
+        String role = reviewerRole.toUpperCase();
         String targetStatus = proposal.getStatus();
         boolean returnedForRevision = false;
 
@@ -105,44 +110,12 @@ public class ProposalReviewService {
         }
         proposalRepository.save(proposal);
 
-        String title = proposal.getProjectTitle();
-
-        // The proponent is told the outcome of an evaluation unless the proposal was
-        // returned for revision - a return goes to ORPS first, who forwards it with the
-        // deadline, so the proponent learns about it from that message instead.
-        if (!returnedForRevision && proposal.getProponent() != null) {
-            String type = "REJECTED".equals(decision)
-                    ? NotificationTypes.REJECTION
-                    : NotificationTypes.APPROVAL;
-            String notificationTitle = "REJECTED".equals(decision)
-                    ? "Proposal Rejected"
-                    : "Proposal Evaluated";
-            notificationService.notifyUsers(List.of(proposal.getProponent()),
-                    "A review decision has been submitted on your proposal \"" + title
-                            + "\". Decision: " + decision + ".",
-                    notificationTitle, type, proposalId, NotificationEvent.STATUS_UPDATED);
-        }
-
-        // Notify the office that owns the next step. Each role is resolved by query, so
-        // the whole user table is never loaded.
-        if ("REC_APPROVED".equals(targetStatus)) {
-            notificationService.notifyRoles(List.of(UserRoles.OVCRIGE),
-                    "Proposal \"" + title + "\" was approved by REC and is ready for OVC review.",
-                    "Proposal Approved by REC", NotificationTypes.APPROVAL, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
-        } else if ("OVC_APPROVED".equals(targetStatus)) {
-            notificationService.notifyRoles(List.of(UserRoles.OC),
-                    "Proposal \"" + title + "\" was approved by OVC and is ready for OC final approval.",
-                    "Final Approval Required", NotificationTypes.APPROVAL, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
-        } else if (returnedForRevision) {
-            notificationService.notifyRoles(
-                    List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF),
-                    "Proposal \"" + title + "\" was returned for revision by " + role
-                            + " and awaits RPS review.",
-                    "Revision Request Received", NotificationTypes.REVISION, proposalId,
-                    NotificationEvent.STATUS_UPDATED);
-        }
+        // The one notification policy owns the recipients and wording of every status
+        // transition. Using it here keeps an evaluation outcome consistent with the
+        // dedicated workflow endpoints and prevents a second, generic "decision" message
+        // from being written alongside it. The policy deliberately stays silent for a
+        // return: that goes to RPS first, and the Proponent is told when RPS forwards it.
+        proposalNotificationPolicy.notifyForStatus(proposal);
 
         return review;
     }

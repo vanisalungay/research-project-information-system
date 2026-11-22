@@ -1,0 +1,748 @@
+/**
+ * ui.css
+ * ---------------------------------------------------------------------------
+ * The one geometry authority of RPIS.
+ *
+ * Ownership:
+ *   tokens.css   the values (--ui-*)
+ *   ui.css       shape: size, padding, radius, spacing, elevation, layer
+ *   actions.css  button COLOUR per action meaning (--btn-*)
+ *   status.css   status badge COLOUR per workflow state (--status-*)
+ *
+ * Why pages must drop their own geometry: a Vue scoped rule compiles to
+ * `.btn-primary[data-v-x]` (specificity 0,2,0) and always beats the global
+ * `.btn-primary` (0,1,0). No non-!important global selector can reliably win,
+ * so standardisation is done by removing the duplicate local rules, and this
+ * file is the single place they were removed in favour of.
+ *
+ * Class adoption is additive: a migrated element carries the legacy class for
+ * its JS/print hooks AND a ui-* class for the standard, e.g.
+ *   <div class="modal ui-modal"> <div class="modal-body ui-modal-body">
+ *
+ * Imported by src/assets/main.css before status.css and actions.css, so the
+ * semantic colour files always win a border/background conflict.
+ */
+
+/* ============================================================
+   0. Element reset — zero specificity so page rules can override
+   ============================================================ */
+
+:where(button, input, select, textarea) {
+  font-family: inherit;
+}
+
+:where(button) {
+  cursor: pointer;
+}
+
+:where(button, input, select, textarea, a):focus-visible {
+  outline: var(--ui-focus-width) solid var(--ui-focus-color);
+  outline-offset: var(--ui-focus-offset);
+}
+
+/* ============================================================
+   1. Layout primitives
+   ============================================================ */
+
+.ui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Pushes a group to the far side of a toolbar without breaking the wrap. */
+.ui-toolbar-end {
+  margin-left: auto;
+}
+
+/* ============================================================
+   2. UI typography
+   ============================================================ */
+
+.ui-page-title,
+.page-title {
+  font-size: var(--ui-font-page-title);
+  font-weight: 700;
+  line-height: var(--ui-line-tight);
+  color: var(--ui-text-heading);
+}
+
+.ui-section-title,
+.section-title {
+  font-size: var(--ui-font-section-title);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ui-text-heading);
+}
+
+.ui-card-title {
+  font-size: var(--ui-font-card-title);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ui-text-heading);
+}
+
+.ui-modal-title {
+  font-size: var(--ui-font-modal-title);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ui-text-heading);
+}
+
+.ui-label {
+  display: block;
+  font-size: var(--ui-field-label-font);
+  font-weight: 600;
+  color: var(--ui-text-body);
+}
+
+.ui-help {
+  font-size: var(--ui-field-help-font);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
+}
+
+.ui-text-muted {
+  color: var(--ui-text-muted);
+}
+
+.ui-text-soft {
+  color: var(--ui-text-soft);
+}
+
+.ui-error-text {
+  font-size: var(--ui-field-help-font);
+  color: var(--status-rejected-text);
+}
+
+/* ============================================================
+   3. Buttons — the one geometry authority
+   ============================================================ */
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-approve,
+.btn-reject,
+.btn-return,
+.btn-view,
+.btn-download,
+.btn-cancel,
+.btn-edit,
+.btn-success,
+.btn-warning,
+.btn-danger,
+.btn-error,
+.btn-info,
+.btn-ghost,
+.btn-outline,
+.btn-open,
+.btn-submit,
+.login-btn,
+.submit-btn,
+.create-btn,
+.end-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-control-gap);
+  min-height: var(--ui-control-height-md);
+  padding: var(--ui-control-pad-y-md) var(--ui-control-pad-x-md);
+  border: 1px solid transparent;
+  border-radius: var(--ui-control-radius);
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-control-weight);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+/* ===== Sizes ===== */
+.btn-sm {
+  min-height: var(--ui-control-height-sm);
+  padding: var(--ui-control-pad-y-sm) var(--ui-control-pad-x-sm);
+  font-size: var(--ui-control-font-sm);
+}
+
+.btn-lg {
+  min-height: var(--ui-control-height-lg);
+  padding: var(--ui-control-pad-y-lg) var(--ui-control-pad-x-lg);
+  font-size: var(--ui-control-font-lg);
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* Icon-only: square, no label padding. */
+.btn-icon {
+  width: var(--ui-control-icon-size);
+  height: var(--ui-control-icon-size);
+  min-height: 0;
+  padding: 0;
+}
+
+/* ===== Icons inside buttons ===== */
+.btn svg,
+.btn-primary svg,
+.btn-secondary svg,
+.btn-approve svg,
+.btn-reject svg,
+.btn-return svg,
+.btn-view svg,
+.btn-download svg,
+.btn-cancel svg,
+.btn-edit svg,
+.btn-outline svg,
+.btn-ghost svg,
+.btn-open svg,
+.btn-icon svg,
+.end-btn svg {
+  width: var(--ui-icon-md);
+  height: var(--ui-icon-md);
+  flex: none;
+}
+
+/* ===== States ===== */
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-approve:disabled,
+.btn-reject:disabled,
+.btn-return:disabled,
+.btn-view:disabled,
+.btn-download:disabled,
+.btn-cancel:disabled,
+.btn-edit:disabled,
+.btn-success:disabled,
+.btn-warning:disabled,
+.btn-danger:disabled,
+.btn-error:disabled,
+.btn-info:disabled,
+.btn-ghost:disabled,
+.btn-outline:disabled,
+.btn-open:disabled,
+.btn-submit:disabled,
+.login-btn:disabled,
+.submit-btn:disabled,
+.create-btn:disabled,
+.end-btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-approve:focus-visible,
+.btn-reject:focus-visible,
+.btn-return:focus-visible,
+.btn-view:focus-visible,
+.btn-download:focus-visible,
+.btn-cancel:focus-visible,
+.btn-edit:focus-visible,
+.btn-ghost:focus-visible,
+.btn-outline:focus-visible,
+.btn-open:focus-visible,
+.btn-icon:focus-visible,
+.end-btn:focus-visible {
+  outline: var(--ui-focus-width) solid var(--ui-focus-color);
+  outline-offset: var(--ui-focus-offset);
+  box-shadow: var(--ui-focus-halo);
+}
+
+/* A busy button keeps its width and shows the shared spinner. */
+.btn-spinner {
+  width: var(--ui-icon-sm);
+  height: var(--ui-icon-sm);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--ui-radius-pill);
+  opacity: 0.8;
+  animation: ui-spin 0.8s linear infinite;
+}
+
+/* ============================================================
+   4. Fields
+   ============================================================ */
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-input,
+.ui-select,
+.ui-textarea {
+  width: 100%;
+  min-height: var(--ui-field-height-md);
+  padding: var(--ui-field-pad-y) var(--ui-field-pad-x);
+  border: 1px solid var(--ui-border-color);
+  border-radius: var(--ui-control-radius);
+  font-size: var(--ui-field-font);
+  color: var(--ui-text-body);
+  background: var(--ui-surface-input);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ui-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.ui-input:focus,
+.ui-select:focus,
+.ui-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--ui-focus-halo);
+}
+
+.ui-input.is-invalid,
+.ui-select.is-invalid,
+.ui-textarea.is-invalid {
+  border-color: var(--status-rejected-border);
+}
+
+/* ============================================================
+   5. Cards and panels
+   ============================================================ */
+
+.ui-card,
+.ui-panel {
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-color);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.ui-card-header,
+.ui-card-body,
+.ui-card-footer {
+  padding: var(--space-5) var(--space-6);
+}
+
+.ui-card-header {
+  border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-card-footer {
+  border-top: 1px solid var(--ui-border-color);
+  background: var(--ui-surface-sunken);
+  border-radius: 0 0 var(--ui-radius-card) var(--ui-radius-card);
+}
+
+/* ============================================================
+   6. Tables
+   ============================================================ */
+
+.ui-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ui-font-body);
+}
+
+.ui-table th {
+  padding: var(--ui-table-cell-pad-y) var(--ui-table-cell-pad-x);
+  background: var(--ui-surface-sunken);
+  color: var(--ui-text-soft);
+  font-size: var(--ui-font-table-header);
+  font-weight: 600;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-table td {
+  padding: var(--ui-table-cell-pad-y) var(--ui-table-cell-pad-x);
+  border-bottom: 1px solid var(--ui-border-color);
+  vertical-align: middle;
+}
+
+.ui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ui-table tbody tr:hover td {
+  background: var(--ui-surface-hover);
+}
+
+/* ============================================================
+   7. Modal shell
+   ============================================================ */
+
+.ui-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--ui-overlay-backdrop);
+  backdrop-filter: blur(var(--ui-overlay-blur));
+}
+
+.ui-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: min(var(--ui-modal-width-md), var(--ui-modal-max-inline));
+  max-height: var(--ui-modal-max-block);
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-color);
+  border-radius: var(--ui-radius-modal);
+  box-shadow: var(--ui-shadow-overlay);
+  overflow: hidden;
+}
+
+.ui-modal-sm {
+  max-width: min(var(--ui-modal-width-sm), var(--ui-modal-max-inline));
+}
+
+.ui-modal-lg {
+  max-width: min(var(--ui-modal-width-lg), var(--ui-modal-max-inline));
+}
+
+.ui-modal-xl {
+  max-width: min(var(--ui-modal-width-xl), var(--ui-modal-max-inline));
+}
+
+.ui-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-modal-body {
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.ui-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--ui-border-color);
+  background: var(--ui-surface-sunken);
+}
+
+.ui-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-icon-size);
+  height: var(--ui-control-icon-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-control-radius);
+  background: transparent;
+  color: var(--ui-text-muted);
+}
+
+.ui-modal-close:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text-body);
+}
+
+/* ============================================================
+   8. Tabs, pagination, states
+   ============================================================ */
+
+.ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-tab {
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: var(--ui-font-body);
+  font-weight: 600;
+  color: var(--ui-text-soft);
+  cursor: pointer;
+}
+
+.ui-tab:hover {
+  color: var(--ui-text-heading);
+}
+
+.ui-tab.is-active,
+.ui-tab[aria-selected='true'] {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.ui-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-page-btn {
+  min-width: var(--ui-control-height-sm);
+  min-height: var(--ui-control-height-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--ui-border-color);
+  border-radius: var(--ui-control-radius);
+  background: var(--ui-surface-card);
+  color: var(--ui-text-soft);
+  font-size: var(--ui-control-font-sm);
+  font-weight: 600;
+}
+
+.ui-page-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.ui-page-btn:disabled {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* Empty, loading and error states share one block. */
+.ui-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--ui-text-soft);
+}
+
+.ui-state-icon {
+  width: var(--ui-icon-empty);
+  height: var(--ui-icon-empty);
+  color: var(--ui-text-muted);
+}
+
+.ui-state-title {
+  font-size: var(--ui-font-card-title);
+  font-weight: 600;
+  color: var(--ui-text-heading);
+}
+
+.ui-state-text {
+  max-width: 42ch;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
+}
+
+.ui-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ui-border-color);
+  border-top-color: var(--color-primary);
+  border-radius: var(--ui-radius-pill);
+  animation: ui-spin 0.8s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner,
+  .btn-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* Counts only. Workflow status badges belong to status.css. */
+.ui-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--ui-radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  background: var(--status-rejected-solid);
+  color: #ffffff;
+}
+
+/* ============================================================
+   9. Responsive touch targets
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .btn-icon {
+    width: var(--ui-control-height-md);
+    height: var(--ui-control-height-md);
+  }
+
+  .ui-modal {
+    max-height: calc(100vh - 32px);
+  }
+
+  .ui-modal-header,
+  .ui-modal-body,
+  .ui-card-header,
+  .ui-card-body,
+  .ui-card-footer {
+    padding: var(--space-4);
+  }
+
+  .ui-modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .ui-modal-footer > * {
+    flex: 1 1 auto;
+  }
+}
+
+/* ============================================================
+   10. Dark theme
+
+   base.css still paints broad surfaces and text colours with !important
+   (div[class*="card"], div[class*="modal"], span/p/label, ...). Until that
+   blanket is removed in the final phase, the shared primitives repeat their
+   surface and text tokens here, otherwise a ui-* block would be repainted as
+   a raised dark card with flattened muted text. Keep this block minimal: one
+   token per property, no new colours.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .ui-card,
+  .ui-panel,
+  .ui-modal,
+  .ui-modal-header,
+  .ui-modal-footer,
+  .ui-modal-body {
+    background-color: var(--ui-surface-card) !important;
+    border-color: var(--ui-border-color) !important;
+    color: var(--ui-text-body) !important;
+  }
+
+  .ui-modal-overlay {
+    background-color: var(--ui-overlay-backdrop) !important;
+  }
+
+  .ui-card-header,
+  .ui-card-footer,
+  .ui-modal-header,
+  .ui-modal-footer {
+    border-color: var(--ui-border-color) !important;
+  }
+
+  .ui-help,
+  .ui-text-muted,
+  .ui-state-text {
+    color: var(--ui-text-muted) !important;
+  }
+
+  .ui-text-soft,
+  .ui-state {
+    color: var(--ui-text-soft) !important;
+  }
+
+  .ui-page-title,
+  .ui-section-title,
+  .ui-card-title,
+  .ui-modal-title,
+  .ui-state-title {
+    color: var(--ui-text-heading) !important;
+  }
+
+  .ui-input,
+  .ui-select,
+  .ui-textarea {
+    background-color: var(--ui-surface-input) !important;
+    border-color: var(--ui-border-color) !important;
+    color: var(--ui-text-body) !important;
+  }
+
+  .ui-table th {
+    background-color: var(--ui-surface-sunken) !important;
+    color: var(--ui-text-soft) !important;
+    border-color: var(--ui-border-color) !important;
+  }
+
+  .ui-table td {
+    border-color: var(--ui-border-color) !important;
+  }
+
+  .ui-table tbody tr:hover td {
+    background-color: var(--ui-surface-hover) !important;
+  }
+
+  .ui-page-btn {
+    background-color: var(--ui-surface-card) !important;
+    color: var(--ui-text-soft) !important;
+    border-color: var(--ui-border-color) !important;
+  }
+
+  .ui-page-btn.is-active {
+    background-color: var(--color-primary) !important;
+    color: #ffffff !important;
+  }
+
+  .ui-modal-close {
+    color: var(--ui-text-muted) !important;
+  }
+
+  .ui-modal-close:hover {
+    color: var(--ui-text-body) !important;
+  }
+}

@@ -31,6 +31,7 @@
             class="tr-input tr-textarea"
             rows="4"
             :placeholder="field.hint"
+            @blur="formatCoverField(field)"
           ></textarea>
           <input
             v-else
@@ -38,7 +39,9 @@
             type="text"
             class="tr-input"
             :class="{ 'tr-input--error': errors[field.key] }"
+            @blur="formatCoverField(field)"
           />
+          <PersonNameHint v-if="field.personName" />
           <p v-if="errors[field.key]" class="tr-error">{{ errors[field.key] }}</p>
         </div>
       </div>
@@ -390,6 +393,7 @@ import { computed, watch } from 'vue'
 // Terminal Report document styling; the print export inlines this same file, so the
 // document on screen and the printed / PDF report stay identical.
 import '@/assets/terminalReportDocument.css'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import TerminalReportEntries from '@/components/TerminalReportEntries.vue'
 import TerminalReportSheet from '@/components/TerminalReportSheet.vue'
 import TerminalReportTables from '@/components/TerminalReportTables.vue'
@@ -419,6 +423,7 @@ import {
   terminalSummaryRows,
   textParagraphs,
 } from '@/utils/terminalReport'
+import { formatPersonName, formatPersonNameLines } from '@/utils/personName'
 
 /**
  * The structured MSUN-Naawan Terminal Report (reporting stage 4).
@@ -466,6 +471,18 @@ const letterhead = TERMINAL_LETTERHEAD
 const narrativeFields = TERMINAL_NARRATIVE_FIELDS.filter((field) => field.key !== 'acknowledgment')
 /** The cover values the proponent enters (the project team, printed as the authors). */
 const coverInputFields = TERMINAL_COVER_INPUT_FIELDS
+
+/**
+ * Formats a cover field when the user leaves it. The Project Team holds one name per
+ * line, so each line is formatted on its own; any other name field uses the single-name
+ * rule. Fields that are not person names are left untouched.
+ */
+function formatCoverField(field) {
+  if (!field.personName) return
+  model.value[field.key] = field.multiline
+    ? formatPersonNameLines(model.value[field.key])
+    : formatPersonName(model.value[field.key])
+}
 
 function hasText(value) {
   return String(value ?? '').trim() !== ''

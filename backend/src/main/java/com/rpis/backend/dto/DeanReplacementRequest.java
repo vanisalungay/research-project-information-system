@@ -18,15 +18,13 @@ import lombok.Data;
 @Data
 public class DeanReplacementRequest {
 
+    /**
+     * The ACTIVE appointment being replaced. This is the authority for the college and
+     * designation: both are copied from that stored appointment, so the replacement
+     * screen cannot change either of them.
+     */
+    private Long assignmentId;
+
     /** The existing account that becomes the new Dean. Required. */
     private Long userId;
-
-    /**
-     * The college / department whose Dean is being replaced. Null means the
-     * institution-wide fallback (an assignment with no college).
-     */
-    private String assignedCollege;
-
-    /** Designation / title of the incoming Dean, e.g. "Dean" or "Department Chair". */
-    private String designation;
 }

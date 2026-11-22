@@ -1,7 +1,7 @@
 <template>
   <div class="reject-wrapper">
     <!-- BACK BUTTON -->
-    <button class="back-btn" @click="goToSubmission">← Back to Submission</button>
+    <BackButton label="Back to Submission" to="/assigned-proposals" />
 
     <!-- HEADER -->
     <div class="page-header">
@@ -96,7 +96,7 @@
     <!-- ERROR STATE -->
     <div v-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goToSubmission">Go Back</button>
+      <BackButton label="Back to Submission" to="/assigned-proposals" />
     </div>
 
     <!-- REJECT CONFIRMATION MODAL -->
@@ -126,6 +126,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -214,12 +215,7 @@ const goToSubmission = () => {
   background: #f4f5fa;
 }
 
-.back-btn {
-  background: transparent;
-  border: none;
-  color: #2f2a66;
-  font-size: 14px;
-  cursor: pointer;
+.reject-wrapper > .back-button {
   margin-bottom: 10px;
 }
 

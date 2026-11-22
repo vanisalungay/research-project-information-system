@@ -18,6 +18,7 @@ import com.rpis.backend.service.ProposalService;
 import com.rpis.backend.service.ProposalVersionService;
 import com.rpis.backend.storage.UploadStorage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/proposals")
 @RequiredArgsConstructor
@@ -47,12 +49,17 @@ public class ProposalController {
     public ResponseEntity<List<Proposal>> getProposals(
             @RequestParam(required = false) Long proponentId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String[] statusIn) {
+            @RequestParam(required = false) String[] statusIn,
+            @RequestParam(required = false) String sort) {
         // Ownership is resolved from the authenticated principal inside the service;
         // a Proponent can never use proponentId/status params to read another user's
         // proposals.
         List<String> statuses = (statusIn != null && statusIn.length > 0) ? List.of(statusIn) : null;
-        return ResponseEntity.ok(proposalService.getProposalsForCurrentUser(proponentId, status, statuses));
+        // Opt-in: the service recognises submittedAt, endorsedAt, returnedAt,
+        // revisionForwardedAt, updatedAt and createdAt; anything else keeps the
+        // repository's default ordering for existing callers.
+        return ResponseEntity.ok(proposalService.getProposalsForCurrentUser(
+                proponentId, status, statuses, sort));
     }
 
     @GetMapping("/{id}")
@@ -195,9 +202,16 @@ public class ProposalController {
 
     // ========== FLOW ACTIONS ==========
 
+    /**
+     * RPS endorses a reviewed proposal to OVCRIGE.
+     *
+     * <p>The transition itself (eligibility, idempotency and the OVCRIGE notification)
+     * lives in {@link ProposalService#endorseToOvcrige(Long)} so this route cannot be
+     * used to advance a proposal that is not awaiting the RPS decision.</p>
+     */
     @PutMapping("/{id}/endorse")
     public ResponseEntity<Proposal> endorseProposal(@PathVariable Long id) {
-        Proposal updated = proposalService.updateProposalStatus(id, "ENDORSED");
+        Proposal updated = proposalService.endorseToOvcrige(id);
         return ResponseEntity.ok(updated);
     }
 
@@ -498,14 +512,16 @@ public class ProposalController {
                 .body(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Invalid request."));
     }
 
-    // Safety net for the proposal/revision identifier unique constraints. The
-    // sequence allocator makes collisions structurally impossible, but if one is
-    // ever detected the request fails cleanly with 409 and no partial record is
-    // committed (record creation happens in a single transaction).
+    // Safety net for database integrity violations on proposal routes (an identifier
+    // unique constraint, a foreign key, a CHECK). The request fails cleanly with 409
+    // and no partial record is committed, because every workflow action runs in a
+    // single transaction. The exception is logged with its cause so the actual
+    // constraint stays diagnosable; the response deliberately does not expose it.
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleIdentifierConflict(
             org.springframework.dao.DataIntegrityViolationException ex) {
+        log.error("A proposal request was refused by a database integrity constraint", ex);
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("error", "A conflicting proposal or revision identifier was generated. Please retry."));
+                .body(Map.of("error", "The request conflicts with the data already recorded; nothing was changed. Please retry."));
     }
 }

@@ -9,6 +9,7 @@ import com.rpis.backend.repository.ProposalAnnouncementRepository;
 import com.rpis.backend.repository.ProposalRepository;
 import com.rpis.backend.repository.UserRepository;
 import com.rpis.backend.util.AnnouncementStatus;
+import com.rpis.backend.util.EmailNormalizer;
 import com.rpis.backend.util.NotificationEvent;
 import com.rpis.backend.util.NotificationTypes;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -42,10 +44,40 @@ public class NotificationService {
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationPreferencePolicy preferencePolicy;
 
+    /** Every notification of the account, regardless of role (administrative/legacy use). */
     public List<Notification> getNotificationsForUser(Long userId) {
+        return getNotificationsForUser(userId, null);
+    }
+
+    /**
+     * The notifications of the account <em>in one role</em>. A multi-role account sees
+     * only the notifications raised for the role it is currently signed in as, so a
+     * Proponent notification never appears while it is using its Dean dashboard.
+     *
+     * <p>A legacy row with no role is served only to an account that holds a single role:
+     * for such an account there is no other role the row could belong to. A multi-role
+     * account is never shown an unscoped row, because it could not be attributed safely.
+     */
+    public List<Notification> getNotificationsForUser(Long userId, String recipientRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        String role = EmailNormalizer.normalizeRole(recipientRole);
+        List<Notification> notifications;
+        if (role == null) {
+            notifications = new ArrayList<>(
+                    notificationRepository.findByUserOrderByCreatedAtDesc(user));
+        } else {
+            notifications = new ArrayList<>(
+                    notificationRepository
+                            .findByUserAndRecipientRoleIgnoreCaseOrderByCreatedAtDesc(user, role));
+            if (user.getRoles().size() <= 1) {
+                notifications.addAll(notificationRepository
+                        .findByUserAndRecipientRoleIsNullOrderByCreatedAtDesc(user));
+                notifications.sort(Comparator.comparing(
+                        Notification::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())));
+            }
+        }
         fillAnnouncementDetails(notifications);
         fillProposalDocumentIds(notifications);
         return notifications;
@@ -151,10 +183,22 @@ public class NotificationService {
 
     public Notification createNotification(Long userId, String message, String title, String type,
             Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
+        return createNotification(userId, message, title, type, proposalId,
+                proposalAnnouncementId, event, null);
+    }
+
+    /**
+     * Creates a notification in an explicit recipient role. Multi-role accounts must pass
+     * the role context here, or the row is left unscoped and is only visible to a
+     * single-role account.
+     */
+    public Notification createNotification(Long userId, String message, String title, String type,
+            Long proposalId, Long proposalAnnouncementId, NotificationEvent event,
+            String recipientRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         return createNotificationForUser(user, message, title, type, proposalId,
-                proposalAnnouncementId, event);
+                proposalAnnouncementId, event, recipientRole);
     }
 
     /**
@@ -183,6 +227,13 @@ public class NotificationService {
      */
     public Notification createNotificationForUser(User user, String message, String title,
             String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
+        return createNotificationForUser(user, message, title, type, proposalId,
+                proposalAnnouncementId, event, null);
+    }
+
+    public Notification createNotificationForUser(User user, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event,
+            String recipientRole) {
         if (user == null) {
             throw new IllegalArgumentException("A recipient account is required.");
         }
@@ -199,6 +250,7 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setTitle(title != null ? title : "Notification");
         notification.setType(type);
+        notification.setRecipientRole(recipientRoleFor(user, recipientRole));
         notification.setProposalId(proposalId);
         notification.setProposalAnnouncementId(proposalAnnouncementId);
         notification.setDedupeKey(dedupeKey);
@@ -208,6 +260,21 @@ public class NotificationService {
         // transaction commits. When there is no transaction the listener runs immediately.
         eventPublisher.publishEvent(new NotificationCreatedEvent(saved.getId(), user.getId()));
         return saved;
+    }
+
+    /**
+     * The role the row belongs to. An explicit role is accepted only when the recipient
+     * actually holds it; otherwise a single-role account's one role is used. For a
+     * multi-role account with no explicit context the row stays unscoped rather than
+     * being guessed, and is not shown in any role-specific list.
+     */
+    private static String recipientRoleFor(User user, String requested) {
+        String role = EmailNormalizer.normalizeRole(requested);
+        if (role != null && user.hasRole(role)) {
+            return role;
+        }
+        List<String> active = user.getRoles();
+        return active.size() == 1 ? active.get(0) : null;
     }
 
     /**
@@ -224,6 +291,18 @@ public class NotificationService {
 
     public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
             String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event) {
+        return notifyUsers(recipients, message, title, type, proposalId,
+                proposalAnnouncementId, event, null);
+    }
+
+    /**
+     * Notifies a known set of accounts in the given role context (for example the
+     * Proponent receiving an approval). The role is applied where the account holds it;
+     * otherwise the single-role fallback of {@link #recipientRoleFor} applies.
+     */
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId, Long proposalAnnouncementId, NotificationEvent event,
+            String recipientRole) {
         if (recipients == null || recipients.isEmpty()) {
             return List.of();
         }
@@ -236,7 +315,8 @@ public class NotificationService {
         List<Notification> created = new ArrayList<>(unique.size());
         for (User user : unique.values()) {
             Notification notification = createNotificationForUser(
-                    user, message, title, type, proposalId, proposalAnnouncementId, event);
+                    user, message, title, type, proposalId, proposalAnnouncementId, event,
+                    recipientRole);
             if (notification != null) {
                 created.add(notification);
             }
@@ -246,7 +326,14 @@ public class NotificationService {
 
     public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
             String type, Long proposalId) {
-        return notifyUsers(recipients, message, title, type, proposalId, null, null);
+        return notifyUsers(recipients, message, title, type, proposalId,
+                (Long) null, (NotificationEvent) null, null);
+    }
+
+    public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
+            String type, Long proposalId, NotificationEvent event, String recipientRole) {
+        return notifyUsers(recipients, message, title, type, proposalId, null, event,
+                recipientRole);
     }
 
     public List<Notification> notifyUsers(Collection<User> recipients, String message, String title,
@@ -278,8 +365,28 @@ public class NotificationService {
         if (distinct.isEmpty()) {
             return List.of();
         }
-        return notifyUsers(userRepository.findByRoleIn(new ArrayList<>(distinct)),
-                message, title, type, proposalId, null, event);
+        // The assignment table is included, so a multi-role account receives the alert
+        // once, tagged with the first role it holds from this request. It appears only in
+        // that role's notification view, never mixed into the other role's.
+        Map<Long, User> recipients = new LinkedHashMap<>();
+        for (User user : userRepository.findByAnyAssignedRoleIn(new ArrayList<>(distinct))) {
+            if (user != null && user.getId() != null) {
+                recipients.putIfAbsent(user.getId(), user);
+            }
+        }
+        List<Notification> created = new ArrayList<>(recipients.size());
+        for (User user : recipients.values()) {
+            String role = distinct.stream()
+                    .filter(user::hasRole)
+                    .findFirst()
+                    .orElse(null);
+            Notification notification = createNotificationForUser(
+                    user, message, title, type, proposalId, null, event, role);
+            if (notification != null) {
+                created.add(notification);
+            }
+        }
+        return created;
     }
 
     @Transactional
@@ -302,12 +409,36 @@ public class NotificationService {
      */
     @Transactional
     public Notification markAsReadForCurrentUser(Long notificationId, Long requesterId) {
+        return markAsReadForCurrentUser(notificationId, requesterId, null);
+    }
+
+    /**
+     * Marks one notification read in the caller's current role. A notification raised for
+     * another role of the same account is refused, so switching roles can never mark the
+     * other role's notifications read. Legacy unscoped rows are accepted only when the
+     * account has a single role.
+     */
+    @Transactional
+    public Notification markAsReadForCurrentUser(Long notificationId, Long requesterId,
+            String requesterRole) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
-        Long ownerId = notification.getUser() != null ? notification.getUser().getId() : null;
+        User owner = notification.getUser();
+        Long ownerId = owner != null ? owner.getId() : null;
         if (ownerId == null || !ownerId.equals(requesterId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You are not authorized to access this notification.");
+        }
+        String role = EmailNormalizer.normalizeRole(requesterRole);
+        if (role != null) {
+            String assigned = EmailNormalizer.normalizeRole(notification.getRecipientRole());
+            boolean allowed = assigned != null
+                    ? assigned.equals(role)
+                    : owner.getRoles().size() <= 1 && owner.hasRole(role);
+            if (!allowed) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "This notification belongs to a different role of this account.");
+            }
         }
         notification.setIsRead(true);
         Notification saved = notificationRepository.save(notification);
@@ -317,9 +448,26 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(Long userId) {
+        markAllAsRead(userId, null);
+    }
+
+    /** Marks read only the notifications visible in the caller's current role. */
+    @Transactional
+    public void markAllAsRead(Long userId, String requesterRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        String role = EmailNormalizer.normalizeRole(requesterRole);
+        List<Notification> notifications;
+        if (role == null) {
+            notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        } else {
+            notifications = new ArrayList<>(notificationRepository
+                    .findByUserAndRecipientRoleIgnoreCaseOrderByCreatedAtDesc(user, role));
+            if (user.getRoles().size() <= 1) {
+                notifications.addAll(notificationRepository
+                        .findByUserAndRecipientRoleIsNullOrderByCreatedAtDesc(user));
+            }
+        }
         for (Notification notification : notifications) {
             notification.setIsRead(true);
         }

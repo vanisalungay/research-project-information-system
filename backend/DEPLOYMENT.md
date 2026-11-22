@@ -169,19 +169,27 @@ for f in \
   migration-add-workplan-json.sql \
   migration-rename-dean-role.sql \
   migration-add-must-change-password.sql \
+  migration-add-user-roles.sql \
   migration-add-dean-assignments.sql \
+  migration-fix-institutional-email-domain.sql \
   migration-add-gad-checklist.sql \
   migration-add-activity-logs.sql \
   migration-add-endorsement-document-code-unique.sql \
+  migration-add-endorsement-letter-versions.sql \
   migration-add-proposal-needs-budget.sql \
   migration-add-performance-indexes.sql \
   migration-01-db-audit-integrity.sql \
   migration-02-db-audit-dedupe.sql \
   migration-03-db-audit-status-history.sql \
+  migration-add-proposal-submitted-at.sql \
+  migration-add-proposal-endorsed-at.sql \
   migration-norm-01-relational-integrity.sql \
   migration-norm-02-relational-observability.sql \
   migration-norm-03-fk-consolidation.sql \
-  migration-add-proposal-certification.sql
+  migration-add-proposal-certification.sql \
+  migration-widen-notification-type-check.sql \
+  migration-add-notification-recipient-role.sql \
+  migration-widen-activity-log-checks.sql
 do
   echo "applying $f"
   psql -v ON_ERROR_STOP=1 -f "$f"
@@ -241,6 +249,23 @@ constraint, enum or trigger exists on the role columns), it also renames the rol
 audit columns that are displayed to users, and it ends with the verification query whose
 counts must all be 0. A database provisioned from scratch by the current code needs
 nothing: new Dean accounts are created as `DEAN`.
+
+### Note on `migration-widen-notification-type-check.sql`
+
+`chk_notifications_type` was introduced by `migration-01-db-audit-integrity.sql` with
+the notification types that existed then. A `NOT VALID` CHECK still applies to every
+new row, so the types added later (`PROPOSAL_ENDORSED`, `QUARTERLY_REPORT`,
+`PROJECT_COMPLETION`, `DEAN_ASSIGNMENT`, `SPECIAL_ORDER_DRAFT`,
+`REVISION_DEADLINE_REMINDER`) could not be stored: the insert failed and rolled back
+the whole workflow transaction. The endorsement to OVCRIGE answered 409 for that
+reason.
+
+The migration replaces the constraint with the full `NotificationTypes` vocabulary. It
+is idempotent, touches no notification row, and keeps the constraint `NOT VALID` for
+the same reason as the original (unchanged historical rows are not re-validated). It
+must be applied together with the build that introduced the newer types;
+`NotificationTypeConstraintCoverageTest` keeps the SQL list and the Java constants in
+step.
 
 ---
 

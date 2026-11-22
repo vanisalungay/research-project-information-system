@@ -260,13 +260,34 @@ class NotificationServiceTest {
 
     @Test
     void notifyRolesResolvesRolesWithOneQuery() {
-        when(userRepository.findByRoleIn(anyList()))
+        // The recipient query includes the role-assignment table, so a multi-role account
+        // is found by every role it holds.
+        when(userRepository.findByAnyAssignedRoleIn(anyList()))
                 .thenReturn(List.of(user(1L, "RPS_ADMIN"), user(2L, "RPS_STAFF")));
 
         List<Notification> created = service.notifyRoles(
                 List.of("RPS_ADMIN", "RPS_STAFF"), "message", "title", "REVISION", 9L);
 
         assertEquals(2, created.size());
-        verify(userRepository).findByRoleIn(anyList());
+        assertEquals("RPS_ADMIN", created.get(0).getRecipientRole());
+        assertEquals("RPS_STAFF", created.get(1).getRecipientRole());
+        verify(userRepository).findByAnyAssignedRoleIn(anyList());
+    }
+
+    @Test
+    void aMultiRoleRecipientGetsOneRowTaggedWithTheRequestedRole() {
+        User multi = new User();
+        multi.setId(7L);
+        multi.setName("Proponent who is also Dean");
+        multi.setRole("PROPONENT");
+        multi.assignRole("DEAN");
+        when(userRepository.findByAnyAssignedRoleIn(anyList())).thenReturn(List.of(multi));
+
+        List<Notification> created = service.notifyRoles(
+                List.of("DEAN", "PROPONENT"), "message", "title", "ENDORSEMENT", 11L);
+
+        assertEquals(1, created.size(), "one recipient, one row");
+        assertEquals("DEAN", created.get(0).getRecipientRole(),
+                "the row belongs to the first requested role the account holds");
     }
 }

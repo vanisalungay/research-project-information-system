@@ -85,7 +85,15 @@
 
             <div class="input-group">
               <label for="email">Email Address</label>
-              <input id="email" type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
+              <input
+                id="email"
+                type="email"
+                v-model="email"
+                placeholder="you@msunaawan.edu.ph"
+                required
+                autocomplete="username"
+                @blur="email = normalizeEmailInput(email)"
+              />
             </div>
 
             <div class="input-group">
@@ -93,7 +101,14 @@
                 <label for="password">Password</label>
                 <a href="/register" class="forgot-link">Forgot password?</a>
               </div>
-              <input id="password" type="password" v-model="password" placeholder="••••••••" required />
+              <PasswordInput
+                id="password"
+                v-model="password"
+                class="password-input"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
             </div>
 
             <div class="form-actions">
@@ -116,7 +131,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { UserRole, useUserDataStore } from '@/stores/userData'
+import { normalizeEmailInput } from '@/utils/institutionalEmail'
 
 const userStore = useUserDataStore()
 const router = useRouter()
@@ -441,7 +458,8 @@ const handleGoogleLogin = async (response) => {
 }
 
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+.password-input {
   padding: 12px 14px;
   border: 1px solid var(--color-border, #cbd5e1);
   border-radius: 8px;

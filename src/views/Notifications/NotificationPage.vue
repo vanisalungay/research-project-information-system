@@ -235,6 +235,16 @@ const filteredNotifications = computed(() => {
  * The groups are always rendered in full - there is no collapsed or compact state.
  */
 const notificationGroups = computed(() => {
+  // The Proponent feed is one strict reverse-chronological list: a proposal update
+  // must never be pushed below an older call or endorsement row by grouping. The
+  // reviewing offices keep the existing "Proposal Updates" group because their feed
+  // is dominated by proposal work.
+  if (userStore.user?.role === 'PROPONENT') {
+    return filteredNotifications.value.length
+      ? [{ key: 'all', title: '', items: filteredNotifications.value }]
+      : []
+  }
+
   const { proposalUpdates, others } = groupNotifications(
     filteredNotifications.value,
     userStore.user?.role,
@@ -294,6 +304,7 @@ const getTypeClass = (type) => {
   const typeMap = {
     'PROPOSAL_UPDATE': 'type-proposal',
     'PROPOSAL_ENDORSED': 'type-proposal',
+    'PROPOSAL_SUBMISSION': 'type-proposal',
     'REVIEW_REQUEST': 'type-review',
     'APPROVAL': 'type-approval',
     'REVISION': 'type-revision',

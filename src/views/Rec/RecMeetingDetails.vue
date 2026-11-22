@@ -35,9 +35,7 @@
     <!-- ERROR -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">
-        Go Back
-      </button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- CONTENT -->
@@ -220,6 +218,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { downloadUploadedFile } from '@/utils/fileDownload'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
@@ -253,7 +252,12 @@ const proposal = ref({
 const attachments = ref([])
 
 const goBack = () => {
-  router.back()
+  // Previous page when there is one; the assigned-proposals list for a direct URL.
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    router.back()
+    return
+  }
+  router.push('/assigned-proposals')
 }
 
 const goToDetailed = () => {

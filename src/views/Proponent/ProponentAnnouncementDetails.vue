@@ -1,14 +1,7 @@
 <template>
   <div class="announcement-page">
     <!-- BACK -->
-    <button type="button" class="back-btn" @click="goBack">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round" aria-hidden="true">
-        <path d="M19 12H5" />
-        <polyline points="12 19 5 12 12 5" />
-      </svg>
-      Back
-    </button>
+    <BackButton :navigate="false" @click="goBack" />
 
     <!-- LOADING STATE -->
     <div v-if="loading" class="state-card">
@@ -21,7 +14,7 @@
       <h1>{{ errorTitle }}</h1>
       <p>{{ error }}</p>
       <div class="state-actions">
-        <button type="button" class="btn-secondary" @click="goBack">Go Back</button>
+        <BackButton :navigate="false" @click="goBack" />
         <button v-if="errorKind === 'error'" type="button" class="btn-primary" @click="loadAnnouncement">
           Retry
         </button>
@@ -210,6 +203,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { announcementStatus, localTodayISO } from '@/utils/announcementStatus'
 import { extensionNotice } from '@/utils/announcementUpdates'
 import { ANNOUNCEMENT_REMINDERS, normalizeReminderKeys } from '@/utils/announcementOptions'
@@ -499,34 +493,8 @@ onMounted(loadAnnouncement)
 }
 
 /* BACK BUTTON */
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.announcement-page > .back-button {
   margin-bottom: 12px;
-  padding: 6px 11px;
-  background: #ffffff;
-  border: 1px solid #e3e6ef;
-  border-radius: 7px;
-  color: #25245b;
-  font-size: var(--font-secondary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.back-btn:hover {
-  border-color: #25245b;
-}
-
-.back-btn:focus-visible {
-  outline: 2px solid #25245b;
-  outline-offset: 2px;
-}
-
-.back-btn svg {
-  width: 14px;
-  height: 14px;
 }
 
 /* ANNOUNCEMENT BANNER */

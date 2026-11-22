@@ -9,6 +9,7 @@ import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.storage.UploadStorage;
 import com.rpis.backend.util.NotificationEvent;
 import com.rpis.backend.util.NotificationTypes;
+import com.rpis.backend.util.PersonNameFormatter;
 import com.rpis.backend.util.ProposalStatus;
 import com.lowagie.text.pdf.PdfReader;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -328,6 +330,70 @@ public class ProposalService {
      * supplied by the frontend is ignored for non-privileged callers.
      */
     public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status, List<String> statusIn) {
+        return getProposalsForCurrentUser(requestedProponentId, status, statusIn, (String) null);
+    }
+
+    /** Backwards-compatible shorthand for the original submission-date ordering. */
+    public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn, boolean sortBySubmittedAt) {
+        return getProposalsForCurrentUser(requestedProponentId, status, statusIn,
+                sortBySubmittedAt ? "submittedAt" : null);
+    }
+
+    /**
+     * As above, optionally ordered by the workflow event date the caller names.
+     * <p>
+     * Sorting is server-side so every client gets the same order regardless of how
+     * much of the list it fetched. The order is newest event first; records with no
+     * date for that event sort last, and the proposal id (descending) is the stable
+     * tie-breaker. It is opt-in (`sort=<field>`) so other callers keep the
+     * repository's default order.
+     */
+    public List<Proposal> getProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn, String sort) {
+        List<Proposal> proposals = new ArrayList<>(
+                loadProposalsForCurrentUser(requestedProponentId, status, statusIn));
+        Comparator<Proposal> ordering = orderingFor(sort);
+        if (ordering != null) {
+            proposals.sort(ordering);
+        }
+        return proposals;
+    }
+
+    /**
+     * The supported list orderings, each keyed by the actual event timestamp it sorts by:
+     * submission, RPS endorsement, the reviewing office's return, RPS's forward to the
+     * proponent, the latest workflow change, or creation. An unrecognised value is ignored
+     * instead of failing the list request.
+     */
+    private static Comparator<Proposal> orderingFor(String sort) {
+        if (sort == null) {
+            return null;
+        }
+        return switch (sort.trim()) {
+            case "submittedAt" -> newestFirst(Proposal::getSubmittedAt);
+            case "endorsedAt" -> newestFirst(Proposal::getEndorsedAt);
+            case "returnedAt" -> newestFirst(Proposal::getReturnedAt);
+            case "revisionForwardedAt" -> newestFirst(Proposal::getRevisionForwardedAt);
+            case "updatedAt" -> newestFirst(Proposal::getUpdatedAt);
+            case "createdAt" -> newestFirst(Proposal::getCreatedAt);
+            default -> null;
+        };
+    }
+
+    /**
+     * Newest timestamp first; records with no timestamp sort last; the proposal id
+     * (descending) breaks ties so equal timestamps keep a stable order.
+     */
+    private static Comparator<Proposal> newestFirst(
+            java.util.function.Function<Proposal, LocalDateTime> timestamp) {
+        return Comparator
+                .comparing(timestamp, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Proposal::getId, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private List<Proposal> loadProposalsForCurrentUser(Long requestedProponentId, String status,
+            List<String> statusIn) {
         String normalizedStatus = ProposalStatus.normalize(status);
         List<String> normalizedStatuses = ProposalStatus.withForReviewAliases(statusIn);
         // A filter for either submission spelling must return both the current and the
@@ -414,6 +480,11 @@ public class ProposalService {
             proposal.setProponent(resolveOwnerForNewProposal(request));
         }
 
+        // The status the proposal had before this save. Notifications are raised only for
+        // a real transition, so re-saving an already submitted draft (an attachment, a
+        // late field edit) cannot send the "submitted" or any later notification twice.
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+
         // Validate the requested status after the access/ownership checks but before any
         // write. An unsupported value (for example a typo sent by a client or integration)
         // is a request error, so it fails with the controller's readable 400 instead of
@@ -499,7 +570,9 @@ public class ProposalService {
         // Standard properties
         proposal.setProgramTitle(request.getProgramTitle());
         proposal.setProjectTitle(request.getProjectTitle());
-        proposal.setProjectLeader(request.getProjectLeader());
+        // Person names are stored in the one RPIS format (see PersonNameFormatter), so a
+        // client that bypasses the browser cannot save an all-uppercase or lowercase name.
+        proposal.setProjectLeader(PersonNameFormatter.format(request.getProjectLeader()));
         proposal.setProjectLeaderSex(request.getProjectLeaderSex());
         // Project duration is selected by the proponent (12, 24 or 36 months). It is
         // validated server-side (not only by the frontend dropdown) so a modified API
@@ -568,7 +641,7 @@ public class ProposalService {
         // revision form, an integration) preserves what was already stored; an explicit
         // empty string still clears a field the proponent emptied.
         if (request.getSubmittedByName() != null) {
-            proposal.setSubmittedByName(request.getSubmittedByName());
+            proposal.setSubmittedByName(PersonNameFormatter.format(request.getSubmittedByName()));
         }
         if (request.getSubmittedByDesignation() != null) {
             proposal.setSubmittedByDesignation(request.getSubmittedByDesignation());
@@ -577,7 +650,7 @@ public class ProposalService {
             proposal.setSubmittedByDate(request.getSubmittedByDate());
         }
         if (request.getEndorsedByName() != null) {
-            proposal.setEndorsedByName(request.getEndorsedByName());
+            proposal.setEndorsedByName(PersonNameFormatter.format(request.getEndorsedByName()));
         }
         if (request.getEndorsedByDesignation() != null) {
             proposal.setEndorsedByDesignation(request.getEndorsedByDesignation());
@@ -671,6 +744,15 @@ public class ProposalService {
             }
         } else if (proposal.getStatus() == null) {
             proposal.setStatus(ProposalStatus.DRAFT);
+        }
+
+        // Record the actual submission event. It is written only when this save moves the
+        // proposal into FOR REVIEW from a non-submitted state (a brand-new submission or a
+        // revision resubmission), so editing an already submitted proposal, an attachment
+        // upload, or a later review action never rewrites the original submission date.
+        if (ProposalStatus.isForReview(proposal.getStatus())
+                && !ProposalStatus.isForReview(previousStatus)) {
+            proposal.setSubmittedAt(LocalDateTime.now());
         }
 
         // Dates parsing
@@ -876,9 +958,16 @@ public class ProposalService {
             proposalSectionRemarkService.closeActiveRound(proposal);
         }
 
-        // Notify the RPS that submitted work is waiting (a resubmission gets its own
-        // wording so it is not reported as a brand-new proposal).
-        proposalNotificationPolicy.notifyForStatus(proposal, isRevisionResubmission);
+        // Notify only when this save actually moved the proposal to a new status. A
+        // resubmission gets its own wording so it is not reported as a brand-new proposal.
+        // Both submission spellings are the same workflow state.
+        boolean statusChanged = requestedStatus != null
+                && !requestedStatus.equals(previousStatus)
+                && !(ProposalStatus.isForReview(requestedStatus)
+                        && ProposalStatus.isForReview(previousStatus));
+        if (statusChanged) {
+            proposalNotificationPolicy.notifyForStatus(proposal, isRevisionResubmission);
+        }
 
         return proposal;
     }
@@ -987,12 +1076,55 @@ public class ProposalService {
             return proposal;
         }
         proposal.setStatus(storedStatus);
+        if ("ENDORSED".equals(storedStatus)) {
+            // The generic transition is the same workflow event as the dedicated
+            // endorsement endpoint, so the endorsement date is recorded here too.
+            proposal.setEndorsedAt(LocalDateTime.now());
+        }
         proposal = proposalRepository.save(proposal);
 
         // Dispatch notifications to the next user level and the proponent
         proposalNotificationPolicy.notifyForStatus(proposal);
 
         return proposal;
+    }
+
+    /**
+     * RPS endorses a submitted proposal to OVCRIGE.
+     *
+     * <p>The proposal row is locked for the duration of the transaction, so a repeated
+     * click (or two concurrent requests) is serialized: the second request sees the
+     * already stored {@code ENDORSED} status and returns without writing a second
+     * notification. Only the existing submitted state ({@code FOR REVIEW}, or the legacy
+     * {@code SUBMITTED} spelling) may be endorsed - any other status is refused instead of
+     * silently advancing a proposal that is not awaiting RPS's decision. The notification
+     * that tells OVCRIGE about the endorsement is written in the same transaction as the
+     * status change, so a failure leaves neither a partial status nor a stray notification
+     * behind.
+     *
+     * @param id the proposal the RPS has reviewed
+     * @return the saved proposal, now at {@code ENDORSED}
+     */
+    @Transactional
+    public Proposal endorseToOvcrige(Long id) {
+        Proposal proposal = proposalRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + id));
+        currentUser.requireAccessTo(proposal);
+        String previousStatus = ProposalStatus.normalize(proposal.getStatus());
+        if ("ENDORSED".equals(previousStatus)) {
+            // A retried or repeated submission is a no-op, not a second transition.
+            return proposal;
+        }
+        if (!ProposalStatus.isForReview(previousStatus)) {
+            throw new IllegalArgumentException(
+                    "Only a proposal submitted for RPS review can be endorsed to OVCRIGE; its current status is "
+                            + (previousStatus == null ? "unknown" : previousStatus) + ".");
+        }
+        proposal.setStatus("ENDORSED");
+        proposal.setEndorsedAt(LocalDateTime.now());
+        Proposal saved = proposalRepository.save(proposal);
+        proposalNotificationPolicy.notifyForStatus(saved);
+        return saved;
     }
 
     /**
@@ -1453,7 +1585,7 @@ public class ProposalService {
     public Proposal updateReviewerInfo(Long id, String reviewedBy, String reviewedByPosition) {
         Proposal proposal = getProposalById(id);
         currentUser.requireAccessTo(proposal);
-        proposal.setReviewedBy(reviewedBy);
+        proposal.setReviewedBy(PersonNameFormatter.format(reviewedBy));
         proposal.setReviewedByPosition(reviewedByPosition);
         return proposalRepository.save(proposal);
     }
@@ -1483,7 +1615,7 @@ public class ProposalService {
         proposal.setReturnRemarks(remarks);
         proposal.setReturnedByOffice(returnedByOffice);
         proposal.setReturnedByUserId(returnedByUserId);
-        proposal.setReturnedByName(returnedByName);
+        proposal.setReturnedByName(PersonNameFormatter.format(returnedByName));
         proposal.setReturnedAt(LocalDateTime.now());
         // Reset any previous forward/deadline metadata so a fresh return restarts the flow.
         proposal.setRevisionDeadline(null);
@@ -1608,7 +1740,7 @@ public class ProposalService {
             proposal.setReturnRemarks(remarks);
             proposal.setReturnedByOffice("RPS");
             proposal.setReturnedByUserId(forwardedByUserId);
-            proposal.setReturnedByName(forwardedByName);
+            proposal.setReturnedByName(PersonNameFormatter.format(forwardedByName));
             if (proposal.getReturnedAt() == null) {
                 proposal.setReturnedAt(LocalDateTime.now());
             }
@@ -1618,7 +1750,7 @@ public class ProposalService {
         proposal.setRevisionDeadline(deadlineLdt);
         proposal.setRevisionForwardedAt(LocalDateTime.now());
         proposal.setRevisionForwardedByUserId(forwardedByUserId);
-        proposal.setRevisionForwardedByName(forwardedByName);
+        proposal.setRevisionForwardedByName(PersonNameFormatter.format(forwardedByName));
         proposal.setRevisionNotes(notes);
 
         // Keep the proponent-facing remarks in sync with the office's original remarks so
@@ -1632,16 +1764,28 @@ public class ProposalService {
         proposalSectionRemarkService.recordForwardRemarks(
                 proposal, sectionRemarks, "RPS", forwardedByUserId, forwardedByName);
 
-        // Notify the Proponent of the revision request + deadline.
+        // Notify the Proponent of the revision request, the deadline and the feedback.
+        // The same deadline is the idempotency key: pressing Forward twice cannot write
+        // the same revision request again, while setting a new deadline is a new event.
         if (proposal.getProponent() != null) {
+            String deadlineText = deadlineLdt != null
+                    ? deadlineLdt.toLocalDate().toString()
+                    : "not set";
+            String feedback = proposal.getRemarks() == null || proposal.getRemarks().isBlank()
+                    ? ""
+                    : " Remarks: " + proposal.getRemarks().trim();
             notificationService.createNotification(
                     proposal.getProponent().getId(),
                     "Your proposal \"" + proposal.getProjectTitle()
-                            + "\" has been returned for revision. Deadline: "
-                            + (deadlineLdt != null ? deadlineLdt.toLocalDate().toString() : "—"),
-                    "Revision Required",
+                            + "\" has been returned for revision. Please review the remarks and "
+                            + "make the necessary corrections. Deadline: " + deadlineText + "."
+                            + feedback,
+                    "Proposal Returned for Revision",
                     NotificationTypes.REVISION,
-                    proposal.getId(), null, NotificationEvent.STATUS_UPDATED);
+                    proposal.getId(), null,
+                    NotificationEvent.STATUS_UPDATED.withDedupeKey(
+                            "proposal:" + proposal.getId() + ":revision-forwarded:" + deadlineText),
+                    "PROPONENT");
         }
 
         return proposal;
@@ -1802,6 +1946,8 @@ public class ProposalService {
             requireAddressPart(request.getAddressBarangay(), "Barangay");
             validateAddressHierarchy(request);
         }
+
+        validateSiteCountries(request);
 
         if (request.getContactType() == null && request.getContactValue() == null) {
             return;
@@ -2046,6 +2192,31 @@ public class ProposalService {
                 request.getAddressDistrict(), request.getAddressMunicipality());
         if (problem != null) {
             throw new IllegalArgumentException(problem);
+        }
+    }
+
+    /**
+     * Sites of Implementation are Philippine-only.
+     *
+     * <p>The form offers only the Philippines, but a request can arrive from a client
+     * that skips the browser, so every submitted site is checked again before the
+     * proposal is accepted. A blank country means the Philippines, exactly like the
+     * Address section. No other site part is validated here: the existing location
+     * data drives the dropdowns, and adding new rules to unrelated site fields would
+     * change their requirements.</p>
+     */
+    static void validateSiteCountries(ProposalRequest request) {
+        if (request == null || request.getSites() == null) {
+            return;
+        }
+        int position = 1;
+        for (ProposalRequest.SiteDTO site : request.getSites()) {
+            String country = trimToNull(site == null ? null : site.getCountry());
+            if (country != null && !PhilippineAddressCatalog.PHILIPPINES.equalsIgnoreCase(country)) {
+                throw new IllegalArgumentException(
+                        "Site " + position + ": only the Philippines is accepted as the country.");
+            }
+            position += 1;
         }
     }
 

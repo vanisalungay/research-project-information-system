@@ -13,7 +13,7 @@
     <!-- Selected project: report history -->
     <template v-else-if="selectedProject">
       <div class="sub-header">
-        <button class="back-btn btn-secondary" @click="selectedProject = null">← All Projects</button>
+        <BackButton label="All Projects" :navigate="false" @click="selectedProject = null" />
         <div>
           <h2>{{ selectedProject.projectTitle }}</h2>
           <p class="subtitle">SO Number: {{ selectedProject.soNumber || 'N/A' }}</p>
@@ -148,6 +148,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import QuarterlyReportViewer from '@/components/QuarterlyReportViewer.vue'
 import TerminalReportPreviewModal from '@/components/TerminalReportPreviewModal.vue'
 import TerminalReportForm from '@/components/TerminalReportForm.vue'
@@ -313,12 +314,6 @@ onMounted(fetchProjects)
   font-size: 18px;
 }
 /* Layout only; the action colours are global (assets/actions.css). */
-.back-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
 .state {
   background: #fff;
   border: 1px solid #e2e8f0;

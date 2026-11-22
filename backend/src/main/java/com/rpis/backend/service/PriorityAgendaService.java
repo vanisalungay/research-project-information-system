@@ -3,6 +3,7 @@ package com.rpis.backend.service;
 import com.rpis.backend.dto.ActivePriorityAgendaResponse;
 import com.rpis.backend.dto.PriorityAgendaItemRequest;
 import com.rpis.backend.dto.PriorityAgendaSetRequest;
+import com.rpis.backend.model.ActivityLog;
 import com.rpis.backend.model.PriorityAgenda;
 import com.rpis.backend.model.PriorityAgendaSet;
 import com.rpis.backend.repository.PriorityAgendaRepository;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -58,6 +60,7 @@ public class PriorityAgendaService {
 
     private final PriorityAgendaSetRepository agendaSetRepository;
     private final PriorityAgendaRepository agendaRepository;
+    private final ActivityLogService activityLogService;
 
     // ==================== READ (Proponent form) ====================
 
@@ -148,6 +151,18 @@ public class PriorityAgendaService {
         return allowed;
     }
 
+    /** {@code "MSUN RIIDE 2025–2028"} for the readable activity descriptions. */
+    private static String frameworkLabel(PriorityAgendaSet set) {
+        if (set == null || set.getFrameworkName() == null || set.getFrameworkName().isBlank()) {
+            return "framework";
+        }
+        String name = set.getFrameworkName().trim();
+        if (set.getCoverageStartYear() == null || set.getCoverageEndYear() == null) {
+            return name;
+        }
+        return name + " " + set.getCoverageStartYear() + "–" + set.getCoverageEndYear();
+    }
+
     /** The ready-to-display heading of a set, e.g. {@code (based on MSUN RIIDE 2025–2028)}. */
     public static String formatLabel(PriorityAgendaSet set) {
         if (set == null || set.getFrameworkName() == null || set.getFrameworkName().isBlank()) {
@@ -201,8 +216,21 @@ public class PriorityAgendaService {
         set.setActive(Boolean.FALSE);
         PriorityAgendaSet saved = agendaSetRepository.save(set);
 
-        if (Boolean.TRUE.equals(request != null ? request.getActive() : null)) {
+        boolean activated = Boolean.TRUE.equals(request != null ? request.getActive() : null);
+        if (activated) {
             applyActive(saved);
+        }
+        activityLogService.success(ActivityLog.ACTION_FRAMEWORK_CREATED,
+                ActivityLog.MODULE_PRIORITY_AGENDA,
+                "Created a new framework, " + frameworkLabel(saved),
+                activated
+                        ? "The framework was created and activated for new submissions."
+                        : "The framework was created as inactive.");
+        if (activated) {
+            activityLogService.success(ActivityLog.ACTION_FRAMEWORK_ACTIVATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    "Activated the " + saved.getFrameworkName() + " framework",
+                    "New proposals now use " + frameworkLabel(saved) + ".");
         }
         return getSet(saved.getId());
     }
@@ -217,13 +245,25 @@ public class PriorityAgendaService {
         requireValidPeriod(startYear, endYear);
         requireUniquePeriod(frameworkName, startYear, endYear, id);
 
+        boolean wasActive = Boolean.TRUE.equals(set.getActive());
         set.setFrameworkName(frameworkName);
         set.setCoverageStartYear(startYear);
         set.setCoverageEndYear(endYear);
         agendaSetRepository.save(set);
 
-        if (Boolean.TRUE.equals(request != null ? request.getActive() : null)) {
+        boolean activateNow = Boolean.TRUE.equals(request != null ? request.getActive() : null);
+        if (activateNow) {
             applyActive(set);
+        }
+        activityLogService.success(ActivityLog.ACTION_FRAMEWORK_UPDATED,
+                ActivityLog.MODULE_PRIORITY_AGENDA,
+                "Updated the " + set.getFrameworkName() + " framework",
+                "The framework " + frameworkLabel(set) + " was updated.");
+        if (activateNow && !wasActive) {
+            activityLogService.success(ActivityLog.ACTION_FRAMEWORK_ACTIVATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    "Activated the " + set.getFrameworkName() + " framework",
+                    "New proposals now use " + frameworkLabel(set) + ".");
         }
         return getSet(id);
     }
@@ -236,7 +276,42 @@ public class PriorityAgendaService {
     @Transactional
     public PriorityAgendaSet activateSet(Long id) {
         PriorityAgendaSet set = getSet(id);
+        boolean wasActive = Boolean.TRUE.equals(set.getActive());
         applyActive(set);
+        if (!wasActive) {
+            activityLogService.success(ActivityLog.ACTION_FRAMEWORK_ACTIVATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    "Activated the " + set.getFrameworkName() + " framework",
+                    "New proposals now use " + frameworkLabel(set)
+                            + "; any previously active framework was deactivated.");
+        }
+        return getSet(id);
+    }
+
+    /**
+     * Deactivates one framework / program for new submissions, without touching any other
+     * set and without changing a single agenda item. No set is active afterwards until an
+     * administrator activates one, so {@link #getActiveConfiguration()} returns its empty
+     * state and the Proponent form shows that - it never falls back to a hard-coded
+     * framework.
+     *
+     * <p>The set, its name, coverage period and every agenda row are kept, so it can be
+     * activated again. This is the program-level counterpart of
+     * {@link #updateItem(Long, PriorityAgendaItemRequest)}, which changes one agenda.
+     */
+    @Transactional
+    public PriorityAgendaSet deactivateSet(Long id) {
+        PriorityAgendaSet set = getSet(id);
+        boolean wasActive = Boolean.TRUE.equals(set.getActive());
+        set.setActive(false);
+        agendaSetRepository.saveAndFlush(set);
+        if (wasActive) {
+            activityLogService.success(ActivityLog.ACTION_FRAMEWORK_DEACTIVATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    "Deactivated the " + set.getFrameworkName() + " framework",
+                    "New proposals now show their empty state until a framework is activated. "
+                            + "The framework's agendas were not changed.");
+        }
         return getSet(id);
     }
 
@@ -262,7 +337,13 @@ public class PriorityAgendaService {
                 ? request.getDisplayOrder()
                 : nextDisplayOrder(setId));
         item.setActive(request == null || request.getActive() == null || request.getActive());
-        return agendaRepository.save(item);
+        PriorityAgenda saved = agendaRepository.save(item);
+        activityLogService.success(ActivityLog.ACTION_AGENDA_CREATED,
+                ActivityLog.MODULE_PRIORITY_AGENDA,
+                "Created a new agenda, " + saved.getName() + ", under " + set.getFrameworkName(),
+                "\"" + saved.getName() + "\" (" + saved.getAgendaKey() + ") was added to "
+                        + frameworkLabel(set) + ".");
+        return saved;
     }
 
     /**
@@ -273,11 +354,20 @@ public class PriorityAgendaService {
     public PriorityAgenda updateItem(Long id, PriorityAgendaItemRequest request) {
         PriorityAgenda item = agendaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Priority agenda not found: " + id));
-        Long setId = item.getAgendaSet().getId();
+        PriorityAgendaSet set = item.getAgendaSet();
+        Long setId = set.getId();
         String name = requireItemName(request);
         if (agendaRepository.existsByAgendaSetIdAndNameIgnoreCaseAndIdNot(setId, name, id)) {
             throw new IllegalStateException("\"" + name + "\" is already an agenda of this set.");
         }
+
+        // Capture the old values before applying the update, so the log can tell an edit
+        // from an activation / deactivation (the toggle sends the same content back).
+        boolean wasActive = Boolean.TRUE.equals(item.getActive());
+        String previousName = item.getName();
+        String previousSubLabel = item.getSubLabel();
+        String previousDescription = item.getDescription();
+        Integer previousOrder = item.getDisplayOrder();
 
         item.setName(name);
         item.setSubLabel(trimToNull(request != null ? request.getSubLabel() : null,
@@ -289,7 +379,34 @@ public class PriorityAgendaService {
         if (request != null && request.getActive() != null) {
             item.setActive(request.getActive());
         }
-        return agendaRepository.save(item);
+        PriorityAgenda saved = agendaRepository.save(item);
+
+        boolean contentChanged = !Objects.equals(previousName, saved.getName())
+                || !Objects.equals(previousSubLabel, saved.getSubLabel())
+                || !Objects.equals(previousDescription, saved.getDescription())
+                || !Objects.equals(previousOrder, saved.getDisplayOrder());
+        boolean activeChanged = request != null && request.getActive() != null
+                && !request.getActive().equals(wasActive);
+        if (contentChanged) {
+            activityLogService.success(ActivityLog.ACTION_AGENDA_UPDATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    "Updated the " + saved.getName() + " agenda",
+                    "\"" + saved.getName() + "\" under " + frameworkLabel(set) + " was updated.");
+        }
+        if (activeChanged) {
+            boolean nowActive = Boolean.TRUE.equals(saved.getActive());
+            activityLogService.success(
+                    nowActive ? ActivityLog.ACTION_AGENDA_ACTIVATED
+                            : ActivityLog.ACTION_AGENDA_DEACTIVATED,
+                    ActivityLog.MODULE_PRIORITY_AGENDA,
+                    (nowActive ? "Activated the " : "Deactivated the ") + saved.getName()
+                            + " agenda",
+                    "\"" + saved.getName() + "\" under " + frameworkLabel(set)
+                            + (nowActive
+                                    ? " is now offered to new proposals."
+                                    : " is no longer offered to new proposals; existing proposals keep their selection."));
+        }
+        return saved;
     }
 
     // ==================== INTERNALS ====================

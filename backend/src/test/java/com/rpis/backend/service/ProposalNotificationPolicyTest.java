@@ -71,8 +71,9 @@ class ProposalNotificationPolicyTest {
                 eq(List.of(UserRoles.OVCRIGE)), anyString(), eq("Proposal Approved by REC"),
                 eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class));
         verify(notificationService).notifyUsers(
-                eq(List.of(proposal.getProponent())), anyString(), eq("Proposal Recommended for Approval"),
-                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class));
+                eq(List.of(proposal.getProponent())), anyString(), eq("Proposal Approved by REC"),
+                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
     }
 
     @Test
@@ -125,8 +126,10 @@ class ProposalNotificationPolicyTest {
         policy.notifyForStatus(proposal);
 
         verify(notificationService).notifyUsers(
-                eq(List.of(proposal.getProponent())), anyString(), eq("Proposal Approved"),
-                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class));
+                eq(List.of(proposal.getProponent())), anyString(),
+                eq("Proposal Approved for Implementation"),
+                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
         verify(notificationService, never()).notifyRoles(any(), anyString(), anyString(), anyString(), any(), any());
     }
 
@@ -159,5 +162,97 @@ class ProposalNotificationPolicyTest {
         verify(notificationService).notifyRoles(
                 eq(List.of(UserRoles.RPS_ADMIN, UserRoles.RPS_STAFF)), anyString(),
                 eq("Proposal Resubmitted"), eq(NotificationTypes.PROPOSAL_UPDATE), eq(42L), any(NotificationEvent.class));
+    }
+
+    @Test
+    void submissionConfirmsToTheProponentAndKeepsTheResubmissionWording() {
+        Proposal submitted = proposal("FOR REVIEW");
+        submitted.setProponent(proponent());
+        policy.notifyForStatus(submitted);
+        verify(notificationService).notifyUsers(
+                eq(List.of(submitted.getProponent())), anyString(), eq("Proposal Submitted"),
+                eq(NotificationTypes.PROPOSAL_SUBMISSION), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
+
+        Proposal resubmitted = proposal("FOR REVIEW");
+        resubmitted.setProponent(proponent());
+        policy.notifyForStatus(resubmitted, true);
+        verify(notificationService).notifyUsers(
+                eq(List.of(resubmitted.getProponent())), anyString(), eq("Proposal Resubmitted"),
+                eq(NotificationTypes.PROPOSAL_SUBMISSION), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
+    }
+
+    @Test
+    void theProponentIsToldAboutEveryForwardAndApprovalStage() {
+        Proposal endorsed = proposal("ENDORSED");
+        endorsed.setProponent(proponent());
+        policy.notifyForStatus(endorsed);
+        verify(notificationService).notifyUsers(
+                eq(List.of(endorsed.getProponent())), anyString(),
+                eq("Proposal Endorsed by RPS"), eq(NotificationTypes.PROPOSAL_ENDORSED),
+                eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
+
+        Proposal rec = proposal("UNDER_REVIEW");
+        rec.setProponent(proponent());
+        policy.notifyForStatus(rec);
+        verify(notificationService).notifyUsers(
+                eq(List.of(rec.getProponent())), anyString(),
+                eq("Proposal Forwarded to REC"), eq(NotificationTypes.REVIEW_REQUEST),
+                eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
+
+        Proposal forwardedOc = proposal("FOR_OC_APPROVAL");
+        forwardedOc.setProponent(proponent());
+        policy.notifyForStatus(forwardedOc);
+        verify(notificationService).notifyUsers(
+                eq(List.of(forwardedOc.getProponent())), anyString(),
+                eq("Proposal Forwarded to the Office of the Chancellor"),
+                eq(NotificationTypes.APPROVAL), eq(42L), any(NotificationEvent.class),
+                eq(UserRoles.PROPONENT));
+    }
+
+    @Test
+    void anOvcApprovalTellsTheProponentWithoutPreemptingTheOcForward() {
+        Proposal proposal = proposal("OVC_APPROVED");
+        proposal.setProponent(proponent());
+
+        policy.notifyForStatus(proposal);
+
+        verify(notificationService).notifyUsers(
+                eq(List.of(proposal.getProponent())), anyString(),
+                eq("Proposal Approved by OVCRIGE"), eq(NotificationTypes.APPROVAL),
+                eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
+        verify(notificationService, never()).notifyRoles(
+                eq(List.of(UserRoles.OC)), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void theChancellorApprovalMentionsTheSpecialOrderAndOvcafWhenABudgetIsRequired() {
+        Proposal proposal = proposal("FOR_OVCAF_APPROVAL");
+        proposal.setProponent(proponent());
+        proposal.setSoNumber("SO-2026-001");
+
+        policy.notifyForStatus(proposal);
+
+        verify(notificationService).notifyUsers(
+                eq(List.of(proposal.getProponent())),
+                org.mockito.ArgumentMatchers.contains("Special Order SO-2026-001 has been issued"),
+                eq("Proposal Approved by the Chancellor"), eq(NotificationTypes.APPROVAL),
+                eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
+    }
+
+    @Test
+    void aReturnedRevisionNamesTheRevisionAndCarriesTheRemarks() {
+        Proposal proposal = proposal("RPS_RETURNED");
+        proposal.setProponent(proponent());
+        proposal.setRemarks("Please expand the methodology.");
+
+        policy.notifyForStatus(proposal);
+
+        verify(notificationService).notifyUsers(
+                eq(List.of(proposal.getProponent())),
+                org.mockito.ArgumentMatchers.contains("Please expand the methodology"),
+                eq("Proposal Returned for Revision"), eq(NotificationTypes.REVISION),
+                eq(42L), any(NotificationEvent.class), eq(UserRoles.PROPONENT));
     }
 }

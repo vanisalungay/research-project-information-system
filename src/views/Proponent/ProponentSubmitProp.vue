@@ -74,14 +74,29 @@
         <span class="substep-name">{{ currentSubstepName }}</span>
       </div>
 
-      <!-- VALIDATION ERROR BANNER -->
-      <div v-if="showValidation && visibleErrorList.length > 0" class="validation-banner" ref="errorBannerRef">
+      <!-- VALIDATION ERROR BANNER.
+           Every incomplete section is listed, with its own clickable heading and
+           messages. Choosing one shows that page, scrolls to the field and
+           highlights it; the entered values are untouched. -->
+      <div v-if="showValidation && incompleteSections.length > 0" class="validation-banner" ref="errorBannerRef">
         <div class="banner-icon">⚠</div>
         <div class="banner-content">
-          <strong>Please complete all required fields before proceeding.</strong>
-          <ul>
-            <li v-for="(err, i) in visibleErrorList" :key="i">
-              <a href="#" @click.prevent="scrollToField(err.field)">{{ err.message }}</a>
+          <strong>Please complete the highlighted sections before proceeding.</strong>
+          <ul class="validation-section-list">
+            <li v-for="(group, groupIndex) in incompleteSections" :key="group.ref || `other-${groupIndex}`" class="validation-section-group">
+              <button
+                type="button"
+                class="validation-section-link"
+                :aria-label="`Go to section ${group.number} ${group.title}`"
+                @click="goToError(group.errors[0])"
+              >
+                Section {{ group.number }} – {{ group.title }}
+              </button>
+              <ul class="validation-field-list">
+                <li v-for="(err, i) in group.errors" :key="i">
+                  <a href="#" @click.prevent="goToError(err)">{{ err.message }}</a>
+                </li>
+              </ul>
             </li>
           </ul>
         </div>
@@ -148,7 +163,12 @@
             <div class="form-row">
               <div class="form-group" :class="{ 'has-error': showValidation && errors.project_leader }">
                 <label>Project Leader <span class="req">*</span></label>
-                <input v-model="proposal.project_leader" placeholder="Full name of project leader" />
+                <input
+                  v-model="proposal.project_leader"
+                  placeholder="Dela Cruz, Juan, M., Jr."
+                  @blur="proposal.project_leader = formatPersonName(proposal.project_leader)"
+                />
+                <PersonNameHint />
                 <span class="field-error" v-if="showValidation && errors.project_leader">{{ errors.project_leader
                   }}</span>
               </div>
@@ -269,22 +289,6 @@
                     @input="addressCascade.select('province', $event.target.value)" />
                 </div>
                 <div class="ac-field">
-                  <!-- A district only exists in a districted area (NCR): the marker
-                       follows the loaded hierarchy so it never claims a level that
-                       does not apply to the selected region. -->
-                  <label for="address-district">District <span v-if="addressCascade.districtEnabled"
-                      class="req">*</span></label>
-                  <select v-if="!addressCascade.manual" id="address-district" :value="addressDetails.district"
-                    :disabled="!addressCascade.districtEnabled"
-                    @change="addressCascade.select('district', $event.target.value)">
-                    <option value="">{{ addressCascade.placeholders.district }}</option>
-                    <option v-for="district in addressCascade.districtOptions" :key="district.code"
-                      :value="district.name">{{ district.name }}</option>
-                  </select>
-                  <input v-else id="address-district" type="text" :value="addressDetails.district"
-                    placeholder="District (if any)" @input="addressCascade.select('district', $event.target.value)" />
-                </div>
-                <div class="ac-field">
                   <label for="address-municipality">Municipality / City <span class="req">*</span></label>
                   <select v-if="!addressCascade.manual" id="address-municipality" :value="addressDetails.municipality"
                     :disabled="!addressCascade.cityEnabled"
@@ -366,7 +370,7 @@
         <section class="form-section" ref="section_sites">
           <div class="section-header">
             <span class="section-number">03</span>
-            <h3>Sites of Implementation</h3>
+            <h3>Sites of Implementation <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.sites }">
             <div class="table-wrapper">
@@ -374,29 +378,43 @@
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Country</th>
-                    <th>Region</th>
-                    <th>Province</th>
+                    <th>Country <span class="req">*</span></th>
+                    <th>Region <span class="req">*</span></th>
+                    <th>Province <span class="req">*</span></th>
                     <th>District</th>
-                    <th>Municipality</th>
-                    <th>Barangay</th>
+                    <th>Municipality <span class="req">*</span></th>
+                    <th>Barangay <span class="req">*</span></th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(site, index) in proposal.sites" :key="index">
-                    <td class="row-num">{{ index + 1 }}</td>
-                    <td><input v-model="site.country" placeholder="Philippines" /></td>
-                    <td><input v-model="site.region" placeholder="Region X" /></td>
-                    <td><input v-model="site.province" placeholder="Misamis Oriental" /></td>
-                    <td><input v-model="site.district" placeholder="District 2" /></td>
-                    <td><input v-model="site.municipality" placeholder="Naawan" /></td>
-                    <td><input v-model="site.barangay" placeholder="San Miguel" /></td>
-                    <td><button class="btn-icon btn-remove" @click="removeSite(index)" title="Remove">✕</button></td>
-                  </tr>
+                  <template v-for="(site, index) in proposal.sites" :key="index">
+                    <tr :class="{ 'has-error-row': showValidation && siteRowErrors[index] }">
+                      <td class="row-num">{{ index + 1 }}</td>
+                      <!-- One row reuses the section-01 cascade and PSGC data. Province is
+                           required only where the loaded hierarchy has provinces; District
+                           is optional and never gates the municipality. -->
+                      <SiteLocationRow
+                        :ref="(el) => setSiteRowRef(index, el)"
+                        :site="site"
+                        :site-number="index + 1"
+                        @update:site="updateSite(index, $event)"
+                      />
+                      <td><button class="btn-icon btn-remove" @click="removeSite(index)" title="Remove">✕</button></td>
+                    </tr>
+                    <tr v-if="showValidation && siteRowErrors[index]" class="site-error-row">
+                      <td></td>
+                      <td colspan="7">
+                        <span class="field-error">{{ siteRowErrors[index] }}</span>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
+            <p class="field-hint">
+              Province is not applicable in a region without provinces. District is optional.
+            </p>
             <span class="field-error" v-if="showValidation && errors.sites">{{ errors.sites }}</span>
             <button class="btn-add" @click="addSite">+ Add Site</button>
           </div>
@@ -406,7 +424,7 @@
         <section class="form-section" ref="section_research_type">
           <div class="section-header">
             <span class="section-number">04</span>
-            <h3>Type of Research</h3>
+            <h3>Type of Research <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.research_type }">
             <div class="radio-group">
@@ -435,7 +453,7 @@
         <section class="form-section" ref="section_priority_agendas">
           <div class="section-header">
             <span class="section-number">05</span>
-            <h3>Priority Agenda</h3>
+            <h3>Priority Agenda <span class="req">*</span></h3>
             <span v-if="agendaLabel" class="section-sub">{{ agendaLabel }}</span>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.priority_agendas }">
@@ -487,7 +505,7 @@
         <section class="form-section" ref="section_innovation_goals">
           <div class="section-header">
             <span class="section-number">06</span>
-            <h3>Innovation Goals</h3>
+            <h3>Innovation Goals <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.innovation_goals }">
@@ -502,7 +520,7 @@
         <section class="form-section" ref="section_sector_relevance">
           <div class="section-header">
             <span class="section-number">07</span>
-            <h3>Sector Relevance</h3>
+            <h3>Sector Relevance <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.sector_relevance }">
@@ -517,11 +535,11 @@
         <section class="form-section" ref="section_sdg">
           <div class="section-header">
             <span class="section-number">08</span>
-            <h3>Sustainable Development Goals (SDG)</h3>
+            <h3>Sustainable Development Goals (SDG) <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.sustainable_development_goals }">
-              <label>Select all applicable SDGs</label>
+              <label>Select all applicable SDGs <span class="req">*</span></label>
               <div class="sdg-checkbox-list">
                 <label v-for="goal in SDG_OPTIONS" :key="goal" class="sdg-checkbox">
                   <input type="checkbox" :value="goal" v-model="proposal.sustainable_development_goals" />
@@ -537,7 +555,7 @@
         <section class="form-section" ref="section_executive_summary">
           <div class="section-header">
             <span class="section-number">09</span>
-            <h3>Executive Summary</h3>
+            <h3>Executive Summary <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.executive_summary }">
@@ -558,7 +576,7 @@
           </div>
           <div class="section-card">
             <div class="sub-section">
-              <h4>Rationale / Significance</h4>
+              <h4>Rationale / Significance <span class="req">*</span></h4>
               <p class="field-note">Not to exceed 300 words</p>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.rationale }">
                 <textarea v-model="proposal.rationale" rows="4"></textarea>
@@ -566,7 +584,7 @@
               </div>
             </div>
             <div class="sub-section">
-              <h4>Scientific Basis / Theoretical Framework</h4>
+              <h4>Scientific Basis / Theoretical Framework <span class="req">*</span></h4>
               <div class="form-group" :class="{ 'has-error': showValidation && errors.theoretical_framework }">
                 <textarea v-model="proposal.theoretical_framework" rows="4"></textarea>
                 <span class="field-error" v-if="showValidation && errors.theoretical_framework">{{
@@ -599,7 +617,7 @@
         <section class="form-section" ref="section_review_of_literature">
           <div class="section-header">
             <span class="section-number">11</span>
-            <h3>Review of Literature</h3>
+            <h3>Review of Literature <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.review_of_literature }">
@@ -616,7 +634,7 @@
         <section class="form-section" ref="section_methodology">
           <div class="section-header">
             <span class="section-number">12</span>
-            <h3>Methodology</h3>
+            <h3>Methodology <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.methodology }">
@@ -702,7 +720,7 @@
         <section class="form-section" ref="section_expected_outputs">
           <div class="section-header">
             <span class="section-number">14</span>
-            <h3>Expected Outputs (6Ps)</h3>
+            <h3>Expected Outputs (6Ps) <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.expected_outputs }">
             <div class="agenda-grid">
@@ -727,7 +745,7 @@
         <section class="form-section" ref="section_potential_outcomes">
           <div class="section-header">
             <span class="section-number">15</span>
-            <h3>Potential Outcomes</h3>
+            <h3>Potential Outcomes <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.potential_outcomes }">
@@ -768,7 +786,7 @@
         <section class="form-section" ref="section_target_beneficiaries">
           <div class="section-header">
             <span class="section-number">17</span>
-            <h3>Target Beneficiaries</h3>
+            <h3>Target Beneficiaries <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.target_beneficiaries }">
@@ -784,7 +802,7 @@
         <section class="form-section" ref="section_sustainability_plan">
           <div class="section-header">
             <span class="section-number">18</span>
-            <h3>Sustainability Plan</h3>
+            <h3>Sustainability Plan <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.sustainability_plan }">
@@ -800,7 +818,7 @@
         <section class="form-section" ref="section_gad_score">
           <div class="section-header">
             <span class="section-number">19</span>
-            <h3>Gender and Development (GAD) Score</h3>
+            <h3>Gender and Development (GAD) Score <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.gad_checklist }">
             <GadChecklist
@@ -820,7 +838,7 @@
         <section class="form-section" ref="section_limitations">
           <div class="section-header">
             <span class="section-number">20</span>
-            <h3>Limitations of the Project</h3>
+            <h3>Limitations of the Project <span class="req">*</span></h3>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.limitations }">
@@ -835,7 +853,7 @@
         <section class="form-section" ref="section_risks">
           <div class="section-header">
             <span class="section-number">21</span>
-            <h3>Risk Management Plan</h3>
+            <h3>Risk Management Plan <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.risk_management }">
             <RiskManagementTable v-model="proposal.risk_management" :show-validation="showValidation" />
@@ -854,7 +872,7 @@
         <section class="form-section" ref="section_logical_framework">
           <div class="section-header">
             <span class="section-number">22</span>
-            <h3>Logical Framework</h3>
+            <h3>Logical Framework <span class="req">*</span></h3>
             <span class="section-sub">Outcome and Output Indicators</span>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.logical_framework }">
@@ -862,8 +880,8 @@
               <table class="form-table">
                 <thead>
                   <tr>
-                    <th>Outcome Indicators</th>
-                    <th>Output Indicators / Physical Target</th>
+                    <th>Outcome Indicators <span class="req">*</span></th>
+                    <th>Output Indicators / Physical Target <span class="req">*</span></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -891,7 +909,7 @@
         <section class="form-section" ref="section_literature_cited">
           <div class="section-header">
             <span class="section-number">23</span>
-            <h3>Literature Cited</h3>
+            <h3>Literature Cited <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.literature_cited }">
             <p class="reference-instruction">{{ REFERENCE_INSTRUCTION }}</p>
@@ -929,16 +947,16 @@
         <section class="form-section" ref="section_personnel">
           <div class="section-header">
             <span class="section-number">24</span>
-            <h3>Personnel Requirement</h3>
+            <h3>Personnel Requirement <span class="req">*</span></h3>
           </div>
           <div class="section-card" :class="{ 'has-error-card': showValidation && errors.personnel_requirements }">
             <div class="table-wrapper">
               <table class="form-table">
                 <thead>
                   <tr>
-                    <th>Position</th>
-                    <th>% Time Devoted</th>
-                    <th>Responsibilities</th>
+                    <th>Position <span class="req">*</span></th>
+                    <th>% Time Devoted <span class="req">*</span></th>
+                    <th>Responsibilities <span class="req">*</span></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -979,8 +997,9 @@
           <div class="section-header">
             <span class="section-number">25</span>
             <h3>Line-Item Budget Requirement</h3>
+            <span class="section-sub">(optional)</span>
           </div>
-          <div class="section-card" :class="{ 'has-error-card': showValidation && errors.line_item_budget_file }">
+          <div class="section-card">
             <!-- The official template must be followed, and it can be read in place
                  (View Line-Item Budget Template) instead of being downloaded first. -->
             <p class="budget-template-instruction">
@@ -1072,7 +1091,7 @@
           <div class="section-header">
             <span class="section-number">26</span>
             <h3>Other Ongoing Projects</h3>
-            <span class="section-sub">Being handled by the Project Leader</span>
+            <span class="section-sub">Being handled by the Project Leader — optional</span>
           </div>
           <div class="section-card">
             <div class="form-group" :class="{ 'has-error': showValidation && errors.other_projects_number }">
@@ -1120,6 +1139,7 @@
           <div class="section-header">
             <span class="section-number">27</span>
             <h3>Other Supporting Documents</h3>
+            <span class="section-sub">(optional)</span>
           </div>
           <div class="section-card">
             <p class="field-note">Please refer to the next page for additional necessary documents.</p>
@@ -1201,8 +1221,10 @@ import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesCheckl
 import GadChecklist from '@/components/GadChecklist.vue'
 import LineItemBudgetTemplateModal from '@/components/LineItemBudgetTemplateModal.vue'
 import LiteratureReferenceModal from '@/components/LiteratureReferenceModal.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import ProgramTitleSelect from '@/components/ProgramTitleSelect.vue'
 import RiskManagementTable from '@/components/RiskManagementTable.vue'
+import SiteLocationRow from '@/components/SiteLocationRow.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
 import { useDialog } from '@/composables/useDialog'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
@@ -1242,6 +1264,7 @@ import {
   validateRiskPlan
 } from '@/utils/riskManagement'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import { formatPersonName } from '@/utils/personName'
 import {
   GAD_ITEMS,
   GAD_RESPONSE_OPTIONS,
@@ -1267,10 +1290,10 @@ import {
   PROPOSAL_SUBSTEP_COUNT,
   clampSubstep,
   errorsOfSubstep,
-  fieldsOfSubstep,
   substepOfField,
   substepTitle
 } from '@/utils/proposalSubsteps'
+import { groupErrorsBySection, sectionNavigation } from '@/utils/proposalErrorSections'
 import {
   PHILIPPINES,
   cityLabel,
@@ -1280,6 +1303,7 @@ import {
   savedAddressDetails,
   validateAddress,
 } from '@/utils/philippineLocations'
+import { emptySiteLocation, siteLocationFromSaved } from '@/utils/siteLocations'
 import {
   CONTACT_METHOD_PLACEHOLDER,
   CONTACT_NUMBER,
@@ -1355,6 +1379,9 @@ const showValidation = ref(false)
 const showEvalCriteria = ref(false)
 const showBudgetTemplate = ref(false)
 const errors = reactive({})
+// One message per site row, shown directly beneath that row. The same messages are
+// also joined into errors.sites for the section banner.
+const siteRowErrors = ref([])
 
 const sectionRefs = {
   program_title: 'section_project_profile',
@@ -1523,7 +1550,7 @@ const getInitialProposal = () => ({
   cooperating_agencies: '',
   cooperating_agency_ids: [],
   cooperating_agency_names: [],
-  sites: [{ country: '', region: '', province: '', district: '', municipality: '', barangay: '' }],
+  sites: [emptySiteLocation()],
   research_type: '',
   // Section 05: filled from the Priority Agenda master data (see resetAgendaState);
   // never a hard-coded list of programs.
@@ -1780,7 +1807,10 @@ const contactDetails = computed({
   get: () => proposal.contact_details,
   set: (value) => { proposal.contact_details = value }
 })
-const addressCascade = useAddressCascade(addressDetails)
+// Section 01 no longer asks for a District, so the municipality / city of a
+// districted region (NCR) is chosen from the region instead of waiting for a
+// district. Section 03 keeps the district-driven cascade.
+const addressCascade = useAddressCascade(addressDetails, { districtRequired: false })
 
 /** Accessible name of the value input (its visible label is the heading above). */
 const contactInputLabel = computed(() => contactTypeLabel(contactDetails.value.type))
@@ -1842,6 +1872,7 @@ const resetForm = () => {
   resetAgendaState([])
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
+  siteRowErrors.value = []
   programTitleChoice.value = ''
   programTitleBeforeCreation.value = null
   budgetFileError.value = ''
@@ -1922,16 +1953,10 @@ const loadProposal = (data) => {
   proposal.roadmap_file_name = data.roadmapFileName || ''
   proposal.roadmap_file_path = data.roadmapFilePath || ''
 
-  // Map sites
+  // Map sites. A saved site with no country becomes a Philippine one, so an older
+  // draft stays editable through the same cascade the new rows use.
   if (data.sites && data.sites.length > 0) {
-    proposal.sites = data.sites.map(s => ({
-      country: s.country || '',
-      region: s.region || '',
-      province: s.province || '',
-      district: s.district || '',
-      municipality: s.municipality || '',
-      barangay: s.barangay || ''
-    }))
+    proposal.sites = data.sites.map((site) => siteLocationFromSaved(site))
   }
 
   // Map priority agendas (section 05). The active configuration is merged with the
@@ -1968,6 +1993,7 @@ const loadProposal = (data) => {
 
   showValidation.value = false
   Object.keys(errors).forEach(key => delete errors[key])
+  siteRowErrors.value = []
 }
 
 defineExpose({
@@ -1978,7 +2004,9 @@ defineExpose({
    * Saving from another step merges this snapshot, so a jump to Review & Submit can
    * never save an empty logical framework / personnel / sites in place of what was typed.
    */
-  getFormData: () => ({ ...proposal })
+  getFormData: () => ({ ...proposal }),
+  /** Opens this step with every incomplete section listed (used by Review & Submit). */
+  showIncompleteSections,
 })
 
 /**
@@ -2040,8 +2068,28 @@ const parseSixPs = (raw) => {
 }
 
 const close = () => emit('update:modelValue', false)
-const addSite = () => proposal.sites.push({ country: '', region: '', province: '', district: '', municipality: '', barangay: '' })
-const removeSite = (index) => proposal.sites.splice(index, 1)
+
+// The site row components expose their hierarchy-aware `validate()`; the parent
+// calls one per row so a level the data says does not apply is not reported.
+const siteRowRefs = []
+const setSiteRowRef = (index, instance) => {
+  // A removed row reports null. Clearing the slot keeps a later add/remove from
+  // validating a stale component against the wrong site's data.
+  if (instance) siteRowRefs[index] = instance
+  else delete siteRowRefs[index]
+}
+const updateSite = (index, site) => {
+  // Array index assignment is reactive in Vue 3, so the row receives the new object
+  // (with the dependent selections already cleared by the cascade).
+  proposal.sites[index] = site
+}
+
+const addSite = () => proposal.sites.push(emptySiteLocation())
+const removeSite = (index) => {
+  proposal.sites.splice(index, 1)
+  siteRowRefs.splice(index, 1)
+  siteRowErrors.value.splice(index, 1)
+}
 
 const addTableRow = (key) => {
   const templates = {
@@ -2628,7 +2676,6 @@ const validateStep1 = () => {
   // the contact must match its selected type.
   const addressError = validateAddress(proposal.address_details, {
     hasProvinces: addressCascade.provinceOptions.length > 0,
-    hasDistricts: addressCascade.districtOptions.length > 0,
     manual: addressCascade.manual,
     manualBarangay: addressCascade.manualBarangay,
     // An independent city (City of Isabela, City of Cotabato) belongs to no
@@ -2645,15 +2692,28 @@ const validateStep1 = () => {
     errors.cooperating_agencies = 'Please select at least one cooperating agency.'
   }
 
-  // 03 - Sites of Implementation
+  // 03 - Sites of Implementation. Each row knows which levels its selected
+  // hierarchy actually has, so a province in NCR is not reported as missing; the
+  // District is optional and is never reported either.
   if (!proposal.sites.length) {
+    siteRowErrors.value = []
     errors.sites = 'At least one site of implementation is required.'
   } else {
-    const siteFields = ['country', 'region', 'province', 'district', 'municipality', 'barangay']
-    const hasIncompleteSite = proposal.sites.some(site =>
-      siteFields.some(f => isBlank(site[f]))
-    )
-    if (hasIncompleteSite) errors.sites = 'All site location fields must be filled for each site.'
+    const perRow = []
+    const siteMessages = proposal.sites
+      .map((site, index) => {
+        const message = siteRowRefs[index]?.validate?.()
+          // Fallback only if the row is not mounted: the universally required parts.
+          || (() => {
+            const missing = ['country', 'region', 'municipality', 'barangay'].find((field) => isBlank(site[field]))
+            return missing ? `complete the ${missing}.` : ''
+          })()
+        perRow[index] = message
+        return message ? `Site ${index + 1}: ${message}` : ''
+      })
+      .filter(Boolean)
+    siteRowErrors.value = perRow
+    if (siteMessages.length) errors.sites = siteMessages.join(' ')
   }
 
   // 04 - Research Type
@@ -2750,17 +2810,24 @@ const validateStep1 = () => {
     }
   }
 
-  // 25 - Budget. A file chosen in this session or a file already attached to the
-  // proposal (restored when a draft is reopened) both satisfy the requirement - an
-  // empty picker must never mean the stored budget is gone.
-  if (!proposal.line_item_budget_file && !proposal.budget_file_path && !proposal.budget_file_name) {
-    errors.line_item_budget_file = 'Line-Item Budget file is required.'
-  }
-
-
-
+  // 25 - Budget is optional, as is section 26 (Other Ongoing Projects). Leaving
+  // the budget file empty must never block a draft or a submission; an entered
+  // file is still carried and stored by the normal save path.
   return Object.keys(errors).length === 0
 }
+
+/**
+ * Once the banner has appeared, every edit is validated against the current form
+ * state. A field that the proponent has just completed loses its error immediately
+ * (including a site row whose last missing level was just chosen), instead of the
+ * banner continuing to show a stale message until the next Continue/Submit.
+ */
+watch(proposal, () => {
+  if (showValidation.value) validateStep1()
+  // `post`: the site rows validate through their component instances, whose props
+  // receive the new selection during the normal render. Validating before that render
+  // read the previous value and left a just-completed site reported as incomplete.
+}, { deep: true, flush: 'post' })
 
 const errorList = computed(() => {
   return Object.entries(errors).map(([field, message]) => ({
@@ -2769,23 +2836,113 @@ const errorList = computed(() => {
   }))
 })
 
-const scrollToField = (fieldName) => {
-  const sectionName = sectionRefs[fieldName]
-  if (!sectionName) return
-  // Find the section element by ref in the template
-  const sectionEl = document.querySelector(`[ref="${sectionName}"]`) ||
-    document.querySelector(`section[ref="${sectionName}"]`)
-  // Fallback: try to find by data attribute or scroll to error banner
-  if (sectionEl) {
-    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  } else if (modalBodyRef.value) {
-    // Try to find the first has-error element
-    const errorEl = modalBodyRef.value.querySelector('.has-error')
-    if (errorEl) {
-      errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    } else {
-      modalBodyRef.value.scrollTo({ top: 0, behavior: 'smooth' })
+/**
+ * The same errors grouped by section, in validation order. Each group carries
+ * the section number, title and page, so the banner can name and navigate to
+ * every incomplete section. The banner shows all groups, not only the page on
+ * screen: a proponent can jump straight to any of them.
+ */
+const incompleteSections = computed(() => groupErrorsBySection(errorList.value, sectionRefs))
+
+/** The section element of one field (the form renders all pages; it is located by number). */
+const sectionElementOf = (fieldName) => {
+  const navigation = sectionNavigation(sectionRefs[fieldName])
+  if (!navigation || !modalBodyRef.value) return null
+  return [...modalBodyRef.value.querySelectorAll('.form-section')].find(
+    (section) => section.querySelector('.section-number')?.textContent.trim() === navigation.number,
+  ) || null
+}
+
+/**
+ * Scrolls to the section and, when the message identifies one, to the exact
+ * field's error message. The field group is briefly highlighted so it is not
+ * lost in a long section.
+ */
+const scrollToField = async (fieldName, message = '') => {
+  // Wait for the target page's v-show to be painted before measuring anything.
+  await nextTick()
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+  const sectionEl = sectionElementOf(fieldName)
+  let target = sectionEl
+  if (sectionEl && message) {
+    const errorEl = [...sectionEl.querySelectorAll('.field-error')].find(
+      (element) => element.textContent.trim() === message,
+    )
+    if (errorEl) target = errorEl.closest('.form-group, .subsection, .file-upload') || errorEl
+  }
+  if (!target && modalBodyRef.value) {
+    target = modalBodyRef.value.querySelector('.has-error')
+  }
+  if (!target) {
+    modalBodyRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+
+  // Grouped site errors name one row per message; bring the first row into view and
+  // mark every incomplete row (not just the combined message under the table).
+  const highlighted = [target]
+  if (fieldName === 'sites' && sectionEl) {
+    const rows = [...sectionEl.querySelectorAll('.form-table tbody tr')]
+    const indexes = [...String(message).matchAll(/Site (\d+):/g)].map((match) => Number(match[1]) - 1)
+    const firstRow = rows[indexes[0]]
+    if (firstRow) target = firstRow
+    for (const index of indexes) {
+      if (rows[index]) highlighted.push(rows[index])
     }
+  }
+
+  // Scroll the form's own scroll container instead of relying on scrollIntoView,
+  // whose target can be the page behind the modal. The section/page is already
+  // active at this point, so the measurement is against the visible layout.
+  const body = modalBodyRef.value
+  if (body) {
+    const bodyRect = body.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const centered = body.scrollTop + (targetRect.top - bodyRect.top)
+      - Math.max(16, (body.clientHeight - targetRect.height) / 2)
+    body.scrollTo({ top: Math.max(0, centered), behavior: 'smooth' })
+  } else {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  for (const element of highlighted) element.classList.add('validation-highlight')
+  window.setTimeout(() => {
+    for (const element of highlighted) element.classList.remove('validation-highlight')
+  }, 2400)
+}
+
+/**
+ * Navigates to one incomplete field: shows its page, then scrolls to and
+ * highlights the field. Used by the section links in the banner.
+ */
+const goToError = async (entry) => {
+  if (!entry) return
+  const targetSubstep = substepOfField(sectionRefs, entry.field)
+  if (targetSubstep && targetSubstep !== currentSubstep.value) {
+    goToSubstep(targetSubstep, { keepValidation: true })
+    await nextTick()
+    // goToSubstep schedules its own "back to top" scroll; let that run first so the
+    // field scroll below is the final action and cannot be overwritten.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  }
+  await scrollToField(entry.field, entry.message)
+}
+
+/**
+ * Opens the form with every incomplete section listed and the first one in view.
+ * Exposed so the Review & Submit step can send the user back here instead of
+ * showing only a count.
+ */
+async function showIncompleteSections() {
+  showValidation.value = true
+  validateStep1()
+  await nextTick()
+  const first = incompleteSections.value[0]?.errors?.[0]
+  if (first) {
+    await goToError(first)
+  } else {
+    modalBodyRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 
@@ -2807,8 +2964,6 @@ const currentSubstepName = computed(() => substepTitle(currentSubstep.value))
 /** The validation errors of the page on screen (the banner lists only those). */
 const pageErrorsOf = (number) => errorsOfSubstep(errorList.value, sectionRefs, number)
 
-const visibleErrorList = computed(() => pageErrorsOf(currentSubstep.value))
-
 /**
  * The details step no longer saves on its own: it hands its current values to the
  * workflow owner, which drives the one save path in Review & Submit. That save path
@@ -2817,6 +2972,8 @@ const visibleErrorList = computed(() => pageErrorsOf(currentSubstep.value))
  * step sending a partial payload that used to blank fields it did not include.
  */
 const saveAsDraft = () => {
+  // A value that never lost focus is still formatted before it leaves the step.
+  proposal.project_leader = formatPersonName(proposal.project_leader)
   emit('savedraft', { ...proposal })
 }
 
@@ -2824,23 +2981,17 @@ const goNext = async () => {
   showValidation.value = true
   const isValid = validateStep1()
   if (!isValid) {
-    // A missing field can sit on a page the proponent has already left: that page is
-    // brought back (with its own errors) instead of leaving them on a page they cannot
-    // fix from here.
-    const firstProblem = errorList.value.find(
-      (entry) => !fieldsOfSubstep(sectionRefs, currentSubstep.value).includes(entry.field)
-    )
-    const targetSubstep = firstProblem ? substepOfField(sectionRefs, firstProblem.field) : null
-    if (targetSubstep && targetSubstep !== currentSubstep.value) {
-      goToSubstep(targetSubstep, { keepValidation: true })
-    }
-    await scrollToFirstPageError(pageErrorsOf(currentSubstep.value))
+    // The banner lists every incomplete section. Bring the first one into view (its
+    // page is opened if needed) and highlight the exact field, so the proponent lands
+    // on the problem instead of on an alert that only counts it.
+    await goToError(errorList.value[0])
     await showAlert(
-      `Please fill in all ${errorList.value.length} required field(s) before proceeding to the next step.`,
+      `Please complete ${incompleteSections.value.length} incomplete section(s) before proceeding to the next step.`,
       { type: 'warning', title: 'Incomplete Proposal' }
     )
     return
   }
+  proposal.project_leader = formatPersonName(proposal.project_leader)
   emit('next', { ...proposal })
 }
 
@@ -3237,6 +3388,68 @@ watch(() => props.modelValue, (isOpen) => {
 
 .banner-content li a:hover {
   color: #991b1b;
+}
+
+/* One block per incomplete section: the section name is the navigation control,
+   and its individual messages sit beneath it. */
+.banner-content .validation-section-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.banner-content .validation-section-group + .validation-section-group {
+  margin-top: 6px;
+}
+
+.banner-content .validation-section-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #991b1b;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.banner-content .validation-section-link:hover,
+.banner-content .validation-section-link:focus-visible {
+  color: #7f1d1d;
+}
+
+.banner-content .validation-field-list {
+  margin: 2px 0 0;
+  padding-left: 18px;
+}
+
+/* The field the user jumped to is briefly outlined, on top of its own red error
+   border, so a long section cannot hide it. */
+.validation-highlight {
+  outline: 2px solid #f59e0b;
+  outline-offset: 3px;
+  border-radius: 6px;
+  animation: validation-highlight-pulse 1.2s ease-in-out 2;
+}
+
+/* Site rows show their own message directly beneath the row. */
+.has-error-row > td {
+  background: #fff7f7;
+}
+
+.site-error-row > td {
+  padding-top: 0;
+  border-top: none;
+}
+
+.site-error-row .field-error {
+  margin: 0 0 8px;
+}
+
+@keyframes validation-highlight-pulse {
+  50% {
+    background-color: rgba(245, 158, 11, 0.12);
+  }
 }
 
 /* ===== BODY ===== */

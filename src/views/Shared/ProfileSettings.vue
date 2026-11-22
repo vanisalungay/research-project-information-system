@@ -78,7 +78,14 @@
         <div class="form-grid">
           <div class="field-group">
             <label for="fullName">Full Name</label>
-            <input id="fullName" type="text" v-model="personalForm.fullName" placeholder="Enter your full name" />
+            <input
+              id="fullName"
+              type="text"
+              v-model="personalForm.fullName"
+              placeholder="Dela Cruz, Juan, M., Jr."
+              @blur="personalForm.fullName = formatPersonName(personalForm.fullName)"
+            />
+            <PersonNameHint />
           </div>
           <div class="field-group">
             <label for="email">Email Address</label>
@@ -91,6 +98,19 @@
           <div class="field-group">
             <label for="contact">Contact Number</label>
             <input id="contact" type="text" v-model="personalForm.contact" placeholder="e.g. +63 917 123 4567" />
+          </div>
+          <!-- Display-only: the Dean's endorsement scope is assigned by the RPS
+               Administrator in Dean Role Management. -->
+          <div v-if="isDean" class="field-group">
+            <label for="assignedCollege">Assigned College / Department</label>
+            <input
+              id="assignedCollege"
+              type="text"
+              :value="assignedCollege || 'Not assigned'"
+              readonly
+              aria-readonly="true"
+            />
+            <p class="field-note">Assigned by the RPS Administrator and not editable here.</p>
           </div>
         </div>
 
@@ -116,25 +136,44 @@
       <div v-if="activeTab === 'security'" class="form-card animate-fade">
         <div class="card-header">
           <h2>Security & Credentials</h2>
-          <p>Alter your official login name or update your account passwords safely.</p>
+          <p>Update your account's full name or change your account password safely.</p>
         </div>
 
         <div class="form-double-grid">
-          
+
           <!-- Column 1: Name Changes -->
           <div class="form-column">
-            <h3 class="column-title">Account Username</h3>
+            <h3 class="column-title">Account Full Name</h3>
             <div class="field-group">
-              <label for="oldName">Current Name</label>
-              <input id="oldName" type="text" v-model="securityForm.oldName" placeholder="Enter old account name" />
+              <label for="oldName">Current Full Name</label>
+              <input
+                id="oldName"
+                type="text"
+                v-model="securityForm.oldName"
+                placeholder="Current account name"
+                @blur="securityForm.oldName = formatPersonName(securityForm.oldName)"
+              />
             </div>
             <div class="field-group">
-              <label for="newName">New Username</label>
-              <input id="newName" type="text" v-model="securityForm.newName" placeholder="Enter new account name" />
+              <label for="newName">New Full Name</label>
+              <input
+                id="newName"
+                type="text"
+                v-model="securityForm.newName"
+                placeholder="Dela Cruz, Juan, M., Jr."
+                @blur="securityForm.newName = formatPersonName(securityForm.newName)"
+              />
+              <PersonNameHint />
             </div>
             <div class="field-group">
-              <label for="confirmName">Confirm New Username</label>
-              <input id="confirmName" type="text" v-model="securityForm.confirmName" placeholder="Confirm new account name" />
+              <label for="confirmName">Confirm New Full Name</label>
+              <input
+                id="confirmName"
+                type="text"
+                v-model="securityForm.confirmName"
+                placeholder="Repeat the new full name"
+                @blur="securityForm.confirmName = formatPersonName(securityForm.confirmName)"
+              />
             </div>
           </div>
 
@@ -143,22 +182,56 @@
             <h3 class="column-title">Account Password</h3>
             <div class="field-group">
               <label for="oldPassword">Current Password</label>
-              <input id="oldPassword" type="password" v-model="securityForm.oldPassword" placeholder="••••••••" />
+              <PasswordInput
+                id="oldPassword"
+                v-model="securityForm.oldPassword"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                aria-describedby="oldPassword-hint"
+              />
+              <PasswordFieldHint id="oldPassword-hint" kind="current" />
             </div>
+
+            <PasswordRequirements
+              id="password-requirements"
+              :password="securityForm.newPassword"
+              :confirm="securityForm.confirmPassword"
+            />
+
             <div class="field-group">
               <label for="newPassword">New Password</label>
-              <input id="newPassword" type="password" v-model="securityForm.newPassword" placeholder="Min. 8 characters" />
+              <PasswordInput
+                id="newPassword"
+                v-model="securityForm.newPassword"
+                placeholder="Create a new password"
+                autocomplete="new-password"
+                aria-describedby="newPassword-hint password-requirements"
+              />
+              <PasswordFieldHint id="newPassword-hint" kind="new" />
             </div>
             <div class="field-group">
               <label for="confirmPassword">Confirm New Password</label>
-              <input id="confirmPassword" type="password" v-model="securityForm.confirmPassword" placeholder="••••••••" />
+              <PasswordInput
+                id="confirmPassword"
+                v-model="securityForm.confirmPassword"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                aria-describedby="confirmPassword-hint"
+              />
+              <PasswordFieldHint id="confirmPassword-hint" kind="confirm" />
             </div>
           </div>
 
         </div>
 
         <div class="action-footer">
-          <button class="save-btn btn-primary" @click="saveSecurity">Update Security Info</button>
+          <button
+            class="save-btn btn-primary"
+            :disabled="securitySubmitDisabled || securitySaving"
+            @click="saveSecurity"
+          >
+            {{ securitySaving ? 'Saving...' : 'Update Security Info' }}
+          </button>
         </div>
       </div>
 
@@ -238,12 +311,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useUserDataStore } from '@/stores/userData'
+import { computed, ref, reactive, onMounted } from 'vue'
+import { UserRole, useUserDataStore } from '@/stores/userData'
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ElectronicSignaturePanel from '@/components/ElectronicSignaturePanel.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PasswordRequirements from '@/components/PasswordRequirements.vue'
+import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
+import { formatPersonName } from '@/utils/personName'
+import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 import {
   DEADLINE_OPTIONS,
   PROPOSAL_OPTIONS,
@@ -256,6 +335,13 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 const userStore = useUserDataStore()
 const activeTab = ref('personal')
 const currentUserId = ref(null)
+
+// A Dean's college / department is the endorsement scope assigned by the RPS
+// Administrator. It is shown read-only here; the administrator owns that field.
+// The signed-in session carries it, and the account fetched below refreshes it, so
+// a reassignment made by the administrator is reflected rather than a stale copy.
+const isDean = computed(() => userStore.user?.role === UserRole.DEAN)
+const assignedCollege = ref(userStore.user?.assignedCollege || '')
 
 // Specializations offered by the Manage Profile form. This is a fixed list of
 // research areas, not user data.
@@ -287,6 +373,24 @@ const securityForm = reactive({
   confirmName: '',
   confirmPassword: '',
 })
+
+const securitySaving = ref(false)
+
+// A password change is an all-or-nothing block: once any of the three password
+// fields has been touched, the footer button waits for a current password, a new
+// password that satisfies every requirement, and a matching confirmation. Editing
+// only the name leaves the button available as before.
+const passwordFieldsTouched = computed(() =>
+  Boolean(securityForm.oldPassword || securityForm.newPassword || securityForm.confirmPassword),
+)
+const passwordFormValid = computed(
+  () =>
+    securityForm.oldPassword !== '' &&
+    passwordFormReady(securityForm.newPassword, securityForm.confirmPassword),
+)
+const securitySubmitDisabled = computed(
+  () => passwordFieldsTouched.value && !passwordFormValid.value,
+)
 
 // Personal Info Form Reactive Binding
 const personalForm = reactive({
@@ -320,6 +424,7 @@ const loadUserProfile = async () => {
       personalForm.contact = storedUser.contactNumber || ''
       personalForm.specialization = storedUser.specialization ? storedUser.specialization.split(',') : []
       securityForm.oldName = storedUser.name || ''
+      assignedCollege.value = storedUser.assignedCollege || ''
 
       // Load the account from PostgreSQL.
       if (storedUser.id) {
@@ -332,6 +437,7 @@ const loadUserProfile = async () => {
           personalForm.contact = user.contactNumber || ''
           personalForm.specialization = user.specialization ? user.specialization.split(',') : []
           securityForm.oldName = user.name || ''
+          assignedCollege.value = user.assignedCollege || ''
 
           // Notification Routing: the selection stored on the account. Legacy labels
           // are normalized to stable keys, and an account that never saved the tab
@@ -355,41 +461,83 @@ const loadUserProfile = async () => {
 
 onMounted(loadUserProfile)
 
+const clearPasswordFields = () => {
+  securityForm.oldPassword = ''
+  securityForm.newPassword = ''
+  securityForm.confirmPassword = ''
+}
+
 const saveSecurity = async () => {
-  if (!securityForm.newName && !securityForm.newPassword) {
+  if (securitySaving.value) return
+
+  // Format both name entries before comparing them, so a case-only difference is not
+  // reported as a mismatch.
+  securityForm.newName = formatPersonName(securityForm.newName)
+  securityForm.confirmName = formatPersonName(securityForm.confirmName)
+
+  const wantsPasswordChange = passwordFieldsTouched.value
+
+  if (!securityForm.newName && !wantsPasswordChange) {
     return showAlert('Please fill out at least one change field.', { type: 'warning', title: 'Validation Error' })
   }
-  
+
   if (securityForm.newName && securityForm.newName !== securityForm.confirmName) {
     return showAlert('New username confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
   }
-  
-  if (securityForm.newPassword && securityForm.newPassword !== securityForm.confirmPassword) {
-    return showAlert('New password confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
+
+  // The password block is validated as a unit, against the same rules the backend
+  // enforces. Nothing is sent until the current password is present, every
+  // requirement is met and the confirmation matches.
+  if (wantsPasswordChange) {
+    if (securityForm.oldPassword === '') {
+      return showAlert('Enter your current password to choose a new one.', { type: 'warning', title: 'Validation Error' })
+    }
+    const policyMessage = passwordPolicyMessage(securityForm.newPassword)
+    if (policyMessage) {
+      return showAlert(policyMessage, { type: 'error', title: 'Password Requirements' })
+    }
+    if (securityForm.newPassword !== securityForm.confirmPassword) {
+      return showAlert('New password confirmation does not match.', { type: 'error', title: 'Mismatch Error' })
+    }
   }
 
+  let passwordChanged = false
   try {
-    const payload = {}
-    if (securityForm.newName) payload.name = securityForm.newName
-    if (securityForm.newPassword) payload.password = securityForm.newPassword
+    securitySaving.value = true
 
     if (!currentUserId.value) {
       throw new Error('No signed-in account was found.')
     }
 
-    const response = await api.put(`/api/users/${currentUserId.value}`, payload)
-    if (response.data) {
-      userStore.setUser({
-        ...userStore.user,
-        name: response.data.name
+    // A password change goes through the one endpoint that verifies the current
+    // password and re-validates the policy on the server. It is attempted first, so
+    // a wrong current password never leaves the name half-updated.
+    if (wantsPasswordChange) {
+      await api.put('/api/users/change-password', {
+        currentPassword: securityForm.oldPassword,
+        newPassword: securityForm.newPassword,
+        confirmPassword: securityForm.confirmPassword,
       })
+      passwordChanged = true
+      clearPasswordFields()
+    }
+
+    if (securityForm.newName) {
+      const response = await api.put(`/api/users/${currentUserId.value}`, {
+        name: formatPersonName(securityForm.newName),
+      })
+      if (response.data) {
+        userStore.setUser({
+          ...userStore.user,
+          name: response.data.name,
+        })
+      }
     }
 
     await showAlert('Security settings updated successfully!', { type: 'success' })
     securityForm.newName = ''
-    securityForm.newPassword = ''
     securityForm.confirmName = ''
-    securityForm.confirmPassword = ''
+    clearPasswordFields()
     loadUserProfile()
   } catch (error) {
     // The change is reported as failed. The previous version wrote the new name and
@@ -397,11 +545,24 @@ const saveSecurity = async () => {
     // settings updated successfully (offline mode)!" - the account in the database
     // still had the old credentials, so the next login with the "new" password
     // failed.
-    console.error('Could not update the account credentials:', error)
+    // Never log the error object: its config carries the password request body.
+    console.error('Could not update the security settings.', error?.response?.status ?? 'no response')
+    const body = error?.response?.data
+    const reason = (typeof body === 'string' && body.trim()) || body?.error
+    if (passwordChanged) {
+      await showAlert(
+        reason || 'Your password was changed, but the name could not be updated. Please try again.',
+        { type: 'warning', title: 'Partly Updated' },
+      )
+      loadUserProfile()
+      return
+    }
     await showAlert(
-      'Your security settings could not be updated. Please check your connection and try again.',
+      reason || 'Your security settings could not be updated. Please check your connection and try again.',
       { type: 'error', title: 'Update Failed' },
     )
+  } finally {
+    securitySaving.value = false
   }
 }
 
@@ -412,7 +573,7 @@ const savePersonal = async () => {
 
   try {
     const payload = {
-      name: personalForm.fullName,
+      name: formatPersonName(personalForm.fullName),
       email: personalForm.email,
       departmentOffice: personalForm.department,
       contactNumber: personalForm.contact,
@@ -664,6 +825,19 @@ const saveNotif = async () => {
   color: var(--color-text, #475569);
 }
 
+/* A helper under a display-only field, e.g. the Dean's assigned college. */
+.field-note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-text-soft, #64748b);
+}
+
+.field-group input[readonly] {
+  background: var(--color-background-soft, #f1f5f9);
+  cursor: default;
+}
+
 input[type="text"],
 input[type="email"],
 input[type="password"] {
@@ -857,6 +1031,11 @@ input:focus {
   transition: all 0.2s ease;
 }
 
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Fade in effects */
 .animate-fade {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -878,6 +1057,14 @@ input:focus {
   }
   .profile-header-card {
     padding: 24px;
+  }
+}
+
+/* At phone width the app shell already narrows the content area; the card's
+   desktop padding left the password checklist cramped. */
+@media (max-width: 480px) {
+  .form-card {
+    padding: 20px 16px;
   }
 }
 </style>

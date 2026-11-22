@@ -49,7 +49,6 @@ import RpsEndorsedPro from '@/views/Rps/RpsEndorsedPro.vue'
 import RpsProposalDetails from '../views/Rps/RpsProposalDetails.vue'
 import RpsNotificationDetails from '../views/Notifications/RpsNotificationDetails.vue'
 import RpsProposalReview from '../views/Rps/RpsProposalReview.vue'
-import RpsRevResultViewer from '../views/Rps/RpsRevResultViewer.vue'
 import RpsBudgetProcessing from '../views/Rps/RpsBudgetProcessing.vue'
 import RpsBudgetRelease from '../views/Rps/RpsBudgetRelease.vue'
 import RpsProposalMonitoringDetails from '../views/Rps/RpsProposalMonitoringDetails.vue'
@@ -81,6 +80,7 @@ import RecDetailedProp from '../views/Rec/RecDetailedProp.vue'
 
 /* PROPONENT */
 import ProponentDashboard from '../views/Dashboard/ProponentDashboard.vue'
+import ProponentCalls from '../views/Proponent/ProponentCalls.vue'
 import ProponentRevision from '@/views/Proponent/ProponentRevision.vue'
 import ProponentProposals from '@/views/Proponent/ProponentProposals.vue'
 import ProponentEvalCriteria from '@/views/Proponent/ProponentEvalCriteria.vue'
@@ -129,7 +129,9 @@ const routes = [
       { path: 'proposal/:id', name: 'ProposalDetails', component: RpsProposalDetails },
       { path: 'notification/:id', name: 'NotificationDetails', component: RpsNotificationDetails },
       { path: 'proposal/:id/review', name: 'ProposalReview', component: RpsProposalReview },
-      { path: 'review-viewer/:id', name: 'ReviewResultViewer', component: RpsRevResultViewer },
+      // Kept as a route for old links/bookmarks; it renders the same canonical proposal
+      // details page (and therefore the same header and history) as every other entry.
+      { path: 'review-viewer/:id', name: 'ReviewResultViewer', component: RpsProposalDetails },
 
       { path: 'budget-processing', name: 'BudgetProcessing', component: RpsBudgetProcessing },
       { path: 'budgetrelease', name: 'BudgetRelease', component: RpsBudgetRelease },
@@ -196,6 +198,11 @@ const routes = [
 
       // ================= PROPONENT =================
       { path: 'proponent-dashboard', component: ProponentDashboard },
+      {
+        path: 'proponent-calls',
+        name: 'ProponentCalls',
+        component: ProponentCalls,
+      },
       { path: 'proponent-notification', component: NotificationPage },
       {
         path: 'proponent-announcement/:id',

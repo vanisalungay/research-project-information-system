@@ -5,7 +5,7 @@
   >
     <!-- Terminal Report keeps the existing page heading. -->
     <div v-if="isTerminalStage" class="page-header">
-      <button class="back-btn btn-secondary" @click="$router.back()">← Back</button>
+      <BackButton :fallback="reportsFallback" />
       <div class="page-header-text">
         <h1>{{ pageTitle }}</h1>
         <p class="subtitle subtitle--terminal">
@@ -17,9 +17,7 @@
     <!-- Quarterly Progress Report: top bar with the report title, reporting
          period, the return action and Save Draft. -->
     <header v-if="!isTerminalStage" class="qpr-topbar">
-      <button type="button" class="qpr-back" aria-label="Back" @click="$router.back()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
+      <BackButton :fallback="reportsFallback" />
       <div class="qpr-topbar-text">
         <span class="qpr-eyebrow">
           MSUN Internally-Funded Project<template v-if="reportingPeriodLabel">
@@ -392,7 +390,7 @@
             All required reports are submitted. This project is now marked
             <strong>Completed</strong>.
           </p>
-          <button class="btn-submit" @click="goToReports">Back to My Reports</button>
+          <BackButton label="Back to My Reports" :to="reportsFallback" />
         </div>
 
         <div class="review-body">
@@ -420,7 +418,7 @@
         </div>
 
         <div class="review-footer">
-          <button class="btn-secondary" @click="reviewing = false">Back to Editing</button>
+          <BackButton label="Back to Editing" :navigate="false" @click="reviewing = false" />
           <div class="review-footer-right">
             <template v-if="isTerminalStage">
               <button class="btn-secondary" @click="printTerminalReview">DOWNLOAD</button>
@@ -455,6 +453,7 @@
 import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { resetScrollPosition } from '@/utils/scrollReset'
 import QuarterlyReportForm from '@/components/QuarterlyReportForm.vue'
 import ProjectWorkplanForm from '@/components/ProjectWorkplanForm.vue'
@@ -492,6 +491,9 @@ const TERMINAL_FORMAT_URL = '/templates/ORPS-Inhouse-Terminal-Report-Format-2026
 const route = useRoute()
 const router = useRouter()
 const proposalId = computed(() => route.params.proposalId)
+
+/** Direct-URL fallback: the report list of the proposal this form belongs to. */
+const reportsFallback = computed(() => `/quarterly-reports/${proposalId.value}`)
 const reportId = computed(() => route.params.reportId)
 const isEdit = computed(() => !!reportId.value)
 
@@ -1198,15 +1200,6 @@ onMounted(async () => {
   text-transform: uppercase;
   color: #1c2145;
 }
-/* Layout only; the action colours come from assets/actions.css. */
-.back-btn {
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
 .state {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -1558,28 +1551,8 @@ onMounted(async () => {
   padding: 2px 0 18px;
 }
 
-.qpr-back {
+.qpr-topbar > .back-button {
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: #40506b;
-  cursor: pointer;
-}
-
-.qpr-back:hover {
-  background: #e9eef6;
-}
-
-.qpr-back svg {
-  width: 19px;
-  height: 19px;
 }
 
 .qpr-topbar-text {

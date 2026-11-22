@@ -2,6 +2,7 @@ package com.rpis.backend.controller;
 
 import com.rpis.backend.dto.DeanAccountRequest;
 import com.rpis.backend.dto.DeanAssignmentResponse;
+import com.rpis.backend.dto.DeanReplacementCreateRequest;
 import com.rpis.backend.dto.DeanReplacementRequest;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
@@ -9,6 +10,8 @@ import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.DeanAccountService;
 import com.rpis.backend.service.UserService;
 import com.rpis.backend.service.UserSignatureService;
+import com.rpis.backend.util.EmailNormalizer;
+import com.rpis.backend.util.PersonNameFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +36,6 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
-    private final com.rpis.backend.service.InstitutionalCredentialsService credentialsService;
     private final TokenService tokenService;
     private final UserSignatureService signatureService;
     private final DeanAccountService deanAccountService;
@@ -43,6 +45,9 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers() {
 
         List<User> users = userService.getAllUsers();
+        // The Dean's appointment status comes from the same appointment table Dean Role
+        // Management reads, so the two screens report the same Active / Revoked state.
+        deanAccountService.attachDeanStatuses(users);
 
         // Hide passwords before returning response
         users.forEach(user -> user.setPassword(null));
@@ -51,14 +56,20 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        try {
+            User createdUser = userService.createUser(user);
 
-        User createdUser = userService.createUser(user);
+            // Hide password in response
+            createdUser.setPassword(null);
 
-        // Hide password in response
-        createdUser.setPassword(null);
-
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+            return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            // A rejected registration - a weak password, a non-institutional address or a
+            // duplicate account - is a client error, not a server failure. The message is
+            // the one the registration form shows; it never contains the password.
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/pending")
@@ -122,14 +133,54 @@ public class UserController {
                     .body("Invalid email, password, or role.");
         }
 
-        // Generate and set token
-        String token = tokenService.generateToken(user.getId(), user.getRole());
-        user.setToken(token);
+        // The token carries the role the user selected. An account that holds several roles
+        // gets a session for that one role, so switching roles on the sign-in page never
+        // carries the other role's authority into the session.
+        String selectedRole = EmailNormalizer.normalizeRole(loginRequest.getRole());
+        User session = sessionView(user, selectedRole);
+        String token = tokenService.generateToken(user.getId(), selectedRole);
+        session.setToken(token);
 
-        // Never serialize the stored hash.
-        user.setPassword(null);
+        return ResponseEntity.ok(session);
+    }
 
-        return ResponseEntity.ok(user);
+    /**
+     * The account as the browser should see this session: the same real account data, with
+     * {@code role} set to the role selected at sign-in. The stored account keeps its
+     * primary role, so a Proponent who is also a Dean signs in as whichever role was
+     * selected and still appears in both role-specific lists. The stored password hash is
+     * never copied to the response.
+     */
+    private static User sessionView(User account, String selectedRole) {
+        User view = new User();
+        view.setId(account.getId());
+        view.setName(account.getName());
+        view.setEmail(account.getEmail());
+        view.setRole(selectedRole);
+        view.setStatus(account.getStatus());
+        view.setDepartmentOffice(account.getDepartmentOffice());
+        view.setDateRegistered(account.getDateRegistered());
+        view.setEmailVerified(account.getEmailVerified());
+        view.setMustChangePassword(account.getMustChangePassword());
+        view.setContactNumber(account.getContactNumber());
+        view.setSpecialization(account.getSpecialization());
+        view.setDesignation(account.getDesignation());
+        view.setAssignedCollege(account.getAssignedCollege());
+        view.setNotifyProposals(account.getNotifyProposals() == null
+                ? new java.util.ArrayList<>()
+                : new java.util.ArrayList<>(account.getNotifyProposals()));
+        view.setNotifyDeadlines(account.getNotifyDeadlines() == null
+                ? new java.util.ArrayList<>()
+                : new java.util.ArrayList<>(account.getNotifyDeadlines()));
+        view.setNotifyPreferencesConfigured(account.getNotifyPreferencesConfigured());
+        view.setSignatureFileName(account.getSignatureFileName());
+        // The role assignments travel with the session so the client can show every role
+        // the account holds (the role selected for this token is the primary one here).
+        for (String role : account.getRoles()) {
+            view.assignRole(role);
+        }
+        view.setPassword(null);
+        return view;
     }
 
     @PostMapping("/google-login")
@@ -153,9 +204,10 @@ public class UserController {
                 }
 
                 java.util.Optional<User> existingUserOpt = userService.findByEmail(email);
+                String selectedRole = EmailNormalizer.normalizeRole(request.getRole());
                 if (existingUserOpt.isPresent()) {
                     User existingUser = existingUserOpt.get();
-                    if (!existingUser.getRole().equalsIgnoreCase(request.getRole())) {
+                    if (selectedRole == null || !existingUser.hasRole(selectedRole)) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                                 .body("Role mismatch for this user.");
                     }
@@ -167,13 +219,12 @@ public class UserController {
                                 .body("Your account registration was rejected.");
                     }
 
-                    existingUser.setPassword(null);
-                    
+                    User session = sessionView(existingUser, selectedRole);
                     // Generate and set token
-                    String token = tokenService.generateToken(existingUser.getId(), existingUser.getRole());
-                    existingUser.setToken(token);
-                    
-                    return ResponseEntity.ok(existingUser);
+                    String token = tokenService.generateToken(existingUser.getId(), selectedRole);
+                    session.setToken(token);
+
+                    return ResponseEntity.ok(session);
                 } else {
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found.");
                 }
@@ -258,6 +309,8 @@ public class UserController {
         if (user.getName() == null || user.getName().isBlank()) {
             throw new IllegalArgumentException("A full name is required.");
         }
+        // Format first: the email and temporary password below are derived from this name.
+        user.setName(PersonNameFormatter.format(user.getName()));
         // The Dean's own validation still runs on what the administrator sent, so a foreign
         // domain is refused with the reason the form always showed. The address the account is
         // created with is still the generated institutional one.
@@ -267,22 +320,21 @@ public class UserController {
             throw new IllegalArgumentException("Only MSU Naawan email addresses are allowed.");
         }
 
-        String email = credentialsService.availableEmailFor(user.getName());
-        boolean adjusted = !email.equalsIgnoreCase(
-                com.rpis.backend.service.InstitutionalCredentialsService.emailFor(user.getName()));
-        String temporaryPassword =
-                com.rpis.backend.service.InstitutionalCredentialsService.temporaryPasswordFor(user.getName());
-
         DeanAccountRequest request = new DeanAccountRequest();
         request.setName(user.getName());
-        request.setEmail(email);
-        request.setPassword(temporaryPassword);
         request.setDesignation(user.getDesignation());
         request.setAssignedCollege(user.getAssignedCollege());
-        User created = deanAccountService.save(request, currentUser.requireUserId(), currentUser.getRole());
-        User flagged = userService.requirePasswordChange(created);
+        // The service generates the address and temporary password, or reuses the account
+        // that already owns the person's institutional address instead of duplicating it.
+        DeanAccountService.ProvisionedDean provisioned =
+                deanAccountService.save(request, currentUser.requireUserId(), currentUser.getRole());
+        User flagged = provisioned.reused()
+                ? provisioned.user()
+                : userService.requirePasswordChange(provisioned.user());
         return new ResponseEntity<>(
-                com.rpis.backend.dto.CreatedAccountResponse.of(flagged, email, temporaryPassword, adjusted),
+                com.rpis.backend.dto.CreatedAccountResponse.of(flagged, provisioned.email(),
+                        provisioned.temporaryPassword(), provisioned.emailAdjusted(),
+                        provisioned.reused()),
                 HttpStatus.CREATED);
     }
 
@@ -330,7 +382,7 @@ public class UserController {
     public ResponseEntity<?> saveDean(@RequestBody DeanAccountRequest request) {
         try {
             User dean = deanAccountService.save(request, currentUser.requireUserId(),
-                    currentUser.getRole());
+                    currentUser.getRole()).user();
             dean.setPassword(null);
             return new ResponseEntity<>(dean, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
@@ -338,13 +390,26 @@ public class UserController {
         }
     }
 
-    /** Revokes the Dean role; the account keeps working as a Faculty Proponent. */
+    /**
+     * Revokes the Dean role; the account keeps working as a Faculty Proponent.
+     *
+     * <p>A Dean appointed to a college is refused here on purpose: the sitting Dean owns
+     * the college's pending endorsement requests, so the administrator must use Replace
+     * Dean instead. The reason is returned as a readable 400, which the Manage Dean modal
+     * shows when a direct request bypasses its disabled Revoke button.</p>
+     */
     @DeleteMapping("/deans/{id}")
-    public ResponseEntity<User> revokeDean(@PathVariable Long id) {
-        User user = deanAccountService.revoke(id, currentUser.requireUserId(),
-                currentUser.getRole());
-        user.setPassword(null);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<?> revokeDean(@PathVariable Long id) {
+        try {
+            // `User.password` is WRITE_ONLY, so the hash is never serialized. Do not null
+            // it after the service call: with an open EntityManager (and inside a
+            // surrounding transaction) that marks the managed row dirty and the flush then
+            // fails the not-null constraint, which is what made the Revoke action fail.
+            return ResponseEntity.ok(deanAccountService.revoke(id, currentUser.requireUserId(),
+                    currentUser.getRole()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -386,6 +451,41 @@ public class UserController {
     }
 
     /**
+     * Creates the incoming Dean of an existing ACTIVE appointment and completes the
+     * replacement in one transaction (Dean Role Management -> Manage Dean -> Replace Dean).
+     *
+     * <p>The account is provisioned exactly like any other administrator-created account:
+     * the institutional address and temporary password are generated here and returned once,
+     * and the payload never chooses either. The college comes from the appointment being
+     * replaced; a request that names a different college is refused by the service. Only an
+     * RPS administrator reaches this route (SecurityConfig and the service).
+     */
+    @PostMapping("/deans/replacement")
+    public ResponseEntity<?> createReplacementDean(
+            @RequestBody DeanReplacementCreateRequest request) {
+        try {
+            String name = request != null ? request.getName() : null;
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("A full name is required.");
+            }
+            request.setName(PersonNameFormatter.format(name));
+            DeanAccountService.ProvisionedDean provisioned =
+                    deanAccountService.createReplacementDean(request,
+                            currentUser.requireUserId(), currentUser.getRole());
+            User flagged = provisioned.reused()
+                    ? provisioned.user()
+                    : userService.requirePasswordChange(provisioned.user());
+            return new ResponseEntity<>(
+                    com.rpis.backend.dto.CreatedAccountResponse.of(flagged, provisioned.email(),
+                            provisioned.temporaryPassword(), provisioned.emailAdjusted(),
+                            provisioned.reused()),
+                    HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
      * Updates an account.
      *
      * <p>Data isolation: a caller who is not one of the privileged review/administrative
@@ -395,14 +495,19 @@ public class UserController {
      * administrative roles are privileged.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
         currentUser.requireSelfOrPrivileged(id);
         try {
             User updated = userService.updateUser(id, user);
             updated.setPassword(null); // Hide password for safety
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            if ("User not found".equals(e.getMessage())) {
+                return ResponseEntity.notFound().build();
+            }
+            // A password supplied here (the administrator's reset) is held to the shared
+            // policy; the reason is a client error the reset modal can display.
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

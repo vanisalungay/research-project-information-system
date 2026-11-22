@@ -60,7 +60,7 @@
                 <div class="subtext">{{ proposal.programTitle || 'N/A' }}</div>
               </td>
               <td>{{ proposal.projectLeader || proposal.proponent?.name || 'Unknown' }}</td>
-              <td class="date-cell">{{ proposal.createdAt?.substring(0, 10) || 'N/A' }}</td>
+              <td class="date-cell">{{ proposal.submittedAt?.substring(0, 10) || 'N/A' }}</td>
               <td>
                 <span :class="['status', statusTone(proposal.status)]">
                   {{ proposalStatusLabel(proposal.status) }}
@@ -138,6 +138,10 @@ export default {
         const res = await api.get('/api/proposals', {
           params: {
             statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
+            // Server-side ordering by the real submission event (not created_at or
+            // updated_at). The server also breaks equal timestamps by proposal id and
+            // puts records with no submission timestamp last.
+            sort: 'submittedAt',
           },
           paramsSerializer: { indexes: null },
         })
@@ -158,8 +162,10 @@ export default {
       } else if (proposal.status === 'RETURNED_TO_RPS') {
         this.$router.push({ name: 'RpsForwardRevision', params: { id: proposal.id } })
       } else if (proposal.status === 'REVISION' || proposal.status === 'RPS_RETURNED') {
-        // Returned proposals go to the review viewer
-        this.$router.push({ name: 'ReviewResultViewer', params: { id: proposal.id } })
+        // A proposal that is back with the proponent is read, not actioned, by RPS: it
+        // opens the same details page as the notification and every other listing, so
+        // the header and history are the canonical ones.
+        this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })
       } else {
         // All other statuses go to the details viewer
         this.$router.push({ name: 'ProposalDetails', params: { id: proposal.id } })

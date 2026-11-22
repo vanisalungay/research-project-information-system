@@ -78,7 +78,7 @@ export function formatAbsoluteTime(value, options = {}) {
     return new Intl.DateTimeFormat('en-US', {
       timeZone,
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
@@ -106,11 +106,11 @@ export function formatRelativeTime(value, now = new Date(), options = {}) {
   }
 
   const seconds = Math.floor(diff / 1000)
-  if (seconds < 45) return 'Just now'
-  if (seconds < 90) return '1 minute ago'
+  if (seconds < 60) return 'Just now'
 
+  // Minutes keep the compact wording the notification feed uses ("5 mins ago").
   const minutes = Math.floor(diff / MINUTE)
-  if (minutes < 60) return plural(minutes, 'minute')
+  if (minutes < 60) return minutes === 1 ? '1 min ago' : `${minutes} mins ago`
 
   const hours = Math.floor(diff / HOUR)
   if (hours < 24) return plural(hours, 'hour')
@@ -121,17 +121,9 @@ export function formatRelativeTime(value, now = new Date(), options = {}) {
     // clock/ZONE anomaly; report the elapsed hours rather than inventing a date.
     return plural(hours, 'hour')
   }
-  if (days === 1) return 'Yesterday'
   if (days < 7) return plural(days, 'day')
+  if (days === 7) return '1 week ago'
 
-  if (days < 28) {
-    const weeks = Math.floor(days / 7)
-    return plural(Math.max(1, weeks), 'week')
-  }
-  if (days < 365) {
-    const months = Math.floor(days / 30)
-    return plural(Math.max(1, months), 'month')
-  }
-  const years = Math.floor(days / 365)
-  return plural(Math.max(1, years), 'year')
+  // Older than one week: the exact saved date and time, never an approximate age.
+  return formatAbsoluteTime(date, { timeZone })
 }

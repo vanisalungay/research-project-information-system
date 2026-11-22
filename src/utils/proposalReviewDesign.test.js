@@ -119,10 +119,22 @@ test('a label and its value can never run together', () => {
   assert.match(CSS, /\.rv-row-value \{[^}]*text-align: left/, 'the value sits under its label')
 })
 
-test('the header keeps its actions on the far side and wraps instead of overlapping', () => {
-  assert.match(CSS, /\.rv-header-actions \{[^}]*margin-left: auto/, 'DOWNLOAD stays right')
-  assert.match(CSS, /\.rv-header \{[^}]*flex-wrap: wrap/, 'the header wraps on a narrow screen')
-  assert.match(CSS, /\.rv-heading-meta \{[^}]*flex-wrap: wrap/, 'the status pill never overlaps the id')
+test('the header keeps navigation, identification and actions in separate areas', () => {
+  // Three explicit areas, so the Back control, the title block and the actions cannot
+  // compete for the same row on a wide screen.
+  assert.match(
+    CSS,
+    /\.rv-header \{[^}]*grid-template-columns: auto minmax\(0, 1fr\) auto/,
+    'navigation | identification | actions',
+  )
+  assert.match(CSS, /\.rv-header-actions \{[^}]*justify-content: flex-end/, 'actions stay right')
+  assert.match(CSS, /\.rv-title \{[^}]*overflow-wrap: anywhere/, 'a long title wraps')
+  assert.match(CSS, /\.rv-page \{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+    'a wide section cannot stretch the page (and the header) past a phone viewport')
+  assert.match(CSS, /@media \(max-width: 900px\)[\s\S]*?\.rv-header-actions \{[^}]*grid-column: 1 \/ -1/,
+    'the actions move to their own row on a narrow screen')
+  assert.match(CSS, /@media \(max-width: 640px\)[\s\S]*?\.rv-header \{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+    'the header stacks on a phone')
 })
 
 test('the OVCRIGE review page downloads the proposal through the shared helper', () => {

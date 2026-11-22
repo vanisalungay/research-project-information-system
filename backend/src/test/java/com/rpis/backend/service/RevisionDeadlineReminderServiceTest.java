@@ -48,7 +48,7 @@ class RevisionDeadlineReminderServiceTest {
         proponent.setId(7L);
         proponent.setRole("PROPONENT");
         when(notificationService.notifyUsers(anyList(), anyString(), anyString(), anyString(),
-                any(), any(NotificationEvent.class)))
+                any(), any(NotificationEvent.class), anyString()))
                 .thenReturn(List.of(new Notification()));
     }
 
@@ -76,7 +76,7 @@ class RevisionDeadlineReminderServiceTest {
                 org.mockito.ArgumentMatchers.contains("2026-11-21"),
                 eq("Revision Deadline Reminder"),
                 eq(NotificationTypes.REVISION_DEADLINE_REMINDER),
-                eq(5L), event.capture());
+                eq(5L), event.capture(), eq("PROPONENT"));
         assertEquals("revision-deadline:5:2026-11-21", event.getValue().dedupeKey());
     }
 
@@ -89,7 +89,8 @@ class RevisionDeadlineReminderServiceTest {
 
         assertEquals(0, service.runSweep(NOW));
         verify(notificationService, times(0)).notifyUsers(
-                anyList(), anyString(), anyString(), anyString(), any(), any(NotificationEvent.class));
+                anyList(), anyString(), anyString(), anyString(), any(),
+                any(NotificationEvent.class), anyString());
     }
 
     @Test
@@ -99,19 +100,20 @@ class RevisionDeadlineReminderServiceTest {
         when(proposalRepository.findRevisionDeadlinesDue(any(), any(), anyList()))
                 .thenReturn(List.of(first, second));
         when(notificationService.notifyUsers(anyList(), anyString(), anyString(), anyString(),
-                eq(7L), any(NotificationEvent.class)))
+                eq(7L), any(NotificationEvent.class), anyString()))
                 .thenThrow(new RuntimeException("database hiccup"));
 
         assertEquals(1, service.runSweep(NOW), "the second row must still be processed");
         verify(notificationService).notifyUsers(anyList(), anyString(), anyString(), anyString(),
-                eq(8L), any(NotificationEvent.class));
+                eq(8L), any(NotificationEvent.class), eq("PROPONENT"));
     }
 
     @Test
     void aNullClockDoesNothing() {
         assertEquals(0, service.remindDue(null));
         verify(notificationService, times(0)).notifyUsers(
-                anyList(), anyString(), anyString(), anyString(), any(), any(NotificationEvent.class));
+                anyList(), anyString(), anyString(), anyString(), any(),
+                any(NotificationEvent.class), anyString());
     }
 
     @Test

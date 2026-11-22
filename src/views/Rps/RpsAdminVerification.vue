@@ -74,7 +74,7 @@
       <p class="actions-title">Account Actions</p>
 
       <div class="actions">
-        <button class="btn back btn-secondary" @click="$router.push('/rpsadmin-dash')">← Back</button>
+        <BackButton to="/rpsadmin-dash" />
         <button class="btn reject btn-reject" @click="openModal('reject')">Reject</button>
         <button class="btn approve btn-approve" @click="openModal('approve')">Approve</button>
       </div>
@@ -134,6 +134,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useDialog } from '@/composables/useDialog'
 import { statusTone } from '@/utils/statusTone.js'

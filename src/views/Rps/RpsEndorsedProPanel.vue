@@ -104,7 +104,8 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const res = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED')
+        // Newest endorsement event first (not the original submission or last edit).
+        const res = await api.get('/api/proposals?statusIn=ENDORSED&statusIn=UNDER_REVIEW&statusIn=REC_APPROVED&statusIn=FOR_OVCAF_APPROVAL&statusIn=FOR_OC_APPROVAL&statusIn=APPROVED&sort=endorsedAt')
         this.proposals = Array.isArray(res.data) ? res.data : []
       } catch (err) {
         console.error('Failed to fetch endorsed proposals:', err)

@@ -43,13 +43,15 @@
         </p>
       </div>
 
-      <p class="back">
-        Remember your password?
-        <router-link to="/proponent-login">Back to Sign In</router-link>
-      </p>
+      <p class="back">Remember your password?</p>
+      <BackButton label="Back to Sign In" to="/proponent-login" class="auth-back" />
     </div>
   </div>
 </template>
+
+<script setup>
+import BackButton from '@/components/BackButton.vue'
+</script>
 
 <style scoped>
 .login-wrapper {
@@ -160,13 +162,7 @@
   margin-top: 24px;
 }
 
-.back a {
-  color: #2452ff;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.back a:hover {
-  text-decoration: underline;
+.auth-back {
+  margin-top: 10px;
 }
 </style>

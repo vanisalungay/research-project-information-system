@@ -29,10 +29,10 @@ test('a fresh notification is "Just now"', () => {
   assert.equal(at('2026-11-18T12:00:30+08:00'), 'Just now')
 })
 
-test('minutes use singular and plural grammar', () => {
-  assert.equal(at('2026-11-18T11:59:00+08:00'), '1 minute ago')
-  assert.equal(at('2026-11-18T11:58:00+08:00'), '2 minutes ago')
-  assert.equal(at('2026-11-18T11:05:00+08:00'), '55 minutes ago')
+test('minutes use the compact notification wording', () => {
+  assert.equal(at('2026-11-18T11:59:00+08:00'), '1 min ago')
+  assert.equal(at('2026-11-18T11:58:00+08:00'), '2 mins ago')
+  assert.equal(at('2026-11-18T11:05:00+08:00'), '55 mins ago')
 })
 
 test('hours use singular and plural grammar', () => {
@@ -41,19 +41,22 @@ test('hours use singular and plural grammar', () => {
   assert.equal(at('2026-11-17T13:00:00+08:00'), '23 hours ago')
 })
 
-test('the previous calendar day is "Yesterday"', () => {
-  assert.equal(at('2026-11-17T10:00:00+08:00'), 'Yesterday')
-  assert.equal(at('2026-11-17T00:01:00+08:00'), 'Yesterday')
+test('the previous calendar day is "1 day ago"', () => {
+  assert.equal(at('2026-11-17T10:00:00+08:00'), '1 day ago')
+  assert.equal(at('2026-11-17T00:01:00+08:00'), '1 day ago')
 })
 
-test('older notifications count days, weeks, months and years', () => {
+test('days 2-6, then exactly one week, then the actual date', () => {
   assert.equal(at('2026-11-16T10:00:00+08:00'), '2 days ago')
+  assert.equal(at('2026-11-15T10:00:00+08:00'), '3 days ago')
   assert.equal(at('2026-11-12T10:00:00+08:00'), '6 days ago')
-  assert.equal(at('2026-11-08T10:00:00+08:00'), '1 week ago')
-  assert.equal(at('2026-11-01T10:00:00+08:00'), '2 weeks ago')
-  assert.equal(at('2026-10-01T10:00:00+08:00'), '1 month ago')
-  assert.equal(at('2026-08-01T10:00:00+08:00'), '3 months ago')
-  assert.equal(at('2024-11-18T10:00:00+08:00'), '2 years ago')
+  assert.equal(at('2026-11-11T10:00:00+08:00'), '1 week ago')
+  // More than seven days: the saved date and time, not an approximate age.
+  assert.equal(at('2026-11-10T10:00:00+08:00'), 'November 10, 2026 at 10:00 AM')
+  assert.equal(at('2026-11-01T10:00:00+08:00'), 'November 1, 2026 at 10:00 AM')
+  assert.equal(at('2026-10-01T10:00:00+08:00'), 'October 1, 2026 at 10:00 AM')
+  assert.equal(at('2026-08-01T10:00:00+08:00'), 'August 1, 2026 at 10:00 AM')
+  assert.equal(at('2024-11-18T10:00:00+08:00'), 'November 18, 2024 at 10:00 AM')
 })
 
 test('the day boundary is compared in the display zone, not the browser zone', () => {
@@ -66,8 +69,8 @@ test('the day boundary is compared in the display zone, not the browser zone', (
   )
   assert.equal(
     formatRelativeTime('2026-11-17T00:00:00+08:00', justAfterMidnight),
-    'Yesterday',
-    'more than a day and the previous calendar day is Yesterday',
+    '1 day ago',
+    'more than a day and the previous calendar day is one day ago',
   )
 })
 
@@ -87,7 +90,7 @@ test('historical wall-clock values keep their intended +08 date', () => {
   // 2026-11-18), serialized with the configured offset.
   assert.equal(
     formatRelativeTime('2026-07-05T08:15:00+08:00', NOW),
-    '4 months ago',
+    'July 5, 2026 at 8:15 AM',
   )
   assert.equal(
     formatRelativeTime('2026-11-17T22:08:00+08:00', NOW),
@@ -97,6 +100,6 @@ test('historical wall-clock values keep their intended +08 date', () => {
 
 test('the absolute hover time is a readable date and time', () => {
   const label = formatAbsoluteTime('2026-11-18T14:07:00+08:00')
-  assert.match(label, /Nov 18, 2026/)
+  assert.match(label, /November 18, 2026/)
   assert.match(label, /2:07\s?PM/i)
 })

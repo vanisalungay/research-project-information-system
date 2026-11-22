@@ -228,6 +228,13 @@ test('an address without a country is a Philippine one, and Region is the first 
     assert.equal(cascade.philippines, false)
     assert.equal(cascade.manual, true)
     assert.equal(cascade.regionEnabled, false)
+
+    // Switching the country back to the Philippines must reload the options that
+    // were dropped for the foreign address (the request markers are reset too).
+    details.value = emptyDetails()
+    await waitFor(() => cascade.regionOptions.length > 0)
+    assert.equal(cascade.regionEnabled, true)
+    assert.equal(cascade.regionOptions.length, 17)
   } finally {
     await server.close()
     restoreFetch()

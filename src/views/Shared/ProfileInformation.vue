@@ -8,7 +8,13 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" v-model="form.fullName" />
+          <input
+            type="text"
+            v-model="form.fullName"
+            placeholder="Dela Cruz, Juan, M., Jr."
+            @blur="form.fullName = formatPersonName(form.fullName)"
+          />
+          <PersonNameHint />
         </div>
 
         <div class="form-group">
@@ -93,7 +99,9 @@
 <script setup>
 import { reactive } from 'vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
+import { formatPersonName } from '@/utils/personName'
 
 const { dialogState, showAlert, showConfirm } = useDialog()
 
@@ -150,6 +158,14 @@ const cancelChanges = () => {
   margin-top: 20px;
   padding: 40px;
   border-radius: 4px;
+  color: #fff;
+}
+
+/* The shared name-format hint inherits this card's light text; the default opacity is
+   too faint on the dark background. */
+.form-card .person-name-hint {
+  color: #c9c7e2;
+  opacity: 1;
 }
 
 .form-grid {

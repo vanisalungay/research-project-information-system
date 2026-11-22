@@ -129,7 +129,12 @@
           <input type="email" v-model="email" placeholder="you@msunaawan.edu.ph" required />
 
           <label>Password</label>
-          <input type="password" v-model="password" placeholder="Enter your password" required />
+          <PasswordInput
+            v-model="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
 
           <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
@@ -146,6 +151,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { UserRole, useUserDataStore } from '@/stores/userData'
 import { useNotificationStore } from '@/stores/notifications'
 import { unreadBadgeLabel } from '@/utils/notifications'

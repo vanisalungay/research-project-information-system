@@ -81,20 +81,53 @@ class ProposalAddressContactValidationTest {
     }
 
     @Test
-    void anAddressNeedsAProvinceOrADistrict() {
+    void anAddressNeedsItsApplicableAreaLevel() {
         ProposalRequest missingBoth = request();
         missingBoth.setAddressProvince("");
         missingBoth.setAddressDistrict("");
         assertThrows(IllegalArgumentException.class,
                 () -> ProposalService.validateAddressAndContact(missingBoth));
 
-        // A province-less region (NCR) is identified by its district instead.
+        // A province-less region (NCR) is identified by its city. Section 01 no
+        // longer asks for a District, so a request without one must be accepted.
         ProposalRequest ncr = request();
         ncr.setAddressRegion("NCR");
         ncr.setAddressProvince("");
-        ncr.setAddressDistrict("First District");
+        ncr.setAddressDistrict("");
         ncr.setAddressMunicipality("City of Manila");
         assertDoesNotThrow(() -> ProposalService.validateAddressAndContact(ncr));
+
+        // A client that still sends the district keeps working as before.
+        ProposalRequest ncrWithDistrict = request();
+        ncrWithDistrict.setAddressRegion("NCR");
+        ncrWithDistrict.setAddressProvince("");
+        ncrWithDistrict.setAddressDistrict("First District");
+        ncrWithDistrict.setAddressMunicipality("City of Manila");
+        assertDoesNotThrow(() -> ProposalService.validateAddressAndContact(ncrWithDistrict));
+    }
+
+    @Test
+    void aSiteCountryMustBeThePhilippines() {
+        ProposalRequest philippines = request();
+        ProposalRequest.SiteDTO ph = new ProposalRequest.SiteDTO();
+        ph.setCountry("Philippines");
+        philippines.setSites(java.util.List.of(ph));
+        assertDoesNotThrow(() -> ProposalService.validateAddressAndContact(philippines));
+
+        // A missing country means the Philippines, like the Address section.
+        ProposalRequest blank = request();
+        ProposalRequest.SiteDTO noCountry = new ProposalRequest.SiteDTO();
+        noCountry.setCountry("");
+        blank.setSites(java.util.List.of(noCountry));
+        assertDoesNotThrow(() -> ProposalService.validateAddressAndContact(blank));
+
+        ProposalRequest foreign = request();
+        ProposalRequest.SiteDTO japan = new ProposalRequest.SiteDTO();
+        japan.setCountry("Japan");
+        foreign.setSites(java.util.List.of(japan));
+        assertThrows(IllegalArgumentException.class,
+                () -> ProposalService.validateAddressAndContact(foreign),
+                "a foreign site must be rejected by the API");
     }
 
     @Test

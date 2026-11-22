@@ -304,19 +304,25 @@ export function formatAddressContact(details, contact) {
  * ({@link #isPhilippineAddress}) - only a stored foreign country (a record saved
  * while the country control still existed) falls back to the manual rules.
  *
- * `hasProvinces` / `hasDistricts` come from the loaded hierarchy: a region
- * without provinces (NCR) needs no province, and a district is only required
- * where the PSGC actually defines districts. `manual` marks the states in which
+ * `hasProvinces` comes from the loaded hierarchy: a region without provinces
+ * (NCR) needs no province. The section no longer has a District control, so a
+ * district is never required here - the municipality / city is chosen from the
+ * region when the region has no provinces. `manual` marks the states in which
  * the dropdowns cannot be used (a foreign address, or the bundled data being
  * unavailable) - then the parts are typed in and the province is required again.
  * `independentCity` marks a selected municipality / city that belongs to no
  * province and no district (City of Isabela, City of Cotabato), so neither level
  * applies to that address.
+ *
+ * `hasDistricts` is accepted for callers that still pass it but is ignored: the
+ * District field was removed from section 01.
  */
 export function validateAddress(
   details = {},
   {
     hasProvinces = true,
+    // Kept in the signature for older callers; no longer required by section 01.
+    // eslint-disable-next-line no-unused-vars
     hasDistricts = false,
     manual = false,
     manualBarangay = false,
@@ -333,7 +339,6 @@ export function validateAddress(
     return ''
   }
   if (hasProvinces && !independentCity && !details.province) return 'Please select a province.'
-  if (hasDistricts && !independentCity && !details.district) return 'Please select a district.'
   if (!details.municipality) return 'Please select a municipality / city.'
   if (!details.barangay)
     return manualBarangay ? 'Please enter the barangay.' : 'Please select a barangay.'

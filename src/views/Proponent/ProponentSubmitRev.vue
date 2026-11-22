@@ -3,12 +3,7 @@
     <!-- HEADER -->
     <header class="page-header">
       <div class="header-left">
-        <button class="back-btn" @click="goBack">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-          Back
-        </button>
+        <BackButton fallback="/revisions" />
         <div class="header-info">
           <h1>Submit Revision</h1>
           <p class="subtitle">{{ documentId || '—' }}</p>
@@ -117,7 +112,12 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label>Project Leader</label>
-                    <input v-model="proposal.project_leader" placeholder="Full name of project leader" />
+                    <input
+                      v-model="proposal.project_leader"
+                      placeholder="Dela Cruz, Juan, M., Jr."
+                      @blur="proposal.project_leader = formatPersonName(proposal.project_leader)"
+                    />
+                    <PersonNameHint />
                   <FieldRemarkControl :proposal-id="proposalId" :section-key="'01'" :field-key="'projectLeader'" field-label="Project Leader" :remarks="remarksForField('projectLeader')" readonly />
                   </div>
                   <div class="form-group">
@@ -917,11 +917,13 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SectionRemarksNotice from '@/components/SectionRemarksNotice.vue'
 import FieldRemarkControl from '@/components/FieldRemarkControl.vue'
 import CooperatingAgenciesChecklist from '@/components/CooperatingAgenciesChecklist.vue'
+import PersonNameHint from '@/components/PersonNameHint.vue'
 import RiskManagementTable from '@/components/RiskManagementTable.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useUserDataStore } from '@/stores/userData'
@@ -929,6 +931,7 @@ import { SDG_OPTIONS, sdgToList } from '@/utils/sdg'
 import { PROPOSAL_SECTIONS, activeRemarksBySection, previousRounds, sectionLabel } from '@/utils/proposalSections'
 import { buildFieldRemarkIndex } from '@/utils/proposalFields'
 import { joinAgencyNames, normalizeSelectedIds } from '@/utils/cooperatingAgencies'
+import { formatPersonName } from '@/utils/personName'
 // Section 21: the structured Risk Management Plan (one row per identified risk with its
 // likelihood, impact and mitigation measure) and the rule that keeps an incomplete row out
 // of a resubmission. A proposal saved before the table existed keeps its single-text plan.
@@ -1424,7 +1427,7 @@ const submitRevision = async () => {
     proponentId,
     programTitle: data.program_title || '',
     projectTitle: data.project_title || '',
-    projectLeader: data.project_leader || '',
+    projectLeader: formatPersonName(data.project_leader || ''),
     projectLeaderSex: data.project_leader_sex || '',
     duration: data.duration || '',
     startDate: data.start_date || '',
@@ -1548,25 +1551,6 @@ onMounted(() => {
   gap: 16px;
 }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
 
 .header-info h1 {
   font-size: 24px;

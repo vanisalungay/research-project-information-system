@@ -14,11 +14,16 @@ import java.util.Locale;
  * <p>The administrator types only the person's name: the address and the temporary password
  * are derived here, on the server, so the browser can never choose them. The naming rule is
  *
- * <pre>firstname + middlename + "." + lastname + "@msunawaan.edu.ph"</pre>
+ * <pre>firstname + middlename + "." + lastname + "@msunaawan.edu.ph"</pre>
  *
  * with the given names run together and everything lower-cased and stripped of accents and
  * punctuation - {@code Xarzha Maurine Bagares} becomes
- * {@code xarzhamaurine.bagares@msunawaan.edu.ph}.
+ * {@code xarzhamaurine.bagares@msunaawan.edu.ph}.
+ *
+ * <p>The name may be sent in the standard RPIS order ({@code Dela Cruz, Juan, M., Jr.}) or
+ * as the Dean form's plain first-name-last-name order ({@code Juan Dela Cruz}). Both are
+ * understood and resolve to the same address; an existing account's address is never
+ * re-derived.</p>
  *
  * <p>The temporary password follows the format {@code [first initial][surname]123}:
  * {@code Xarzha Maurine Bagares} becomes {@code xbagares123}. It is returned to the
@@ -33,15 +38,13 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class InstitutionalCredentialsService {
 
-    /** The institution's domain. Every generated address ends with it. */
-    public static final String INSTITUTIONAL_DOMAIN = "@msunawaan.edu.ph";
-
     /**
-     * The misspelling this codebase used before the domain was corrected. It is still
-     * accepted when an address is validated, so the accounts that already exist (and the
-     * seeded demonstration accounts) keep working; nothing new is ever created with it.
+     * The institution's domain. Every generated address ends with it, and only this domain
+     * is accepted for an account. The previous spelling contained an extra letter; the
+     * migration {@code migration-fix-institutional-email-domain.sql} corrects the accounts
+     * that were created with it.
      */
-    public static final String LEGACY_DOMAIN = "@msunaawan.edu.ph";
+    public static final String INSTITUTIONAL_DOMAIN = "@msunaawan.edu.ph";
 
     /** How many numbered variants the uniqueness loop will try before giving up. */
     private static final int MAX_SUFFIX = 9999;
@@ -57,15 +60,23 @@ public class InstitutionalCredentialsService {
             "de", "del", "dela", "delas", "dele", "la", "las", "los", "van", "von",
             "der", "den", "san", "santa", "sta", "mac");
 
+    /** Jr, Sr, II, III ... are suffixes, not middle names, when a name is split on commas. */
+    private static final java.util.Set<String> SUFFIXES = java.util.Set.of(
+            "jr", "sr", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x");
+
+    /** A name split into the given names and the surname. */
+    private record NameParts(java.util.List<String> given, java.util.List<String> surname) {
+    }
+
     private final UserRepository userRepository;
 
-    /** True when the address belongs to the institution (current or legacy spelling). */
+    /** True when the address belongs to the institution's one correct domain. */
     public static boolean isInstitutionalAddress(String email) {
         if (email == null) {
             return false;
         }
         String value = email.trim().toLowerCase(Locale.ROOT);
-        return value.endsWith(INSTITUTIONAL_DOMAIN) || value.endsWith(LEGACY_DOMAIN);
+        return value.endsWith(INSTITUTIONAL_DOMAIN);
     }
 
     /** Lower case, no diacritics, nothing but a-z and 0-9 left. */
@@ -80,34 +91,88 @@ public class InstitutionalCredentialsService {
     }
 
     /**
-     * The local part of the address: the given names run together, a dot, then the surname.
-     * One name is used as it is; two or more treat the last word as the surname. Returns ""
-     * when the name carries nothing usable.
+     * Splits a name into given names and surname, accepting both the standard
+     * {@code Dela Cruz, Juan, M., Jr.} order and the legacy {@code Juan Dela Cruz} order
+     * still stored on existing accounts.
+     *
+     * <p>With commas the first component is the surname, the second the given names and
+     * the third the middle initial - or the suffix when the middle initial was left out.
+     * Anything after the middle initial is a suffix and never part of the address. Without
+     * a comma the name is read as "First Name Last Name", with the surname being the last
+     * word plus any particles directly before it - the same rule the temporary password
+     * uses, so {@code Juan Dela Cruz} and {@code Dela Cruz, Juan} derive the same address.</p>
+     */
+    static NameParts nameParts(String fullName) {
+        String text = fullName == null ? "" : fullName.replaceAll("\\s+", " ").trim();
+        if (text.isEmpty()) {
+            return new NameParts(java.util.List.of(), java.util.List.of());
+        }
+
+        if (text.contains(",")) {
+            String[] segments = text.split(",");
+            java.util.List<String> surname = normalizedWords(segments[0]);
+            java.util.List<String> given = segments.length > 1
+                    ? normalizedWords(segments[1])
+                    : new java.util.ArrayList<>();
+            if (segments.length > 2) {
+                String middle = segments[2].trim();
+                if (!middle.isEmpty() && !SUFFIXES.contains(normalizePart(middle))) {
+                    given.addAll(normalizedWords(middle));
+                }
+            }
+            return new NameParts(given, surname);
+        }
+
+        java.util.List<String> parts = normalizedWords(text);
+        if (parts.size() <= 1) {
+            return new NameParts(java.util.List.of(), parts);
+        }
+        // "First Name Last Name": the surname is the last word plus the particles directly
+        // before it, so "Dela Cruz" stays one surname. This mirrors temporaryPasswordFor and
+        // keeps the address identical to the comma order for the same person.
+        int surnameFrom = parts.size() - 1;
+        while (surnameFrom > 0 && SURNAME_PARTICLES.contains(parts.get(surnameFrom - 1))) {
+            surnameFrom--;
+        }
+        return new NameParts(parts.subList(0, surnameFrom),
+                parts.subList(surnameFrom, parts.size()));
+    }
+
+    /**
+     * The local part of the address: the given names run together, a dot, then the whole
+     * surname. The standard "Last, First Middle, Suffix" order and the Dean form's
+     * "First Name Last Name" order both resolve to the same given names and surname.
+     * Returns "" when the name carries nothing usable.
      */
     public static String localPart(String fullName) {
-        java.util.List<String> parts = normalizedParts(fullName);
-        if (parts.isEmpty()) {
+        NameParts parts = nameParts(fullName);
+        String given = String.join("", parts.given());
+        String surname = String.join("", parts.surname());
+        if (given.isEmpty() && surname.isEmpty()) {
             return "";
         }
-        if (parts.size() == 1) {
-            return parts.get(0);
+        if (given.isEmpty()) {
+            return surname;
         }
-        String surname = parts.get(parts.size() - 1);
-        StringBuilder given = new StringBuilder();
-        for (int i = 0; i < parts.size() - 1; i++) {
-            given.append(parts.get(i));
+        if (surname.isEmpty()) {
+            return given;
         }
         return given + "." + surname;
     }
 
     /** The words of a name, lower case and stripped of accents and punctuation. */
     private static java.util.List<String> normalizedParts(String fullName) {
+        return normalizedWords(fullName);
+    }
+
+    /** The words of one name component, normalized, in order. */
+    private static java.util.List<String> normalizedWords(String value) {
         java.util.List<String> parts = new java.util.ArrayList<>();
-        if (fullName == null) {
+        if (value == null) {
             return parts;
         }
-        for (String value : fullName.trim().split("\\s+")) {
-            String normalized = normalizePart(value);
+        for (String word : value.trim().split("\\s+")) {
+            String normalized = normalizePart(word);
             if (!normalized.isEmpty()) {
                 parts.add(normalized);
             }
@@ -126,11 +191,33 @@ public class InstitutionalCredentialsService {
      * as a BCrypt hash.
      */
     public static String temporaryPasswordFor(String fullName) {
-        java.util.List<String> parts = normalizedParts(fullName);
-        if (parts.isEmpty()) {
+        String text = fullName == null ? "" : fullName.replaceAll("\\s+", " ").trim();
+        if (text.isEmpty()) {
             throw new IllegalArgumentException(
                     "A full name is required to generate a temporary password.");
         }
+
+        // Standard "Dela Cruz, Juan, M., Jr." order: the surname is the first component.
+        if (text.contains(",")) {
+            NameParts parts = nameParts(text);
+            if (parts.surname().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "A full name is required to generate a temporary password.");
+            }
+            String firstGiven = parts.given().isEmpty()
+                    ? parts.surname().get(0)
+                    : parts.given().get(0);
+            StringBuilder password = new StringBuilder();
+            password.append(firstGiven.charAt(0));
+            for (String word : parts.surname()) {
+                password.append(word);
+            }
+            password.append(TEMPORARY_PASSWORD_SUFFIX);
+            return password.toString();
+        }
+
+        // Legacy "Juan Dela Cruz" order: the surname is the last word plus its particles.
+        java.util.List<String> parts = normalizedParts(text);
         int surnameFrom = parts.size() - 1;
         while (surnameFrom > 0 && SURNAME_PARTICLES.contains(parts.get(surnameFrom - 1))) {
             surnameFrom--;
@@ -164,7 +251,9 @@ public class InstitutionalCredentialsService {
         }
         for (int suffix = 1; suffix <= MAX_SUFFIX; suffix++) {
             String candidate = (suffix == 1 ? local : local + suffix) + INSTITUTIONAL_DOMAIN;
-            if (userRepository.findByEmail(candidate).isEmpty()) {
+            // Normalized lookup: an account stored with an older capitalization still owns
+            // its address, so a new account can never be issued a case-only variant of it.
+            if (userRepository.findByNormalizedEmail(candidate).isEmpty()) {
                 return candidate;
             }
         }

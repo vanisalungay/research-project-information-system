@@ -24,6 +24,8 @@
  * Run the rules with: npm test
  */
 
+import { PERSON_NAME_EXAMPLE, PERSON_NAME_FORMAT } from './personName.js'
+
 /** One-page abstract limit of the official format. Mirrors the backend rule. */
 export const MAX_ABSTRACT_WORDS = 350
 
@@ -71,7 +73,9 @@ export const TERMINAL_COVER_INPUT_FIELDS = [
     label: 'Project Team (printed as the authors)',
     required: true,
     multiline: true,
-    hint: 'One author per line, e.g. Juan Dela Cruz. Enter only the members who should appear as authors.',
+    // The same person-name format every other name field uses, one name per line.
+    personName: true,
+    hint: `One name per line as ${PERSON_NAME_FORMAT}. Example: ${PERSON_NAME_EXAMPLE}`,
   },
 ]
 

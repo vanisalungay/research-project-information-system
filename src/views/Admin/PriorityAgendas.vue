@@ -53,6 +53,14 @@
             <button v-if="!set.active" class="activate-btn btn-approve" @click="activateSet(set)">Activate</button>
             <button class="edit-btn btn-edit" @click="openEditFramework(set)">Edit</button>
             <button class="edit-btn btn-edit" @click="openCreateItem(set)">+ Add Agenda</button>
+            <!-- Program-level action: deactivates the whole framework, never its agendas. -->
+            <button
+              v-if="set.active"
+              class="deactivate-btn btn-danger"
+              @click="deactivateSet(set)"
+            >
+              Deactivate Program
+            </button>
           </div>
         </div>
 
@@ -97,56 +105,145 @@
     </template>
 
     <!-- ================= Create / Edit framework ================= -->
-    <div v-if="showFrameworkModal" class="modal-overlay" @click.self="closeModals">
-      <div class="modal-box">
-        <header class="modal-header">
-          <div class="header-text">
-            <h3 class="header-title">
-              {{ editingFrameworkId ? 'Edit Framework' : 'Create Framework' }}
+    <div
+      v-if="showFrameworkModal"
+      class="modal-overlay"
+      @click.self="closeModals"
+      @keydown.esc="closeModals"
+    >
+      <div
+        class="fw-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="framework-modal-title"
+      >
+        <header class="fw-header">
+          <span class="fw-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 2 9 5-9 5-9-5 9-5z" />
+              <path d="m3 12 9 5 9-5" />
+              <path d="m3 17 9 5 9-5" />
+            </svg>
+          </span>
+          <div class="fw-heading">
+            <h3 id="framework-modal-title">
+              {{ editingFrameworkId ? 'Edit framework' : 'Create framework' }}
             </h3>
-            <p class="header-subtitle">
-              The framework name and coverage period are what the New Proposal form displays
-              beside "Priority Agenda".
-            </p>
+            <p>Set the name and years that appear next to "Priority Agenda" on new proposals.</p>
           </div>
-          <button type="button" class="header-close" @click="closeModals" :disabled="saving" aria-label="Close">
-            ×
+          <button
+            type="button"
+            class="fw-close"
+            :disabled="saving"
+            aria-label="Close create framework"
+            @click="closeModals"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </header>
 
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Framework / program name</label>
-            <input v-model="frameworkForm.frameworkName" type="text" class="form-input"
-              placeholder="e.g., MSUN RIIDE" maxlength="150" />
+        <div class="fw-body">
+          <div class="fw-field">
+            <label for="frameworkName">Framework / program name</label>
+            <input
+              id="frameworkName"
+              ref="frameworkNameInput"
+              v-model="frameworkForm.frameworkName"
+              type="text"
+              class="fw-input"
+              placeholder="e.g., MSUN RIIE"
+              maxlength="150"
+              autocomplete="off"
+            />
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Coverage start year</label>
-              <input v-model.number="frameworkForm.coverageStartYear" type="number" class="form-input"
-                min="1900" max="3000" placeholder="2025" />
-            </div>
-            <div class="form-group">
-              <label>Coverage end year</label>
-              <input v-model.number="frameworkForm.coverageEndYear" type="number" class="form-input"
-                min="1900" max="3000" placeholder="2028" />
-            </div>
-          </div>
-          <label class="checkbox-row">
-            <input type="checkbox" v-model="frameworkForm.active" />
-            <span>Activate this framework for new submissions (deactivates the current one)</span>
-          </label>
 
-          <p v-if="formError" class="error-text form-error">{{ formError }}</p>
+          <div class="fw-row">
+            <div class="fw-field">
+              <label for="coverageStartYear">Start year</label>
+              <input
+                id="coverageStartYear"
+                v-model.number="frameworkForm.coverageStartYear"
+                type="number"
+                class="fw-input"
+                min="1900"
+                max="3000"
+                placeholder="2026"
+              />
+            </div>
+            <div class="fw-field">
+              <label for="coverageEndYear">End year</label>
+              <input
+                id="coverageEndYear"
+                v-model.number="frameworkForm.coverageEndYear"
+                type="number"
+                class="fw-input"
+                min="1900"
+                max="3000"
+                placeholder="2029"
+              />
+            </div>
+          </div>
+          <p class="fw-hint">Enter a four-digit start and end year.</p>
+          <p v-if="yearRangeError" class="fw-hint fw-hint-error" role="alert">
+            {{ yearRangeError }}
+          </p>
+
+          <!-- What the Proponent sees on the New Proposal form, from the live form state. -->
+          <section class="fw-preview" aria-label="Preview on the new proposal form">
+            <span class="fw-preview-label">Shown on the new proposal form</span>
+            <div class="fw-preview-row">
+              <span class="fw-preview-agenda">Priority Agenda</span>
+              <span class="fw-preview-badge">{{ frameworkPreview }}</span>
+            </div>
+          </section>
+
+          <!-- The existing active-framework flag, presented as a switch. -->
+          <section class="fw-toggle-card">
+            <div class="fw-toggle-text">
+              <span class="fw-toggle-title">Make this the active framework</span>
+              <span class="fw-toggle-description">
+                New submissions will use it, and the current active framework will be deactivated.
+              </span>
+            </div>
+            <label class="fw-switch">
+              <input
+                v-model="frameworkForm.active"
+                type="checkbox"
+                aria-label="Make this the active framework"
+              />
+              <span class="fw-switch-track" aria-hidden="true">
+                <span class="fw-switch-thumb"></span>
+              </span>
+            </label>
+          </section>
+
+          <p v-if="formError" class="fw-error" role="alert">{{ formError }}</p>
         </div>
 
-        <footer class="modal-footer">
-          <div class="modal-actions">
-            <button class="cancel-btn btn-secondary" @click="closeModals" :disabled="saving">Cancel</button>
-            <button class="confirm-btn btn-primary" @click="saveFramework" :disabled="saving">
-              {{ saving ? 'Saving...' : (editingFrameworkId ? 'Save Changes' : 'Create Framework') }}
-            </button>
-          </div>
+        <footer class="fw-footer">
+          <button type="button" class="fw-cancel" :disabled="saving" @click="closeModals">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="fw-create"
+            :disabled="saving || !canSaveFramework"
+            @click="saveFramework"
+          >
+            <span>
+              {{ saving ? 'Saving...' : (editingFrameworkId ? 'Save changes' : 'Create framework') }}
+            </span>
+            <svg v-if="!saving" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="12" x2="19" y2="12" />
+              <polyline points="13 6 19 12 13 18" />
+            </svg>
+          </button>
         </footer>
       </div>
     </div>
@@ -236,7 +333,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 
 import api from '@/utils/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -270,6 +367,8 @@ const error = ref(null)
 const showFrameworkModal = ref(false)
 const editingFrameworkId = ref(null)
 const frameworkForm = ref(emptyFrameworkForm())
+/** The name input, focused when the framework modal opens. */
+const frameworkNameInput = ref(null)
 
 const showItemModal = ref(false)
 const editingItemId = ref(null)
@@ -305,6 +404,45 @@ function emptyItemForm(set) {
 }
 
 const activeSet = computed(() => sets.value.find((set) => set.active) || null)
+
+/** A coverage year is one the form accepts: a four-digit year within its min/max range. */
+function isValidYear(value) {
+  const year = Number(value)
+  return Number.isInteger(year) && year >= 1900 && year <= 3000
+}
+
+/** Shown under the year inputs when an entered range is impossible. */
+const yearRangeError = computed(() => {
+  const start = frameworkForm.value.coverageStartYear
+  const end = frameworkForm.value.coverageEndYear
+  if (start === '' || start === null || start === undefined) return ''
+  if (end === '' || end === null || end === undefined) return ''
+  if (!isValidYear(start) || !isValidYear(end)) return ''
+  return Number(end) < Number(start)
+    ? 'End year must not be earlier than the start year.'
+    : ''
+})
+
+/** The live preview: the real form values, or a placeholder before they are typed. */
+const frameworkPreview = computed(() => {
+  const name = (frameworkForm.value.frameworkName || '').trim() || 'Your framework name'
+  const start = frameworkForm.value.coverageStartYear
+  const end = frameworkForm.value.coverageEndYear
+  // An impossible range is never previewed as if it were valid; the red hint below the
+  // year fields explains why the years are missing from the badge.
+  const years = isValidYear(start) && isValidYear(end) && Number(end) >= Number(start)
+    ? ` (${Number(start)}–${Number(end)})`
+    : ''
+  return name + years
+})
+
+/** The footer button is enabled only for a valid name and a valid year range. */
+const canSaveFramework = computed(() => {
+  const name = (frameworkForm.value.frameworkName || '').trim()
+  const start = frameworkForm.value.coverageStartYear
+  const end = frameworkForm.value.coverageEndYear
+  return Boolean(name) && isValidYear(start) && isValidYear(end) && Number(end) >= Number(start)
+})
 
 /** How many agendas of a framework are actually offered to new proposals. */
 function activeItemCount(set) {
@@ -351,6 +489,7 @@ function openCreateFramework() {
   frameworkForm.value = emptyFrameworkForm()
   formError.value = null
   showFrameworkModal.value = true
+  nextTick(() => frameworkNameInput.value?.focus())
 }
 
 function openEditFramework(set) {
@@ -363,6 +502,7 @@ function openEditFramework(set) {
   }
   formError.value = null
   showFrameworkModal.value = true
+  nextTick(() => frameworkNameInput.value?.focus())
 }
 
 function openCreateItem(set) {
@@ -394,15 +534,19 @@ async function saveFramework() {
   const start = frameworkForm.value.coverageStartYear
   const end = frameworkForm.value.coverageEndYear
   if (!name) {
-    formError.value = 'Framework name is required.'
+    formError.value = 'Framework / program name is required.'
     return
   }
-  if (start === null || start === undefined || start === '' || end === null || end === undefined || end === '') {
-    formError.value = 'Coverage start year and end year are required.'
+  if (!isValidYear(start)) {
+    formError.value = 'Enter a four-digit start year.'
+    return
+  }
+  if (!isValidYear(end)) {
+    formError.value = 'Enter a four-digit end year.'
     return
   }
   if (Number(end) < Number(start)) {
-    formError.value = 'Coverage end year must not be earlier than the start year.'
+    formError.value = 'End year must not be earlier than the start year.'
     return
   }
 
@@ -497,6 +641,42 @@ async function activateSet(set) {
     await showAlert(extractErrorMessage(err, 'Failed to activate the framework.'), {
       type: 'error',
       title: 'Activation Failed',
+    })
+  }
+}
+
+/**
+ * Deactivates the whole framework / program (not one agenda). The confirmation names the
+ * program; the backend keeps the set, its years and every agenda, and only clears the
+ * program-level active flag.
+ */
+async function deactivateSet(set) {
+  const label = `${set.frameworkName} ${set.coverageStartYear}–${set.coverageEndYear}`
+  const confirmed = await showConfirm(
+    'Are you sure you want to deactivate this framework/program? ' +
+      `You are about to deactivate ${label}. This will deactivate the program itself and ` +
+      'affect its availability for new proposals. Individual agenda statuses will not be ' +
+      'changed unless required by the existing system logic.',
+    {
+      title: 'Deactivate Framework / Program',
+      type: 'danger',
+      confirmText: 'Deactivate Program',
+    }
+  )
+  if (!confirmed) return
+
+  try {
+    await api.put(`/api/priority-agendas/sets/${set.id}/deactivate`)
+    await loadSets()
+    await showAlert(
+      `${label} is now inactive. New proposals will show their empty state until a framework is activated.`,
+      { type: 'success', title: 'Framework Deactivated' }
+    )
+  } catch (err) {
+    console.error(err)
+    await showAlert(extractErrorMessage(err, 'Failed to deactivate the framework.'), {
+      type: 'error',
+      title: 'Deactivation Failed',
     })
   }
 }
@@ -751,6 +931,16 @@ function useTypedAgendaName(name) {
   font-size: 12px;
 }
 
+/* Layout only; .btn-danger supplies the destructive colour. */
+.deactivate-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* ===== Modals ===== */
 
 .modal-overlay {
@@ -890,6 +1080,423 @@ function useTypedAgendaName(name) {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+}
+
+/* ===== Create / Edit framework dialog =====================================
+   A compact, centred form dialog: icon header, full-width name, a two-column
+   year row, the live "New Proposal" preview, the active switch and a
+   two-button footer. The Add Agenda modal above keeps its own layout. */
+.fw-modal {
+  display: flex;
+  flex-direction: column;
+  width: 352px;
+  max-width: calc(100vw - 24px);
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid #e5e8f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 48px -16px rgba(20, 24, 50, 0.32),
+    0 8px 18px -10px rgba(20, 24, 50, 0.18);
+}
+
+.fw-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  flex: 0 0 auto;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid #eceef5;
+  background: #ffffff;
+}
+
+.fw-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: #262342;
+  color: #ffd000;
+}
+
+.fw-header-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.fw-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.fw-heading h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #1c1a3c;
+}
+
+.fw-heading p {
+  margin: 3px 0 0;
+  font-size: 9.5px;
+  line-height: 1.45;
+  color: #777d91;
+}
+
+.fw-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #8a8fa3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fw-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fw-close:hover:not(:disabled) {
+  background: #f2f3f9;
+  color: #262342;
+}
+
+.fw-close:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+.fw-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 16px;
+}
+
+.fw-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.fw-body::-webkit-scrollbar-thumb {
+  background: #d7dbe8;
+  border-radius: 999px;
+}
+
+.fw-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.fw-field label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #3b3d55;
+}
+
+.fw-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #dfe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1c1a3c;
+  font-family: inherit;
+  font-size: 11.5px;
+  box-sizing: border-box;
+}
+
+.fw-input::placeholder {
+  color: #a0a5b6;
+}
+
+.fw-input:focus {
+  outline: none;
+  border-color: #315bff;
+  box-shadow: 0 0 0 3px rgba(49, 91, 255, 0.12);
+}
+
+.fw-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.fw-hint {
+  margin: -6px 0 0;
+  font-size: 9px;
+  line-height: 1.4;
+  color: #81869a;
+}
+
+.fw-hint-error {
+  margin-top: -8px;
+  color: #b42318;
+  font-weight: 600;
+}
+
+/* Preview card */
+.fw-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 12px;
+  border: 1px solid #e2e7f3;
+  border-radius: 13px;
+  background: #f4f6fc;
+}
+
+.fw-preview-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7b8298;
+}
+
+.fw-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  min-height: 30px;
+  padding: 6px 9px;
+  border: 1px dashed #d9dfec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.fw-preview-agenda {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #3b3d55;
+  white-space: nowrap;
+}
+
+.fw-preview-badge {
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e6edfc;
+  color: #31539b;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Active framework switch card */
+.fw-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #e6e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.fw-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fw-toggle-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #1c1a3c;
+}
+
+.fw-toggle-description {
+  font-size: 8.5px;
+  line-height: 1.45;
+  color: #81869a;
+}
+
+.fw-switch {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.fw-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.fw-switch-track {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: #c8ceda;
+  transition: background 0.15s;
+}
+
+.fw-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(20, 24, 50, 0.22);
+  transition: transform 0.15s;
+}
+
+.fw-switch input:checked + .fw-switch-track {
+  background: #315bff;
+}
+
+.fw-switch input:checked + .fw-switch-track .fw-switch-thumb {
+  transform: translateX(14px);
+}
+
+.fw-switch input:focus-visible + .fw-switch-track {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+.fw-error {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.fw-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 12px 16px 16px;
+  border-top: 1px solid #eceef5;
+  background: #ffffff;
+}
+
+.fw-cancel,
+.fw-create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fw-cancel {
+  border: 1px solid #dfe3ee;
+  background: #ffffff;
+  color: #262342;
+}
+
+.fw-cancel:hover:not(:disabled) {
+  background: #f6f7fb;
+  border-color: #cdd3e3;
+}
+
+.fw-create {
+  border: 1px solid transparent;
+  background: #2452ff;
+  color: #ffffff;
+}
+
+.fw-create:hover:not(:disabled) {
+  background: #1e46e0;
+}
+
+.fw-create:disabled {
+  border-color: #d8e0f0;
+  background: #e7ecf6;
+  color: #8a8fa3;
+  cursor: not-allowed;
+}
+
+.fw-cancel:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fw-create svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.fw-cancel:focus-visible,
+.fw-create:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 380px) {
+  .fw-modal {
+    width: calc(100vw - 20px);
+    border-radius: 16px;
+  }
+
+  .fw-header {
+    padding: 14px 14px 12px;
+  }
+
+  .fw-body {
+    padding: 14px;
+  }
+
+  .fw-footer {
+    padding: 10px 14px 14px;
+  }
 }
 </style>
 

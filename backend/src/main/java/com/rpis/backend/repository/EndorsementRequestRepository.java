@@ -20,6 +20,9 @@ public interface EndorsementRequestRepository extends JpaRepository<EndorsementR
     /** The requests routed to one Dean, newest first. */
     List<EndorsementRequest> findByAssignedDeanIdOrderByCreatedAtDesc(Long deanId);
 
+    /** One Dean's requests in one status - the pending ones transferred on a succession. */
+    List<EndorsementRequest> findByAssignedDeanIdAndStatus(Long deanId, String status);
+
     /** Requests that have no Dean configured yet (unassigned college). */
     List<EndorsementRequest> findByAssignedDeanIdIsNullOrderByCreatedAtDesc();
 

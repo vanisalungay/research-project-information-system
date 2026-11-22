@@ -133,6 +133,18 @@ export function resolveNotificationDestination(notification, role) {
     return null
   }
 
+  // A Proponent's revision notification opens the revision form directly. Budget
+  // returns use FUNDING, not REVISION, so those still open the proposal details where
+  // the financial feedback is shown.
+  if (
+    role === ROLES.PROPONENT &&
+    (type === NOTIFICATION_TYPES.REVISION ||
+      type === NOTIFICATION_TYPES.REVISION_DEADLINE_REMINDER)
+  ) {
+    const proposalId = asNotificationId(notification.proposalId)
+    if (proposalId) return { path: `/submit-revision/${proposalId}` }
+  }
+
   // Proposal-workflow types, and any older/untyped row that still carries a proposal
   // reference, open the proposal page the role owns.
   const proposalDestination = proposalDestinationForRole(notification.proposalId, role)

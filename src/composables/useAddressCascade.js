@@ -54,7 +54,16 @@ import {
   sortedByName,
 } from '@/utils/philippineLocations'
 
-export function useAddressCascade(model) {
+/**
+ * @param {object} model writable ref/computed holding the address details
+ * @param {{ districtRequired?: boolean }} options
+ *   `districtRequired` (default true) keeps the legacy behaviour where a
+ *   district gates the municipality in a districted region. Section 01 and
+ *   section 03 (Sites of Implementation) both pass false: the district is
+ *   optional, and the municipality is offered for the whole region when it is
+ *   left blank.
+ */
+export function useAddressCascade(model, { districtRequired = true } = {}) {
   const regions = ref([])
   const provinces = ref([])
   const districts = ref([])
@@ -159,7 +168,9 @@ export function useAddressCascade(model) {
         districtCode: selectedDistrictCode.value,
         regionCode: selectedRegionCode.value,
         // Regions with districts (NCR) list cities only once a district is chosen.
-        districtRequired: districtOptions.value.length > 0,
+        // Section 01 removes the district control, so it turns this off and chooses
+        // the city from the region instead.
+        districtRequired: districtRequired && districtOptions.value.length > 0,
         // Regions with provinces list the cities of the chosen province only (plus
         // their own independent cities, which belong to no province).
         provinceRequired: provinceOptions.value.length > 0,
@@ -255,6 +266,11 @@ export function useAddressCascade(model) {
       cities.value = []
       barangays.value = []
       barangayRegion.value = ''
+      // The options were dropped, so the "already requested" markers must be reset
+      // too: otherwise switching the country back to the Philippines would find
+      // requested.base/cities still true and leave the dropdowns empty.
+      requested.base = false
+      requested.cities = false
       return
     }
     ensureBase()

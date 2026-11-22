@@ -76,21 +76,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/utils/api'
 import { activeRemarksBySection, PROPOSAL_SECTIONS } from '@/utils/proposalSections'
 import { statusTone } from '@/utils/statusTone.js'
 import { proposalStatusLabel } from '@/utils/proposalStatus.js'
 
-const proposals = ref([])
+const awaiting = ref([])
+const forwarded = ref([])
 const loading = ref(false)
 const error = ref('')
 const activeTab = ref('awaiting')
 // Section remarks returned by the reviewing office, keyed by proposal id.
 const flaggedSections = ref({})
-
-const awaiting = computed(() => proposals.value.filter(p => p.status === 'RETURNED_TO_RPS'))
-const forwarded = computed(() => proposals.value.filter(p => p.status === 'RPS_RETURNED'))
 
 function formatDate(value) {
   if (!value) return '—'
@@ -133,9 +131,15 @@ async function fetchProposals() {
   loading.value = true
   error.value = ''
   try {
-    const res = await api.get('/api/proposals?statusIn=RETURNED_TO_RPS&statusIn=RPS_RETURNED')
-    proposals.value = Array.isArray(res.data) ? res.data : []
-    await fetchSectionRemarks(proposals.value)
+    // Each tab is ordered by the event that put the proposal there: the office's return
+    // for "Awaiting RPS Review", and RPS's forward to the proponent for "Forwarded".
+    const [awaitingRes, forwardedRes] = await Promise.all([
+      api.get('/api/proposals?statusIn=RETURNED_TO_RPS&sort=returnedAt'),
+      api.get('/api/proposals?statusIn=RPS_RETURNED&sort=revisionForwardedAt'),
+    ])
+    awaiting.value = Array.isArray(awaitingRes.data) ? awaitingRes.data : []
+    forwarded.value = Array.isArray(forwardedRes.data) ? forwardedRes.data : []
+    await fetchSectionRemarks([...awaiting.value, ...forwarded.value])
   } catch (err) {
     console.error(err)
     error.value = 'Failed to load revision requests.'

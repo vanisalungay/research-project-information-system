@@ -29,13 +29,15 @@ public class NotificationController {
             @RequestParam(required = false) Long userId) {
         // Identity is derived from the authenticated principal; the query param is
         // never trusted (prevents reading another user's notifications).
-        return ResponseEntity.ok(notificationService.getNotificationsForUser(currentUser.requireUserId()));
+        return ResponseEntity.ok(notificationService.getNotificationsForUser(
+                currentUser.requireUserId(), currentUser.getRole()));
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getNotificationsForUser(@PathVariable Long userId) {
         currentUser.requireSelf(userId);
-        return ResponseEntity.ok(notificationService.getNotificationsForUser(userId));
+        return ResponseEntity.ok(notificationService.getNotificationsForUser(
+                userId, currentUser.getRole()));
     }
 
     /**
@@ -58,12 +60,12 @@ public class NotificationController {
     @PutMapping("/{id}/read")
     public ResponseEntity<Notification> markAsRead(@PathVariable Long id) {
         return ResponseEntity.ok(notificationService.markAsReadForCurrentUser(
-                id, currentUser.requireUserId()));
+                id, currentUser.requireUserId(), currentUser.getRole()));
     }
 
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllAsRead(@RequestParam(required = false) Long userId) {
-        notificationService.markAllAsRead(currentUser.requireUserId());
+        notificationService.markAllAsRead(currentUser.requireUserId(), currentUser.getRole());
         return ResponseEntity.ok().build();
     }
 }

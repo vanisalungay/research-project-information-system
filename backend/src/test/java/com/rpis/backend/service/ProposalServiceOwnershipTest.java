@@ -1,6 +1,7 @@
 package com.rpis.backend.service;
 
 import com.rpis.backend.dto.ProposalRequest;
+import com.rpis.backend.model.GadChecklistData;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.ProposalAnnouncement;
 import com.rpis.backend.model.User;
@@ -17,11 +18,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -74,6 +80,18 @@ class ProposalServiceOwnershipTest {
         user.setName("User " + id);
         user.setRole("PROPONENT");
         return user;
+    }
+
+    /** Every GAD checklist item answered, which is what a final submission requires. */
+    private GadChecklistData completedChecklist() {
+        GadChecklistData data = new GadChecklistData();
+        Map<String, String> responses = new LinkedHashMap<>();
+        for (String item : List.of("1.1", "1.2", "2.0", "3.1", "3.2", "4.0", "5.0",
+                "6.1", "6.2", "6.3", "7.0", "8.0", "9.1", "9.2", "10.1", "10.2", "10.3")) {
+            responses.put(item, "YES");
+        }
+        data.setResponses(responses);
+        return data;
     }
 
     private Proposal proposal(Long id, Long ownerId) {
@@ -170,6 +188,148 @@ class ProposalServiceOwnershipTest {
         assertEquals(List.of(), result);
         verify(proposalRepository).findByProponent(me);
         verify(proposalRepository, never()).findAll();
+    }
+
+    @Test
+    void submittedAtSortIsNewestFirstWithAStableIdTieBreakAndMissingLast() {
+        authenticate(2L, "RPS_STAFF");
+        Proposal oldest = proposal(5L, 7L);
+        oldest.setSubmittedAt(LocalDateTime.of(2026, 10, 1, 9, 0));
+        Proposal newest = proposal(8L, 7L);
+        newest.setSubmittedAt(LocalDateTime.of(2026, 11, 19, 15, 30));
+        // The same timestamp must fall back to proposal id descending.
+        Proposal tieLowId = proposal(6L, 7L);
+        tieLowId.setSubmittedAt(LocalDateTime.of(2026, 11, 10, 12, 0));
+        Proposal tieHighId = proposal(11L, 7L);
+        tieHighId.setSubmittedAt(LocalDateTime.of(2026, 11, 10, 12, 0));
+        // Never submitted: no timestamp, so it must sort after every dated record.
+        Proposal missing = proposal(99L, 7L);
+        when(proposalRepository.findAll())
+                .thenReturn(List.of(missing, oldest, tieLowId, newest, tieHighId));
+
+        List<Proposal> result = service.getProposalsForCurrentUser(null, null, null, true);
+
+        assertEquals(List.of(8L, 11L, 6L, 5L, 99L),
+                result.stream().map(Proposal::getId).toList());
+    }
+
+    @Test
+    void eachListingCanSortByTheEventDateItRepresents() {
+        authenticate(2L, "RPS_STAFF");
+        Proposal oldEndorsement = proposal(2L, 7L);
+        oldEndorsement.setEndorsedAt(LocalDateTime.of(2026, 10, 1, 9, 0));
+        oldEndorsement.setReturnedAt(LocalDateTime.of(2026, 11, 19, 9, 0));
+        Proposal newEndorsement = proposal(9L, 7L);
+        newEndorsement.setEndorsedAt(LocalDateTime.of(2026, 11, 18, 9, 0));
+        newEndorsement.setReturnedAt(LocalDateTime.of(2026, 9, 1, 9, 0));
+        when(proposalRepository.findAll())
+                .thenReturn(List.of(oldEndorsement, newEndorsement));
+
+        assertEquals(List.of(9L, 2L),
+                service.getProposalsForCurrentUser(null, null, null, "endorsedAt")
+                        .stream().map(Proposal::getId).toList());
+        // The same two rows order differently by the return event: this proves the list
+        // chooses its event date rather than reusing one arbitrary timestamp.
+        assertEquals(List.of(2L, 9L),
+                service.getProposalsForCurrentUser(null, null, null, "returnedAt")
+                        .stream().map(Proposal::getId).toList());
+    }
+
+    @Test
+    void anUnrecognisedSortLeavesTheDefaultOrderAlone() {
+        authenticate(2L, "RPS_STAFF");
+        Proposal first = proposal(3L, 7L);
+        first.setSubmittedAt(LocalDateTime.of(2026, 10, 1, 9, 0));
+        Proposal second = proposal(4L, 7L);
+        second.setSubmittedAt(LocalDateTime.of(2026, 11, 19, 15, 30));
+        when(proposalRepository.findAll()).thenReturn(List.of(first, second));
+
+        List<Proposal> result = service.getProposalsForCurrentUser(null, null, null, "not-a-column");
+
+        assertEquals(List.of(3L, 4L), result.stream().map(Proposal::getId).toList());
+    }
+
+    @Test
+    void endorsingAProposalRecordsTheEndorsementTimestamp() {
+        authenticate(2L, "RPS_STAFF");
+        Proposal submitted = proposal(5L, 7L);
+        submitted.setStatus("FOR REVIEW");
+        when(proposalRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(submitted));
+
+        LocalDateTime before = LocalDateTime.now().minusSeconds(1);
+        Proposal saved = service.endorseToOvcrige(5L);
+
+        assertEquals("ENDORSED", saved.getStatus());
+        assertNotNull(saved.getEndorsedAt(), "the endorsement event is recorded");
+        assertTrue(saved.getEndorsedAt().isAfter(before));
+    }
+
+    @Test
+    void theDefaultListOrderIsUnchangedWithoutTheSubmittedAtSort() {
+        authenticate(2L, "RPS_STAFF");
+        Proposal first = proposal(3L, 7L);
+        first.setSubmittedAt(LocalDateTime.of(2026, 10, 1, 9, 0));
+        Proposal second = proposal(4L, 7L);
+        second.setSubmittedAt(LocalDateTime.of(2026, 11, 19, 15, 30));
+        when(proposalRepository.findAll()).thenReturn(List.of(first, second));
+
+        List<Proposal> result = service.getProposalsForCurrentUser(null, null, null);
+
+        assertEquals(List.of(3L, 4L), result.stream().map(Proposal::getId).toList());
+    }
+
+    @Test
+    void submittingAProposalRecordsTheActualSubmissionTimestamp() {
+        User me = user(7L);
+        authenticate(7L, "PROPONENT");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(me));
+        when(proposalRepository.nextProposalCodeSequence()).thenReturn(23L);
+        ProposalAnnouncement announcement = new ProposalAnnouncement();
+        announcement.setId(1L);
+        announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
+        announcement.setStartDate(LocalDate.now().minusDays(1));
+        announcement.setEndDate(LocalDate.now().plusDays(1));
+        when(announcementService.getActiveAnnouncementOrNull()).thenReturn(announcement);
+
+        ProposalRequest request = new ProposalRequest();
+        request.setProjectTitle("Submitted Proposal");
+        request.setDuration("12");
+        request.setStatus("SUBMITTED");
+        // The server requires a complete GAD Checklist 2 on a final submission.
+        request.setGadChecklist(completedChecklist());
+
+        LocalDateTime before = LocalDateTime.now().minusSeconds(1);
+        Proposal saved = service.saveProposal(request, null);
+
+        assertNotNull(saved.getSubmittedAt(), "the submission event is recorded");
+        assertTrue(saved.getSubmittedAt().isAfter(before));
+        assertTrue(saved.getSubmittedAt().isBefore(LocalDateTime.now().plusSeconds(1)));
+    }
+
+    @Test
+    void savingAnAlreadySubmittedProposalKeepsItsOriginalSubmissionTimestamp() {
+        User me = user(7L);
+        authenticate(7L, "PROPONENT");
+        Proposal existing = proposal(5L, 7L);
+        existing.setStatus("FOR REVIEW");
+        LocalDateTime original = LocalDateTime.of(2026, 9, 1, 10, 0);
+        existing.setSubmittedAt(original);
+        when(proposalRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(existing));
+        ProposalAnnouncement announcement = new ProposalAnnouncement();
+        announcement.setId(1L);
+        announcement.setStatus(ProposalAnnouncement.STATUS_ACTIVE);
+        announcement.setStartDate(LocalDate.now().minusDays(1));
+        announcement.setEndDate(LocalDate.now().plusDays(1));
+        when(announcementService.getActiveAnnouncementOrNull()).thenReturn(announcement);
+
+        ProposalRequest request = new ProposalRequest();
+        // A client that re-sends the same submitted status (an edit, a file upload).
+        request.setStatus("FOR REVIEW");
+
+        Proposal saved = service.saveProposal(request, 5L);
+
+        assertEquals(original, saved.getSubmittedAt(),
+                "a later save must never rewrite the original submission date");
     }
 
     @Test

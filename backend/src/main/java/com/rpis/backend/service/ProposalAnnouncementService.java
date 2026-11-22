@@ -190,6 +190,47 @@ public class ProposalAnnouncementService {
     }
 
     /**
+     * Every published Call for Proposal a Proponent may view on the full listing page:
+     * open, scheduled and closed. Only ACTIVE (published) calls are returned; drafts and
+     * cancelled calls remain hidden. The order is the one the page shows: calls open now
+     * first (newest window first), then scheduled calls by opening date, then closed
+     * calls with the most recently closed first.
+     */
+    public List<ProposalAnnouncement> getProponentCalls() {
+        LocalDate today = LocalDate.now();
+        List<ProposalAnnouncement> published =
+                announcementRepository.findByStatus(ProposalAnnouncement.STATUS_ACTIVE);
+
+        List<ProposalAnnouncement> open = new ArrayList<>();
+        List<ProposalAnnouncement> scheduled = new ArrayList<>();
+        List<ProposalAnnouncement> closed = new ArrayList<>();
+        for (ProposalAnnouncement announcement : published) {
+            String status = displayStatus(announcement, today);
+            if (DISPLAY_OPEN.equals(status)) {
+                open.add(announcement);
+            } else if (DISPLAY_SCHEDULED.equals(status)) {
+                scheduled.add(announcement);
+            } else if (DISPLAY_CLOSED.equals(status)) {
+                closed.add(announcement);
+            }
+        }
+
+        open.sort(Comparator.comparing(ProposalAnnouncement::getStartDate)
+                .reversed()
+                .thenComparing(ProposalAnnouncement::getId, Comparator.reverseOrder()));
+        scheduled.sort(Comparator.comparing(ProposalAnnouncement::getStartDate)
+                .thenComparing(ProposalAnnouncement::getId));
+        closed.sort(Comparator.comparing(ProposalAnnouncement::getEndDate)
+                .reversed()
+                .thenComparing(ProposalAnnouncement::getId, Comparator.reverseOrder()));
+
+        List<ProposalAnnouncement> all = new ArrayList<>(open);
+        all.addAll(scheduled);
+        all.addAll(closed);
+        return all;
+    }
+
+    /**
      * The Call for Proposal the proponent selected in the Create Proposal workflow. It
      * must still be open for submissions - the exact rule the UI shows and the
      * submission gatekeeper enforces - so a proposal can never be created or submitted
@@ -457,7 +498,13 @@ public class ProposalAnnouncementService {
                     "This proposal announcement cannot be deleted because one or more proponents have already submitted proposals under it.");
         }
 
+        String deletedName = announcement.getName();
+        String deletedPeriod = announcement.getStartDate() + " to " + announcement.getEndDate();
         announcementRepository.delete(announcement);
+        activityLogService.success(ActivityLog.ACTION_CALL_DELETED,
+                ActivityLog.MODULE_CALLS_FOR_PROPOSAL,
+                "Deleted a call for proposal, " + deletedName,
+                "\"" + deletedName + "\" (" + deletedPeriod + ") was deleted.");
     }
 
     private boolean hasSubmittedProposals(Long announcementId) {
@@ -635,14 +682,16 @@ public class ProposalAnnouncementService {
      * open that exact Call for Proposals.
      */
     private void fanOutToProponents(ProposalAnnouncement announcement, String title, String message) {
-        List<User> proponents = userRepository.findByRoleAndStatus("PROPONENT", "APPROVED");
+        List<User> proponents = userRepository
+                .findByAssignedRoleAndStatusOrderByNameAsc("PROPONENT", "APPROVED");
 
         // proposalId stays null, exactly like the existing "new announcement"
         // notification: the field references a proposal, while the announcement itself
         // is carried by proposalAnnouncementId. One row per account is guaranteed by the
         // service even if the role query ever returns a duplicate.
         notificationService.notifyUsers(proponents, message, title,
-                NotificationTypes.PROPOSAL_ANNOUNCEMENT, null, announcement.getId());
+                NotificationTypes.PROPOSAL_ANNOUNCEMENT, null, announcement.getId(), null,
+                "PROPONENT");
     }
 
     // ==================== UPDATE HISTORY ====================

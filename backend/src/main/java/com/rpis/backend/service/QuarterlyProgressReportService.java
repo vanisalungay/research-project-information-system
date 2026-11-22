@@ -17,6 +17,7 @@ import com.rpis.backend.repository.QuarterlyProgressReportRepository;
 import com.rpis.backend.storage.UploadStorage;
 import com.rpis.backend.util.NotificationTypes;
 import com.rpis.backend.util.PercentageValue;
+import com.rpis.backend.util.PersonNameFormatter;
 import com.rpis.backend.util.ProposalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -434,7 +435,8 @@ public class QuarterlyProgressReportService {
                 notificationService.notifyUsers(List.of(proposal.getProponent()),
                         "Your project \"" + proposal.getProjectTitle()
                                 + "\" is complete. All required reporting stages have been submitted.",
-                        "Project Completed", NotificationTypes.PROJECT_COMPLETION, proposalId);
+                        "Project Completed", NotificationTypes.PROJECT_COMPLETION, proposalId,
+                        null, null, UserRoles.PROPONENT);
             }
             return;
         }
@@ -623,7 +625,12 @@ public class QuarterlyProgressReportService {
         // (for example a stage 1-3 save, or a terminal draft that only attaches a file)
         // never wipes the content the proponent already entered.
         if (request.getTerminalReport() != null) {
-            report.setTerminalReport(request.getTerminalReport());
+            // The Project Team is printed as the report's authors, one name per line, so
+            // each line is stored in the same name format as every other person field.
+            TerminalReportData terminalReport = request.getTerminalReport();
+            terminalReport.setProjectTeam(
+                    PersonNameFormatter.formatLines(terminalReport.getProjectTeam()));
+            report.setTerminalReport(terminalReport);
         }
         normalizePercentages(report);
     }

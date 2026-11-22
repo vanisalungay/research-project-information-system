@@ -3,9 +3,11 @@ package com.rpis.backend.service;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import com.rpis.backend.dto.EndorsementDecisionRequest;
+import com.rpis.backend.dto.EndorsementLetterVersionResponse;
 import com.rpis.backend.dto.EndorsementRequestCreateRequest;
 import com.rpis.backend.dto.EndorsementRequestResponse;
 import com.rpis.backend.model.Certification;
+import com.rpis.backend.model.EndorsementLetterVersion;
 import com.rpis.backend.model.EndorsementRequest;
 import com.rpis.backend.model.Notification;
 import com.rpis.backend.model.Proposal;
@@ -14,6 +16,7 @@ import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.repository.CertificationRepository;
 import com.rpis.backend.repository.EndorsementLetterSettingsRepository;
+import com.rpis.backend.repository.EndorsementLetterVersionRepository;
 import com.rpis.backend.repository.EndorsementRequestEventRepository;
 import com.rpis.backend.repository.EndorsementRequestRepository;
 import com.rpis.backend.repository.NotificationRepository;
@@ -88,6 +91,8 @@ class EndorsementWorkflowPostgresTest {
     @Autowired
     private EndorsementRequestEventRepository eventRepository;
     @Autowired
+    private EndorsementLetterVersionRepository letterVersionRepository;
+    @Autowired
     private CertificationRepository certificationRepository;
     @Autowired
     private EndorsementLetterSettingsRepository settingsRepository;
@@ -114,6 +119,11 @@ class EndorsementWorkflowPostgresTest {
     void setUp() {
         jdbcTemplate.execute("TRUNCATE TABLE certifications RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE endorsement_request_events RESTART IDENTITY CASCADE");
+        // The entity holds the request id as a plain column (the migration adds the FK, but
+        // the Hibernate-built test schema does not), so truncating the requests does not
+        // cascade here. Without this, a version row from the previous test survives and is
+        // attributed to the next request that reuses the id after RESTART IDENTITY.
+        jdbcTemplate.execute("TRUNCATE TABLE endorsement_letter_versions RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE endorsement_requests RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE proposals RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE proposal_announcements RESTART IDENTITY CASCADE");
@@ -155,6 +165,11 @@ class EndorsementWorkflowPostgresTest {
         for (String stored : jdbcTemplate.queryForList(
                 "SELECT signature_file_path FROM users WHERE signature_file_path IS NOT NULL",
                 String.class)) {
+            deleteStoredFile(stored);
+        }
+        // Superseded versions are preserved rows/files too, so remove their test copies.
+        for (String stored : jdbcTemplate.queryForList(
+                "SELECT file_path FROM endorsement_letter_versions", String.class)) {
             deleteStoredFile(stored);
         }
         settingsRepository.deleteAll();
@@ -349,6 +364,14 @@ class EndorsementWorkflowPostgresTest {
         assertTrue(Files.exists(testUploadRoot()
                 .resolve(stored.getSignatureFilePath())));
 
+        // The issued letter is preserved as version 1 of its own history.
+        List<EndorsementLetterVersion> versions = letterVersionRepository
+                .findByEndorsementRequestIdOrderByVersionNumberDesc(request.getId());
+        assertEquals(1, versions.size());
+        assertEquals(1, versions.get(0).getVersionNumber());
+        assertEquals(stored.getLetterFilePath(), versions.get(0).getFilePath());
+        assertEquals("Dean Maria Santos", versions.get(0).getGeneratedByName());
+
         // The certification entry belongs to the Proponent and points at the same file.
         assertEquals(1, certificationRepository.findAll().size());
         var certification = certificationRepository.findByEndorsementRequestId(request.getId())
@@ -431,6 +454,20 @@ class EndorsementWorkflowPostgresTest {
         ResponseStatusException deanError = assertThrows(ResponseStatusException.class,
                 () -> endorsementService.loadLetter(request.getId()));
         assertEquals(403, deanError.getStatusCode().value());
+
+        // The preserved version history follows the same visibility rule.
+        Long versionId = letterVersionRepository
+                .findByEndorsementRequestIdOrderByVersionNumberDesc(request.getId())
+                .get(0).getId();
+        authenticateAs(proponent);
+        assertEquals(1, endorsementService.letterVersions(request.getId()).size());
+        assertNotNull(endorsementService.loadLetterVersion(request.getId(), versionId));
+
+        authenticateAs(otherDean);
+        assertThrows(ResponseStatusException.class,
+                () -> endorsementService.letterVersions(request.getId()));
+        assertThrows(ResponseStatusException.class,
+                () -> endorsementService.loadLetterVersion(request.getId(), versionId));
     }
 
     @Test
@@ -719,6 +756,30 @@ class EndorsementWorkflowPostgresTest {
         assertTrue(Files.exists(testUploadRoot()
                 .resolve(stored.getLetterFilePath())));
 
+        // Both versions are recorded, newest first, and each file stays reachable through
+        // the history endpoint. The current version is clearly flagged.
+        List<EndorsementLetterVersion> versions = letterVersionRepository
+                .findByEndorsementRequestIdOrderByVersionNumberDesc(request.getId());
+        assertEquals(2, versions.size());
+        assertEquals(2, versions.get(0).getVersionNumber());
+        assertEquals(stored.getLetterFilePath(), versions.get(0).getFilePath());
+        assertEquals(1, versions.get(1).getVersionNumber());
+        assertEquals(firstPath, versions.get(1).getFilePath());
+
+        authenticateAs(dean);
+        List<EndorsementLetterVersionResponse> listed =
+                endorsementService.letterVersions(request.getId());
+        assertEquals(2, listed.size());
+        assertEquals(2, listed.get(0).getVersion());
+        assertTrue(listed.get(0).isCurrent(), "the newest version is the current one");
+        assertEquals(1, listed.get(1).getVersion());
+        assertFalse(listed.get(1).isCurrent(), "the superseded version is not current");
+        assertTrue(endorsementService.loadLetterVersion(request.getId(),
+                versions.get(0).getId()).stored().size() > 0);
+        assertTrue(endorsementService.loadLetterVersion(request.getId(),
+                versions.get(1).getId()).stored().size() > 0,
+                "the previous letter version must remain downloadable");
+
         // The Proponent keeps exactly one certification, now pointing at the new version.
         assertEquals(1, certificationRepository.findAll().size());
         assertEquals(stored.getLetterFilePath(),
@@ -726,6 +787,51 @@ class EndorsementWorkflowPostgresTest {
                         .orElseThrow().getFilePath());
         assertTrue(eventRepository.findByEndorsementRequestIdOrderByCreatedAtAsc(request.getId())
                 .stream().anyMatch(e -> "LETTER_REISSUED".equals(e.getEventType())));
+    }
+
+    /**
+     * A letter issued before version history existed has no version number and no history
+     * row. It must still appear as version 1 (the original), and a reissue of it must
+     * preserve that first PDF instead of overwriting the only copy.
+     */
+    @Test
+    void aLegacyLetterIsTreatedAsVersionOneAndSurvivesAReissue() {
+        EndorsementRequestResponse request = submittedRequest("Legacy letter");
+        authenticateAs(dean);
+        endorsementService.approve(request.getId(), approval());
+        String firstPath = requestRepository.findById(request.getId()).orElseThrow()
+                .getLetterFilePath();
+
+        // Rewind to the pre-versioning shape: no history row and no version number.
+        jdbcTemplate.update(
+                "UPDATE endorsement_requests SET letter_version = NULL WHERE id = ?",
+                request.getId());
+        letterVersionRepository.deleteAll();
+
+        List<EndorsementLetterVersionResponse> beforeReissue =
+                endorsementService.letterVersions(request.getId());
+        assertEquals(1, beforeReissue.size(), "the original letter must be version 1");
+        assertEquals(1, beforeReissue.get(0).getVersion());
+        assertTrue(beforeReissue.get(0).isCurrent(),
+                "a legacy letter is the current version until it is reissued");
+
+        // Rewind again and reissue through the service: the pre-versioning path must also
+        // record the file being superseded.
+        jdbcTemplate.update(
+                "UPDATE endorsement_requests SET letter_version = NULL WHERE id = ?",
+                request.getId());
+        letterVersionRepository.deleteAll();
+
+        authenticateAs(admin);
+        endorsementService.reissue(request.getId(), approval());
+
+        List<EndorsementLetterVersion> versions = letterVersionRepository
+                .findByEndorsementRequestIdOrderByVersionNumberDesc(request.getId());
+        assertEquals(2, versions.size());
+        assertEquals(1, versions.get(1).getVersionNumber());
+        assertEquals(firstPath, versions.get(1).getFilePath(),
+                "the original PDF must be preserved as version 1");
+        assertTrue(Files.exists(testUploadRoot().resolve(firstPath)));
     }
 
     // ==================== CONTINUE TO PROPOSAL SUBMISSION ====================

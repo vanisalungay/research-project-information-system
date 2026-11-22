@@ -90,7 +90,7 @@
     <!-- ERROR STATE -->
     <div v-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="goBack">Go Back</button>
+      <BackButton :navigate="false" @click="goBack" />
     </div>
 
     <!-- ACTIVITY LOG -->
@@ -129,6 +129,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
+import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -331,7 +332,12 @@ async function viewDetails() {
 }
 
 function goBack() {
-  window.history.back()
+  // Previous page when there is one; the proposal list when the URL was opened directly.
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    window.history.back()
+    return
+  }
+  router.push('/proposals')
 }
 
 function downloadPdf() {

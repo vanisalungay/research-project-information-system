@@ -192,6 +192,21 @@ class AdminAccountCreationTest {
         return result;
     }
 
+    /**
+     * Restores the managed account's password after a response nulled it, then flushes.
+     * Only needed inside this test transaction; a real request's entity is already detached.
+     */
+    private void flushRestoringPassword(Long userId) {
+        String stored = jdbcTemplate.queryForObject(
+                "SELECT password FROM users WHERE id = ?", String.class, userId);
+        User managed = entityManager.find(User.class, userId);
+        if (managed != null) {
+            managed.setPassword(stored);
+        }
+        entityManager.flush();
+        entityManager.clear();
+    }
+
     /** The address the response reports for the account it just created. */
     private String responseEmail(org.springframework.test.web.servlet.MvcResult result)
             throws Exception {
@@ -225,7 +240,7 @@ class AdminAccountCreationTest {
 
         // The form sends only the name and the role: the address comes from the response.
         String generatedEmail = responseEmail(result);
-        assertTrue(generatedEmail.endsWith("@msunawaan.edu.ph"),
+        assertTrue(generatedEmail.endsWith("@msunaawan.edu.ph"),
                 "the generated address must use the institutional domain, was " + generatedEmail);
         User dean = userRepository.findByEmail(generatedEmail).orElseThrow();
         assertEquals(UserRoles.DEAN, dean.getRole(),
@@ -255,6 +270,73 @@ class AdminAccountCreationTest {
                 "SELECT COUNT(*) FROM endorsement_request_events WHERE actor_id = ? AND event_type = ?",
                 Integer.class, adminId, EndorsementRequestEvent.TYPE_DEAN_ROLE_ASSIGNED);
         assertEquals(1, audited, "provisioning a Dean must be recorded in the audit trail");
+    }
+
+    /**
+     * The Dean form asks for "First Name Last Name" only: no Last, First order, no middle
+     * initial and no suffix. The value is title-cased, stored that way, and the address and
+     * temporary password are derived from the first name and the whole compound surname.
+     */
+    @Test
+    void aDeanNameEnteredAsFirstAndLastNameIsNormalizedAndDrivesTheCredentials() throws Exception {
+        Map<String, Object> body = deanPayload(uniqueEmail("ignored"));
+        body.put("name", "JUAN DELA CRUZ");
+
+        var result = create(adminToken, body)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.name").value("Juan Dela Cruz"))
+                .andExpect(jsonPath("$.user.role").value(UserRoles.DEAN))
+                .andExpect(jsonPath("$.user.assignedCollege").value(COLLEGE))
+                .andReturn();
+
+        String generatedEmail = responseEmail(result);
+        assertTrue(generatedEmail.matches("juan\\.delacruz\\d*@msunaawan\\.edu\\.ph"),
+                "the first name and the whole surname must form the address, was "
+                        + generatedEmail);
+
+        assertEquals("jdelacruz123", responseText(result, "temporaryPassword"),
+                "the temporary password uses the same compound surname");
+
+        User dean = userRepository.findByEmail(generatedEmail).orElseThrow();
+        assertEquals("Juan Dela Cruz", dean.getName(),
+                "the stored name must be title-cased, not left in capitals");
+    }
+
+    /**
+     * The Create User Account form now asks for a plain First Name Last Name entry. The
+     * standard (non-Dean) provisioning path normalizes it and derives the same
+     * first.last address and temporary password.
+     */
+    @Test
+    void aFirstAndLastNameCreatesAStaffAccountWithTheSimpleAddress() throws Exception {
+        var result = create(adminToken, Map.of("name", "JUAN DELA CRUZ", "role", UserRoles.RPS_STAFF))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.name").value("Juan Dela Cruz"))
+                .andReturn();
+
+        String generatedEmail = responseEmail(result);
+        assertTrue(generatedEmail.matches("juan\\.delacruz\\d*@msunaawan\\.edu\\.ph"),
+                "the first name and the whole surname must form the address, was "
+                        + generatedEmail);
+        assertEquals("jdelacruz123", responseText(result, "temporaryPassword"),
+                "the temporary password uses the same compound surname");
+    }
+
+    @Test
+    void theStandardNameFormatIsStoredAndDrivesTheGeneratedCredentials() throws Exception {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("name", "DELA CRUZ, JUAN, M., JR.");
+        payload.put("role", UserRoles.RPS_STAFF);
+
+        create(adminToken, payload)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.name").value("Dela Cruz, Juan, M., Jr."))
+                .andExpect(jsonPath("$.email").value("juanm.delacruz@msunaawan.edu.ph"))
+                .andExpect(jsonPath("$.temporaryPassword").value("jdelacruz123"));
+
+        User created = userRepository.findByEmail("juanm.delacruz@msunaawan.edu.ph").orElseThrow();
+        assertEquals("Dela Cruz, Juan, M., Jr.", created.getName(),
+                "the stored name must be the standard title-cased form");
     }
 
     @Test
@@ -330,7 +412,9 @@ class AdminAccountCreationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.email == '" + generatedEmail + "')]", hasSize(1)))
                 .andExpect(jsonPath("$[?(@.email == '" + generatedEmail + "')].role")
-                        .value(hasItem(UserRoles.DEAN)));
+                        .value(hasItem(UserRoles.DEAN)))
+                .andExpect(jsonPath("$[?(@.email == '" + generatedEmail + "')].deanStatus")
+                        .value(hasItem("ACTIVE")));
     }
 
     @Test
@@ -342,38 +426,98 @@ class AdminAccountCreationTest {
                 .andExpect(content().string(containsString("MSU Naawan")));
     }
 
+    /**
+     * The person already has a Proponent account with the institutional address. Appointing
+     * them Dean must reuse that account: one account, one address, both roles. It must not
+     * create a second account or append a number to the address.
+     */
     @Test
-    void aDeanEmailThatAlreadyExistsIsNumberedInsteadOfDuplicated() throws Exception {
-        // The address is generated from the name, so two faculty members with the same name
-        // collide. The rule is to number the address rather than refuse the request, and an
-        // account that already holds the plain address is left exactly as it was.
-        var first = create(adminToken, deanPayload(uniqueEmail("dean-duplicate")))
+    void anExistingProponentIsReusedAsTheDeanInsteadOfDuplicated() throws Exception {
+        User proponent = new User();
+        proponent.setName("Vanisa Lungay");
+        proponent.setEmail("vanisa.lungay@msunaawan.edu.ph");
+        proponent.setPassword(passwordService.hash(PASSWORD));
+        proponent.setRole(UserRoles.PROPONENT);
+        proponent.assignRole(UserRoles.PROPONENT);
+        proponent.setStatus("APPROVED");
+        User existing = userRepository.saveAndFlush(proponent);
+        entityManager.clear();
+
+        Map<String, Object> body = deanPayload("ignored@msunaawan.edu.ph");
+        body.put("name", "Vanisa Lungay");
+        var result = mockMvc.perform(withToken(post("/api/users/admin/create"), adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.emailAdjusted").value(false))
+                .andExpect(jsonPath("$.accountReused").value(true))
+                .andExpect(jsonPath("$.email").value("vanisa.lungay@msunaawan.edu.ph"))
+                .andExpect(jsonPath("$.user.id").value(existing.getId()))
+                .andExpect(jsonPath("$.user.email").value("vanisa.lungay@msunaawan.edu.ph"))
+                .andExpect(jsonPath("$.user.roles[0]").value(UserRoles.PROPONENT))
+                .andExpect(jsonPath("$.user.roles[1]").value(UserRoles.DEAN))
+                .andExpect(jsonPath("$.mustChangePassword").value(false))
                 .andReturn();
-        String firstEmail = responseEmail(first);
 
-        // A different college, so the second Dean does not collide with the first on the
-        // one-active-Dean-per-college rule (the point here is the address numbering).
-        var second = create(adminToken,
-                deanPayload(uniqueEmail("dean-duplicate-2"),
-                        "College of Environment and Life Sciences (CELS)"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.emailAdjusted").value(true))
-                .andReturn();
-        String secondEmail = responseEmail(second);
+        // The response nulls the password on the managed entity (in a real request it is
+        // already detached). Restore it before flushing so the new role assignment is
+        // persisted without tripping the not-null column.
+        flushRestoringPassword(existing.getId());
 
-        assertFalse(firstEmail.equalsIgnoreCase(secondEmail),
-                "a taken address must be numbered rather than reused");
-        assertTrue(secondEmail.indexOf(0x40) > firstEmail.indexOf(0x40),
-                "the number must be appended to the local part, before the domain");
-        String suffix = localPartOf(secondEmail).substring(localPartOf(firstEmail).length());
-        assertTrue(suffix.matches("\\D*\\d+"),
-                "a number must be appended to the taken address, got: " + secondEmail);
+        assertTrue(objectMapper.readTree(result.getResponse().getContentAsString())
+                        .path("temporaryPassword").isNull(),
+                "a reused account keeps its password, so no temporary password is issued");
 
-        // Both accounts exist, and neither claim of another account's address is allowed.
-        assertEquals(UserRoles.DEAN, userRepository.findByEmail(firstEmail).orElseThrow().getRole());
-        assertEquals(UserRoles.DEAN, userRepository.findByEmail(secondEmail).orElseThrow().getRole());
+        // Exactly one account holds the address - no vanisa.lungay2@ account was created.
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE LOWER(email) = ?",
+                Long.class, "vanisa.lungay@msunaawan.edu.ph");
+        assertEquals(1L, count, "the existing account must be reused, not duplicated");
+        Long generatedVariants = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE LOWER(email) LIKE 'vanisa.lungay%'",
+                Long.class);
+        assertEquals(1L, generatedVariants,
+                "no numbered address may be issued for the same person");
+
+        User promoted = userRepository.findById(existing.getId()).orElseThrow();
+        assertEquals(UserRoles.PROPONENT, promoted.getRole(),
+                "the primary role is preserved when the Dean role is added");
+        assertTrue(promoted.hasRole(UserRoles.PROPONENT));
+        assertTrue(promoted.hasRole(UserRoles.DEAN));
+        assertTrue(passwordService.verify(promoted.getPassword(), PASSWORD).matches(),
+                "the existing password must not be changed");
+    }
+
+    /**
+     * The sign-in lookup ignores case, surrounding whitespace and invisible characters.
+     * Typing the address and pasting it are therefore the same input, and the account may
+     * sign in under either of its roles - but not under a role it does not hold.
+     */
+    @Test
+    void aTypedAddressSignsInWithEveryRoleTheAccountHolds() {
+        User proponent = new User();
+        proponent.setName("Mira Normalized");
+        proponent.setEmail("mira.normalized@msunaawan.edu.ph");
+        proponent.setPassword(passwordService.hash(PASSWORD));
+        proponent.setRole(UserRoles.PROPONENT);
+        proponent.assignRole(UserRoles.PROPONENT);
+        proponent.assignRole(UserRoles.DEAN);
+        proponent.setStatus("APPROVED");
+        userRepository.saveAndFlush(proponent);
+
+        String typed = "   MIRA.Normalized@MSUNAAWAN.EDU.PH  ​";
+        assertEquals(UserService.LoginStatus.OK,
+                userService.login(typed, PASSWORD, "PROPONENT").status(),
+                "a typed address must sign in as the Proponent role");
+        assertEquals(UserService.LoginStatus.OK,
+                userService.login(typed, PASSWORD, " dean ").status(),
+                "the same address must sign in as the Dean role");
+        assertEquals(UserService.LoginStatus.INVALID_CREDENTIALS,
+                userService.login(typed, PASSWORD, "RPS_ADMIN").status(),
+                "a role the account does not hold must be refused");
+
+        // The same address pasted as-is (no formatting noise) reaches the same account.
+        assertEquals(UserService.LoginStatus.OK,
+                userService.login("mira.normalized@msunaawan.edu.ph", PASSWORD, "DEAN").status());
     }
 
     @Test
@@ -381,13 +525,19 @@ class AdminAccountCreationTest {
         // The Dean Role Management form offers the five colleges as the Dean's college. Each
         // choice must be stored on the account's assignedCollege while the account keeps the
         // DEAN system role and the generated-credentials flow is unchanged.
-        for (String college : new String[] {
+        String[] colleges = new String[] {
                 "College of Fisheries and Marine Sciences (CFMS)",
                 "College of Environment and Life Sciences (CELS)",
                 "College of Education and Social Sciences (CESS)",
                 "College of Business and Information Technology (CBIT)",
-                "Integrated Development School (IDS)" }) {
-            var result = create(adminToken, deanPayload(uniqueEmail("dean-college"), college))
+                "Integrated Development School (IDS)" };
+        for (int i = 0; i < colleges.length; i++) {
+            String college = colleges[i];
+            // A different person per college: the same name now resolves to the same
+            // account and would be reused for the second college.
+            Map<String, Object> body = deanPayload(uniqueEmail("dean-college"), college);
+            body.put("name", "Dean" + (i + 1) + " College");
+            var result = create(adminToken, body)
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.user.role").value(UserRoles.DEAN))
                     .andExpect(jsonPath("$.user.assignedCollege").value(college))

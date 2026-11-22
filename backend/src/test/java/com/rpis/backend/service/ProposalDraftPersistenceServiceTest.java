@@ -377,6 +377,35 @@ class ProposalDraftPersistenceServiceTest {
     }
 
     @Test
+    void aSentSiteKeepsItsLocationAndAcceptsAMissingDistrict() {
+        Proposal draft = existingDraft();
+        draft.getSites().add(new ProposalSite(null, draft, "Philippines",
+                "Caraga", "Agusan del Norte", "First District", "Butuan City", "Barangay 1"));
+
+        ProposalRequest.SiteDTO site = new ProposalRequest.SiteDTO();
+        site.setCountry("Philippines");
+        site.setRegion("Northern Mindanao");
+        site.setProvince("Misamis Oriental");
+        site.setDistrict(null);
+        site.setMunicipality("Naawan");
+        site.setBarangay("Balintad");
+
+        ProposalRequest request = request("DRAFT");
+        request.setSites(List.of(site));
+
+        Proposal saved = service.saveProposal(request, PROPOSAL_ID);
+
+        assertEquals(1, saved.getSites().size());
+        ProposalSite stored = saved.getSites().get(0);
+        assertEquals("Philippines", stored.getCountry());
+        assertEquals("Northern Mindanao", stored.getRegion());
+        assertEquals("Misamis Oriental", stored.getProvince());
+        assertNull(stored.getDistrict(), "a missing district must be accepted");
+        assertEquals("Naawan", stored.getMunicipality());
+        assertEquals("Balintad", stored.getBarangay());
+    }
+
+    @Test
     void aSentPersonnelListReplacesTheStoredRowsAndKeepsEveryValue() {
         Proposal draft = existingDraft();
         draft.getPersonnel().add(new ProposalPersonnel(null, draft, "Old role", "10", "Old duties"));

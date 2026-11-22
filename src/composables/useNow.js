@@ -15,6 +15,10 @@ let timer = null
 
 function startTicker() {
   subscribers += 1
+  // Refresh immediately: after the last label unmounted the timer stopped, so `now`
+  // may be old. A newly opened panel must not show a timestamp that is 10 minutes
+  // stale until the first interval fires.
+  now.value = Date.now()
   if (timer !== null || typeof window === 'undefined') return
   timer = window.setInterval(() => {
     now.value = Date.now()

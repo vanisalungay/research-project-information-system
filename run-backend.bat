@@ -211,10 +211,13 @@ for %%F in (
     migration-add-workplan-json.sql
     migration-rename-dean-role.sql
     migration-add-must-change-password.sql
+    migration-add-user-roles.sql
     migration-add-dean-assignments.sql
+    migration-fix-institutional-email-domain.sql
     migration-add-gad-checklist.sql
     migration-add-activity-logs.sql
     migration-add-endorsement-document-code-unique.sql
+    migration-add-endorsement-letter-versions.sql
     migration-add-proposal-needs-budget.sql
     migration-add-performance-indexes.sql
     migration-01-db-audit-integrity.sql
@@ -223,6 +226,9 @@ for %%F in (
     migration-norm-01-relational-integrity.sql
     migration-norm-02-relational-observability.sql
     migration-norm-03-fk-consolidation.sql
+    migration-widen-notification-type-check.sql
+    migration-add-notification-recipient-role.sql
+    migration-widen-activity-log-checks.sql
 ) do (
     if not exist "%%F" (
         echo Migration file missing: %%F

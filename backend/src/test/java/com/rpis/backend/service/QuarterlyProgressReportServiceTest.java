@@ -5,6 +5,7 @@ import com.rpis.backend.dto.QuarterlyProgressReportRequest;
 import com.rpis.backend.model.Proposal;
 import com.rpis.backend.model.QuarterlyObjective;
 import com.rpis.backend.model.QuarterlyProgressReport;
+import com.rpis.backend.model.TerminalReportData;
 import com.rpis.backend.model.User;
 import com.rpis.backend.model.WorkplanData;
 import com.rpis.backend.model.WorkplanObjective;
@@ -355,6 +356,23 @@ class QuarterlyProgressReportServiceTest {
         QuarterlyProgressReport saved = service.create(request("TERMINAL_REPORT", "TERMINAL", "SUBMITTED"));
         assertEquals("SUBMITTED", saved.getStatus());
         assertEquals("TERMINAL_REPORT", saved.getReportType());
+    }
+
+    @Test
+    void theTerminalProjectTeamIsStoredInTheStandardNameFormat() {
+        QuarterlyProgressReport draft = report("TERMINAL_REPORT", "TERMINAL", "DRAFT");
+        draft.setId(11L);
+        when(reportRepository.findById(11L)).thenReturn(Optional.of(draft));
+
+        QuarterlyProgressReportRequest req = request("TERMINAL_REPORT", "TERMINAL", "DRAFT");
+        TerminalReportData terminal = new TerminalReportData();
+        terminal.setProjectTeam("BAGARES, XARZHA MAURINE\nlungay, vanisa");
+        req.setTerminalReport(terminal);
+
+        QuarterlyProgressReport saved = service.update(11L, req);
+
+        assertEquals("Bagares, Xarzha Maurine\nLungay, Vanisa",
+                saved.getTerminalReport().getProjectTeam());
     }
 
     @Test

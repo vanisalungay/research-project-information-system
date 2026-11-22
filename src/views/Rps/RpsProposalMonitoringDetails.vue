@@ -2,9 +2,7 @@
   <div class="page">
     <!-- Back Navigation -->
     <div class="details-nav">
-      <button class="btn btn-secondary btn-back" @click="goBackToList">
-        ← Back to Proposals List
-      </button>
+      <BackButton label="Back to Proposals List" to="/rps-proposal-monitoring" />
       <span class="view-indicator-pill">Monitoring Details Mode</span>
     </div>
 
@@ -144,18 +142,20 @@
       <div class="error-icon">⚠️</div>
       <h3>Proposal Not Found</h3>
       <p>The monitoring records for the requested proposal ID could not be located.</p>
-      <button class="btn btn-primary" @click="goBackToList">Return to Proposals List</button>
+      <BackButton label="Back to Proposals List" to="/rps-proposal-monitoring" />
     </div>
   </div>
 </template>
 
 <script>
+import BackButton from '@/components/BackButton.vue'
 import { statusTone } from '@/utils/statusTone.js'
 
 const STORAGE_KEY = 'proposals_workflow_db';
 
 export default {
   name: 'ProposalMonitoringDetails',
+  components: { BackButton },
 
   data() {
     return {
@@ -297,7 +297,7 @@ export default {
     },
 
     goBackToList() {
-      this.$router.push('/rii-subproposal');
+      this.$router.push('/rps-proposal-monitoring');
     },
 
     loadProposal() {
@@ -390,12 +390,6 @@ export default {
 }
 
 /* The action colours are global (assets/actions.css). */
-.btn-back {
-  font-size: 12.5px;
-  font-weight: 600;
-  padding: 8px 16px;
-}
-
 .view-indicator-pill {
   background-color: #e0e7ff;
   color: #4338ca;

@@ -37,6 +37,16 @@ public class Notification {
     private String type;
 
     /**
+     * The role this notification is for - the recipient's role context at the time it was
+     * raised (for example {@code DEAN} for a new endorsement request, {@code PROPONENT}
+     * for an approval). A multi-role account therefore sees only the notifications of the
+     * role it signed in as. Null on a legacy row whose context could not be recovered
+     * safely; the API only serves such a row to a single-role account.
+     */
+    @Column(name = "recipient_role", length = 50)
+    private String recipientRole;
+
+    /**
      * The record this notification is about, interpreted by {@link #type}: the proposal
      * for a proposal notification, and the endorsement request for an endorsement
      * notification ({@code ENDORSEMENT}), which is what clicking the notification opens.

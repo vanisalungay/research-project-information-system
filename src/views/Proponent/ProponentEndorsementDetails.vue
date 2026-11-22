@@ -15,7 +15,7 @@
     <div v-else-if="error" class="end-card is-error">
       <p>{{ error }}</p>
       <div class="end-actions">
-        <router-link class="end-btn" to="/endorsements">Back to my requests</router-link>
+        <BackButton label="Back to My Requests" to="/endorsements" />
       </div>
     </div>
 
@@ -167,6 +167,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import '@/assets/endorsement.css'
+import BackButton from '@/components/BackButton.vue'
 import {
   endorsementStatusDescription,
   endorsementStatusLabel,

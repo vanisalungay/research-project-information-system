@@ -38,6 +38,7 @@ test('every proposal-workflow type resolves for every role that has a proposal p
     'REJECTION',
     'FUNDING',
     'PROPOSAL_ENDORSED',
+    'PROPOSAL_SUBMISSION',
     'SOMETHING_NEW',
   ]) {
     for (const role of ['PROPONENT', 'RPS_ADMIN', 'RPS_STAFF', 'REC', 'OVCRIGE', 'OVCAF', 'OC']) {
@@ -133,12 +134,21 @@ test('a Dean account notification opens the profile that shows the role', () => 
   )
 })
 
-test('a revision deadline reminder opens the proposal for the Proponent', () => {
+test('a revision notification opens the revision form for the Proponent', () => {
+  for (const type of ['REVISION', 'REVISION_DEADLINE_REMINDER']) {
+    assert.deepEqual(
+      resolveNotificationDestination({ type, proposalId: 12 }, 'PROPONENT'),
+      { path: '/submit-revision/12' },
+    )
+  }
+  // The same row for an office still opens that office's proposal page.
   assert.deepEqual(
-    resolveNotificationDestination(
-      { type: 'REVISION_DEADLINE_REMINDER', proposalId: 12 },
-      'PROPONENT',
-    ),
+    resolveNotificationDestination({ type: 'REVISION', proposalId: 12 }, 'RPS_STAFF'),
+    { name: 'ProposalDetails', params: { id: 12 } },
+  )
+  // A budget return is a FUNDING row, so it still opens the proposal details.
+  assert.deepEqual(
+    resolveNotificationDestination({ type: 'FUNDING', proposalId: 12 }, 'PROPONENT'),
     { name: 'ProponentPropDetails', params: { id: 12 } },
   )
 })
