@@ -116,6 +116,14 @@ public class RejectionQueueService {
             row.setRoutedAt(proposal.getReturnedAt());
         }
         row.setProcessedAt(latestTransition(history, STATUS_REJECTED));
+        // Legacy finalized rows predate the audited history table. There is no
+        // transition row to read, so the record's own last-update timestamp is the only
+        // stored evidence of when the decision was finalized. It is used only for a
+        // REJECTED row that has no audited transition; nothing is invented for a record
+        // with no timestamp at all.
+        if (row.getProcessedAt() == null && STATUS_REJECTED.equals(row.getStatus())) {
+            row.setProcessedAt(proposal.getUpdatedAt());
+        }
         return row;
     }
 

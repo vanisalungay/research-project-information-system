@@ -69,6 +69,24 @@ public class ProposalController {
     }
 
     /**
+     * One page of the caller's authorized proposals. Filtering, search, ordering and
+     * pagination are server-side; the array endpoint above remains for existing callers.
+     */
+    @GetMapping("/page")
+    public ResponseEntity<com.rpis.backend.dto.ProposalPageResponse> getProposalPage(
+            @RequestParam(required = false) Long proponentId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String[] statusIn,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<String> statuses = (statusIn != null && statusIn.length > 0) ? List.of(statusIn) : null;
+        return ResponseEntity.ok(proposalService.getProposalPage(
+                proponentId, status, statuses, sort, search, page, size));
+    }
+
+    /**
      * The cooperating agencies (section 02) selected on a proposal, in directory
      * order. The Create Proposal and Revision forms read this to restore the
      * checklist when a saved proposal is edited. Ownership is enforced by the

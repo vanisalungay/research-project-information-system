@@ -96,8 +96,16 @@ test('the rejected list fetches every office rejection and keeps only rejection 
   assert.ok(PANEL.includes('activated()'), 'the queue reloads when the category is shown again')
   assert.ok(
     PANEL.includes("statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS']"),
-    'the All Submitted request is unchanged',
+    'the All Submitted request keeps its base statuses',
   )
+  assert.ok(PANEL.includes("api.get('/api/proposals/page'"),
+    'the All Submitted list uses the paginated API')
+  assert.ok(PANEL.includes('status: this.selectedStatus || undefined'),
+    'the status filter is applied by the server')
+  assert.ok(PANEL.includes('search: this.search.trim() || undefined'),
+    'search is applied by the server')
+  assert.ok(PANEL.includes(':total="displayTotal"'),
+    'the pager total is the server count for the paged list')
   assert.ok(PANEL.includes("sort: 'submittedAt'"), 'the All Submitted order is unchanged')
   assert.ok(!PANEL.includes('.sort('), 'the client must not re-sort the server order')
 })

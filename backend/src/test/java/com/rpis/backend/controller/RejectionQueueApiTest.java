@@ -126,6 +126,23 @@ class RejectionQueueApiTest {
     }
 
     @Test
+    void aLegacyFinalizedRejectionFallsBackToItsOwnRecordTimestamp() throws Exception {
+        Proposal legacy = proposal("REJ-LEGACY", "Legacy Rejection", "REJECTED",
+                null, null, null);
+        // No status-history row: the record predates the audit table. Its own last-update
+        // timestamp is the only stored evidence of the finalization.
+        jdbcTemplate.update("UPDATE proposals SET updated_at = ? WHERE id = ?",
+                LocalDateTime.of(2026, 8, 1, 10, 0), legacy.getId());
+
+        mockMvc.perform(get("/api/proposals/rejections")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + rpsToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].documentId").value("REJ-LEGACY"))
+                .andExpect(jsonPath("$[0].processedAt").value("2026-08-01T10:00:00"));
+    }
+
+    @Test
     void onlyOrpsCanReadTheRejectionQueue() throws Exception {
         mockMvc.perform(get("/api/proposals/rejections")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ovcafToken))

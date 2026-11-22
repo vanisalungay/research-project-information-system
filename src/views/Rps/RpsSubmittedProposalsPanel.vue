@@ -145,7 +145,7 @@
         v-if="filteredProposals.length"
         :page="page"
         :page-size="pageSize"
-        :total="filteredProposals.length"
+        :total="displayTotal"
         item-label="proposal"
         item-label-plural="proposals"
         @update:page="setPage"
@@ -163,7 +163,6 @@ import { statusTone } from '@/utils/statusTone.js'
 import {
   isForReviewStatus,
   proposalStatusLabel,
-  proposalStatusMatches,
 } from '@/utils/proposalStatus.js'
 
 import {
@@ -212,6 +211,10 @@ export default {
       hasLoaded: false,
       page: 1,
       pageSize: 10,
+      serverTotalItems: 0,
+      serverTotalPages: 1,
+      searchTimer: null,
+      suppressFetch: false,
     }
   },
   computed: {
@@ -239,25 +242,20 @@ export default {
         : 'No submitted proposals found.'
     },
     filteredProposals() {
+      // The Rejected queue is still filtered locally (it is a small, dedicated queue);
+      // the All Submitted list is already filtered and sliced by the server.
+      if (!this.isRejectedCategory) return this.proposals
       const keyword = this.search.toLowerCase().trim()
-      const rejectedOnly = this.isRejectedCategory
       return this.proposals.filter((p) => {
-        if (rejectedOnly && !matchesRejectionStatus(p, this.selectedRejectionStatus)) return false
-        if (rejectedOnly && this.selectedOffice
-          && this.rejectionOffice(p) !== this.selectedOffice) return false
-        const matchesStatus = proposalStatusMatches(p.status, this.selectedStatus)
-        if (!matchesStatus) return false
+        if (!matchesRejectionStatus(p, this.selectedRejectionStatus)) return false
+        if (this.selectedOffice && this.rejectionOffice(p) !== this.selectedOffice) return false
         if (!keyword) return true
         const title = String(p.projectTitle || p.title || '').toLowerCase()
         const program = String(p.programTitle || '').toLowerCase()
         const documentId = String(p.documentId || p.proposalCode || '').toLowerCase()
         const leader = String(p.projectLeader || p.proponent?.name || '').toLowerCase()
-        // In the Rejected category, the rejecting office and the reason are searchable too,
-        // so ORPS can find a rejection by who sent it or what it says.
-        const office = rejectedOnly ? String(p.returnedByOffice || '').toLowerCase() : ''
-        const reason = rejectedOnly
-          ? String(p.returnRemarks || p.remarks || '').toLowerCase()
-          : ''
+        const office = String(p.returnedByOffice || '').toLowerCase()
+        const reason = String(p.returnRemarks || p.remarks || '').toLowerCase()
         return (
           title.includes(keyword) ||
           program.includes(keyword) ||
@@ -268,10 +266,16 @@ export default {
         )
       })
     },
+    displayTotal() {
+      return this.isRejectedCategory ? this.filteredProposals.length : this.serverTotalItems
+    },
     totalPages() {
+      if (!this.isRejectedCategory) return Math.max(1, this.serverTotalPages)
       return Math.max(1, Math.ceil(this.filteredProposals.length / this.pageSize))
     },
     paginatedProposals() {
+      // The All Submitted API already returned only the requested page.
+      if (!this.isRejectedCategory) return this.filteredProposals
       const start = (this.page - 1) * this.pageSize
       return this.filteredProposals.slice(start, start + this.pageSize)
     },
@@ -283,10 +287,16 @@ export default {
   },
   watch: {
     search() {
+      if (this.suppressFetch) return
       this.page = 1
+      // The All Submitted list is searched by the API; debounce typing. The rejected
+      // queue filters its small local set immediately.
+      if (!this.isRejectedCategory) this.scheduleFetch()
     },
     selectedStatus() {
+      if (this.suppressFetch) return
       this.page = 1
+      if (!this.isRejectedCategory) this.fetchProposals()
     },
     selectedOffice() {
       this.page = 1
@@ -301,20 +311,31 @@ export default {
   methods: {
     statusTone,
     proposalStatusLabel,
+    scheduleFetch() {
+      if (this.searchTimer) clearTimeout(this.searchTimer)
+      this.searchTimer = setTimeout(() => this.fetchProposals(), 250)
+    },
     setPage(value) {
-      this.page = clampPage(value, this.totalPages)
+      const next = clampPage(value, this.totalPages)
+      if (next === this.page) return
+      this.page = next
+      if (!this.isRejectedCategory) this.fetchProposals()
     },
     setPageSize(value) {
       this.pageSize = Math.max(1, Number(value) || 10)
       this.page = 1
+      if (!this.isRejectedCategory) this.fetchProposals()
     },
     /** Restores the full category without changing the stored catalogue. */
     clearFilters() {
+      this.suppressFetch = true
       this.search = ''
       this.selectedStatus = ''
       this.selectedOffice = ''
       this.selectedRejectionStatus = 'ALL'
       this.page = 1
+      this.suppressFetch = false
+      if (!this.isRejectedCategory) this.fetchProposals()
     },
     isPendingRejection(proposal) {
       return isPendingRejection(proposal)
@@ -348,32 +369,53 @@ export default {
       })
     },
     async fetchProposals() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer)
+        this.searchTimer = null
+      }
       this.loading = true
       this.error = null
       try {
         const rejected = this.isRejectedCategory
         // Rejected Proposals: read from the dedicated ORPS queue endpoint. It contains
         // every reviewing-office rejection (pending hand-off + finalized) together with
-        // the actual routed-at and processed-at workflow timestamps. The Submitted list
-        // keeps its original statuses and submission ordering.
+        // the actual routed-at and processed-at workflow timestamps.
+        // All Submitted: page/filter/search are resolved by the API so a large dataset
+        // is not downloaded only to be sliced in the browser.
         const res = rejected
           ? await api.get('/api/proposals/rejections')
-          : await api.get('/api/proposals', {
+          : await api.get('/api/proposals/page', {
               params: {
                 statusIn: ['FOR REVIEW', 'SUBMITTED', 'REVISION', 'RETURNED_TO_RPS'],
-                // Server-side ordering by the real submission event (not created_at or
-                // updated_at). The server also breaks equal timestamps by proposal id and
-                // puts records with no submission timestamp last.
+                status: this.selectedStatus || undefined,
                 sort: 'submittedAt',
+                search: this.search.trim() || undefined,
+                page: this.page,
+                size: this.pageSize,
               },
               paramsSerializer: { indexes: null },
             })
-        this.proposals = Array.isArray(res.data) ? res.data : []
-        this.page = 1
+        if (rejected) {
+          this.proposals = Array.isArray(res.data) ? res.data : []
+          this.serverTotalItems = this.proposals.length
+          this.serverTotalPages = Math.max(
+            1,
+            Math.ceil(this.proposals.length / this.pageSize),
+          )
+          this.page = 1
+        } else {
+          this.proposals = Array.isArray(res.data?.items) ? res.data.items : []
+          this.serverTotalItems = Number(res.data?.totalItems) || 0
+          this.serverTotalPages = Number(res.data?.totalPages) || 1
+          this.page = Number(res.data?.page) || 1
+          this.pageSize = Number(res.data?.size) || this.pageSize
+        }
       } catch (err) {
         console.error(err)
         this.error = 'Failed to load proposals.'
         this.proposals = []
+        this.serverTotalItems = 0
+        this.serverTotalPages = 1
       } finally {
         this.loading = false
         this.hasLoaded = true
@@ -399,6 +441,9 @@ export default {
   },
   mounted() {
     this.fetchProposals()
+  },
+  beforeUnmount() {
+    if (this.searchTimer) clearTimeout(this.searchTimer)
   },
   /**
    * The parent keeps each category alive, so returning to this tab after a proposal was

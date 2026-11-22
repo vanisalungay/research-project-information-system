@@ -361,6 +361,60 @@ public class ProposalService {
     }
 
     /**
+     * One page of the caller's authorized proposals, with the same search/status rules as
+     * the list screens. The legacy {@code GET /api/proposals} array endpoint is untouched
+     * for callers that still need the complete list; paginated screens use this method so
+     * a large dataset is not transferred only to be sliced in the browser.
+     */
+    public com.rpis.backend.dto.ProposalPageResponse getProposalPage(Long requestedProponentId,
+            String status, List<String> statusIn, String sort, String search, int page, int size) {
+        List<Proposal> proposals = new ArrayList<>(
+                getProposalsForCurrentUser(requestedProponentId, null, statusIn, sort));
+
+        String exactStatus = ProposalStatus.normalize(status);
+        if (exactStatus != null) {
+            proposals = proposals.stream()
+                    .filter(proposal -> exactStatus.equals(ProposalStatus.normalize(proposal.getStatus())))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        }
+
+        String keyword = search == null ? null : search.trim().toLowerCase(java.util.Locale.ROOT);
+        if (keyword != null && !keyword.isEmpty()) {
+            proposals = proposals.stream()
+                    .filter(proposal -> matchesListSearch(proposal, keyword))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        }
+
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int totalItems = proposals.size();
+        int totalPages = Math.max(1, (int) Math.ceil(totalItems / (double) safeSize));
+        int safePage = Math.min(Math.max(page, 1), totalPages);
+        int from = Math.min((safePage - 1) * safeSize, totalItems);
+        int to = Math.min(from + safeSize, totalItems);
+
+        com.rpis.backend.dto.ProposalPageResponse response =
+                new com.rpis.backend.dto.ProposalPageResponse();
+        response.setItems(new ArrayList<>(proposals.subList(from, to)));
+        response.setPage(safePage);
+        response.setSize(safeSize);
+        response.setTotalItems(totalItems);
+        response.setTotalPages(totalPages);
+        return response;
+    }
+
+    private static boolean matchesListSearch(Proposal proposal, String keyword) {
+        return containsIgnoreCase(proposal.getDocumentId(), keyword)
+                || containsIgnoreCase(proposal.getProposalCode(), keyword)
+                || containsIgnoreCase(proposal.getProjectTitle(), keyword)
+                || containsIgnoreCase(proposal.getProjectLeader(), keyword)
+                || containsIgnoreCase(proposal.getProgramTitle(), keyword);
+    }
+
+    private static boolean containsIgnoreCase(String value, String keyword) {
+        return value != null && value.toLowerCase(java.util.Locale.ROOT).contains(keyword);
+    }
+
+    /**
      * The supported list orderings, each keyed by the actual event timestamp it sorts by:
      * submission, RPS endorsement, the reviewing office's return, RPS's forward to the
      * proponent, the latest workflow change, or creation. An unrecognised value is ignored
