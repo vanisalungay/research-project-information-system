@@ -413,6 +413,29 @@ export async function fetchEndorsementEvents(id) {
   return Array.isArray(response.data) ? response.data : []
 }
 
+/**
+ * The audit trail ordered newest first, for display.
+ *
+ * The API returns the events oldest first (their chronological order). The Proponent's
+ * History and the Dean's Audit History both read the most recent entry first, so the
+ * order is applied here instead of changing the endpoint and every other consumer.
+ * Entries with a missing or unparseable timestamp sort last; equal timestamps keep the
+ * order the API returned, so the list is stable between refreshes.
+ */
+export function sortEndorsementEventsNewestFirst(events) {
+  const list = Array.isArray(events) ? [...events] : []
+  return list.sort((a, b) => {
+    const timeA = Date.parse(a?.createdAt)
+    const timeB = Date.parse(b?.createdAt)
+    const validA = !Number.isNaN(timeA)
+    const validB = !Number.isNaN(timeB)
+    if (!validA && !validB) return 0
+    if (!validA) return 1
+    if (!validB) return -1
+    return timeB - timeA
+  })
+}
+
 /** Raises a Request for Endorsement. */
 export async function createEndorsementRequest(payload) {
   const response = await api.post(ENDORSEMENTS_ENDPOINT, payload)

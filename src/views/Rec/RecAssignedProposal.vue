@@ -222,8 +222,8 @@ const goToView = (id) => {
 }
 .page-title {
   margin: 0;
-  font-size: 26px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
 }
 .page-subtitle {
   margin: 4px 0 18px;
@@ -266,14 +266,14 @@ const goToView = (id) => {
   border-bottom: 1px solid #eee;
 }
 .subtext {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   opacity: 0.7;
 }
 .status-pill {
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 .review-btn,
 .view-btn {
@@ -320,16 +320,16 @@ const goToView = (id) => {
 .end-page--fluid .rec-assigned-table {
   min-width: 900px;
   table-layout: fixed;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
 }
 
 .rec-assigned-table th {
   background: #f6f7fd;
   color: #1c1a3c;
   padding: 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -374,14 +374,14 @@ const goToView = (id) => {
 }
 
 .cell-id {
-  font-size: 0.6875rem;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #5b6484;
   overflow-wrap: anywhere;
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
@@ -391,26 +391,26 @@ const goToView = (id) => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-  line-height: 1.35;
+  line-height: var(--ui-line-snug);
 }
 
 .cell-title .subtext {
   margin: 2px 0 0;
-  font-size: 0.65rem;
+  font-size: var(--ui-font-caption);
   opacity: 1;
-  color: #78809a;
+  color: var(--ui-text-muted);
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
 .cell-proponent {
-  font-size: 0.78rem;
+  font-size: var(--ui-font-small);
   color: #1f2937;
   overflow-wrap: anywhere;
 }
 
 .cell-date {
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: #5b6484;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -418,20 +418,20 @@ const goToView = (id) => {
 
 .rec-assigned-table .end-badge {
   padding: 2px 7px;
-  font-size: 0.6875rem;
+  font-size: var(--ui-font-caption);
 }
 
 .row-btn {
   padding: 6px 10px;
-  font-size: 0.75rem;
+  font-size: var(--ui-control-font-sm);
   white-space: nowrap;
 }
 
 .rec-state {
   margin: 0;
   padding: 22px;
-  font-size: 0.8125rem;
-  color: #78809a;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .rec-error {
@@ -441,7 +441,7 @@ const goToView = (id) => {
 .rec-empty {
   padding: 24px 12px;
   text-align: center;
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 @media (max-width: 640px) {

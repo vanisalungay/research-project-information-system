@@ -234,17 +234,17 @@ onMounted(scrollToTop)
 }
 .wizard-eyebrow {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 .wizard-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #1c2145;
 }
 .wizard-meta {
@@ -252,8 +252,8 @@ onMounted(scrollToTop)
   flex-wrap: wrap;
   gap: 4px 16px;
   margin: 6px 0 0;
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-snug);
   color: #475569;
 }
 .wizard-page-badge {
@@ -262,8 +262,8 @@ onMounted(scrollToTop)
   border-radius: 999px;
   background: #ffd400;
   color: #1c2145;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 /* Progress indicator: descriptive labels, the current page highlighted and
@@ -292,9 +292,9 @@ onMounted(scrollToTop)
   background: #f8fafc;
   color: #475569;
   font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-control-font-lg);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   text-align: left;
   cursor: pointer;
 }
@@ -308,8 +308,8 @@ onMounted(scrollToTop)
   border-radius: 50%;
   background: #e2e8f0;
   color: #475569;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 .wizard-progress-item.is-current .wizard-progress-btn {
   border-color: #a5b4fc;
@@ -339,9 +339,9 @@ onMounted(scrollToTop)
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fff;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   text-align: center;
 }
 
@@ -377,13 +377,13 @@ onMounted(scrollToTop)
 .viewer-footer .btn-copy {
   min-height: 46px;
   padding: 12px 26px;
-  font-size: 15.5px;
+  font-size: var(--ui-control-font-lg);
 }
 /* Layout only; the action colours come from assets/actions.css. */
 .btn-secondary {
   padding: 12px 22px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 /* "Create a Copy" reuses the existing primary-action shape with the outline
@@ -393,7 +393,7 @@ onMounted(scrollToTop)
 .btn-copy {
   padding: 10px 22px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-copy:disabled {
@@ -414,8 +414,8 @@ onMounted(scrollToTop)
     width: 100%;
     min-width: 760px;
     min-height: 0; /* content-driven height: no empty A4 sheet */
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: var(--ui-font-body-lg);
+    line-height: var(--ui-line-body);
   }
   .qpr-viewer :deep(.doc-body) {
     padding: 16px 20px 20px;
@@ -430,23 +430,23 @@ onMounted(scrollToTop)
     height: 40px;
   }
   .qpr-viewer :deep(.doc-eyebrow) {
-    font-size: 12px;
+    font-size: var(--ui-font-caption);
   }
   .qpr-viewer :deep(.doc-title) {
-    font-size: 28px;
+    font-size: var(--ui-font-stat);
   }
   .qpr-viewer :deep(.doc-badge) {
     padding: 6px 14px;
-    font-size: 14px;
+    font-size: var(--ui-font-caption);
   }
   .qpr-viewer :deep(.doc-badge-sub) {
-    font-size: 13px;
+    font-size: var(--ui-font-caption);
   }
   /* Section headings */
   .qpr-viewer :deep(.doc-section) {
     gap: 10px;
     margin: 24px 0 12px;
-    font-size: 21px;
+    font-size: var(--ui-font-section-title);
   }
   .qpr-viewer :deep(.doc-section-accent) {
     width: 4px;
@@ -454,24 +454,24 @@ onMounted(scrollToTop)
   }
   .qpr-viewer :deep(.doc-subsection) {
     margin: 16px 0 8px;
-    font-size: 17px;
+    font-size: var(--ui-font-section-title);
   }
   .qpr-viewer :deep(.doc-hint) {
     margin: 0 0 10px;
-    font-size: 14.5px;
+    font-size: var(--ui-font-small);
   }
   /* Labels, values and narrative notes */
   .qpr-viewer :deep(.doc-label) {
-    font-size: 15px;
-    letter-spacing: 0.2px;
+    font-size: var(--ui-font-label);
+    letter-spacing: var(--ui-tracking-caps);
   }
   .qpr-viewer :deep(.doc-value) {
     margin-top: 4px;
-    font-size: 16px;
+    font-size: var(--ui-font-body-lg);
   }
   .qpr-viewer :deep(.doc-note) {
     padding: 12px 14px 12px 20px;
-    font-size: 16px;
+    font-size: var(--ui-font-small);
   }
   /* Document tables */
   .qpr-viewer :deep(.doc-info-table td) {
@@ -479,11 +479,11 @@ onMounted(scrollToTop)
   }
   .qpr-viewer :deep(.doc-table th) {
     padding: 9px 8px;
-    font-size: 13.5px;
+    font-size: var(--ui-font-table-header);
   }
   .qpr-viewer :deep(.doc-table td) {
     padding: 8px 8px;
-    font-size: 15px;
+    font-size: var(--ui-font-table-cell);
   }
   /* Submitted values. Only typography is scaled: read-only values have no
      control to size, so no minimum height is applied (nothing empty is left
@@ -493,14 +493,14 @@ onMounted(scrollToTop)
   }
   .qpr-viewer :deep(.doc-sheet .qr-cell-text),
   .qpr-viewer :deep(.doc-sheet .qr-cell-value) {
-    font-size: 15px;
+    font-size: var(--ui-font-body);
   }
   .qpr-viewer :deep(.doc-sheet .qr-note-text) {
-    font-size: 16px;
+    font-size: var(--ui-font-small);
   }
   .qpr-viewer :deep(.wp-cell-text),
   .qpr-viewer :deep(.wp-note-text) {
-    font-size: 15px;
+    font-size: var(--ui-font-small);
   }
   /* The workplan grid carries 12 month columns beside the objectives column, so
      its cells use slightly smaller text and tighter padding to stay readable
@@ -511,19 +511,19 @@ onMounted(scrollToTop)
   }
   /* Signatures */
   .qpr-viewer :deep(.wp-sign-name) {
-    font-size: 16px;
+    font-size: var(--ui-font-body-lg);
   }
   .qpr-viewer :deep(.wp-sign-role) {
-    font-size: 13.5px;
+    font-size: var(--ui-font-body);
   }
   /* Document footer */
   .qpr-viewer :deep(.doc-footer) {
     padding: 10px 20px;
-    font-size: 12.5px;
+    font-size: var(--ui-font-small);
   }
   .qpr-viewer :deep(.doc-page-badge) {
     padding: 4px 12px;
-    font-size: 12.5px;
+    font-size: var(--ui-font-caption);
   }
 }
 
@@ -533,7 +533,7 @@ onMounted(scrollToTop)
     padding: 16px;
   }
   .wizard-title {
-    font-size: 19px;
+    font-size: var(--ui-font-card-title);
   }
   .wizard-head {
     flex-direction: column;

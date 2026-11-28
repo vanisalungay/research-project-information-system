@@ -1,5 +1,5 @@
 <template>
-  <div style="padding: 40px; font-family: sans-serif;">
+  <div style="padding: 40px;">
     <h1 style="color: #2c3e50;">Backend Connection Test</h1>
     <p>This page tests if your Vue frontend can talk to your Spring Boot backend.</p>
 

@@ -167,8 +167,8 @@ onMounted(() => {
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   margin-bottom: 4px;
 }
 
@@ -191,13 +191,13 @@ onMounted(() => {
 }
 
 .stat-card h3 {
-  font-size: 28px;
+  font-size: var(--ui-font-card-title);
   margin: 0;
 }
 
 .stat-card p {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .stat-card.dark {
@@ -234,20 +234,20 @@ onMounted(() => {
 
 .proposal-header h3 {
   margin: 0 0 6px;
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
 }
 
 .proposal-id {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #9ca3af;
   margin-right: 8px;
 }
 
 .badge {
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   padding: 4px 8px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
@@ -277,17 +277,17 @@ onMounted(() => {
 }
 
 .role {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
   margin: 2px 0 0;
 }
 
 /* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .review-status {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   padding: 6px 10px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .feedback-box {
@@ -299,7 +299,7 @@ onMounted(() => {
 
 .feedback-box p {
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #374151;
 }
 
@@ -311,13 +311,13 @@ onMounted(() => {
 .empty-state h4 {
   margin: 0 0 10px;
   color: #374151;
-  font-size: 18px;
+  font-size: var(--ui-font-small);
 }
 
 .empty-state p {
   margin: 0;
   color: #6b7280;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   max-width: 500px;
   margin-inline: auto;
 }

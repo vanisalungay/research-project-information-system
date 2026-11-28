@@ -295,7 +295,7 @@ onMounted(loadDashboard)
 .ovcaf-table th {
   background: #f6f7fd;
   color: #1c1a3c;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -313,14 +313,14 @@ onMounted(loadDashboard)
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 /* A table row action is smaller than a page action. */
 .row-btn {
   padding: 7px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--ui-control-font-md);
 }
 
 /* ===== Loading ===== */
@@ -329,8 +329,8 @@ onMounted(loadDashboard)
   align-items: center;
   gap: 10px;
   padding: 12px 4px;
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
 }
 
 .loading-spinner {
@@ -404,15 +404,15 @@ onMounted(loadDashboard)
 }
 
 .act-desc {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
   color: var(--text-primary);
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .act-link {
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .act-link:hover {
@@ -421,7 +421,7 @@ onMounted(loadDashboard)
 
 .act-note {
   margin-top: 0.375rem;
-  font-size: 0.78rem;
+  font-size: var(--ui-font-caption);
   font-style: italic;
   color: var(--text-secondary);
   background: #f8fafc;

@@ -330,13 +330,14 @@ const cancelReturn = () => {
 
 .page-header h2 {
   margin: 0 0 4px 0;
-  font-size: 22px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
   color: #6b7280;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
   margin: 0;
 }
 
@@ -358,8 +359,8 @@ const cancelReturn = () => {
 }
 
 .card h3 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1f2937;
   margin: 0 0 14px 0;
 }
@@ -372,17 +373,17 @@ const cancelReturn = () => {
 }
 
 .info-grid label {
-  font-size: 12px;
+  font-size: var(--ui-font-label);
   color: #6b7280;
-  font-weight: 500;
+  font-weight: var(--ui-weight-semibold);
   display: block;
   margin-bottom: 2px;
 }
 
 .info-grid p {
   margin: 0;
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: var(--ui-weight-medium);
+  font-size: var(--ui-font-body);
   color: #1f2937;
 }
 
@@ -391,15 +392,15 @@ const cancelReturn = () => {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* DEADLINE */
 label {
   display: block;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
 }
@@ -409,15 +410,15 @@ input[type='date'] {
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   color: #1f2937;
 }
 
 .note {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
   margin-top: 8px;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 /* UPLOAD */
@@ -432,16 +433,16 @@ input[type='date'] {
 .upload-box p {
   margin: 4px 0;
   color: #6b7280;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .upload-box small {
   color: #9ca3af;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .upload-icon {
-  font-size: 28px;
+  font-size: var(--ui-icon-2xl);
   margin-bottom: 8px;
 }
 
@@ -453,8 +454,8 @@ input[type='date'] {
   color: #2563eb;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
 }
 
 .select:hover {
@@ -473,9 +474,9 @@ input[type='date'] {
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #374151;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .checklist input[type="checkbox"] {
@@ -488,7 +489,7 @@ input[type='date'] {
 
 /* REVISION COMMENTS */
 .label {
-  font-size: 13px;
+  font-size: var(--ui-font-label);
   color: #555;
   margin-bottom: 6px;
   display: block;
@@ -501,7 +502,7 @@ textarea {
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   resize: vertical;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   outline: none;
 }
 
@@ -510,7 +511,7 @@ textarea:focus {
 }
 
 .quick-title {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #666;
   margin-top: 12px;
   margin-bottom: 6px;
@@ -526,7 +527,7 @@ textarea:focus {
 .template-btn {
   padding: 6px 12px;
   border-radius: 14px;
-  font-size: 12px;
+  font-size: var(--ui-control-font-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -536,7 +537,7 @@ textarea:focus {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   margin-top: 10px;
 }
@@ -545,7 +546,7 @@ textarea:focus {
 .info-box {
   background: #fff8d6;
   padding: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   border-radius: 8px;
   margin-top: 12px;
 }
@@ -585,7 +586,7 @@ textarea:focus {
   color: white;
   padding: 12px 18px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   animation: fadeInOut 2s ease;
 }
 
@@ -618,7 +619,7 @@ textarea:focus {
   color: white;
   padding: 12px 18px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   animation: fadeInOut 2s ease;
 }
 
@@ -634,16 +635,16 @@ textarea:focus {
 
 .error-state p {
   color: #dc2626;
-  font-size: 15px;
+  font-size: var(--ui-font-small);
   margin-bottom: 16px;
 }
 
 /* HINT TEXT */
 .hint {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
   margin-bottom: 12px;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 .field-remark-item {
   border-left: 3px solid #f59e0b;
@@ -655,14 +656,14 @@ textarea:focus {
 
 .field-remark-head {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #92400e;
 }
 
 .field-remark-text {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #3f3f46;
   white-space: pre-wrap;
 }

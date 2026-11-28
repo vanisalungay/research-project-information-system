@@ -32,10 +32,10 @@
   --ui-control-pad-y-lg: 12px;
   --ui-control-pad-x-lg: 20px;
 
-  --ui-control-font-sm: 13px;
-  --ui-control-font-md: 14px;
-  --ui-control-font-lg: 15px;
-  --ui-control-weight: 600;
+  --ui-control-font-sm: var(--ui-font-small); /* 13px */
+  --ui-control-font-md: var(--ui-font-body); /* 14px */
+  --ui-control-font-lg: 0.9375rem; /* 15px — auth and search only */
+  --ui-control-weight: var(--ui-weight-semibold);
   --ui-control-radius: 8px;
   --ui-control-gap: 8px;
 
@@ -45,9 +45,9 @@
   --ui-field-height-lg: 44px;
   --ui-field-pad-y: 8px;
   --ui-field-pad-x: 12px;
-  --ui-field-font: 14px;
-  --ui-field-label-font: 13px;
-  --ui-field-help-font: 12px;
+  --ui-field-font: var(--ui-font-body); /* 14px */
+  --ui-field-label-font: var(--ui-font-label); /* 13px */
+  --ui-field-help-font: var(--ui-font-caption); /* 12px */
 
   /* ===== Icons ===== */
   --ui-icon-xs: 12px;
@@ -58,16 +58,49 @@
   --ui-icon-2xl: 24px;
   --ui-icon-empty: 40px;
 
-  /* ===== UI typography — --fs-* stays the source scale ===== */
-  --ui-font-page-title: var(--fs-xl); /* 24px */
-  --ui-font-section-title: var(--fs-lg); /* 18px */
-  --ui-font-modal-title: var(--fs-lg); /* 18px */
-  --ui-font-card-title: var(--fs-base); /* 16px */
-  --ui-font-body: var(--fs-sm); /* 14px */
-  --ui-font-helper: var(--fs-xs); /* 12px */
-  --ui-font-table-header: 13px;
+  /* ===== UI typography — the single source of truth for screen text =====
+     Eight size steps. The auth screens and the public About hero use the display
+     step; every other screen uses the seven functional roles below.
+     The --fs-* primitives in base.css remain as compatibility aliases. */
+  --ui-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  --ui-font-caption: 0.75rem; /* 12px — metadata, helper text, table headers */
+  --ui-font-small: 0.8125rem; /* 13px — dense table cells, labels, compact controls */
+  --ui-font-body: 0.875rem; /* 14px — standard body, form fields, buttons */
+  --ui-font-body-lg: 1rem; /* 16px — long-form copy */
+  --ui-font-section-title: 1.125rem; /* 18px */
+  --ui-font-page-title: 1.5rem; /* 24px */
+  --ui-font-stat: 1.75rem; /* 28px — dashboard numbers */
+  --ui-font-display: clamp(1.875rem, 2.6vw, 2.375rem); /* 30–38px — auth hero and the public About hero */
+
+  --ui-weight-regular: 400;
+  --ui-weight-medium: 500;
+  --ui-weight-semibold: 600;
+  --ui-weight-bold: 700;
+  --ui-weight-display: 800; /* numeric emphasis and the auth hero only */
+
+  --ui-line-none: 1;
+  --ui-line-display: 1.15;
   --ui-line-tight: 1.25;
+  --ui-line-snug: 1.4;
   --ui-line-body: 1.5;
+
+  --ui-tracking-tight: -0.01em;
+  --ui-tracking-normal: 0;
+  --ui-tracking-label: 0.02em;
+  --ui-tracking-caps: 0.04em;
+  --ui-tracking-eyebrow: 0.12em; /* auth overline only */
+
+  --ui-font-card-title: var(--ui-font-body-lg); /* 16px */
+  --ui-font-modal-title: var(--ui-font-body-lg); /* 16px */
+  --ui-font-label: var(--ui-font-small); /* 13px */
+  --ui-font-helper: var(--ui-font-caption); /* 12px */
+  --ui-font-table-header: var(--ui-font-caption); /* 12px */
+  --ui-font-table-cell: var(--ui-font-body); /* 14px */
+  --ui-font-table-cell-compact: var(--ui-font-small); /* 13px */
 
   /* ===== Surfaces and text ===== */
   --ui-surface-page: var(--color-background);
@@ -82,7 +115,7 @@
   --ui-text-heading: var(--color-heading);
   --ui-text-body: var(--color-text);
   --ui-text-soft: #475569;
-  --ui-text-muted: #64748b;
+  --ui-text-muted: #5b6678;
   --ui-overlay-backdrop: rgba(15, 23, 42, 0.5);
   --ui-overlay-blur: 2px;
 

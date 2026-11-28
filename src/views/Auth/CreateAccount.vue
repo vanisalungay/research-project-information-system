@@ -1,39 +1,23 @@
 <template>
-  <div class="register-wrapper">
-    <!-- LEFT PANEL -->
-    <div class="left-panel">
-      <div class="glow-effect"></div>
-      <div class="branding-content">
-        <img src="@/assets/images/logo.png" class="school-logo" alt="MSU Naawan Logo" />
+  <div class="auth-page">
+    <!-- Left: the same MSU-Naawan branding panel the Sign In page uses. -->
+    <AuthBrandingPanel />
 
-        <h1 class="title">
-          Research <span class="highlight">Project</span><br />
-          Information<br />
-          System
-        </h1>
-
-        <p class="school-name">
-          RESEARCH AND PUBLICATION SERVICES<br />
-          <span class="sub-school">Mindanao State University at Naawan</span>
-        </p>
-      </div>
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div class="right-panel">
-      <div class="right-content">
+    <!-- Right: the registration form. -->
+    <main class="auth-right">
+      <div class="auth-form auth-form--register">
         <BackButton label="Back to Login" to="/login" class="auth-back" />
 
-        <div class="header-section">
-          <h2 class="welcome">Create Proponent Account</h2>
-          <p class="subtitle">
+        <header class="auth-header">
+          <h2 class="auth-heading">Create an account</h2>
+          <p class="auth-subtitle">
             Register as a Proponent to submit and manage research project proposals.
           </p>
-        </div>
+        </header>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="error-banner">
-          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div v-if="errorMessage" class="auth-error" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4M12 16h.01" />
           </svg>
@@ -41,11 +25,12 @@
         </div>
 
         <!-- FORM -->
-        <form class="register-form" @submit.prevent="handleRegister">
-          <div class="input-group">
-            <label for="name">Full Name</label>
+        <form class="auth-form__fields" @submit.prevent="handleRegister">
+          <div class="auth-field">
+            <label for="name" class="auth-label">Full Name</label>
             <input
               id="name"
+              class="auth-input"
               type="text"
               v-model="name"
               placeholder="Juan Dela Cruz"
@@ -55,10 +40,11 @@
             <FullNameHint />
           </div>
 
-          <div class="input-group">
-            <label for="idNumber">ID Number</label>
+          <div class="auth-field">
+            <label for="idNumber" class="auth-label">ID Number</label>
             <input
               id="idNumber"
+              class="auth-input"
               type="text"
               v-model="idNumber"
               placeholder="Enter your ID number"
@@ -66,43 +52,49 @@
             />
           </div>
 
-          <div class="input-group">
-            <label for="department">Department / Office</label>
-            <input
+          <div class="auth-field">
+            <label for="department" class="auth-label">Department / Office</label>
+            <select
               id="department"
-              type="text"
               v-model="departmentOffice"
-              placeholder="Enter your department or office"
+              class="auth-input auth-select"
               required
-            />
+            >
+              <option value="" disabled>Select your College / Office</option>
+              <option v-for="college in colleges" :key="college" :value="college">
+                {{ college }}
+              </option>
+            </select>
           </div>
 
-          <div class="input-group">
-            <label for="email">University Email Address</label>
+          <div class="auth-field">
+            <label for="email" class="auth-label">University Email Address</label>
             <input
               id="email"
+              class="auth-input"
               type="email"
-              v-model="email"
-              placeholder="juan.delacruz@msunaawan.edu.ph"
-              pattern="^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$"
-              title="Please use your MSU Naawan email."
-              required
+              :value="generatedEmail"
+              readonly
+              aria-readonly="true"
+              aria-describedby="email-generated-note"
+              placeholder="Enter your full name"
             />
+            <p id="email-generated-note" class="auth-generated">
+              <span v-if="emailChecking">Checking availability…</span>
+              <span v-else>
+                Automatically generated from your full name. This address cannot be edited.
+              </span>
+            </p>
           </div>
 
-          <PasswordRequirements
-            id="password-requirements"
-            :password="password"
-            :confirm="confirmPassword"
-          />
-
-          <div class="half-inputs">
-            <div class="input-group">
-              <label for="password">Password</label>
+          <div class="auth-half">
+            <div class="auth-field">
+              <label for="password" class="auth-label">Password</label>
               <PasswordInput
                 id="password"
                 v-model="password"
-                placeholder="Create a password"
+                class="auth-input auth-input--password"
+                placeholder="Create password"
                 autocomplete="new-password"
                 aria-describedby="password-hint password-requirements"
                 required
@@ -110,12 +102,13 @@
               <PasswordFieldHint id="password-hint" kind="new" />
             </div>
 
-            <div class="input-group">
-              <label for="confirmPassword">Confirm Password</label>
+            <div class="auth-field">
+              <label for="confirmPassword" class="auth-label">Confirm Password</label>
               <PasswordInput
                 id="confirmPassword"
                 v-model="confirmPassword"
-                placeholder="Confirm your password"
+                class="auth-input auth-input--password"
+                placeholder="Confirm password"
                 autocomplete="new-password"
                 aria-describedby="confirmPassword-hint"
                 required
@@ -124,8 +117,16 @@
             </div>
           </div>
 
+          <PasswordRequirements
+            id="password-requirements"
+            :password="password"
+            :confirm="confirmPassword"
+            :columns="2"
+            show-progress
+          />
+
           <!-- TERMS -->
-          <div class="terms">
+          <div class="auth-terms">
             <input type="checkbox" id="agree" v-model="agree" class="terms-checkbox" />
             <label for="agree" class="terms-label">
               I have read and agree to the
@@ -139,16 +140,22 @@
             </label>
           </div>
 
-          <button class="register-btn" type="submit" :disabled="!passwordReady">
-            Create Proponent Account
+          <button class="auth-submit" type="submit" :disabled="!passwordReady">
+            <span>Create account</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
           </button>
 
-          <p class="signin-text">
-            Already have an account? <router-link to="/login" class="signin-link">Sign in</router-link>
+          <p class="auth-switch">
+            Already have an account?
+            <router-link to="/login" class="auth-link">Sign in</router-link>
           </p>
         </form>
       </div>
-    </div>
+    </main>
 
     <!-- TERMS & CONDITIONS MODAL -->
     <Transition name="modal">
@@ -224,9 +231,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
+import '@/assets/auth.css'
+import AuthBrandingPanel from '@/components/AuthBrandingPanel.vue'
 import BackButton from '@/components/BackButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
@@ -234,6 +243,8 @@ import PasswordRequirements from '@/components/PasswordRequirements.vue'
 import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
 import FullNameHint from '@/components/FullNameHint.vue'
 import { useDialog } from '@/composables/useDialog'
+import { RPIS_COLLEGES } from '@/utils/endorsementColleges.js'
+import { institutionalEmail } from '@/utils/institutionalEmail'
 import { firstLastNameError, formatPersonName } from '@/utils/personName'
 import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
@@ -244,12 +255,68 @@ const router = useRouter()
 const name = ref('')
 const idNumber = ref('')
 const departmentOffice = ref('')
-const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 const showTermsModal = ref(false)
 const errorMessage = ref('')
+
+/** The one authoritative college/unit list the endorsement and proposal forms already use. */
+const colleges = RPIS_COLLEGES
+
+/**
+ * The university address is not typed: it is derived from the full name with the same rule
+ * the administrator's Create Account form uses (utils/institutionalEmail), then checked
+ * against the existing accounts through the server so the duplicate suffix (2, 3, ...) is
+ * exactly the address the registration will receive.
+ */
+const emailPreview = ref('')
+const emailChecking = ref(false)
+const localEmail = computed(() => institutionalEmail(name.value))
+const generatedEmail = computed(() => emailPreview.value || localEmail.value)
+let emailPreviewTimer = null
+let emailPreviewSequence = 0
+
+watch(name, (value) => {
+  if (emailPreviewTimer !== null) {
+    clearTimeout(emailPreviewTimer)
+    emailPreviewTimer = null
+  }
+  emailPreview.value = ''
+  emailChecking.value = false
+
+  const trimmed = String(value || '').trim()
+  const sequence = ++emailPreviewSequence
+  if (!trimmed) return
+
+  // Debounced: a name being typed produces one availability request, not one per key.
+  emailPreviewTimer = setTimeout(async () => {
+    emailPreviewTimer = null
+    if (sequence !== emailPreviewSequence) return
+    emailChecking.value = true
+    try {
+      const response = await api.get('/api/users/registration-email', {
+        params: { name: trimmed },
+      })
+      if (sequence === emailPreviewSequence && response?.data?.email) {
+        emailPreview.value = response.data.email
+      }
+    } catch {
+      // The local rule remains on screen; the server still assigns the authoritative
+      // address (including a duplicate suffix) when the registration is submitted.
+    } finally {
+      if (sequence === emailPreviewSequence) emailChecking.value = false
+    }
+  }, 350)
+})
+
+onBeforeUnmount(() => {
+  if (emailPreviewTimer !== null) {
+    clearTimeout(emailPreviewTimer)
+    emailPreviewTimer = null
+  }
+  emailPreviewSequence += 1
+})
 
 /** The submit button stays disabled until the password and its confirmation are valid. */
 const passwordReady = computed(() => passwordFormReady(password.value, confirmPassword.value))
@@ -276,14 +343,6 @@ const handleRegister = async () => {
     return
   }
 
-  // University email validation
-  const emailRegex = /^[A-Za-z0-9._%+-]+@msunaawan\.edu\.ph$/i
-
-  if (!emailRegex.test(email.value.trim())) {
-    errorMessage.value = 'Only MSU Naawan email addresses (@msunaawan.edu.ph) are allowed.'
-    return
-  }
-
   // Format once more in case the field was never blurred (e.g. the form was submitted
   // with the keyboard while the input still had focus).
   name.value = formatPersonName(name.value)
@@ -293,18 +352,32 @@ const handleRegister = async () => {
     return
   }
 
+  // The address is generated from the name and is never typed. The server derives the
+  // authoritative final address again on submit, including any duplicate suffix.
+  if (!generatedEmail.value) {
+    errorMessage.value = 'Enter your full name so the university email can be generated.'
+    return
+  }
+
   const payload = {
     name: name.value,
-    email: email.value.trim().toLowerCase(),
+    email: generatedEmail.value,
     password: password.value,
     role: 'PROPONENT',
     departmentOffice: departmentOffice.value.trim()
   }
 
   try {
-    await api.post('/api/users', payload)
-
-    await showAlert('Account created successfully! You can now log in.', { type: 'success', title: 'Account Created' })
+    const response = await api.post('/api/users', payload)
+    // The server is the authority on the address; echo the one it actually issued, so the
+    // applicant sees the final value even if another registration took the previewed one.
+    const createdEmail = response?.data?.email
+    await showAlert(
+      createdEmail
+        ? `Account created successfully! Your university email is ${createdEmail}. You can now log in.`
+        : 'Account created successfully! You can now log in.',
+      { type: 'success', title: 'Account Created' },
+    )
     router.push('/login')
   } catch (error) {
     // The axios error can carry the submitted form (including its password) in
@@ -312,14 +385,14 @@ const handleRegister = async () => {
     console.error('Registration request failed.')
 
     if (error.response) {
-      // The backend refused the registration (duplicate e-mail, invalid payload,
-      // ...). Its reason is the one shown to the user.
+      // The backend refused the registration (an invalid payload, a name that cannot
+      // produce an address, ...). Its reason is the one shown to the user.
       const body = error.response.data
       errorMessage.value =
         (typeof body === 'string' && body) ||
         body?.message ||
         body?.error ||
-        'Registration failed. Email already exists.'
+        'Registration failed. Please try again.'
       return
     }
 
@@ -336,284 +409,52 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-.register-wrapper {
-  display: flex;
-  height: 100vh;
-  width: 100%;
-  background: var(--color-background, #f3f4f6);
-  overflow: hidden;
-}
+/* The split-screen layout, the branding panel, the fields and the buttons are shared
+   with the Sign In page (assets/auth.css). Only the Terms and Conditions dialog is
+   unique to this page. */
 
-/* ========== LEFT PANEL ========== */
-.left-panel {
-  position: relative;
-  width: 40%;
-  height: 100vh;
-  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-  padding: 64px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.glow-effect {
-  position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
-  pointer-events: none;
-}
-
-.branding-content {
-  position: relative;
-  z-index: 2;
-  max-width: 440px;
-  margin: 0 auto;
-}
-
-.school-logo {
-  width: 110px;
+/* The shared Back control, rendered as the compact blue text link the auth page needs.
+   Its routing/click behaviour is unchanged. */
+.auth-form .auth-back {
+  --bb-surface: transparent;
+  --bb-border: transparent;
+  --bb-text: var(--color-primary, #2452ff);
   height: auto;
-  margin-bottom: 32px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-}
-
-.title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 28px 0;
-  letter-spacing: -0.025em;
-  text-align: left;
-}
-
-.title .highlight {
-  color: #ffd803;
-}
-
-.school-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.6;
-  opacity: 0.9;
-  letter-spacing: 0.05em;
-  margin: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding-top: 28px;
-  text-align: left;
-}
-
-.sub-school {
-  font-size: 0.75rem;
-  font-weight: 400;
-  opacity: 0.8;
-  letter-spacing: 0;
-}
-
-/* ========== RIGHT PANEL ========== */
-.right-panel {
-  width: 60%;
-  height: 100vh;
-  padding: 64px 80px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow-y: auto;
-}
-
-.right-content {
-  width: 100%;
-  max-width: 540px;
-}
-
-.header-section {
-  margin-bottom: 24px;
-  text-align: left;
-}
-
-.welcome {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-heading, #0f172a);
-  margin: 0 0 8px 0;
-  letter-spacing: -0.02em;
-}
-
-.subtitle {
-  font-size: 0.9375rem;
-  color: var(--color-text-soft, #64748b);
-  margin: 0;
-}
-
-/* ========== BACK BUTTON ========== */
-.auth-back {
-  margin-bottom: 24px;
-}
-
-/* ========== ERROR BANNER ========== */
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: #991b1b;
-  font-size: 0.8125rem;
-  margin-bottom: 20px;
-}
-
-.error-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-/* ========== FORM ========== */
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
+  padding: 0;
   gap: 6px;
-  text-align: left;
+  border-radius: 0;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
 }
 
-.input-group label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text, #475569);
+.auth-form .auth-back:hover {
+  --bb-border: transparent;
+  border-color: transparent;
+  background: transparent;
 }
 
-.input-group input {
-  padding: 12px 14px;
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #1f2937);
-  width: 100%;
+.auth-form .auth-back :deep(.back-button__icon) {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  color: var(--color-primary, #2452ff);
 }
 
-.input-group input:focus {
-  outline: none;
-  border-color: #2452ff;
-  box-shadow: 0 0 0 3px rgba(36, 82, 255, 0.15);
+.auth-form .auth-back :deep(.back-button__icon svg) {
+  width: 14px;
+  height: 14px;
 }
 
-.input-group input::placeholder {
-  color: #94a3b8;
+.auth-form .auth-back:hover :deep(.back-button__icon) {
+  background: transparent;
+  color: var(--color-primary-hover, #1d40cc);
 }
 
-.half-inputs {
-  display: flex;
-  gap: 12px;
-}
-
-.half-inputs .input-group {
-  flex: 1;
-}
-
-/* ========== TERMS ========== */
-.terms {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 4px 0;
-  font-size: 0.8125rem;
-}
-
-.terms-checkbox {
-  width: 16px !important;
-  height: 16px !important;
-  margin-top: 3px !important;
-  cursor: pointer;
-  accent-color: #2452ff;
-}
-
-.terms-label {
-  color: var(--color-text, #475569) !important;
-  font-size: 0.8125rem !important;
-  font-weight: 400 !important;
-  line-height: 1.5;
-  cursor: default;
-}
-
-.terms-link {
-  color: #2452ff;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.15s ease;
-}
-
-.terms-link:hover {
-  color: #1d40cc;
-}
-
-/* ========== REGISTER BUTTON ========== */
-.register-btn {
-  background: #2452ff;
-  color: white;
-  padding: 13px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  width: 100%;
-  margin-top: 4px;
-}
-
-.register-btn:hover {
-  background: #1d40cc;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(36, 82, 255, 0.3);
-}
-
-.register-btn:active {
-  transform: translateY(0);
-}
-
-.register-btn:disabled,
-.register-btn:disabled:hover {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* ========== SIGN IN LINK ========== */
-.signin-text {
-  margin: 12px 0 0 0;
-  font-size: 0.8125rem;
-  color: var(--color-text-soft, #64748b);
-  text-align: center;
-}
-
-.signin-link {
-  color: #2452ff;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.signin-link:hover {
-  text-decoration: underline;
-  color: #1d40cc;
+/* Keep the field hints readable at the enlarged registration type scale. */
+.auth-form--register :deep(.full-name-hint),
+.auth-form--register :deep(.pw-field-hint) {
+  font-size: var(--ui-font-caption);
 }
 
 /* ========== MODAL ========== */
@@ -669,14 +510,14 @@ const handleRegister = async () => {
 .modal-box h2 {
   margin-bottom: 20px;
   color: var(--color-heading, #1f1a3d);
-  font-size: 1.25rem;
+  font-size: var(--ui-font-card-title);
   text-align: center;
 }
 
 .modal-content {
   max-height: 400px;
   overflow-y: auto;
-  line-height: 1.8;
+  line-height: var(--ui-line-body);
   color: var(--color-text, #444);
   text-align: justify;
   padding-right: 8px;
@@ -686,8 +527,8 @@ const handleRegister = async () => {
   margin-top: 24px;
   margin-bottom: 12px;
   color: var(--color-heading, #1f1a3d);
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   text-align: center;
 }
 
@@ -711,8 +552,8 @@ const handleRegister = async () => {
   padding: 12px;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-icon-md);
   transition: all 0.2s ease;
 }
 
@@ -738,69 +579,5 @@ const handleRegister = async () => {
 
 .modal-leave-to .modal-box {
   transform: scale(0.95);
-}
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 960px) {
-  .register-wrapper {
-    height: auto;
-    min-height: 100vh;
-    overflow-y: auto;
-    /* Both panels are width:100% at this breakpoint; without wrapping they were
-       squeezed side by side and the form (and the password checklist) became too
-       narrow to read. */
-    flex-wrap: wrap;
-  }
-
-  .left-panel {
-    width: 100%;
-    height: auto;
-    padding: 40px;
-    align-items: center;
-  }
-
-  .school-logo {
-    margin-bottom: 16px;
-  }
-
-  .title {
-    font-size: 1.875rem;
-    text-align: center;
-    margin-bottom: 16px;
-  }
-
-  .school-name {
-    text-align: center;
-    padding-top: 16px;
-  }
-
-  .right-panel {
-    width: 100%;
-    height: auto;
-    padding: 40px 24px;
-  }
-
-  .half-inputs {
-    flex-direction: column;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 540px) {
-  .left-panel {
-    padding: 32px 24px;
-  }
-
-  .right-panel {
-    padding: 32px 20px;
-  }
-
-  .welcome {
-    font-size: 1.5rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-  }
 }
 </style>

@@ -31,7 +31,7 @@
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
-  --color-text-soft: #64748b;
+  --color-text-soft: #5b6678;
   --color-text-muted: #94a3b8;
 
   /* Semantic color tokens */
@@ -39,7 +39,7 @@
   --color-primary-hover: #1d40cc;
   --color-success: #10b981;
   --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-danger: #b91c1c;
   --color-info: #3b82f6;
 
   /* ===== Status tones =====
@@ -217,13 +217,14 @@
   /* Card surface */
   --color-card-background: #ffffff;
 
-  /* Type scale */
-  --fs-xs: 0.75rem;   /* 12px — labels, metadata */
-  --fs-sm: 0.875rem;  /* 14px — body small, table cells */
-  --fs-base: 1rem;    /* 16px — body text */
-  --fs-lg: 1.125rem;  /* 18px — subheadings */
-  --fs-xl: 1.5rem;    /* 24px — page titles */
-  --fs-2xl: 2rem;     /* 32px — hero text */
+  /* Type scale — compatibility aliases of the semantic tokens in tokens.css.
+     New screen styles should use the --ui-font-* roles directly. */
+  --fs-xs: var(--ui-font-caption); /* 12px */
+  --fs-sm: var(--ui-font-body); /* 14px */
+  --fs-base: var(--ui-font-body-lg); /* 16px */
+  --fs-lg: var(--ui-font-section-title); /* 18px */
+  --fs-xl: var(--ui-font-page-title); /* 24px */
+  --fs-2xl: 2rem; /* 32px — display primitive */
 
   /* Spacing scale */
   --space-1: 4px;
@@ -250,7 +251,7 @@
 *::after {
   box-sizing: border-box;
   margin: 0;
-  font-weight: normal;
+  font-weight: var(--ui-weight-regular);
 }
 
 body {
@@ -260,9 +261,9 @@ body {
   transition:
     color 0.5s,
     background-color 0.5s;
-  line-height: 1.6;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
+  line-height: var(--ui-line-body);
+  font-family: var(--ui-font-ui);
+  font-size: var(--ui-font-body-lg);
   font-variant-numeric: tabular-nums;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -284,6 +285,7 @@ body {
     --color-text-soft: #94a3b8;
     --color-heading: #f8fafc;
     --color-primary: #3b82f6;
+    --color-danger: #f87171;
 
     /* Status tones on a dark surface: the hue is kept, the surface is darkened so the
        badge never turns into a white block. */
@@ -330,8 +332,8 @@ body {
     --btn-primary-bg: #315bff;
     --btn-primary-border: #315bff;
     --btn-primary-hover-bg: #4b6bff;
-    --btn-approve-bg: #059669;
-    --btn-approve-border: #059669;
+    --btn-approve-bg: #047857;
+    --btn-approve-border: #047857;
     --btn-approve-hover-bg: #10b981;
     --btn-reject-bg: #dc2626;
     --btn-reject-border: #dc2626;

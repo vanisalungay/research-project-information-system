@@ -202,7 +202,7 @@ export default {
   width:500%;
   max-width:135%;
   padding:24px;
-  font-family:Arial,sans-serif;
+  font-family:var(--ui-font-ui);
   background:#f7f8fc;
   box-sizing:border-box;
 }
@@ -222,7 +222,7 @@ export default {
 .header p{
   margin-top:4px;
   color:#6b7280;
-  font-size:14px;
+  font-size:var(--ui-font-body);
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
@@ -247,7 +247,7 @@ export default {
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:28px;
+  font-size:var(--ui-icon-2xl);
 }
 
 .title h3{
@@ -270,8 +270,8 @@ export default {
 
 .section label{
   display:block;
-  font-size:13px;
-  font-weight:700;
+  font-size:var(--ui-font-label);
+  font-weight:var(--ui-weight-semibold);
   color:#6b7280;
   margin-bottom:6px;
 }
@@ -279,15 +279,15 @@ export default {
 .section p{
   margin:0;
   color:#1f2937;
-  line-height:1.6;
+  line-height:var(--ui-line-body);
 }
 
 .status{
   display:inline-block;
   padding:6px 14px;
   border-radius:20px;
-  font-size:12px;
-  font-weight:700;
+  font-size:var(--ui-font-caption);
+  font-weight:var(--ui-weight-semibold);
 }
 
 .actions{
@@ -300,8 +300,8 @@ export default {
 .primary-btn{
   border-radius:8px;
   padding:10px 18px;
-  font-size:14px;
-  font-weight:600;
+  font-size:var(--ui-control-font-md);
+  font-weight:var(--ui-weight-semibold);
   cursor:pointer;
   transition:.2s;
 }
@@ -309,8 +309,8 @@ export default {
 .secondary-btn{
   border-radius:8px;
   padding:10px 18px;
-  font-size:14px;
-  font-weight:600;
+  font-size:var(--ui-control-font-md);
+  font-weight:var(--ui-weight-semibold);
   cursor:pointer;
   transition:.2s;
 }

@@ -13,14 +13,53 @@
       </div>
     </div>
 
-    <!-- Search -->
+    <!-- Status filter and search share one toolbar: both narrow the same loaded list,
+         so the page counter below always describes what the two selected. The order and
+         the styling are the ones Dean Role Management already uses. -->
     <div class="toolbar">
+      <div class="filters" role="group" aria-label="Filter accounts by status">
+        <button
+          type="button"
+          class="filter-pill"
+          :class="{ active: statusFilter === '' }"
+          :aria-pressed="statusFilter === ''"
+          @click="statusFilter = ''"
+        >
+          <span>All Accounts</span>
+          <span class="filter-count">{{ users.length }}</span>
+        </button>
+        <button
+          v-for="option in statusOptions"
+          :key="option.value"
+          type="button"
+          class="filter-pill"
+          :class="{ active: statusFilter === option.value }"
+          :aria-pressed="statusFilter === option.value"
+          @click="statusFilter = option.value"
+        >
+          <span>{{ option.label }}</span>
+          <span class="filter-count">{{ option.count }}</span>
+        </button>
+      </div>
+
       <input
         v-model="search"
-        type="text"
+        type="search"
         class="search-input"
         placeholder="Search by name, email, or role..."
+        aria-label="Search accounts by name, email, or role"
       />
+    </div>
+
+    <!-- Result of the last pending-account decision, kept on the page after the modal
+         closes so the administrator sees what happened to the request. -->
+    <div
+      v-if="actionNotice.message"
+      class="notice"
+      :class="`notice--${actionNotice.type}`"
+      role="status"
+    >
+      {{ actionNotice.message }}
     </div>
 
     <!-- Loading -->
@@ -90,24 +129,35 @@
               </span>
             </td>
             <td class="actions-cell">
-              <button class="reset-btn btn-secondary" @click="openResetModal(user)">
-                Reset Password
-              </button>
-              <!-- A Dean account keeps its Dean role management: the designation and the
-                   college it endorses for, or revoking the role. The role itself is
-                   granted when the account is created, through the standard Create
-                   Account flow above. -->
+              <!-- A pending registration is reviewed here: the Actions button opens the
+                   request so the administrator can read it and Approve or Reject it. -->
               <button
-                v-if="isDean(user) && user.deanStatus !== 'REVOKED'"
-                class="dean-manage-btn btn-edit"
-                @click="openDeanModal(user)"
+                v-if="isPending(user)"
+                class="review-btn btn-primary"
+                @click="openPendingModal(user)"
               >
-                Manage Dean Role
+                Actions
               </button>
+              <template v-else>
+                <button class="reset-btn btn-secondary" @click="openResetModal(user)">
+                  Reset Password
+                </button>
+                <!-- A Dean account keeps its Dean role management: the designation and the
+                     college it endorses for, or revoking the role. The role itself is
+                     granted when the account is created, through the standard Create
+                     Account flow above. -->
+                <button
+                  v-if="isDean(user) && user.deanStatus !== 'REVOKED'"
+                  class="dean-manage-btn btn-edit"
+                  @click="openDeanModal(user)"
+                >
+                  Manage Dean Role
+                </button>
+              </template>
             </td>
           </tr>
           <tr v-if="filteredUsers.length === 0">
-            <td colspan="5" class="empty">No users found.</td>
+            <td colspan="5" class="empty">{{ emptyMessage }}</td>
           </tr>
         </tbody>
       </table>
@@ -278,6 +328,119 @@
         </form>
       </div>
     </div>
+
+    <!-- Review a pending account. The administrator reads the request here and decides:
+         Approve lets the account sign in with its assigned role, Reject closes it. -->
+    <div
+      v-if="showPendingModal"
+      class="adm-overlay"
+      @click.self="closePendingModal"
+      @keydown.esc="closePendingModal"
+    >
+      <div
+        ref="pendingModal"
+        class="adm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-account-title"
+        tabindex="-1"
+        @keydown="onPendingKeydown"
+      >
+        <header class="adm-header">
+          <span class="adm-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12l2 2 4-4" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          </span>
+          <div class="adm-heading">
+            <h2 id="review-account-title">Review account request</h2>
+            <p>Approve to let this account sign in with its assigned role, or reject it.</p>
+          </div>
+          <button
+            type="button"
+            class="adm-close"
+            aria-label="Close review account modal"
+            :disabled="pendingAction !== ''"
+            @click="closePendingModal"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="adm-body">
+          <p v-if="pendingError" class="adm-error" role="alert">{{ pendingError }}</p>
+
+          <section class="adm-panel" aria-labelledby="review-account-details-title">
+            <h3 id="review-account-details-title" class="adm-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21a8 8 0 0 0-16 0" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>Requested account</span>
+            </h3>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Full name</span>
+              <span class="adm-credential-value">{{ pendingUser?.name || '—' }}</span>
+            </div>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Email</span>
+              <span class="adm-credential-value">{{ pendingUser?.email || '—' }}</span>
+            </div>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Role</span>
+              <span class="adm-credential-value">{{ pendingUser ? roleLabels(pendingUser) : '—' }}</span>
+            </div>
+            <div class="adm-credential-row">
+              <span class="adm-credential-label">Requested on</span>
+              <span class="adm-credential-value">{{ formatDate(pendingUser?.dateRegistered) }}</span>
+            </div>
+          </section>
+
+          <p class="adm-hint">
+            Approving grants the account the role shown above. Rejecting closes the
+            registration, and the account cannot sign in.
+          </p>
+        </div>
+
+        <footer class="adm-footer review-footer">
+          <button
+            type="button"
+            class="adm-btn adm-btn--secondary"
+            :disabled="pendingAction !== ''"
+            @click="closePendingModal"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="adm-btn btn-reject"
+            :disabled="pendingAction !== ''"
+            :aria-busy="pendingAction === 'reject'"
+            @click="rejectPending"
+          >
+            <span v-if="pendingAction === 'reject'" class="adm-spinner" aria-hidden="true"></span>
+            <span>{{ pendingAction === 'reject' ? 'Rejecting…' : 'Reject' }}</span>
+          </button>
+          <button
+            type="button"
+            class="adm-btn btn-approve"
+            :disabled="pendingAction !== ''"
+            :aria-busy="pendingAction === 'approve'"
+            @click="approvePending"
+          >
+            <span v-if="pendingAction === 'approve'" class="adm-spinner" aria-hidden="true"></span>
+            <span>{{ pendingAction === 'approve' ? 'Approving…' : 'Approve' }}</span>
+          </button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -295,6 +458,10 @@ import PasswordFieldHint from '@/components/PasswordFieldHint.vue'
 import ManageDeanFlow from '@/views/Admin/ManageDeanFlow.vue'
 import { statusTone } from '@/utils/statusTone.js'
 import { accountStatusLabel, deanAssignmentStatusLabel } from '@/utils/statusCatalog.js'
+import {
+  accountStatusFilterOptions,
+  matchesAccountStatus,
+} from '@/utils/accountStatusFilter.js'
 import { passwordFormReady, passwordPolicyMessage } from '@/utils/passwordPolicy'
 
 const users = ref([])
@@ -306,6 +473,8 @@ const selectedAssignment = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const search = ref('')
+// '' is the "All Accounts" option; any other value is one stored account status.
+const statusFilter = ref('')
 
 // Reset password state
 const showResetModal = ref(false)
@@ -324,15 +493,136 @@ let bodyOverflowBefore = ''
 // matching confirmation; the server re-validates the same policy.
 const resetPasswordValid = computed(() => passwordFormReady(newPassword.value, confirmPassword.value))
 
+// Pending-account review. `pendingAction` is '' when idle, otherwise the decision in
+// flight ('approve' / 'reject'), so the dialog cannot fire twice or be dismissed mid-request.
+//
+// Bind it as a boolean (`pendingAction !== ''`), never as the raw action string. A bound
+// boolean attribute counts the EMPTY STRING as present (Vue's includeBooleanAttr('') is
+// true, which mirrors HTML's disabled=""), so the raw binding left all three buttons
+// disabled the moment the dialog opened - the reason Approve and Reject did nothing.
+const showPendingModal = ref(false)
+const pendingUser = ref(null)
+const pendingAction = ref('')
+const pendingError = ref('')
+const pendingModal = ref(null)
+const actionNotice = ref({ type: 'success', message: '' })
+let pendingTrigger = null
+let pendingBodyOverflowBefore = ''
+
+const isPending = (user) => String(user?.status || '').toUpperCase() === 'PENDING'
+
+const formatDate = (value) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+const openPendingModal = (user) => {
+  pendingTrigger = document.activeElement
+  pendingBodyOverflowBefore = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  pendingUser.value = user
+  pendingAction.value = ''
+  pendingError.value = ''
+  showPendingModal.value = true
+  nextTick(() => pendingModal.value?.querySelector('.btn-approve')?.focus())
+}
+
+/** Force is used by a completed decision: the request in flight is already done. */
+const closePendingModal = (force = false) => {
+  if (pendingAction.value && !force) return
+  showPendingModal.value = false
+  document.body.style.overflow = pendingBodyOverflowBefore
+  pendingBodyOverflowBefore = ''
+  if (pendingTrigger && typeof pendingTrigger.focus === 'function') {
+    pendingTrigger.focus()
+  }
+  pendingTrigger = null
+  pendingUser.value = null
+  pendingError.value = ''
+}
+
+/** Keep Tab inside the review dialog while it is open. */
+const onPendingKeydown = (event) => {
+  if (event?.key !== 'Tab' || !pendingModal.value) return
+  const focusable = [...pendingModal.value.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => element.offsetParent !== null)
+  if (focusable.length === 0) return
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+const approvePending = async () => {
+  if (!pendingUser.value || pendingAction.value) return
+  const name = pendingUser.value.name
+  pendingAction.value = 'approve'
+  pendingError.value = ''
+  try {
+    await api.put(`/api/users/${pendingUser.value.id}/approve`)
+    actionNotice.value = { type: 'success', message: `${name} has been approved.` }
+    closePendingModal(true)
+    await loadUsers()
+  } catch (err) {
+    console.error('Failed to approve user:', err?.response?.status ?? 'no response')
+    pendingError.value = err?.response?.data?.error || 'Failed to approve the account.'
+  } finally {
+    pendingAction.value = ''
+  }
+}
+
+const rejectPending = async () => {
+  if (!pendingUser.value || pendingAction.value) return
+  const name = pendingUser.value.name
+  pendingAction.value = 'reject'
+  pendingError.value = ''
+  try {
+    await api.put(`/api/users/${pendingUser.value.id}/reject`)
+    actionNotice.value = { type: 'error', message: `${name} has been rejected.` }
+    closePendingModal(true)
+    await loadUsers()
+  } catch (err) {
+    console.error('Failed to reject user:', err?.response?.status ?? 'no response')
+    pendingError.value = err?.response?.data?.error || 'Failed to reject the account.'
+  } finally {
+    pendingAction.value = ''
+  }
+}
+
 const filteredUsers = computed(() => {
   const keyword = search.value.toLowerCase().trim()
-  if (!keyword) return users.value
-  return users.value.filter(u =>
-    (u.name || '').toLowerCase().includes(keyword) ||
-    (u.email || '').toLowerCase().includes(keyword) ||
-    rolesOf(u).join(' ').toLowerCase().includes(keyword) ||
-    revokedRolesOf(u).join(' ').toLowerCase().includes(keyword)
-  )
+  return users.value.filter(u => {
+    // The status filter and the search narrow the same list, so a row has to pass both.
+    // An account whose stored status is unknown is still found by "All Accounts".
+    if (!matchesAccountStatus(u, statusFilter.value)) return false
+    if (!keyword) return true
+    return (
+      (u.name || '').toLowerCase().includes(keyword) ||
+      (u.email || '').toLowerCase().includes(keyword) ||
+      rolesOf(u).join(' ').toLowerCase().includes(keyword) ||
+      revokedRolesOf(u).join(' ').toLowerCase().includes(keyword)
+    )
+  })
+})
+
+// The options (and their counts) come from the account statuses the backend actually
+// stores, read from the loaded rows - never from a hardcoded list of display words.
+const statusOptions = computed(() => accountStatusFilterOptions(users.value))
+
+const emptyMessage = computed(() => {
+  if (users.value.length === 0) return 'No users found.'
+  if (search.value.trim() || statusFilter.value) {
+    return 'No accounts match the selected search and status filter.'
+  }
+  return 'No users found.'
 })
 
 // Accounts page their own filtered list; the total is the real number of matching
@@ -346,8 +636,8 @@ const {
   reset: resetPage,
 } = usePagination(filteredUsers)
 
-// A new search is a new result set: start at its first page.
-watch(search, resetPage)
+// A new search or a different status is a new result set: start at its first page.
+watch([search, statusFilter], resetPage)
 
 /**
  * Every role the account holds. The API returns the primary role first and the full
@@ -562,6 +852,9 @@ onBeforeUnmount(() => {
   if (showResetModal.value) {
     document.body.style.overflow = bodyOverflowBefore
   }
+  if (showPendingModal.value) {
+    document.body.style.overflow = pendingBodyOverflowBefore
+  }
 })
 </script>
 
@@ -581,8 +874,9 @@ onBeforeUnmount(() => {
 
 .header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* The single page action. `margin-left: auto` keeps it on the right even when the
@@ -599,7 +893,7 @@ onBeforeUnmount(() => {
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* On a narrow screen the title and the action stack, so neither is squeezed. */
@@ -614,16 +908,86 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Filter pills on the left, search on the right; both wrap on a narrow screen. */
 .toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* The same pill the Dean Role Management page uses, so the two admin lists read alike. */
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dfe3ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #3b3d55;
+  font-family: inherit;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.filter-pill:hover:not(.active) {
+  background: #f6f7fb;
+  border-color: #cdd3e3;
+}
+
+.filter-pill.active {
+  background: #262342;
+  border-color: #262342;
+  color: #ffffff;
+}
+
+.filter-pill:focus-visible {
+  outline: 2px solid #315bff;
+  outline-offset: 2px;
+}
+
+/* The count is derived from the loaded rows, never from a hardcoded number. */
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #eef1f8;
+  color: #4a5169;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-none);
+}
+
+.filter-pill.active .filter-count {
+  background: #ffd000;
+  color: #262342;
+}
+
 .search-input {
-  width: 100%;
+  flex: 1 1 260px;
+  min-width: 200px;
+  max-width: 380px;
   padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   outline: none;
   box-sizing: border-box;
 }
@@ -632,10 +996,22 @@ onBeforeUnmount(() => {
   border-color: #2452ff;
 }
 
+/* On a narrow screen the pills and the search stack instead of being squeezed. */
+@media (max-width: 640px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    max-width: none;
+  }
+}
+
 .loading-state {
   text-align: center;
   padding: 40px 20px;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .error-text {
@@ -668,16 +1044,16 @@ th, td {
   border: 1px solid #e5e7eb;
   padding: 12px 16px;
   text-align: left;
-  font-size: 14px;
+  font-size: var(--ui-font-table-header);
 }
 
 th {
   background: #f8fafc;
   color: #475569;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: var(--ui-font-table-header);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 td {
@@ -699,7 +1075,7 @@ td {
 /* A role the account no longer holds: visible for the record, visually inactive. */
 .role-revoked {
   background: #f1f5f9;
-  color: #64748b;
+  color: var(--ui-text-muted);
   border: 1px dashed #cbd5e1;
 }
 
@@ -716,8 +1092,8 @@ td {
 .role-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   display: inline-block;
 }
 
@@ -733,14 +1109,76 @@ td {
 .status-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   display: inline-block;
 }
 
 
+.notice {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-medium);
+}
+
+.notice--success {
+  background: #e8f7ee;
+  border-color: #b7e4c7;
+  color: #16794a;
+}
+
+.notice--error {
+  background: #fdf0ef;
+  border-color: #f5c2c0;
+  color: #b42318;
+}
+
 .actions-cell {
   white-space: nowrap;
+}
+
+/* The pending-account action: same geometry as Reset Password; colour from the
+   shared action system (assets/actions.css). */
+.review-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
+}
+
+/* Three decisions do not fit the two-column footer of the other dialogs. */
+.review-footer {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Approve and Reject are the shared action buttons (assets/actions.css), so they carry
+   their action colour from there; here they only have to fill their equal grid columns
+   and keep the same 1px box as Cancel, whatever the label. */
+.review-footer .adm-btn {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.review-footer .btn-approve,
+.review-footer .btn-reject {
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* On a phone the three decisions get one row each for Cancel and a shared row for the
+   decision pair, so "Approving…" is never squeezed into a third of the dialog. */
+@media (max-width: 480px) {
+  .review-footer {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .review-footer .adm-btn--secondary {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
@@ -748,8 +1186,8 @@ td {
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The Dean row action: the same size as Reset Password. */
@@ -758,8 +1196,8 @@ td {
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 </style>

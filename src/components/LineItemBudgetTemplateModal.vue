@@ -189,8 +189,8 @@ onBeforeUnmount(() => {
 
 .budget-template-heading h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -199,8 +199,8 @@ onBeforeUnmount(() => {
 
 .budget-template-file {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .budget-template-header-actions {
@@ -217,8 +217,8 @@ onBeforeUnmount(() => {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   text-decoration: none;
   cursor: pointer;
   transition: all 0.15s;
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
   background: none;
   border: none;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.15s;
@@ -270,8 +270,8 @@ onBeforeUnmount(() => {
   padding: 8px 24px;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .budget-template-frame {
@@ -295,9 +295,9 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 32px 24px;
   text-align: center;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 /* ===== FOOTER ===== */
@@ -313,8 +313,8 @@ onBeforeUnmount(() => {
 .btn-close {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-icon-xl);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;

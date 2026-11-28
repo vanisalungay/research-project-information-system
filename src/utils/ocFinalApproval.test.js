@@ -161,7 +161,7 @@ test('Approve for Implementation is enabled by a chosen classification and opens
   assert.ok(source.includes('this.showConfirm = true'), 'the confirmation dialog is the execution point')
   assert.ok(!source.includes('api.put'), 'the button must not send the approval directly')
 
-  const confirm = PAGE.slice(PAGE.indexOf('async confirmApproval()'), PAGE.indexOf('async returnToOvcrige()'))
+  const confirm = PAGE.slice(PAGE.indexOf('async confirmApproval()'), PAGE.indexOf('async returnToOrps()'))
   assert.ok(confirm.includes('this.needsBudget !== true && this.needsBudget !== false'),
     'an ambiguous request is refused on the client as well')
   assert.ok(confirm.includes('formData.append(\'needsBudget\', this.needsBudget)'),
@@ -175,14 +175,14 @@ test('the confirmation states where each routing sends the proposal', () => {
     'the with-budget explanation must be kept')
 })
 
-test('Return to OVCRIGE uses its own endpoint and never fakes success', () => {
+test('Return to ORPS uses its own endpoint and never fakes success', () => {
   assert.ok(
-    PAGE.includes('`/api/proposals/${proposalId}/return-to-ovcrige`'),
+    PAGE.includes('`/api/proposals/${proposalId}/return-to-orps`'),
     'the return must call the OC return endpoint, not the generic return-revision route',
   )
   assert.ok(!PAGE.includes('/return-revision'), 'an OC user is not allowed on return-revision')
 
-  const start = PAGE.indexOf('async returnToOvcrige()')
+  const start = PAGE.indexOf('async returnToOrps()')
   assert.ok(start >= 0)
   const end = PAGE.indexOf('handleSuccessClose()', start)
   const source = PAGE.slice(start, end)

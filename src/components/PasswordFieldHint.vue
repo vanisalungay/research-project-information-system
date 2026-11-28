@@ -19,8 +19,8 @@ const text = computed(() => PASSWORD_FIELD_HINTS[props.kind] || PASSWORD_FIELD_H
 <style scoped>
 .pw-field-hint {
   margin: 4px 0 0;
-  color: #64748b;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 </style>

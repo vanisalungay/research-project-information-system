@@ -1,5 +1,5 @@
 <template>
-  <div class="end-page end-page--fluid">
+  <div class="end-page end-page--fluid end-page--proponent">
     <div class="end-page-header">
       <h2>My Endorsements</h2>
       <p class="end-subtitle">
@@ -76,7 +76,7 @@
         </div>
 
         <div v-else class="end-card end-table-scroll">
-          <table class="end-table">
+          <table class="end-table end-table--requests">
             <thead>
               <tr>
                 <th>Reference</th>
@@ -85,7 +85,7 @@
                 <th>College</th>
                 <th>Submitted</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -104,7 +104,7 @@
                   </span>
                 </td>
                 <td>
-                  <router-link class="end-btn is-link" :to="`/endorsements/${request.id}`">
+                  <router-link class="end-btn is-view" :to="`/endorsements/${request.id}`">
                     View
                   </router-link>
                 </td>

@@ -283,7 +283,7 @@ const closeSuccess = () => {
 
 <style scoped>
 .page {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
   background: #f4f6fb;
   min-height: 100vh;
   width: 500%;
@@ -318,15 +318,15 @@ const closeSuccess = () => {
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* Geometry only; the `.is-*` tone colours come from assets/status.css. */
 .status {
   padding: 6px 14px;
   border-radius: 20px;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-caption);
 }
 
 .info-grid {
@@ -349,7 +349,7 @@ const closeSuccess = () => {
 .empty-documents {
   margin-top: 12px;
   color: #6b7280;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 .verification {
@@ -369,7 +369,7 @@ const closeSuccess = () => {
   flex: 1;
   padding: 14px;
   border-radius: 10px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   border: none;
   cursor: pointer;
 }
@@ -398,7 +398,7 @@ const closeSuccess = () => {
   border-radius: 8px;
   border: 1px solid #ccc;
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .modal-actions {

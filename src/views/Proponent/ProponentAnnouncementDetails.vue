@@ -475,15 +475,7 @@ onMounted(loadAnnouncement)
 
 <style scoped>
 .announcement-page {
-  /* Typography scale - the single source of truth for every text size on this page. */
-  --font-title: 26px; /* announcement title */
-  --font-section: 17px; /* panel / section headings */
-  --font-card: 16px; /* card headings */
-  --font-body: 13px; /* descriptions, reminders, dates, instructions, buttons */
-  --font-secondary: 12px; /* labels, badges, program descriptions, back button */
-  --font-supporting: 11px; /* timeline labels, disclaimer */
-  --font-countdown: 32px; /* countdown number */
-  --font-countdown-label: 10px; /* countdown caption */
+  /* Typography scale - the single source of truth for every text size on this page. */ /* announcement title */ /* panel / section headings */ /* card headings */ /* descriptions, reminders, dates, instructions, buttons */ /* labels, badges, program descriptions, back button */ /* timeline labels, disclaimer */ /* countdown number */ /* countdown caption */
   /* Fill the layout content area so the light canvas reaches the application edges. */
   margin: -32px;
   min-height: calc(100% + 64px);
@@ -555,10 +547,10 @@ onMounted(loadAnnouncement)
 
 .banner-eyebrow {
   color: #ffd400;
-  font-size: var(--font-secondary);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .status-badge {
@@ -567,9 +559,9 @@ onMounted(loadAnnouncement)
   gap: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: var(--font-secondary);
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .status-dot {
@@ -584,9 +576,9 @@ onMounted(loadAnnouncement)
 .banner-title {
   margin: 10px 0 8px;
   color: #ffffff;
-  font-size: var(--font-title);
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
 }
 
 .banner.has-countdown .banner-title {
@@ -596,21 +588,21 @@ onMounted(loadAnnouncement)
 .banner-summary {
   margin: 0;
   color: #e5e7f5;
-  font-size: var(--font-body);
-  font-weight: 400;
-  line-height: 1.35;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-snug);
 }
 
 .banner-date {
   color: #ffd400;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .banner-publisher {
   margin: 6px 0 0;
   color: #d7d8e9;
-  font-size: var(--font-body);
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-snug);
 }
 
 /* COUNTDOWN CARD */
@@ -631,18 +623,18 @@ onMounted(loadAnnouncement)
 
 .countdown-value {
   color: #25245b;
-  font-size: var(--font-countdown);
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-none);
 }
 
 .countdown-label {
   margin-top: 3px;
   color: #25245b;
-  font-size: var(--font-countdown-label);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: var(--ui-tracking-caps);
   text-align: center;
 }
 
@@ -691,17 +683,17 @@ onMounted(loadAnnouncement)
 
 .timeline-label {
   color: #e5e7f5;
-  font-size: var(--font-supporting);
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .timeline-date {
   color: #ffffff;
-  font-size: var(--font-body);
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
 }
 
 /* BANNER ACTION */
@@ -721,8 +713,8 @@ onMounted(loadAnnouncement)
   height: 32px;
   padding: 0 14px;
   border-radius: 7px;
-  font-size: var(--font-body);
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -733,8 +725,8 @@ onMounted(loadAnnouncement)
 
 .deadline-note {
   color: #e5e7f5;
-  font-size: var(--font-body);
-  font-weight: 400;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
 }
 /* CONTENT PANELS */
 .panels {
@@ -782,16 +774,16 @@ onMounted(loadAnnouncement)
 .ready-title {
   margin: 0 0 4px;
   color: #25245b;
-  font-size: var(--font-card);
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
 }
 
 .ready-description {
   margin: 0 0 8px;
   color: #858ba5;
-  font-size: var(--font-body);
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-snug);
 }
 
 .ready-steps {
@@ -819,15 +811,15 @@ onMounted(loadAnnouncement)
   background: #25245b;
   color: #ffffff;
   border-radius: 50%;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .step-text {
   color: #25245b;
-  font-size: var(--font-body);
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-snug);
 }
 
 /* Layout only; the action colours are global (assets/actions.css). */
@@ -839,8 +831,8 @@ onMounted(loadAnnouncement)
   width: 100%;
   height: 32px;
   border-radius: 7px;
-  font-size: var(--font-body);
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -864,23 +856,23 @@ onMounted(loadAnnouncement)
 .panel-title {
   margin: 0;
   color: #25245b;
-  font-size: var(--font-section);
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
 }
 
 .panel-subtitle {
   margin: 4px 0 0;
   color: #858ba5;
-  font-size: var(--font-secondary);
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .panel-empty {
   margin: 0;
   color: #858ba5;
-  font-size: var(--font-body);
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-snug);
 }
 
 .count-badge {
@@ -889,8 +881,8 @@ onMounted(loadAnnouncement)
   background: #eeeef8;
   color: #25245b;
   border-radius: 999px;
-  font-size: var(--font-secondary);
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -924,8 +916,8 @@ onMounted(loadAnnouncement)
   background: #25245b;
   color: #ffd400;
   border-radius: 6px;
-  font-size: var(--font-secondary);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 
 .program-text {
@@ -935,16 +927,16 @@ onMounted(loadAnnouncement)
 
 .program-name {
   color: #25245b;
-  font-size: var(--font-body);
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
 }
 
 .program-description {
   margin-top: 3px;
   color: #858ba5;
-  font-size: var(--font-secondary);
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 /* ANNOUNCEMENT REMINDERS */
@@ -1000,16 +992,16 @@ onMounted(loadAnnouncement)
 
 .reminder-text {
   color: #3f4661;
-  font-size: var(--font-body);
-  line-height: 1.5;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 /* SAVED ADDITIONAL ANNOUNCEMENT TEXT */
 .details-body {
   margin: 8px 0 0;
   color: #4b5163;
-  font-size: var(--font-body);
-  line-height: 1.5;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   white-space: pre-line;
 }
 
@@ -1044,16 +1036,16 @@ onMounted(loadAnnouncement)
 .extension-message {
   margin: 0;
   color: #7c3a06;
-  font-size: var(--font-body);
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-snug);
 }
 
 .extension-previous {
   margin: 2px 0 0;
   color: #92620c;
-  font-size: var(--font-secondary);
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 /* READ-ONLY DISCLAIMER */
@@ -1064,8 +1056,8 @@ onMounted(loadAnnouncement)
   gap: 6px;
   margin: 14px 0 0;
   color: #858ba5;
-  font-size: var(--font-supporting);
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   text-align: center;
 }
 
@@ -1089,14 +1081,14 @@ onMounted(loadAnnouncement)
 .state-card h1 {
   margin: 0 0 8px;
   color: #25245b;
-  font-size: var(--font-section);
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .state-card p {
   margin: 0;
-  font-size: var(--font-body);
-  line-height: 1.5;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 .error-state h1 {
@@ -1131,8 +1123,8 @@ onMounted(loadAnnouncement)
 .btn-secondary {
   padding: 9px 16px;
   border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1154,7 +1146,8 @@ onMounted(loadAnnouncement)
   }
 
   .banner-title {
-    font-size: 22px;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 
   .banner.has-countdown .banner-title {
@@ -1170,11 +1163,11 @@ onMounted(loadAnnouncement)
   }
 
   .countdown-value {
-    font-size: 26px;
+    font-size: var(--ui-font-stat);
   }
 
   .countdown-label {
-    font-size: 10px;
+    font-size: var(--ui-font-caption);
   }
 
   .timeline-dates {
@@ -1201,3 +1194,4 @@ onMounted(loadAnnouncement)
   }
 }
 </style>
+

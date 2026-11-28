@@ -506,14 +506,14 @@ onMounted(async () => {
 }
 .page-header h1 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 .subtitle {
   margin: 4px 0 0;
-  color: #64748b;
-  font-size: 14px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-small);
 }
 /* Layout only; the action colours come from assets/actions.css. */
 .stages-card {
@@ -530,17 +530,17 @@ onMounted(async () => {
   margin-bottom: 12px;
 }
 .stages-title {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 .stages-next {
   color: #92400e;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 .stages-done {
   color: #166534;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: var(--ui-weight-bold);
+  font-size: var(--ui-font-small);
 }
 .stage-chips {
   display: flex;
@@ -550,8 +550,8 @@ onMounted(async () => {
 .stage-chip {
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   border: 1px solid var(--status-neutral-border);
   background: var(--status-neutral-bg);
   color: var(--status-neutral-text);
@@ -576,7 +576,7 @@ onMounted(async () => {
   margin-left: auto;
   padding: 12px 20px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-primary:disabled {
@@ -589,7 +589,7 @@ onMounted(async () => {
   padding: 32px;
   border-radius: 8px;
   text-align: center;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 .state.error {
   color: #dc2626;
@@ -601,7 +601,7 @@ onMounted(async () => {
   padding: 10px 14px;
   border-radius: 8px;
   margin-bottom: 16px;
-  font-size: 13px;
+  font-size: var(--ui-control-font-md);
 }
 .state.notice {
   color: #92400e;
@@ -618,9 +618,9 @@ onMounted(async () => {
 }
 .report-table thead th {
   padding: 12px 16px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #ffffff;
   background: #4b3f72;
@@ -676,18 +676,18 @@ onMounted(async () => {
   text-align: left;
 }
 .report-title {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
   color: #1c2145;
 }
 .report-period {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
 }
 .report-date {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #1c2145;
 }
 /* Status badge gets its own column so it lines up on every card. */
@@ -697,8 +697,8 @@ onMounted(async () => {
   justify-content: center;
 }
 .report-meta {
-  color: #64748b;
-  font-size: 13px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
 }
 /* Right section: the action button(s). */
 .report-actions {
@@ -714,14 +714,14 @@ onMounted(async () => {
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 /* Read-only status label: no pill/background/rounded styling so it cannot be
    mistaken for a clickable button. */
 .status-badge {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   /* Read-only label: the tone colour comes from assets/status.css, but the badge
      keeps no pill background so it cannot be mistaken for a button. */
   background: transparent;
@@ -757,7 +757,7 @@ onMounted(async () => {
 }
 .modal-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
 }
 .close-btn {
   width: 32px;
@@ -809,8 +809,8 @@ onMounted(async () => {
 }
 .modal-header-sub {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 .modal-header-actions {
   flex-shrink: 0;
@@ -836,38 +836,38 @@ onMounted(async () => {
     min-height: 0;
   }
   .modal--terminal-doc :deep(.tr-cover-title) {
-    font-size: 22pt;
+    font-size: var(--ui-font-stat);
   }
   .modal--terminal-doc :deep(.tr-cover-team) {
-    font-size: 11pt;
+    font-size: var(--ui-font-body);
   }
   .modal--terminal-doc :deep(.tr-cover-report) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-front-heading),
   .modal--terminal-doc :deep(.tr-section-heading) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-subsection-heading) {
-    font-size: 13pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-body-title) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-paragraph),
   .modal--terminal-doc :deep(.tr-reference),
   .modal--terminal-doc :deep(.tr-keywords) {
-    font-size: 11.5pt;
+    font-size: var(--ui-font-body-lg);
   }
   .modal--terminal-doc :deep(.tr-table-caption),
   .modal--terminal-doc :deep(.tr-list-entry) {
-    font-size: 12pt;
+    font-size: var(--ui-font-small);
   }
   .modal--terminal-doc :deep(.tr-grid) {
-    font-size: 10.5pt;
+    font-size: var(--ui-font-body);
   }
   .modal--terminal-doc :deep(.tr-page-number) {
-    font-size: 12pt;
+    font-size: var(--ui-font-body-lg);
   }
 }
 

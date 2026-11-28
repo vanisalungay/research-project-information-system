@@ -135,35 +135,35 @@ function choose(key) {
   border-radius: 6px;
   background: #e8eefc;
   color: #29417a;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-body);
   text-align: center;
 }
 
 .gad-question-text {
   margin: 0;
   color: #1f2440;
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-snug);
 }
 
 .gad-question-extra,
 .gad-question-conditional {
   margin: 4px 0 0 26px;
   color: #4b516e;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .gad-question-conditional {
   color: #7a5a1d;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .gad-or {
-  font-weight: 800;
+  font-weight: var(--ui-weight-display);
   color: #b45b3e;
 }
 
@@ -198,16 +198,16 @@ function choose(key) {
 }
 
 .gad-answer-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
 }
 
 .gad-answer-score {
   margin-top: 1px;
   color: #7b8198;
-  font-size: 9px;
-  line-height: 1.2;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-display);
 }
 
 .gad-answer:disabled {
@@ -256,8 +256,8 @@ function choose(key) {
   border-radius: 999px;
   background: #f2f3f9;
   color: #2a2f50;
-  font-size: 9.5px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   white-space: nowrap;
 }
 
@@ -267,8 +267,8 @@ function choose(key) {
   background: none;
   color: #5a607c;
   font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -287,9 +287,9 @@ function choose(key) {
   display: block;
   margin-bottom: 4px;
   color: #5c627e;
-  font-size: 9.5px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
 }
 
 .gad-comments {
@@ -302,8 +302,8 @@ function choose(key) {
   background: #ffffff;
   color: #23294a;
   font-family: inherit;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   resize: vertical;
 }
 
@@ -320,7 +320,7 @@ function choose(key) {
   border: 1px solid #eceef6;
   border-radius: 8px;
   color: #4b516e;
-  font-size: 10.5px;
+  font-size: var(--ui-font-caption);
   white-space: pre-wrap;
 }
 

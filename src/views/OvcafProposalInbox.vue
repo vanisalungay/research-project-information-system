@@ -239,8 +239,8 @@ const getStatusClass = (s) => {
 }
 
 .ovcaf-page-title{
-    font-size:1.7rem;
-    font-weight:700;
+    font-size:var(--ui-font-page-title);
+    font-weight:var(--ui-weight-bold);
     color:#1F2937;
 }
 
@@ -279,7 +279,7 @@ const getStatusClass = (s) => {
 
     padding:0 12px;
 
-    font-size:.9rem;
+    font-size:var(--ui-font-body);
 }
 
 .form-control:focus{
@@ -323,8 +323,8 @@ const getStatusClass = (s) => {
 
     padding:7px 14px;
     border-radius:8px;
-    font-size:.82rem;
-    font-weight:600;
+    font-size:var(--ui-control-font-md);
+    font-weight:var(--ui-weight-semibold);
 
     text-decoration:none;
     cursor:pointer;
@@ -361,8 +361,8 @@ const getStatusClass = (s) => {
     display:inline-block;
     padding:5px 12px;
     border-radius:999px;
-    font-size:.75rem;
-    font-weight:700;
+    font-size:var(--ui-font-caption);
+    font-weight:var(--ui-weight-semibold);
 }
 
 .badge-pending{
@@ -388,7 +388,7 @@ const getStatusClass = (s) => {
 .custom-table th{
     background:#F8FAFC;
     color:#6B7280;
-    font-size:.8rem;
+    font-size:var(--ui-font-table-header);
     text-transform:uppercase;
     padding:14px;
     text-align:left;
@@ -413,10 +413,10 @@ const getStatusClass = (s) => {
     right: 0.875rem;
     background: none;
     border: none;
-    font-size: 1.25rem;
+    font-size: var(--ui-control-font-lg);
     color: var(--text-muted);
     cursor: pointer;
-    line-height: 1;
+    line-height: var(--ui-line-none);
 }
 
 .clear-btn:hover {
@@ -434,7 +434,7 @@ const getStatusClass = (s) => {
 }
 
 .sort-ind {
-    font-size: 0.65rem;
+    font-size: var(--ui-font-caption);
     margin-left: 3px;
     opacity: 0.7;
 }
@@ -442,8 +442,8 @@ const getStatusClass = (s) => {
 .form-label{
     display:block;
     margin-bottom:6px;
-    font-size:.82rem;
-    font-weight:600;
+    font-size:var(--ui-font-label);
+    font-weight:var(--ui-weight-semibold);
     color:#6B7280;
 }
 
@@ -453,11 +453,11 @@ const getStatusClass = (s) => {
 }
 
 .font-mono {
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-family: var(--ui-font-mono);
 }
 
 .font-semibold {
-    font-weight: 600;
+    font-weight: var(--ui-weight-semibold);
 }
 
 .title-cell {
@@ -465,14 +465,14 @@ const getStatusClass = (s) => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: 500;
+    font-weight: var(--ui-weight-medium);
     color: var(--text-primary);
 }
 
 .college-abbr {
     border-bottom: 1px dashed var(--text-muted);
     cursor: help;
-    font-size: 0.85rem;
+    font-size: var(--ui-font-body);
 }
 
 .actions-header {
@@ -491,14 +491,14 @@ const getStatusClass = (s) => {
 }
 
 .empty-title {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-bold);
     color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .empty-desc {
-    font-size: 0.875rem;
+    font-size: var(--ui-font-small);
     color: var(--text-muted);
 }
 
@@ -514,7 +514,7 @@ const getStatusClass = (s) => {
 }
 
 .pagination-info {
-    font-size: 0.875rem;
+    font-size: var(--ui-font-body);
     color: var(--text-secondary);
 }
 
@@ -535,8 +535,8 @@ const getStatusClass = (s) => {
     background-color: white;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: var(--ui-control-font-md);
+    font-weight: var(--ui-weight-semibold);
     transition: all var(--transition-fast);
 }
 

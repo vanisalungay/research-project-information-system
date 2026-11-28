@@ -361,7 +361,7 @@ export default {
 <style scoped>
 .page {
   padding: 30px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
   background-color: #f8fafc;
   min-height: 100vh;
   color: #1e293b;
@@ -378,8 +378,8 @@ export default {
 
 .btn {
   padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   border-radius: 8px;
   border: none;
   cursor: pointer;
@@ -393,12 +393,12 @@ export default {
 .view-indicator-pill {
   background-color: #e0e7ff;
   color: #4338ca;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 12px;
   border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .summary-section {
@@ -434,23 +434,23 @@ export default {
   background: #eff6ff;
   color: #1d4ed8;
   padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   border-radius: 6px;
 }
 
 .id-text {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
+  color: var(--ui-text-muted);
 }
 
 .proposal-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 18px 0;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .details-grid {
@@ -466,27 +466,27 @@ export default {
 }
 
 .detail-item .label {
-  font-size: 11px;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .detail-item .value {
-  font-size: 13.5px;
+  font-size: var(--ui-font-body);
   color: #334155;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 .current-office-highlight {
   color: #4f46e5 !important;
-  font-weight: 700 !important;
+  font-weight: var(--ui-weight-bold) !important;
 }
 
 .overall-status-highlight {
   color: #0f172a !important;
-  font-weight: 700 !important;
+  font-weight: var(--ui-weight-semibold) !important;
   background: #e2e8f0;
   padding: 2px 6px;
   border-radius: 4px;
@@ -522,16 +522,16 @@ export default {
 }
 
 .progress-text-overlay .percentage {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 
 .progress-text-overlay .text-label {
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   text-transform: uppercase;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
 }
 
 .timeline-container {
@@ -600,16 +600,16 @@ export default {
 }
 
 .step-num {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   text-transform: uppercase;
-  color: #64748b;
-  letter-spacing: 0.5px;
+  color: var(--ui-text-muted);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .office-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 2px 0 0 0;
 }
@@ -618,8 +618,8 @@ export default {
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   display: inline-block;
 }
 
@@ -639,17 +639,17 @@ export default {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
 }
 
 .meta-label {
-  color: #64748b;
-  font-weight: 500;
+  color: var(--ui-text-muted);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .meta-value {
   color: #334155;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .card-remarks {
@@ -661,20 +661,20 @@ export default {
 }
 
 .remarks-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
   display: block;
   margin-bottom: 2px;
 }
 
 .remarks-text {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
   margin: 0;
   font-style: italic;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .item-waiting .timeline-badge {
@@ -750,20 +750,20 @@ export default {
 }
 
 .error-icon {
-  font-size: 48px;
+  font-size: var(--ui-font-small);
   margin-bottom: 16px;
 }
 
 .error-card h3 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 8px 0;
 }
 
 .error-card p {
-  color: #64748b;
-  font-size: 14px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-small);
   margin: 0 0 24px 0;
 }
 

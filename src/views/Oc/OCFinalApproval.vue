@@ -162,7 +162,7 @@
               {{ actionLoading ? 'Processing...' : approvalActionLabel }}
             </button>
             <button type="button" class="btn-return" :disabled="busy" @click="openReturn">
-              {{ actionLoading ? 'Processing...' : 'Return to OVCRIGE' }}
+              {{ actionLoading ? 'Processing...' : 'Return to ORPS' }}
             </button>
           </div>
           <p v-if="needsBudget === null" class="hint">
@@ -291,16 +291,15 @@
     <div v-if="showReturnConfirm" class="modal-overlay" @click.self="closeReturn">
       <div class="modal">
         <div class="modal-header">
-          <span>Return Proposal to OVCRIGE</span>
+          <span>Return Proposal to ORPS</span>
           <span class="close" @click="closeReturn">&times;</span>
         </div>
         <div class="modal-body">
           <div class="check-icon return-icon">&#8617;</div>
           <h4>Return This Proposal?</h4>
           <p class="return-desc">
-            The proposal goes back to the OVCRIGE queue (<strong>REC_APPROVED</strong>) so it can be
-            re-forwarded to the Office of the Chancellor. No Special Order is issued and no approval is
-            recorded.
+            The proposal goes back to the ORPS (RPS) queue (<strong>RETURNED_TO_RPS</strong>) for
+            review and forwarding. No Special Order is issued and no approval is recorded.
           </p>
           <p v-if="chancellorNotes.trim()" class="return-notes">
             <strong>Remarks:</strong> {{ chancellorNotes.trim() }}
@@ -310,8 +309,8 @@
         </div>
         <div class="modal-actions">
           <button type="button" class="btn-cancel" :disabled="busy" @click="closeReturn">Cancel</button>
-          <button type="button" class="btn-confirm btn-return" :disabled="busy" @click="returnToOvcrige">
-            {{ actionLoading ? 'Returning...' : 'Return to OVCRIGE' }}
+          <button type="button" class="btn-confirm btn-return" :disabled="busy" @click="returnToOrps">
+            {{ actionLoading ? 'Returning...' : 'Return to ORPS' }}
           </button>
         </div>
       </div>
@@ -964,16 +963,16 @@ export default {
       }
     },
     /**
-     * Return the proposal to OVCRIGE through its own endpoint. This is a real status
-     * transition (FOR_OC_APPROVAL -> REC_APPROVED), so it is sent only after the
+     * Return the proposal to ORPS (RPS) through its own endpoint. This is a real status
+     * transition (FOR_OC_APPROVAL -> RETURNED_TO_RPS), so it is sent only after the
      * confirmation and reported only when the server accepts it. A failure never
      * reaches the green success dialog.
      */
-    async returnToOvcrige() {
+    async returnToOrps() {
       if (this.busy) return
       if (!this.atOc) {
         this.returnError =
-          'Only a proposal awaiting the Chancellor\'s final approval can be returned to OVCRIGE.'
+          'Only a proposal awaiting the Chancellor\'s final approval can be returned to ORPS.'
         return
       }
       this.returnError = ''
@@ -981,17 +980,17 @@ export default {
       try {
         const proposalId = this.proposal.id || this.$route.params.id
         const remarks = String(this.chancellorNotes || '').trim()
-        const res = await api.put(`/api/proposals/${proposalId}/return-to-ovcrige`, {
+        const res = await api.put(`/api/proposals/${proposalId}/return-to-orps`, {
           remarks: remarks || null,
         })
         this.showReturnConfirm = false
         await this.refreshProposalState()
         rememberBudget(proposalId, null)
         this.successMessage =
-          res.data?.message || 'Proposal returned to OVCRIGE for re-forwarding.'
+          res.data?.message || 'Proposal returned to ORPS for review and forwarding.'
         this.showSuccess = true
       } catch (err) {
-        console.error('Return to OVCRIGE failed:', err)
+        console.error('Return to ORPS failed:', err)
         const status = err.response?.status
         const errorMsg =
           err.response?.data?.error ||
@@ -1000,7 +999,7 @@ export default {
             ? 'This proposal is no longer awaiting the Chancellor\'s final approval.'
             : '') ||
           err.message ||
-          'The proposal could not be returned to OVCRIGE.'
+          'The proposal could not be returned to ORPS.'
         this.returnError = `Return failed: ${errorMsg}`
         // A conflict means the record moved on (another office acted first): re-read it
         // so the page stops offering an action the server no longer allows.
@@ -1026,7 +1025,7 @@ export default {
   padding: 24px;
   background: #f1f5f9;
   min-height: 100vh;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 .back-link {
@@ -1073,8 +1072,8 @@ export default {
 }
 
 .card h3 {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 16px 0;
   padding-bottom: 10px;
@@ -1091,17 +1090,17 @@ export default {
 }
 
 .proposal-header h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
-  line-height: 1.3;
+  line-height: var(--ui-line-tight);
 }
 
 /* Geometry only; the tone comes from assets/status.css. */
 .status-badge {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 5px 12px;
   border-radius: 20px;
   white-space: nowrap;
@@ -1122,25 +1121,25 @@ export default {
 }
 
 .meta-label {
-  font-size: 11px;
+  font-size: var(--ui-font-label);
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 600;
+  letter-spacing: var(--ui-tracking-caps);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .meta-value {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #334155;
   margin: 4px 0 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Summary */
 .summary-text {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #475569;
-  line-height: 1.7;
+  line-height: var(--ui-line-body);
   text-align: justify;
   margin: 0;
 }
@@ -1152,7 +1151,7 @@ textarea {
   border-radius: 10px;
   border: 1px solid #d1d5db;
   padding: 14px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   font-family: inherit;
   resize: vertical;
   outline: none;
@@ -1211,20 +1210,20 @@ textarea:focus {
 }
 
 .tl-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
   margin: 0;
 }
 
 .tl-desc {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 2px 0;
 }
 
 .timeline-item small {
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
 }
 
@@ -1241,21 +1240,21 @@ textarea:focus {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #475569 !important;
-  font-size: 11.5px !important;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption) !important;
+  line-height: var(--ui-line-snug);
   text-align: left;
 }
 
 .tl-error {
   margin: 6px 0 0 !important;
-  font-size: 12px !important;
+  font-size: var(--ui-font-caption) !important;
   color: #b45309 !important;
 }
 
 /* Budget Options */
 .budget-desc {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 0 0 14px 0;
 }
 
@@ -1321,16 +1320,16 @@ textarea:focus {
 }
 
 .budget-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .budget-description {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
+  line-height: var(--ui-line-body);
 }
 
 /* The one selected classification is stated in words, not only by a border colour. */
@@ -1341,9 +1340,9 @@ textarea:focus {
   border-radius: 999px;
   background: #2563eb;
   color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
 }
 
@@ -1358,8 +1357,8 @@ textarea:focus {
   flex: 1;
   padding: 14px 24px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-lg);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1383,8 +1382,8 @@ textarea:focus {
 .btn-return {
   padding: 14px 28px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-lg);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1396,7 +1395,7 @@ textarea:focus {
 
 .hint {
   text-align: center;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   margin-top: 10px;
 }
@@ -1404,15 +1403,15 @@ textarea:focus {
 /* A record that has left the Chancellor has no actions; say why in place of the buttons. */
 .hint.decision-locked {
   text-align: left;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
 /* Error */
 .error-text {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Modal */
@@ -1444,16 +1443,16 @@ textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
 .close {
   cursor: pointer;
-  font-size: 24px;
+  font-size: var(--ui-icon-2xl);
   color: #94a3b8;
-  line-height: 1;
+  line-height: var(--ui-line-none);
   transition: color 0.2s;
 }
 
@@ -1472,7 +1471,7 @@ textarea:focus {
   background: #dcfce7;
   color: #16a34a;
   border-radius: 50%;
-  font-size: 28px;
+  font-size: var(--ui-icon-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1486,15 +1485,15 @@ textarea:focus {
 
 .modal-body h4 {
   margin: 0 0 8px 0;
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
   color: #1e293b;
 }
 
 .modal-body p {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
   margin: 0;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
 }
 
 .modal-actions {
@@ -1511,8 +1510,8 @@ textarea:focus {
   flex: 1;
   padding: 11px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -1521,8 +1520,8 @@ textarea:focus {
   flex: 1;
   padding: 11px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -1548,8 +1547,8 @@ textarea:focus {
 
 .so-label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #334155;
   margin-bottom: 6px;
 }
@@ -1561,9 +1560,9 @@ textarea:focus {
 /* What the attachment is, then the rules - both visible before a file is chosen. */
 .so-field-help {
   margin: 0 0 8px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
   text-align: left;
 }
 
@@ -1578,9 +1577,9 @@ textarea:focus {
 
 .so-instructions-title {
   margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-label);
   text-transform: uppercase;
   color: #1e3a8a;
 }
@@ -1588,8 +1587,8 @@ textarea:focus {
 .so-instructions-list {
   margin: 0;
   padding-left: 18px;
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -1604,24 +1603,24 @@ textarea:focus {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c !important;
-  font-size: 12.5px !important;
-  font-weight: 500;
+  font-size: var(--ui-font-caption) !important;
+  font-weight: var(--ui-weight-medium);
   text-align: left;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 /* The selected file's size sits beside its name. */
 .file-size {
   flex-shrink: 0;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #166534;
   white-space: nowrap;
 }
 
 .file-replace-note {
   margin: 8px 0 0 !important;
-  font-size: 11.5px !important;
+  font-size: var(--ui-font-caption) !important;
   color: #64748b !important;
   text-align: left;
 }
@@ -1631,7 +1630,7 @@ textarea:focus {
   padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s;
@@ -1651,7 +1650,7 @@ textarea:focus {
   padding: 8px;
   border: 1px dashed #d1d5db;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   cursor: pointer;
   background: #f8fafc;
 }
@@ -1673,14 +1672,14 @@ textarea:focus {
 }
 
 .file-icon {
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
 }
 
 .file-name {
   flex: 1;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #166534;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1690,10 +1689,10 @@ textarea:focus {
   background: none;
   border: none;
   color: #dc2626;
-  font-size: 18px;
+  font-size: var(--ui-font-section-title);
   cursor: pointer;
   padding: 0 4px;
-  line-height: 1;
+  line-height: var(--ui-line-none);
 }
 
 .file-remove:hover {
@@ -1715,8 +1714,8 @@ textarea:focus {
   border-radius: 999px;
   background: #dbeafe;
   color: #1d4ed8;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -1724,8 +1723,8 @@ textarea:focus {
   background: none;
   border: none;
   color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   padding: 0 4px;
   text-decoration: underline;
@@ -1733,7 +1732,7 @@ textarea:focus {
 
 .saved-file-note {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b45309;
 }
 
@@ -1745,14 +1744,14 @@ textarea:focus {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #166534 !important;
-  font-size: 13px !important;
-  font-weight: 600;
+  font-size: var(--ui-font-small) !important;
+  font-weight: var(--ui-weight-semibold);
   text-align: left;
 }
 
 .draft-saved-note {
   margin-top: 10px !important;
-  font-size: 12px !important;
+  font-size: var(--ui-font-caption) !important;
   color: #1d4ed8 !important;
   font-style: italic;
 }
@@ -1762,8 +1761,8 @@ textarea:focus {
   flex: 1;
   padding: 11px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .modal-actions .btn-secondary:disabled {
@@ -1789,10 +1788,10 @@ textarea:focus {
 }
 
 .routing-info p {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
   margin: 0;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .routing-info p strong {
@@ -1801,7 +1800,7 @@ textarea:focus {
 
 .modal-hint {
   text-align: center;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   margin-top: 10px;
 }
@@ -1813,16 +1812,16 @@ textarea:focus {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c !important;
-  font-size: 13px !important;
-  font-weight: 500;
+  font-size: var(--ui-font-caption) !important;
+  font-weight: var(--ui-weight-medium);
   text-align: left;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .return-desc {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #475569;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   text-align: left;
   margin: 8px 0 0;
 }
@@ -1834,9 +1833,9 @@ textarea:focus {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #334155 !important;
-  font-size: 12.5px !important;
+  font-size: var(--ui-font-small) !important;
   text-align: left;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .return-icon {

@@ -274,8 +274,8 @@ const goToReview = (proposalId) => {
   border-radius: 50%;
   background: #e2e8f0;
   color: #475569;
-  font-size: 14px;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
   cursor: pointer;
 }
 .filter-select {
@@ -322,15 +322,15 @@ small {
 }
 .empty-cell {
   text-align: center;
-  color: #64748b;
+  color: var(--ui-text-muted);
   padding: 24px 12px;
 }
 .status {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 /* Layout only; .btn-view supplies the colour. */
 .review-btn {
@@ -351,8 +351,8 @@ small {
   border-top: 1px solid #eee;
 }
 .pagination-info {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 .pagination-controls {
   display: flex;
@@ -367,7 +367,7 @@ small {
   background: #fff;
   color: #334155;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ui-control-font-md);
 }
 .pagination-btn:hover:not(:disabled) {
   background: #f1f5f9;
@@ -380,6 +380,6 @@ small {
   background: #2f2b57;
   border-color: #2f2b57;
   color: #fff;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 </style>

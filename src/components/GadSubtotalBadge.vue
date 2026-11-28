@@ -32,9 +32,9 @@ const state = computed(() => {
   flex-shrink: 0;
   padding: 4px 9px;
   border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-label);
   white-space: nowrap;
 }
 

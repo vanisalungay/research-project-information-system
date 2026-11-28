@@ -330,8 +330,8 @@ onBeforeUnmount(() => {
 
 .lib-preview-heading h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -340,8 +340,8 @@ onBeforeUnmount(() => {
 
 .lib-preview-file {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 
@@ -359,8 +359,8 @@ onBeforeUnmount(() => {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
@@ -380,7 +380,7 @@ onBeforeUnmount(() => {
   background: none;
   border: none;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.15s;
@@ -423,9 +423,9 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 32px 24px;
   text-align: center;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.55;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 .lib-preview-state--error {
@@ -476,8 +476,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   background: #fff;
   color: #1e293b;
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 .lib-preview-docx :deep(p) {
@@ -490,7 +490,7 @@ onBeforeUnmount(() => {
 .lib-preview-docx :deep(h4) {
   margin: 18px 0 8px;
   color: #0f172a;
-  line-height: 1.3;
+  line-height: var(--ui-line-tight);
 }
 
 .lib-preview-docx :deep(ul),
@@ -507,7 +507,7 @@ onBeforeUnmount(() => {
   width: 100%;
   margin: 12px 0 18px;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .lib-preview-docx :deep(th),
@@ -520,7 +520,7 @@ onBeforeUnmount(() => {
 
 .lib-preview-docx :deep(th) {
   background: #f1f5f9;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .lib-preview-docx :deep(a) {
@@ -541,8 +541,8 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #fecaca;
   background: #fef2f2;
   color: #dc2626;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== FOOTER ===== */
@@ -558,8 +558,8 @@ onBeforeUnmount(() => {
 .btn-close {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-icon-xl);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
@@ -568,8 +568,8 @@ onBeforeUnmount(() => {
 .btn-retry {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
 }

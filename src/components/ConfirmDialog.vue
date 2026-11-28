@@ -196,19 +196,19 @@ const handleOverlayClick = () => {
 
 /* Title */
 .dialog-title {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   margin: 0 0 8px 0;
-  line-height: 1.3;
+  line-height: var(--ui-line-tight);
 }
 
 /* Message */
 .dialog-message {
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
   margin: 0 0 24px 0;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
   max-width: 340px;
   margin-left: auto;
   margin-right: auto;
@@ -225,8 +225,8 @@ const handleOverlayClick = () => {
 .dialog-btn {
   padding: 10px 24px;
   border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.875rem;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-control-font-md);
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;

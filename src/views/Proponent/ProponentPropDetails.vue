@@ -386,8 +386,9 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 
 /* TEXT */
 .title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
 }
 
 .subtitle {
@@ -396,18 +397,18 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 }
 
 .label {
-  font-size: 12px;
+  font-size: var(--ui-font-label);
   color: #888;
 }
 
 .value {
   display: block;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: 16px;
 }
 
@@ -429,8 +430,8 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 .btn {
   padding: 8px 14px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -445,29 +446,29 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 .wf-item {
   padding: 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .wf-header {
   display: flex;
   justify-content: space-between;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .wf-date {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #666;
 }
 
 .wf-meta {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #666;
 }
 
 .wf-arrow {
   text-align: center;
   color: #bbb;
-  font-size: 18px;
+  font-size: var(--ui-font-section-title);
 }
 
 /* Workflow stage colours follow the shared status tones (assets/status.css). */
@@ -490,9 +491,9 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
   margin-top: 8px;
   display: inline-block;
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* FILES */
@@ -504,7 +505,7 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 
 .files li {
   padding: 8px 0;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 /* ERROR STATE */
@@ -519,15 +520,15 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 
 .error-state p {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Layout only; the action colours are global (assets/actions.css). */
 .btn-primary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -541,7 +542,7 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 .log-item {
   border-radius: 8px;
   padding: 12px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .log-header {
@@ -551,7 +552,7 @@ watch(() => route.params.id ?? route.query.id ?? null, () => fetchProposal())
 }
 
 .log-header span {
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #555;
 }
 

@@ -896,8 +896,12 @@
               ← Cancel
             </button>
 
-            <button class="btn-action btn-draft btn-secondary" @click="saveDraft">
-              Save Draft
+            <button
+              class="btn-action btn-draft btn-secondary"
+              :disabled="savingDraft || loading"
+              @click="saveDraft"
+            >
+              {{ savingDraft ? 'Saving…' : 'Save Draft' }}
             </button>
 
             <button class="btn-action btn-submit btn-primary" @click="submitRevision" :disabled="loading || isPastDeadline">
@@ -969,6 +973,7 @@ const { dialogState, showAlert, showConfirm } = useDialog()
 const proposalId = computed(() => route.params.id as string | undefined)
 
 const loading = ref(false)
+const savingDraft = ref(false)
 const error = ref('')
 const successMessage = ref('')
 const documentId = ref('')
@@ -1370,6 +1375,87 @@ const fetchProposal = async () => {
   }
 }
 
+/**
+ * The ProposalRequest payload for this revision. `status` decides what the save does:
+ * 'SUBMITTED' resubmits the revision, while null keeps the proposal in its current
+ * revision state and only stores the edits (Save Draft). The backend applies the same
+ * rule: a save without a submission status never advances the revision.
+ */
+const buildRevisionPayload = (status, proponentId) => {
+  const data = proposal.value || {}
+  return {
+    proponentId,
+    programTitle: data.program_title || '',
+    projectTitle: data.project_title || '',
+    projectLeader: formatPersonName(data.project_leader || ''),
+    projectLeaderSex: data.project_leader_sex || '',
+    duration: data.duration || '',
+    startDate: data.start_date || '',
+    endDate: data.end_date || '',
+    college: data.department || '',
+    address: data.address || '',
+    // Section 02: the checklist selection travels as directory ids and the legacy text
+    // column is derived from the selected names (the backend derives it from the ids
+    // again, so the text and the relation can never drift apart).
+    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
+    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
+    reviewFileName: data.review_of_literature_file?.name || '',
+    roadmapFileName: data.technology_roadmap_file?.name || '',
+    gadFileName: data.gad_score_file?.name || '',
+    beneficiariesFileName: data.line_item_budget_file?.name || '',
+    researchType: data.research_type || '',
+    innovationGoals: data.innovation_goals || '',
+    sectorRelevance: data.sector_relevance || '',
+    sdg: data.sustainable_development_goals || [],
+    executiveSummary: data.executive_summary || '',
+    rationale: data.rationale || '',
+    framework: data.theoretical_framework || '',
+    objectivesGeneral: data.general_objective || '',
+    objectivesSpecific: data.specific_objectives || '',
+    methodology: data.methodology || '',
+    outputs: data.expected_outputs || '',
+    review: data.review_of_literature || '',
+    limitationsText: data.limitations || '',
+    outcomes: data.potential_outcomes || '',
+    impactEconomic: data.economic_impact || '',
+    impactSocial: data.social_ethical_impact || '',
+    beneficiaries: data.target_beneficiaries || '',
+    sustainability: data.sustainability_plan || '',
+    risks: data.risks_assumptions || '',
+    // Section 21: the structured Risk Management Plan of this resubmission. The legacy text
+    // above is kept (the backend derives it from these entries when they exist, and leaves
+    // a hand-written plan alone when they do not).
+    riskManagement: riskEntriesPayload(data.risk_management),
+    otherProjectsNumber: data.other_projects_number || '',
+    status,
+    sites: (data.sites || []).map(s => ({
+      country: s.country || '',
+      region: s.region || '',
+      province: s.province || '',
+      district: s.district || '',
+      municipality: s.municipality || '',
+      barangay: s.barangay || ''
+    })),
+    // Section 05: every rendered agenda is sent (selected or not); the backend validates
+    // each key against the active master data.
+    priorityAgenda: agendaPayload(data.priority_agendas),
+    logFrame: (data.logical_framework || []).map(lf => ({
+      outcome: lf.outcome_indicator || '',
+      output: lf.output_indicator || ''
+    })),
+    personnel: (data.personnel_requirements || []).map(p => ({
+      position: p.position || '',
+      time: timeDevotedPayload(p.effort),
+      responsibilities: p.responsibilities || ''
+    })),
+    otherProjects: (data.other_projects || []).map(op => ({
+      title: op.project_title || '',
+      agency: op.funding_agency || '',
+      involvement: op.involvement || ''
+    }))
+  }
+}
+
 const submitRevision = async () => {
   if (!proposalId.value) {
     error.value = 'No proposal ID provided.'
@@ -1427,80 +1513,8 @@ const submitRevision = async () => {
   error.value = ''
   successMessage.value = ''
 
-  const data = proposal.value
-
   // Build payload matching ProposalRequest DTO (camelCase)
-  const payload = {
-    proponentId,
-    programTitle: data.program_title || '',
-    projectTitle: data.project_title || '',
-    projectLeader: formatPersonName(data.project_leader || ''),
-    projectLeaderSex: data.project_leader_sex || '',
-    duration: data.duration || '',
-    startDate: data.start_date || '',
-    endDate: data.end_date || '',
-    college: data.department || '',
-    address: data.address || '',
-    // Section 02: the checklist selection travels as directory ids and the legacy text
-    // column is derived from the selected names (the backend derives it from the ids
-    // again, so the text and the relation can never drift apart).
-    cooperatingAgencies: joinAgencyNames(data.cooperating_agency_names) || data.cooperating_agencies || '',
-    cooperatingAgencyIds: normalizeSelectedIds(data.cooperating_agency_ids),
-    reviewFileName: data.review_of_literature_file?.name || '',
-    roadmapFileName: data.technology_roadmap_file?.name || '',
-    gadFileName: data.gad_score_file?.name || '',
-    beneficiariesFileName: data.line_item_budget_file?.name || '',
-    researchType: data.research_type || '',
-    innovationGoals: data.innovation_goals || '',
-    sectorRelevance: data.sector_relevance || '',
-    sdg: data.sustainable_development_goals || [],
-    executiveSummary: data.executive_summary || '',
-    rationale: data.rationale || '',
-    framework: data.theoretical_framework || '',
-    objectivesGeneral: data.general_objective || '',
-    objectivesSpecific: data.specific_objectives || '',
-    methodology: data.methodology || '',
-    outputs: data.expected_outputs || '',
-    review: data.review_of_literature || '',
-    limitationsText: data.limitations || '',
-    outcomes: data.potential_outcomes || '',
-    impactEconomic: data.economic_impact || '',
-    impactSocial: data.social_ethical_impact || '',
-    beneficiaries: data.target_beneficiaries || '',
-    sustainability: data.sustainability_plan || '',
-    risks: data.risks_assumptions || '',
-    // Section 21: the structured Risk Management Plan of this resubmission. The legacy text
-    // above is kept (the backend derives it from these entries when they exist, and leaves
-    // a hand-written plan alone when they do not).
-    riskManagement: riskEntriesPayload(data.risk_management),
-    otherProjectsNumber: data.other_projects_number || '',
-    status: 'SUBMITTED',
-    sites: (data.sites || []).map(s => ({
-      country: s.country || '',
-      region: s.region || '',
-      province: s.province || '',
-      district: s.district || '',
-      municipality: s.municipality || '',
-      barangay: s.barangay || ''
-    })),
-    // Section 05: every rendered agenda is sent (selected or not); the backend validates
-    // each key against the active master data.
-    priorityAgenda: agendaPayload(data.priority_agendas),
-    logFrame: (data.logical_framework || []).map(lf => ({
-      outcome: lf.outcome_indicator || '',
-      output: lf.output_indicator || ''
-    })),
-    personnel: (data.personnel_requirements || []).map(p => ({
-      position: p.position || '',
-      time: timeDevotedPayload(p.effort),
-      responsibilities: p.responsibilities || ''
-    })),
-    otherProjects: (data.other_projects || []).map(op => ({
-      title: op.project_title || '',
-      agency: op.funding_agency || '',
-      involvement: op.involvement || ''
-    }))
-  }
+  const payload = buildRevisionPayload('SUBMITTED', proponentId)
 
   try {
     await api.put(`/api/proposals/${proposalId.value}`, payload)
@@ -1518,11 +1532,44 @@ const submitRevision = async () => {
   }
 }
 
+/**
+ * Stores the current edits without resubmitting the revision. The payload carries no
+ * submission status, so the backend keeps the proposal in its revision state and only
+ * saves the fields: the proponent can come back, keep editing, and submit later.
+ * A draft is still allowed after the deadline (only the final submission is not).
+ */
 const saveDraft = async () => {
-  await showAlert('Draft saved successfully!', {
-    type: 'success',
-    title: 'Draft Saved'
-  })
+  if (!proposalId.value) {
+    error.value = 'No proposal ID provided.'
+    return
+  }
+  const proponentId = userStore.user?.id
+  if (!proponentId) {
+    error.value = 'User not logged in.'
+    return
+  }
+  if (savingDraft.value) return
+  savingDraft.value = true
+  error.value = ''
+  successMessage.value = ''
+  try {
+    await api.put(
+      `/api/proposals/${proposalId.value}`,
+      buildRevisionPayload(null, proponentId),
+    )
+    successMessage.value =
+      'Draft saved. Your edits are stored and the proposal is still under revision.'
+    await showAlert('Draft saved successfully!', {
+      type: 'success',
+      title: 'Draft Saved'
+    })
+  } catch (err) {
+    console.error(err?.response?.status ?? err)
+    error.value =
+      err?.response?.data?.error || 'Failed to save draft. Please try again.'
+  } finally {
+    savingDraft.value = false
+  }
 }
 
 const goBack = () => {
@@ -1560,15 +1607,15 @@ onMounted(() => {
 
 
 .header-info h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0 0 4px 0;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -1581,7 +1628,7 @@ onMounted(() => {
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 .error-banner {
@@ -1667,14 +1714,14 @@ onMounted(() => {
   background: #4f46e5;
   color: #fff;
   border-radius: 50%;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   flex-shrink: 0;
 }
 
 .card-header h2 {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
 }
@@ -1704,11 +1751,11 @@ onMounted(() => {
 }
 
 .info-item label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-item input,
@@ -1716,7 +1763,7 @@ onMounted(() => {
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   color: #1e293b;
   transition: all 0.15s;
 }
@@ -1740,8 +1787,8 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
   margin-bottom: 6px;
 }
@@ -1753,7 +1800,7 @@ onMounted(() => {
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   color: #1e293b;
   font-family: inherit;
   transition: all 0.15s;
@@ -1784,9 +1831,9 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-snug);
   color: #475569;
   cursor: pointer;
   padding: 6px 8px;
@@ -1828,12 +1875,12 @@ onMounted(() => {
 }
 
 .sidebar-card h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 16px 0;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 /* INFO LIST */
@@ -1850,25 +1897,25 @@ onMounted(() => {
 }
 
 .info-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 .status-badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* INSTRUCTIONS */
@@ -1882,9 +1929,9 @@ onMounted(() => {
   padding: 8px 0;
   padding-left: 20px;
   position: relative;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .instructions-list li:before {
@@ -1892,7 +1939,7 @@ onMounted(() => {
   position: absolute;
   left: 0;
   color: #4f46e5;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* ACTION CARD */
@@ -1907,8 +1954,8 @@ onMounted(() => {
   padding: 12px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1931,16 +1978,16 @@ onMounted(() => {
 }
 
 .no-proposal-message p {
-  font-size: 16px;
-  color: #64748b;
+  font-size: var(--ui-font-body-lg);
+  color: var(--ui-text-muted);
 }
 
 /* Layout only; the action colour is global (assets/actions.css). */
 .btn-primary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1994,21 +2041,21 @@ onMounted(() => {
   border-radius: 50%;
   background: #f59e0b;
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .remarks-summary-head strong {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #92400e;
 }
 
 .remarks-summary-sub {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #a16207;
 }
 
@@ -2028,7 +2075,7 @@ onMounted(() => {
   border-radius: 999px;
   padding: 4px 10px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #78350f;
   cursor: pointer;
 }
@@ -2038,8 +2085,8 @@ onMounted(() => {
 }
 
 .remarks-chip-number {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-weight: 700;
+  font-family: var(--ui-font-mono);
+  font-weight: var(--ui-weight-semibold);
   color: #b45309;
 }
 
@@ -2047,14 +2094,14 @@ onMounted(() => {
   background: #f59e0b;
   color: #ffffff;
   border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 1px 6px;
 }
 
 .remarks-error {
   color: #b45309;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   margin-bottom: 12px;
 }
 
@@ -2081,15 +2128,15 @@ onMounted(() => {
 }
 
 .flagged-number {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #b45309;
 }
 
 .flagged-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #1f2937;
 }
 
@@ -2099,22 +2146,22 @@ onMounted(() => {
 
 .flagged-remark {
   margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #4b5563;
   white-space: pre-wrap;
 }
 
 .flagged-role {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #b45309;
 }
 
 .history-note {
   margin: 0 0 10px;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 
 .history-round + .history-round {
@@ -2125,9 +2172,9 @@ onMounted(() => {
 
 .history-round-title {
   display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b7280;
   margin-bottom: 6px;
@@ -2144,21 +2191,21 @@ onMounted(() => {
 
 .history-section {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4338ca;
 }
 
 .history-text {
   margin: 2px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #4b5563;
   white-space: pre-wrap;
 }
 
 .history-meta {
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   color: #9ca3af;
 }
 
@@ -2195,20 +2242,20 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
 }
 
 .section-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 
 .section-sub {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .section-card {
@@ -2252,8 +2299,8 @@ onMounted(() => {
 }
 
 .field-note {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin-bottom: 10px;
 }
 
@@ -2261,8 +2308,8 @@ onMounted(() => {
   display: block;
   margin-top: 8px;
   text-align: right;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* =========================
@@ -2282,8 +2329,8 @@ onMounted(() => {
 .form-table th {
   background: #f8fafc;
   color: #1e293b;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
   padding: 12px;
   border: 1px solid #e2e8f0;
   text-align: left;
@@ -2304,7 +2351,7 @@ onMounted(() => {
 
 .row-num {
   text-align: center;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   width: 50px;
 }
 
@@ -2318,8 +2365,8 @@ onMounted(() => {
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* Layout only; .btn-download supplies the colour from assets/actions.css. */
@@ -2354,7 +2401,7 @@ onMounted(() => {
   background: transparent;
   color: var(--status-rejected-text);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-control-font-lg);
 }
 
 /* =========================
@@ -2396,8 +2443,8 @@ onMounted(() => {
 }
 
 .upload-hint {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .file-info {
@@ -2440,21 +2487,21 @@ onMounted(() => {
 
 .radio-title {
   display: block;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
 }
 
 .radio-desc {
   display: block;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin-top: 4px;
 }
 
 .agenda-state {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .agenda-state-error {
@@ -2471,15 +2518,15 @@ onMounted(() => {
 
 .agenda-historical-title {
   margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #475569;
 }
 
 .agenda-historical ul {
   margin: 0;
   padding-left: 18px;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
   color: #334155;
 }
 
@@ -2553,17 +2600,17 @@ onMounted(() => {
 }
 
 .agenda-label {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
 .agenda-sub {
   display: block;
   margin-bottom: 8px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
 }
 
 .agenda-value {
@@ -2576,7 +2623,7 @@ onMounted(() => {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #fff;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
 }
 
 /* =========================
@@ -2630,8 +2677,8 @@ onMounted(() => {
   background: #f8faff;
   border-left: 4px solid #94a3b8;
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -2660,7 +2707,7 @@ onMounted(() => {
 }
 
 .percent-symbol {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #475569;
 }
 

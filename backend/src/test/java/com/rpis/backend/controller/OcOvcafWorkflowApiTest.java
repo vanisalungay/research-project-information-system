@@ -520,7 +520,7 @@ class OcOvcafWorkflowApiTest {
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
             returnRequest(Long id, String remarks) {
-        var builder = put("/api/proposals/{id}/return-to-ovcrige", id)
+        var builder = put("/api/proposals/{id}/return-to-orps", id)
                 .contentType(MediaType.APPLICATION_JSON);
         if (remarks != null) {
             builder.content("{\"remarks\":\"" + remarks + "\"}");
@@ -558,27 +558,27 @@ class OcOvcafWorkflowApiTest {
 
     /**
      * The Chancellor's Office returning a proposal is a real transition into the
-     * existing OVCRIGE-owned state, recorded with its actor, remarks and time.
+     * existing ORPS hand-off state, recorded with its actor, remarks and time.
      */
     @Test
-    void theChancellorCanReturnAProposalToOvcrigeAndTheTransitionIsPersisted() throws Exception {
+    void theChancellorCanReturnAProposalToOrpsAndTheTransitionIsPersisted() throws Exception {
         Proposal proposal = proposal("FOR_OC_APPROVAL");
 
         mockMvc.perform(returnRequest(proposal.getId(), "Please re-check the budget routing.")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ocToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.proposal.status").value("REC_APPROVED"))
+                .andExpect(jsonPath("$.proposal.status").value("RETURNED_TO_RPS"))
                 .andExpect(jsonPath("$.message").exists());
 
         proposalRepository.flush();
-        assertEquals("REC_APPROVED", jdbcTemplate.queryForObject(
+        assertEquals("RETURNED_TO_RPS", jdbcTemplate.queryForObject(
                 "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
 
         Map<String, Object> history = jdbcTemplate.queryForMap(
                 "SELECT from_status, to_status, actor_role, actor_name, remarks, source, changed_at "
                         + "FROM proposal_status_history WHERE proposal_id = ?", proposal.getId());
         assertEquals("FOR_OC_APPROVAL", history.get("from_status"));
-        assertEquals("REC_APPROVED", history.get("to_status"));
+        assertEquals("RETURNED_TO_RPS", history.get("to_status"));
         assertEquals("OC", history.get("actor_role"), "the office that acted is recorded");
         assertEquals("Chancellor", history.get("actor_name"));
         assertEquals("Please re-check the budget routing.", history.get("remarks"));
@@ -587,7 +587,7 @@ class OcOvcafWorkflowApiTest {
     }
 
     @Test
-    void onlyTheChancellorCanReturnAProposalToOvcrige() throws Exception {
+    void onlyTheChancellorCanReturnAProposalToOrps() throws Exception {
         Proposal proposal = proposal("FOR_OC_APPROVAL");
 
         mockMvc.perform(returnRequest(proposal.getId(), "not allowed")
@@ -613,7 +613,7 @@ class OcOvcafWorkflowApiTest {
                 .andExpect(jsonPath("$.error").exists());
 
         proposalRepository.flush();
-        assertEquals("REC_APPROVED", jdbcTemplate.queryForObject(
+        assertEquals("RETURNED_TO_RPS", jdbcTemplate.queryForObject(
                 "SELECT status FROM proposals WHERE id = ?", String.class, proposal.getId()));
         assertEquals(1, historyCount(proposal.getId()));
     }

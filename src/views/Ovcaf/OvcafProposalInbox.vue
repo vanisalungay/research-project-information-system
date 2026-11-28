@@ -306,16 +306,16 @@ onBeforeUnmount(() => {
 .end-page--fluid .ovcaf-table {
   min-width: 1020px;
   table-layout: fixed;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
 }
 
 .ovcaf-table th {
   background: #f6f7fd;
   color: #1c1a3c;
   padding: 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -344,14 +344,14 @@ onBeforeUnmount(() => {
 }
 
 .cell-id {
-  font-size: 0.6875rem;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #5b6484;
   overflow-wrap: anywhere;
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
@@ -361,24 +361,24 @@ onBeforeUnmount(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-  line-height: 1.35;
+  line-height: var(--ui-line-snug);
 }
 
 .cell-leader {
-  font-size: 0.78rem;
+  font-size: var(--ui-font-small);
   color: #1f2937;
   overflow-wrap: anywhere;
 }
 
 .cell-college {
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: #475569;
-  line-height: 1.35;
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
 .cell-date {
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: #5b6484;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
 
 .ovcaf-table .end-badge {
   padding: 2px 7px;
-  font-size: 0.6875rem;
+  font-size: var(--ui-font-caption);
 }
 
 .row-actions {
@@ -398,15 +398,15 @@ onBeforeUnmount(() => {
 
 .row-btn {
   padding: 5px 9px;
-  font-size: 0.7rem;
+  font-size: var(--ui-control-font-sm);
   white-space: nowrap;
 }
 
 .ovcaf-state {
   margin: 0;
   padding: 22px;
-  font-size: 0.8125rem;
-  color: #78809a;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .ovcaf-error {
@@ -420,8 +420,8 @@ onBeforeUnmount(() => {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
 }
 
 .retry-btn {
@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
 .ovcaf-empty {
   padding: 24px 12px;
   text-align: center;
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 @media (max-width: 1100px) {

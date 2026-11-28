@@ -267,8 +267,8 @@ const goToMeeting = (id) => {
   background: transparent;
   color: #315bff;
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -284,8 +284,8 @@ const goToMeeting = (id) => {
 }
 
 .section-link-arrow {
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
 }
 
 /* The notifications card keeps its action on its own row, at the start. */
@@ -296,10 +296,16 @@ const goToMeeting = (id) => {
 /* ===== Proposals table =====
    The shared .end-table is used as it is; only the header band, the row alignment and the
    compact row action are set here so the table lines up with the button beside it. */
+/* The REC card is narrower than the other dashboard cards; the shared 720px fluid
+   minimum forced a scrollbar and clipped the Actions label. Five columns fit at 620. */
+.end-page--fluid .rec-table {
+  min-width: 620px;
+}
+
 .rec-table th {
   background: #f6f7fd;
   color: #1c1a3c;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -317,12 +323,12 @@ const goToMeeting = (id) => {
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 .cell-id {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   color: #5b6484;
   white-space: nowrap;
 }
@@ -330,13 +336,13 @@ const goToMeeting = (id) => {
 .rec-empty {
   padding: 24px 12px;
   text-align: center;
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 /* A table row action is smaller than a page action. */
 .row-btn {
   padding: 7px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--ui-control-font-md);
 }
 
 /* ===== Small screens ===== */

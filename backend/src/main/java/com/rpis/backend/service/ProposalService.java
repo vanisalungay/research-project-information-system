@@ -240,8 +240,8 @@ public class ProposalService {
                     + "The proposal must be at FOR_OC_APPROVAL.";
     public static final String SPECIAL_ORDER_DRAFT_EMPTY_MESSAGE =
             "Enter the SO number or attach the SO document before saving a draft.";
-    public static final String RETURN_TO_OVCRIGE_NOT_AT_OC_MESSAGE =
-            "Only a proposal awaiting the Chancellor's final approval can be returned to OVCRIGE. "
+    public static final String RETURN_TO_ORPS_NOT_AT_OC_MESSAGE =
+            "Only a proposal awaiting the Chancellor's final approval can be returned to ORPS. "
                     + "The proposal must be at FOR_OC_APPROVAL.";
 
     // ========================
@@ -510,9 +510,13 @@ public class ProposalService {
                     .orElseThrow(() -> new IllegalArgumentException("Proposal not found: " + proposalId));
             // A Proponent may only modify a proposal they own.
             currentUser.requireAccessTo(proposal);
-            // Check if this is a revision resubmission (proposal was returned and is now
-            // being resubmitted)
-            if (proposalVersionService.isRevisionStatus(proposal.getStatus())) {
+            // A save on a proposal that is currently under revision is only a
+            // resubmission when the request actually carries a submission status. A
+            // draft save (Save Draft, or any request without a submission status) stores
+            // the edits and leaves the revision state, its revision number and its
+            // deadline untouched, so the Proponent can keep editing before submitting.
+            if (proposalVersionService.isRevisionStatus(proposal.getStatus())
+                    && ProposalStatus.isSubmissionRequest(request.getStatus())) {
                 isRevisionResubmission = true;
                 // Preserve the reviewer's return remarks before the row is overwritten, and
                 // snapshot the previous submission so it is never lost from history.
@@ -1812,23 +1816,29 @@ public class ProposalService {
         proposalSectionRemarkService.recordReturnRemarks(
                 proposal, sectionRemarks, returnedByOffice, returnedByUserId, returnedByName);
 
-        // Notify RPS to review and forward the revision request.
+        // Notify RPS to review and forward the revision request, and tell the Proponent
+        // their proposal was returned for revision (the office and its remarks travel
+        // with the message). RPS forwarding later adds the deadline as a second event.
         proposalNotificationPolicy.notifyForStatus(proposal);
+        proposalNotificationPolicy.notifyProponentRevisionReturned(proposal, returnedByOffice);
 
         return proposal;
     }
 
     /**
-     * The Chancellor's Office returns a proposal to OVCRIGE instead of deciding it.
+     * The Chancellor's Office returns a proposal to ORPS (RPS) instead of deciding it.
      *
-     * <p>The target is {@code REC_APPROVED}, the existing state in which OVCRIGE owns
-     * the record and can forward it to the Chancellor again - so no new status or
-     * transition vocabulary is introduced. The transition is recorded in
-     * {@code proposal_status_history} together with the actor and the remarks, and
-     * OVCRIGE is notified through the existing REC_APPROVED recipient rule.
+     * <p>The destination is ORPS, the office that owns the proposal's processing, using
+     * the existing {@code RETURNED_TO_RPS} state that every reviewing office already uses
+     * to hand a record back. ORPS reviews the remarks and forwards the revision to the
+     * Proponent through the established workflow. The transition is recorded in
+     * {@code proposal_status_history} with its actor, remarks and time. ORPS is notified
+     * through the existing RETURNED_TO_RPS recipient rule, and the Proponent is told the
+     * proposal was returned for revision (naming the office and its remarks) so they are
+     * not left waiting for ORPS to forward it.
      */
     @Transactional
-    public Proposal returnToOvcrige(Long proposalId, String remarks) {
+    public Proposal returnToOrps(Long proposalId, String remarks) {
         Proposal proposal = proposalRepository.findByIdForUpdate(proposalId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposal not found."));
 
@@ -1836,25 +1846,39 @@ public class ProposalService {
                 ? ""
                 : proposal.getStatus().trim().toUpperCase(Locale.ROOT);
         if (!"FOR_OC_APPROVAL".equals(status)) {
-            throw new IllegalStateException(RETURN_TO_OVCRIGE_NOT_AT_OC_MESSAGE);
+            throw new IllegalStateException(RETURN_TO_ORPS_NOT_AT_OC_MESSAGE);
         }
 
         String normalisedRemarks = remarks == null || remarks.isBlank()
                 ? null
                 : truncate(remarks.trim(), 2000);
+        Long actorId = currentUser.requireUserId();
+        String actorName = userRepository.findById(actorId).map(User::getName).orElse(null);
 
-        proposal.setStatus("REC_APPROVED");
-        proposal.setReturnKind(null);
+        proposal.setStatus("RETURNED_TO_RPS");
+        proposal.setReturnKind("REVISION");
+        proposal.setReturnedByOffice("OC");
+        proposal.setReturnedByUserId(actorId);
+        proposal.setReturnedByName(PersonNameFormatter.format(actorName));
+        proposal.setReturnedAt(LocalDateTime.now());
         if (normalisedRemarks != null) {
             proposal.setRemarks(normalisedRemarks);
+            proposal.setReturnRemarks(normalisedRemarks);
         }
-        recordStatusChange(proposal, "FOR_OC_APPROVAL", "REC_APPROVED", normalisedRemarks);
+        // A fresh return restarts the revision-forward metadata; ORPS sets the deadline.
+        proposal.setRevisionDeadline(null);
+        proposal.setRevisionForwardedAt(null);
+        proposal.setRevisionForwardedByName(null);
+        proposal.setRevisionForwardedByUserId(null);
+        proposal.setRevisionNotes(null);
+        recordStatusChange(proposal, "FOR_OC_APPROVAL", "RETURNED_TO_RPS", normalisedRemarks);
 
         Proposal saved = proposalRepository.save(proposal);
-        // The status is REC_APPROVED so OVCRIGE can act on it, but the event is a return
-        // from the Chancellor's Office - not an REC recommendation - and the proponent
-        // must not be told the proposal was approved.
-        proposalNotificationPolicy.notifyOvcrigeReturned(saved, normalisedRemarks);
+        // RETURNED_TO_RPS tells ORPS it has work to review; the Proponent is told their
+        // proposal was returned for revision by the Chancellor's Office. This is not an
+        // REC recommendation, so the message never says the proposal was approved.
+        proposalNotificationPolicy.notifyForStatus(saved);
+        proposalNotificationPolicy.notifyProponentRevisionReturned(saved, "OC");
         return saved;
     }
 

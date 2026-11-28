@@ -150,8 +150,8 @@ const cancelChanges = () => {
   background: #1e1c3a;
   color: #f7d900;
   padding: 16px;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   width: 100%;
 }
 
@@ -161,7 +161,7 @@ const cancelChanges = () => {
   border: none;
   padding: 8px 16px;
   margin-top: 20px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .form-card {
@@ -191,7 +191,7 @@ const cancelChanges = () => {
 
 label {
   color: #f7d900;
-  font-size: 13px;
+  font-size: var(--ui-font-label);
 }
 
 input {
@@ -234,12 +234,12 @@ input {
 .save-btn {
   padding: 8px 16px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .cancel-btn {
   padding: 8px 16px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 </style>

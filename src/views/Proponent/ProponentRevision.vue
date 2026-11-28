@@ -354,7 +354,7 @@ onMounted(() => {
   padding: 2rem;
   background: #f3f4f6;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
   color: #1f1f3d;
 }
 
@@ -370,17 +370,17 @@ onMounted(() => {
 
 .header-text h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #1f1f3d;
-  line-height: 1.2;
+  line-height: var(--ui-line-display);
 }
 
 .header-text p {
   margin: 0.375rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   color: #6b7280;
-  font-weight: 400;
+  font-weight: var(--ui-weight-regular);
 }
 
 .revision-count {
@@ -391,8 +391,8 @@ onMounted(() => {
   color: #92400e;
   padding: 0.375rem 0.875rem;
   border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -413,8 +413,8 @@ onMounted(() => {
 }
 
 .search-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
 }
 
@@ -424,7 +424,7 @@ onMounted(() => {
   padding: 0.625rem 0.875rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   font-family: inherit;
   color: #1f1f3d;
   background: #ffffff;
@@ -482,16 +482,16 @@ onMounted(() => {
 }
 
 .days-number {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-none);
   color: #111827;
 }
 
 .days-label {
-  font-size: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #4b5563;
 }
@@ -525,25 +525,25 @@ onMounted(() => {
 
 .revision-tag {
   color: var(--status-returned-text);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 /* TITLE & ID */
 .proposal-title {
   margin: 0.5rem 0 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #1f1f3d;
-  line-height: 1.3;
+  line-height: var(--ui-line-tight);
 }
 
 .proposal-id {
   margin: 0.25rem 0 0;
-  font-size: 0.75rem;
-  color: #64748b;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-mono);
   overflow-wrap: anywhere;
 }
 
@@ -563,7 +563,7 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   color: #1f2937;
 }
 
@@ -572,7 +572,7 @@ onMounted(() => {
 }
 
 .deadline-value {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #b45309;
 }
 
@@ -584,7 +584,7 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
 }
 
@@ -604,9 +604,9 @@ onMounted(() => {
 }
 
 .comments-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b7280;
   margin-bottom: 0.375rem;
@@ -615,8 +615,8 @@ onMounted(() => {
 .comment-text {
   margin: 0;
   color: #374151;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 .rps-note {
@@ -632,7 +632,7 @@ onMounted(() => {
 .rps-note p {
   margin: 0.25rem 0 0;
   color: #374151;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-small);
 }
 
 /* ACTIONS */
@@ -647,23 +647,23 @@ onMounted(() => {
 .submit-btn {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.875rem;
+  font-size: var(--ui-control-font-md);
 }
 
 .details-btn {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.875rem;
+  font-size: var(--ui-control-font-md);
 }
 
 .btn-icon {

@@ -3069,7 +3069,7 @@ watch(() => props.modelValue, (isOpen) => {
 /* A proposal that predates the interactive GAD checklist keeps its uploaded document name. */
 .gad-legacy-file {
   margin: 14px 0 0;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
@@ -3117,8 +3117,8 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .header-left h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
@@ -3126,8 +3126,8 @@ watch(() => props.modelValue, (isOpen) => {
 .header-badge {
   background: #eef2ff;
   color: #4f46e5;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -3145,8 +3145,8 @@ watch(() => props.modelValue, (isOpen) => {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -3159,7 +3159,7 @@ watch(() => props.modelValue, (isOpen) => {
   justify-content: center;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   border-radius: 8px;
@@ -3196,8 +3196,8 @@ watch(() => props.modelValue, (isOpen) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   background: #e2e8f0;
   color: #94a3b8;
   transition: all 0.2s;
@@ -3209,26 +3209,26 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .step-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
 }
 
 .progress-step.active .step-label {
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The steps already completed (step 1 once a call has been selected). */
 .progress-step.completed .step-number {
   background: #10b981;
   color: #fff;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .progress-step.completed .step-label {
   color: #10b981;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-step.completed {
@@ -3267,8 +3267,8 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .substep-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
 }
 
@@ -3276,8 +3276,8 @@ watch(() => props.modelValue, (isOpen) => {
   padding: 2px 10px;
   border-radius: 999px;
   background: #eef2ff;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4338ca;
   white-space: nowrap;
 }
@@ -3299,9 +3299,9 @@ watch(() => props.modelValue, (isOpen) => {
   border-radius: 50%;
   background: #fff;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -3331,8 +3331,8 @@ watch(() => props.modelValue, (isOpen) => {
 
 .substep-name {
   margin-left: auto;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* ===== VALIDATION BANNER ===== */
@@ -3350,10 +3350,10 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .banner-icon {
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #dc2626;
   flex-shrink: 0;
-  line-height: 1;
+  line-height: var(--ui-line-none);
 }
 
 .banner-content {
@@ -3362,7 +3362,7 @@ watch(() => props.modelValue, (isOpen) => {
 
 .banner-content strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #991b1b;
   margin-bottom: 6px;
 }
@@ -3374,10 +3374,10 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .banner-content li {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
   margin-bottom: 2px;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .banner-content li a {
@@ -3407,7 +3407,7 @@ watch(() => props.modelValue, (isOpen) => {
   background: none;
   color: #991b1b;
   font: inherit;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   text-align: left;
   text-decoration: underline;
   cursor: pointer;
@@ -3473,8 +3473,8 @@ watch(() => props.modelValue, (isOpen) => {
   background: #f8faff;
   border-left: 4px solid #94a3b8;
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -3494,8 +3494,8 @@ watch(() => props.modelValue, (isOpen) => {
   background: #f8faff;
   border-left: 4px solid #4f46e5;
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -3532,15 +3532,15 @@ watch(() => props.modelValue, (isOpen) => {
   border-radius: 20px;
   background: #eef2ff;
   color: #4f46e5;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* APA uses a hanging indent: the first line starts at the margin, the rest are
    indented. */
 .reference-text {
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #1e293b;
   padding-left: 2em;
   text-indent: -2em;
@@ -3589,22 +3589,22 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .selected-call-label {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ui-tracking-caps);
   color: #4f46e5;
 }
 
 .selected-call-name {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   overflow-wrap: anywhere;
 }
 
 .selected-call-deadline {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #475569;
 }
 
@@ -3613,8 +3613,8 @@ watch(() => props.modelValue, (isOpen) => {
   flex-shrink: 0;
   border-radius: 8px;
   padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
@@ -3628,8 +3628,8 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .section-number {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #ffffff;
   background: #4f46e5;
   padding: 2px 8px;
@@ -3637,14 +3637,14 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .section-header h3 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
 
 .section-sub {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   font-style: italic;
 }
@@ -3664,7 +3664,7 @@ watch(() => props.modelValue, (isOpen) => {
 /* ===== VALIDATION ERROR STYLES ===== */
 .req {
   color: #dc2626;
-  font-weight: 400;
+  font-weight: var(--ui-weight-regular);
 }
 
 .has-error input,
@@ -3687,17 +3687,17 @@ watch(() => props.modelValue, (isOpen) => {
 
 .field-error {
   display: block;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
   margin-top: 4px;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* Neutral helper text (e.g. program title load failure) shown under a field. */
 .field-hint {
   display: block;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin-top: 4px;
 }
 
@@ -3745,8 +3745,8 @@ watch(() => props.modelValue, (isOpen) => {
   border-radius: 8px;
   background: #fff;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
   white-space: nowrap;
   cursor: pointer;
@@ -3787,9 +3787,9 @@ watch(() => props.modelValue, (isOpen) => {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-snug);
   color: #475569;
   cursor: pointer;
   padding: 6px 8px;
@@ -3853,8 +3853,8 @@ watch(() => props.modelValue, (isOpen) => {
 .ac-retry {
   margin-left: 6px;
   padding: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
   text-decoration: underline;
 }
@@ -3896,8 +3896,8 @@ watch(() => props.modelValue, (isOpen) => {
 
 .form-group label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
 }
@@ -3909,7 +3909,7 @@ textarea {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   color: #1e293b;
   background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -3951,13 +3951,13 @@ select {
 .char-count {
   display: block;
   text-align: right;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   margin-top: 4px;
 }
 
 .field-note {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   font-style: italic;
   margin: 0 0 10px 0;
@@ -3977,8 +3977,8 @@ select {
 }
 
 .sub-section h4 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 6px 0;
 }
@@ -3992,20 +3992,20 @@ select {
 .form-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .form-table th {
   background: #f8fafc;
   color: #1e293b;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   padding: 10px 12px;
   text-align: left;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--ui-font-table-header);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .form-table td {
@@ -4016,7 +4016,7 @@ select {
 
 .form-table td.row-num {
   text-align: center;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
   width: 30px;
 }
@@ -4025,7 +4025,7 @@ select {
   border: 1px solid #e2e8f0;
   padding: 8px 10px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--ui-field-font);
   width: 100%;
   box-sizing: border-box;
 }
@@ -4053,7 +4053,7 @@ select {
 }
 
 .percent-symbol {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #475569;
 }
 
@@ -4066,8 +4066,8 @@ select {
   border: 1px dashed #cbd5e1;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
   cursor: pointer;
   transition: all 0.15s;
@@ -4087,7 +4087,7 @@ select {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-icon-xl);
   transition: all 0.15s;
 }
 
@@ -4106,7 +4106,7 @@ select {
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
   padding: 4px;
 }
 
@@ -4152,21 +4152,21 @@ select {
 }
 
 .radio-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
 .radio-desc {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* ===== AGENDA ===== */
 .agenda-state {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .agenda-state-error {
@@ -4183,15 +4183,15 @@ select {
 
 .agenda-historical-title {
   margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #475569;
 }
 
 .agenda-historical ul {
   margin: 0;
   padding-left: 18px;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
   color: #334155;
 }
 
@@ -4243,13 +4243,13 @@ select {
 .agenda-checkbox input:checked+.checkmark::after {
   content: '✓';
   color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
 }
 
 .agenda-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
@@ -4262,8 +4262,8 @@ select {
 }
 
 .agenda-sub {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
@@ -4272,7 +4272,7 @@ select {
   border: none;
   border-bottom: 1px solid #d1d5db;
   padding: 4px 0;
-  font-size: 13px;
+  font-size: var(--ui-field-font);
   background: transparent;
 }
 
@@ -4293,7 +4293,7 @@ select {
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: var(--ui-field-font);
   font-family: inherit;
   resize: vertical;
   background: #fff;
@@ -4320,7 +4320,7 @@ select {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .upload-area:hover {
@@ -4336,7 +4336,7 @@ select {
 }
 
 .upload-hint {
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
 }
 
@@ -4346,8 +4346,8 @@ select {
    styled here. */
 .technology-map label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
 }
@@ -4362,14 +4362,14 @@ select {
 }
 
 .technology-map .file-name {
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   color: #1e293b;
   overflow-wrap: anywhere;
 }
 
 .technology-map .file-size {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .file-actions {
@@ -4384,8 +4384,8 @@ select {
   margin-top: 4px;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -4396,8 +4396,8 @@ select {
   color: #475569;
   border-radius: 6px;
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -4411,8 +4411,8 @@ select {
   border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .technology-map-preview {
@@ -4448,7 +4448,7 @@ select {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
@@ -4478,14 +4478,14 @@ select {
   margin: 0 0 12px 0;
   padding-left: 18px;
   list-style: disc;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
 .budget-file-rules strong {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* The selected budget file: its name and size, then Replace / Remove. */
@@ -4495,22 +4495,22 @@ select {
 }
 
 .budget-file .file-name {
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   color: #1e293b;
   overflow-wrap: anywhere;
 }
 
 .budget-file .file-size {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .budget-file .btn-remove-file {
   border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* A file that was rejected (wrong format or too large) is reported on the control
@@ -4549,14 +4549,14 @@ select {
   background: #f8faff;
   border-left: 4px solid #4f46e5;
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
 .budget-template-instruction strong {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* Layout only; the neutral/blue tones come from assets/actions.css. */
@@ -4566,8 +4566,8 @@ select {
   gap: 6px;
   padding: 10px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -4622,8 +4622,8 @@ select {
 .btn-secondary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -4634,8 +4634,8 @@ select {
   gap: 6px;
   padding: 10px 24px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }

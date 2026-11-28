@@ -595,8 +595,8 @@ onMounted(load)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .dash-call-more-meta {
@@ -608,7 +608,7 @@ onMounted(load)
 
 .dash-call-more-date {
   color: #6b7190;
-  font-size: 0.6875rem;
+  font-size: var(--ui-font-caption);
   white-space: nowrap;
 }
 </style>

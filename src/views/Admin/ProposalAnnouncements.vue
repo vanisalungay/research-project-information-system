@@ -667,15 +667,16 @@ async function deleteAnnouncementAction(announcement) {
 }
 
 .header h2 {
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
   margin: 0;
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
   color: #6b7280;
   margin: 4px 0 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
@@ -683,14 +684,14 @@ async function deleteAnnouncementAction(announcement) {
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .banner {
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .banner-open {
@@ -708,7 +709,7 @@ async function deleteAnnouncementAction(announcement) {
 .loading-state {
   text-align: center;
   padding: 40px 20px;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .error-text {
@@ -736,16 +737,16 @@ td {
   border: 1px solid #e5e7eb;
   padding: 12px 16px;
   text-align: left;
-  font-size: 14px;
+  font-size: var(--ui-font-table-header);
 }
 
 th {
   background: #f8fafc;
   color: #475569;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: var(--ui-font-table-header);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 td {
@@ -759,20 +760,20 @@ td {
 }
 
 .announcement-name {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .status-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   display: inline-block;
 }
 
 .window-hint {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
 }
 
@@ -796,8 +797,8 @@ td {
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   margin-right: 6px;
 }
 
@@ -805,8 +806,8 @@ td {
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   margin-right: 6px;
 }
 
@@ -814,8 +815,8 @@ td {
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== Create / Edit Announcement modal ===== */
@@ -879,16 +880,16 @@ td {
 
 .header-title {
   margin: 0;
-  font-size: 17.5px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #ffffff;
 }
 
 .header-subtitle {
   margin: 3px 0 0 0;
-  font-size: 12.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #d9d5ea;
 }
 
@@ -957,9 +958,9 @@ td {
   align-items: center; /* number badge stays centred on the heading text */
   gap: 9px;
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #302954;
   text-align: left;
 }
@@ -974,15 +975,15 @@ td {
   border-radius: 50%;
   background: #302954;
   color: #ffffff;
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
 }
 
 .section-note {
   margin: 4px 0 0 0;
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #77758f;
   text-align: left;
 }
@@ -996,8 +997,8 @@ td {
   border: 1px solid #e0e0ea;
   border-radius: 8px;
   color: #33314f;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   text-align: left;
   white-space: pre-line;
 }
@@ -1035,9 +1036,9 @@ td {
 
 .form-group label {
   margin-bottom: 6px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #302954;
 }
 
@@ -1049,8 +1050,8 @@ td {
   border-radius: 6px;
   background: #ffffff;
   color: #302954;
-  font-size: 13.5px;
-  line-height: 1.3;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-tight);
   outline: none;
   box-sizing: border-box;
 }
@@ -1071,9 +1072,9 @@ td {
 .create-announcement-modal .form-row .form-group label {
   display: block;
   margin: 0 0 6px 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
 }
 
 .create-announcement-modal .form-row input.form-input,
@@ -1090,11 +1091,11 @@ td {
   background: #ffffff;
   color: #302954;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: var(--ui-field-font);
   /* The content box is 36px (38px - 2px border). Matching the line box to it
      centres the text and the native dropdown arrow in both control types, with
      no transform/positioning offset. */
-  line-height: 36px;
+  line-height: var(--ui-line-body);
   box-sizing: border-box;
   vertical-align: middle;
 }
@@ -1142,8 +1143,8 @@ select.form-input option {
   background: #fff7d8;
   border: 1px solid #f4d77b;
   border-radius: 7px;
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #6b5316;
   text-align: left;
 }
@@ -1188,8 +1189,8 @@ select.form-input option {
 .footer-summary {
   margin: 0;
   min-width: 0;
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #77758f;
   text-align: left;
 }
@@ -1224,9 +1225,9 @@ select.form-input option {
   box-sizing: border-box;
   cursor: pointer;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
   white-space: nowrap;
   text-align: center;
 }
@@ -1237,7 +1238,7 @@ select.form-input option {
    span explicitly restores the bold primary label. */
 .create-announcement-modal .modal-footer .confirm-btn,
 .create-announcement-modal .modal-footer .confirm-btn .confirm-btn-label {
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .btn-icon {
@@ -1267,9 +1268,9 @@ select.form-input option {
   border-radius: 999px;
   background: #eceaf5;
   color: #302954;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   text-align: left;
 }
 
@@ -1281,8 +1282,8 @@ select.form-input option {
   border-radius: 6px;
   color: #302954;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -1361,8 +1362,8 @@ select.form-input option {
   border-radius: 7px;
   background: #29234f;
   color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .option-text {
@@ -1375,30 +1376,30 @@ select.form-input option {
 }
 
 .option-label {
-  font-size: 13.5px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #302954;
   overflow-wrap: anywhere;
 }
 
 .option-description {
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #77758f;
   overflow-wrap: anywhere;
 }
 
 .reminder-text {
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #4a4666;
   overflow-wrap: anywhere;
 }
 
 .form-error {
   margin: 10px 0 0 0;
-  font-size: 11.5px;
+  font-size: var(--ui-font-caption);
 }
 
 /* ===== Responsive: tablet keeps two columns, phones stack everything ===== */
@@ -1424,7 +1425,7 @@ select.form-input option {
 
   /* Keep the title on one line on narrow screens. */
   .header-title {
-    font-size: 16px;
+    font-size: var(--ui-font-body-lg);
   }
 
   .form-row {
@@ -1458,6 +1459,6 @@ select.form-input option {
   resize: vertical;
   min-height: 90px;
   font-family: inherit;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 </style>

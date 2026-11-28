@@ -308,7 +308,7 @@ onMounted(async () => {
 
 .subtitle {
   color: #666;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* LAYOUT */
@@ -335,20 +335,20 @@ onMounted(async () => {
 }
 
 .info-grid label {
-  font-size: 12px;
+  font-size: var(--ui-font-label);
   color: #777;
 }
 
 .info-grid p {
   margin: 4px 0 0;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .status {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 /* DEADLINE */
@@ -360,7 +360,7 @@ input[type='date'] {
 }
 
 .note {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #555;
   margin-top: 8px;
 }
@@ -375,7 +375,7 @@ input[type='date'] {
 }
 
 .upload-icon {
-  font-size: 24px;
+  font-size: var(--ui-icon-2xl);
   margin-bottom: 8px;
 }
 
@@ -395,11 +395,11 @@ input[type='date'] {
 
 .checklist li {
   margin-bottom: 10px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--ui-font-label);
   color: #555;
   margin-bottom: 6px;
   display: block;
@@ -412,7 +412,7 @@ textarea {
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   resize: vertical;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   outline: none;
 }
 
@@ -421,7 +421,7 @@ textarea:focus {
 }
 
 .quick-title {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #666;
   margin-top: 12px;
   margin-bottom: 6px;
@@ -437,7 +437,7 @@ textarea:focus {
 .template-btn {
   padding: 6px 12px;
   border-radius: 14px;
-  font-size: 12px;
+  font-size: var(--ui-control-font-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -447,7 +447,7 @@ textarea:focus {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   margin-top: 10px;
 }
@@ -461,7 +461,7 @@ textarea:focus {
 .info-box {
   background: #fff8d6;
   padding: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   border-radius: 8px;
   margin-top: 12px;
 }
@@ -475,7 +475,7 @@ textarea:focus {
   color: white;
   padding: 12px 18px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   animation: fadeInOut 2s ease;
 }
 
@@ -505,7 +505,7 @@ textarea:focus {
   color: white;
   padding: 12px 18px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   animation: fadeInOut 2s ease;
 }
 .field-remark-item {
@@ -518,14 +518,14 @@ textarea:focus {
 
 .field-remark-head {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #92400e;
 }
 
 .field-remark-text {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #3f3f46;
   white-space: pre-wrap;
 }

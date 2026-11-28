@@ -172,15 +172,15 @@ onMounted(loadCalls)
 .calls-header h1 {
   margin: 0 0 4px;
   color: #1c1a3c;
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
 }
 
 .calls-header p {
   margin: 0;
-  color: #64748b;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 
 .calls-toolbar {
@@ -198,7 +198,7 @@ onMounted(loadCalls)
   background: #ffffff;
   color: #1e293b;
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
 }
 
 .calls-search {
@@ -246,8 +246,8 @@ onMounted(loadCalls)
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .call-status-dot {
@@ -258,17 +258,17 @@ onMounted(loadCalls)
 }
 
 .call-program {
-  color: #64748b;
-  font-size: 0.6875rem;
-  font-weight: 600;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .call-card-title {
   margin: 0;
   color: #1c1a3c;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .call-meta {
@@ -286,24 +286,24 @@ onMounted(loadCalls)
 
 .call-meta dt {
   color: #6b7190;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-label);
   text-transform: uppercase;
 }
 
 .call-meta dd {
   margin: 0;
   color: #1e293b;
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   text-align: right;
 }
 
 .call-description {
   margin: 0;
   color: #475569;
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   display: -webkit-box;
   -webkit-line-clamp: 4;
   line-clamp: 4;
@@ -326,8 +326,8 @@ onMounted(loadCalls)
   border: 1px solid #e1e4ef;
   border-radius: 13px;
   background: #ffffff;
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
   text-align: center;
 }
 
@@ -357,7 +357,7 @@ onMounted(loadCalls)
   background: #ffffff;
   color: #334155;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

@@ -458,7 +458,7 @@ export default {
 <style scoped>
 .panel {
   width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 /* TOOLBAR */
@@ -496,8 +496,8 @@ export default {
   background: #fff;
   color: #3b4160;
   font: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -524,8 +524,8 @@ export default {
   background: transparent;
   color: #6b5a3a;
   font: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -543,7 +543,7 @@ export default {
 
 .field-icon {
   position: absolute;
-  color: #78809a;
+  color: var(--ui-text-muted);
   pointer-events: none;
 }
 
@@ -571,7 +571,7 @@ export default {
   padding: 0 10px 0 32px;
   border: 1px solid #e0e4ef;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   font-family: inherit;
   color: #20234f;
   background: #ffffff;
@@ -579,7 +579,7 @@ export default {
 }
 
 .search-input::placeholder {
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 .search-input:focus {
@@ -593,7 +593,7 @@ export default {
   padding: 0 26px 0 30px;
   border: 1px solid #e0e4ef;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   font-family: inherit;
   color: #20234f;
   background: #ffffff;
@@ -614,8 +614,8 @@ export default {
   border: 1px solid #e3e6ef;
   border-radius: 0 0 10px 10px;
   padding: 22px;
-  font-size: 12px;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .error-text {
@@ -643,11 +643,11 @@ export default {
 
 .proposals-table th {
   background: #ffffff;
-  color: #78809a;
-  font-size: 10px;
-  font-weight: 600;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: var(--ui-tracking-caps);
   text-align: left;
   padding: 9px 12px;
   border-bottom: 1px solid #e3e6ef;
@@ -657,7 +657,7 @@ export default {
 .proposals-table td {
   padding: 9px 12px;
   border-bottom: 1px solid #eef0f5;
-  font-size: 11px;
+  font-size: var(--ui-font-table-cell-compact);
   color: #20234f;
   vertical-align: top;
 }
@@ -679,29 +679,29 @@ export default {
 }
 
 .document-id {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
   color: #25245b;
   word-break: break-word;
 }
 
 .title-cell {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
   color: #20234f;
-  line-height: 1.35;
+  line-height: var(--ui-line-snug);
 }
 
 .subtext {
-  font-size: 10px;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin-top: 2px;
 }
 
 .rejection-remarks {
   max-width: 420px;
   white-space: normal;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
   color: #6b5a3a;
 }
 
@@ -710,7 +710,7 @@ export default {
 }
 
 .date-cell {
-  color: #78809a;
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
@@ -726,8 +726,8 @@ export default {
   display: inline-block;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 9px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -737,8 +737,8 @@ export default {
   height: 29px;
   padding: 0 12px;
   border-radius: 7px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -751,15 +751,15 @@ export default {
 
 .empty {
   text-align: center;
-  color: #78809a;
+  color: var(--ui-text-muted);
   padding: 24px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .table-footer {
   padding: 10px 12px;
-  font-size: 10px;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   border-top: 1px solid #eef0f5;
 }
 
@@ -787,8 +787,8 @@ export default {
   background: #ffffff;
   color: #25245b;
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

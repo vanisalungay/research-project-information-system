@@ -332,21 +332,21 @@ public class ProposalController {
     }
 
     /**
-     * Returns a proposal that is awaiting the Chancellor's final approval to OVCRIGE.
-     * The record goes back to {@code REC_APPROVED} so OVCRIGE can forward it to the
-     * Chancellor again; the transition, the actor and the remarks are audited. Error
-     * mapping is local for the same reason as {@link #approveWithSpecialOrder}.
+     * Returns a proposal that is awaiting the Chancellor's final approval to ORPS (RPS).
+     * The record goes back to {@code RETURNED_TO_RPS} so ORPS reviews it and forwards the
+     * revision; the transition, the actor and the remarks are audited. Error mapping is
+     * local for the same reason as {@link #approveWithSpecialOrder}.
      */
-    @PutMapping("/{id}/return-to-ovcrige")
-    public ResponseEntity<?> returnToOvcrige(
+    @PutMapping("/{id}/return-to-orps")
+    public ResponseEntity<?> returnToOrps(
             @PathVariable Long id,
             @RequestBody(required = false) ReturnToOvcrigeRequest request) {
         try {
-            Proposal saved = proposalService.returnToOvcrige(
+            Proposal saved = proposalService.returnToOrps(
                     id, request != null ? request.getRemarks() : null);
             Map<String, Object> response = new HashMap<>();
             response.put("proposal", saved);
-            response.put("message", "Proposal returned to OVCRIGE for re-forwarding.");
+            response.put("message", "Proposal returned to ORPS for review and forwarding.");
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -356,6 +356,17 @@ public class ProposalController {
             return ResponseEntity.status(e.getStatusCode())
                     .body(Map.of("error", e.getReason() != null ? e.getReason() : "Return failed."));
         }
+    }
+
+    /**
+     * The original path of {@link #returnToOrps}. Kept as an alias so a client built
+     * against the earlier endpoint keeps working; the action itself now routes to ORPS.
+     */
+    @PutMapping("/{id}/return-to-ovcrige")
+    public ResponseEntity<?> returnToOvcrigeAlias(
+            @PathVariable Long id,
+            @RequestBody(required = false) ReturnToOvcrigeRequest request) {
+        return returnToOrps(id, request);
     }
 
     @PutMapping("/{id}/return-revision")

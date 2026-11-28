@@ -759,23 +759,24 @@ function useTypedAgendaName(name) {
 
 .header h2 {
   margin: 0 0 6px;
-  font-size: 22px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
   margin: 0;
   max-width: 720px;
   color: #6b7280;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
 .create-btn {
   padding: 9px 16px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -784,7 +785,7 @@ function useTypedAgendaName(name) {
   margin: 16px 0;
   padding: 10px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .banner-open {
@@ -818,7 +819,7 @@ function useTypedAgendaName(name) {
 .empty {
   color: #6b7280;
   padding: 12px 0;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
 }
 
 .framework-card {
@@ -850,7 +851,7 @@ function useTypedAgendaName(name) {
 
 .framework-title h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
   color: #1f2937;
 }
 
@@ -864,14 +865,14 @@ function useTypedAgendaName(name) {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .items-table th {
@@ -879,9 +880,9 @@ function useTypedAgendaName(name) {
   padding: 8px 10px;
   background: #f8fafc;
   color: #475569;
-  font-size: 11px;
+  font-size: var(--ui-font-table-header);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -892,21 +893,21 @@ function useTypedAgendaName(name) {
 }
 
 .item-name {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1f2937;
 }
 
 .item-description {
   display: block;
   margin-top: 3px;
-  font-weight: 400;
-  font-size: 11.5px;
+  font-weight: var(--ui-weight-regular);
+  font-size: var(--ui-font-caption);
   color: #6b7280;
   max-width: 420px;
 }
 
 .item-key {
-  font-family: monospace;
+  font-family: var(--ui-font-mono);
   color: #4b3f72;
 }
 
@@ -920,7 +921,7 @@ function useTypedAgendaName(name) {
   border-radius: 6px;
   cursor: pointer;
   margin-right: 6px;
-  font-size: 12px;
+  font-size: var(--ui-control-font-sm);
 }
 
 .edit-btn {
@@ -928,7 +929,7 @@ function useTypedAgendaName(name) {
   border-radius: 6px;
   cursor: pointer;
   margin-right: 6px;
-  font-size: 12px;
+  font-size: var(--ui-control-font-sm);
 }
 
 /* Layout only; .btn-danger supplies the destructive colour. */
@@ -937,8 +938,8 @@ function useTypedAgendaName(name) {
   border-radius: 6px;
   cursor: pointer;
   margin-right: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== Modals ===== */
@@ -977,22 +978,22 @@ function useTypedAgendaName(name) {
 
 .header-title {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
 }
 
 .header-subtitle {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #d9d5ea;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 
 .header-close {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 20px;
-  line-height: 1;
+  font-size: var(--ui-icon-lg);
+  line-height: var(--ui-line-none);
   cursor: pointer;
 }
 
@@ -1009,8 +1010,8 @@ function useTypedAgendaName(name) {
 .form-group label {
   display: block;
   margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
 }
 
@@ -1025,34 +1026,34 @@ function useTypedAgendaName(name) {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   box-sizing: border-box;
 }
 
 .form-error {
   margin: 4px 0 0;
-  font-size: 12.5px;
+  font-size: var(--ui-font-caption);
 }
 
 .field-hint {
   margin: 5px 0 0;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 
 .readonly-value {
   margin: 0;
-  font-family: monospace;
+  font-family: var(--ui-font-mono);
   color: #4b3f72;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .checkbox-row {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
   color: #374151;
   cursor: pointer;
 }
@@ -1072,14 +1073,14 @@ function useTypedAgendaName(name) {
   padding: 9px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .confirm-btn {
   padding: 9px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== Create / Edit framework dialog =====================================
@@ -1135,18 +1136,18 @@ function useTypedAgendaName(name) {
 
 .fw-heading h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
 }
 
 .fw-heading p {
   margin: 3px 0 0;
-  font-size: 9.5px;
-  line-height: 1.45;
-  color: #777d91;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 
 .fw-close {
@@ -1214,8 +1215,8 @@ function useTypedAgendaName(name) {
 }
 
 .fw-field label {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #3b3d55;
 }
 
@@ -1228,7 +1229,7 @@ function useTypedAgendaName(name) {
   background: #ffffff;
   color: #1c1a3c;
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: var(--ui-font-caption);
   box-sizing: border-box;
 }
 
@@ -1250,15 +1251,15 @@ function useTypedAgendaName(name) {
 
 .fw-hint {
   margin: -6px 0 0;
-  font-size: 9px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #81869a;
 }
 
 .fw-hint-error {
   margin-top: -8px;
   color: #b42318;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* Preview card */
@@ -1273,9 +1274,9 @@ function useTypedAgendaName(name) {
 }
 
 .fw-preview-label {
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #7b8298;
 }
@@ -1293,8 +1294,8 @@ function useTypedAgendaName(name) {
 }
 
 .fw-preview-agenda {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #3b3d55;
   white-space: nowrap;
 }
@@ -1305,9 +1306,9 @@ function useTypedAgendaName(name) {
   border-radius: 999px;
   background: #e6edfc;
   color: #31539b;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-body);
   overflow-wrap: anywhere;
 }
 
@@ -1331,15 +1332,15 @@ function useTypedAgendaName(name) {
 }
 
 .fw-toggle-title {
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #1c1a3c;
 }
 
 .fw-toggle-description {
-  font-size: 8.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #81869a;
 }
 
@@ -1405,8 +1406,8 @@ function useTypedAgendaName(name) {
   border-radius: 8px;
   background: #fef2f2;
   color: #991b1b;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .fw-footer {
@@ -1429,8 +1430,8 @@ function useTypedAgendaName(name) {
   padding: 0 10px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }

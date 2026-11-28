@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
 }
 .modal-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
 }
 .close-btn {
   width: 32px;
@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
 .btn-primary {
   padding: 12px 20px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-primary:disabled {
@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
 .btn-secondary {
   padding: 12px 20px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 /* ---------- Layout ----------
@@ -307,8 +307,8 @@ onBeforeUnmount(() => {
 }
 .modal-header-sub {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 .modal-header-actions {
   flex-shrink: 0;
@@ -340,9 +340,9 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 32px 24px;
   text-align: center;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 .terminal-preview-state--error {
   color: #dc2626;
@@ -386,8 +386,8 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #fecaca;
   background: #fef2f2;
   color: #dc2626;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* Small screens: the header actions wrap below the file name instead of

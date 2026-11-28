@@ -724,17 +724,17 @@ const saveNotif = async () => {
 }
 
 .user-name {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #ffffff;
   margin: 0 0 4px 0;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 .user-role-badge {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   color: #ffd803;
   margin: 0;
 }
@@ -752,8 +752,8 @@ const saveNotif = async () => {
   border: none;
   border-bottom: 2px solid transparent;
   padding: 12px 20px;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-text-soft, #64748b);
   cursor: pointer;
   display: flex;
@@ -796,14 +796,14 @@ const saveNotif = async () => {
 }
 
 .card-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   margin: 0 0 6px 0;
 }
 
 .card-header p {
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
   margin: 0;
 }
@@ -830,8 +830,8 @@ const saveNotif = async () => {
 }
 
 .column-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   border-left: 3px solid #2452ff;
   padding-left: 10px;
@@ -845,16 +845,16 @@ const saveNotif = async () => {
 }
 
 .field-group label {
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-text, #475569);
 }
 
 /* A helper under a display-only field, e.g. the Dean's assigned college. */
 .field-note {
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: var(--color-text-soft, #64748b);
 }
 
@@ -869,7 +869,7 @@ input[type="password"] {
   padding: 10px 14px;
   border: 1px solid var(--color-border, #cbd5e1);
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: var(--ui-field-font);
   font-family: inherit;
   transition: all 0.2s ease;
   background: var(--color-background, #ffffff);
@@ -891,14 +891,14 @@ input:focus {
 }
 
 .panel-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   margin: 0 0 4px 0;
 }
 
 .panel-subtitle {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
   margin: 0 0 18px 0;
 }
@@ -935,9 +935,9 @@ input:focus {
 }
 
 .tile-label {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-label);
   color: var(--color-text, #475569);
-  font-weight: 500;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* Notification Styling list */
@@ -958,14 +958,14 @@ input:focus {
 }
 
 .section-heading {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   margin: 0 0 4px 0;
 }
 
 .section-desc {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
   margin: 0 0 18px 0;
 }
@@ -1028,13 +1028,13 @@ input:focus {
 }
 
 .notif-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
 }
 
 .notif-subtitle {
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
 }
 
@@ -1050,8 +1050,8 @@ input:focus {
 .save-btn {
   padding: 11px 22px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }

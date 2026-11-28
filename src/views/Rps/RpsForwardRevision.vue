@@ -306,12 +306,13 @@ watch(() => route.params.id, () => fetchProposal())
 <style scoped>
 .page {
   padding: 24px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
 }
 .page-header h2 {
   margin: 8px 0 0;
-  font-size: 22px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
+  font-weight: var(--ui-weight-bold);
 }
 .page-header > .back-button {
   margin-bottom: 8px;
@@ -319,7 +320,7 @@ watch(() => route.params.id, () => fetchProposal())
 .subtitle {
   color: #6b7280;
   margin: 4px 0 16px;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 .layout {
   display: grid;
@@ -340,7 +341,7 @@ watch(() => route.params.id, () => fetchProposal())
 }
 .card h3 {
   margin: 0 0 12px;
-  font-size: 15px;
+  font-size: var(--ui-font-card-title);
   color: #111827;
 }
 .meta {
@@ -350,13 +351,13 @@ watch(() => route.params.id, () => fetchProposal())
 }
 .meta label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #6b7280;
   text-transform: uppercase;
 }
 .meta span {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #1f2937;
 }
 .remarks {
@@ -368,21 +369,21 @@ watch(() => route.params.id, () => fetchProposal())
 }
 .remarks label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #6b7280;
   text-transform: uppercase;
 }
 .remarks p {
   margin: 4px 0 0;
   color: #475569;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   white-space: pre-wrap;
 }
 .field-label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
 }
@@ -395,15 +396,15 @@ watch(() => route.params.id, () => fetchProposal())
 
 .flagged-section-head {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #3730a3;
 }
 
 .flagged-section-remark {
   margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
   white-space: pre-wrap;
 }
@@ -413,7 +414,7 @@ textarea {
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
 }
 textarea {
   min-height: 90px;
@@ -421,7 +422,7 @@ textarea {
 }
 .hint {
   color: #6b7280;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   margin: 8px 0 0;
 }
 .btn {
@@ -429,8 +430,8 @@ textarea {
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-control-font-md);
   cursor: pointer;
 }
 .btn:disabled {
@@ -439,7 +440,7 @@ textarea {
 }
 .success {
   color: #16a34a;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 .error {
   color: #dc2626;

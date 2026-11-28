@@ -209,7 +209,7 @@ export default {
   background: #f3f4f6;
   padding: 32px 40px;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
   width: 135%;
 }
 
@@ -221,7 +221,7 @@ export default {
 /* Titles */
 h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--ui-font-page-title);
 }
 
 .subtitle {
@@ -254,13 +254,13 @@ h1 {
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #6b7280;
 }
 
 .helper {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
   margin-bottom: 8px;
 }
@@ -284,7 +284,7 @@ textarea {
   margin-top: 10px;
   background: #eef4ff;
   padding: 10px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   border-radius: 6px;
   color: #2563eb;
 }
@@ -303,7 +303,7 @@ textarea {
   display: flex;
   gap: 10px;
   margin-bottom: 14px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 /* Custom checkbox */
@@ -328,7 +328,7 @@ textarea {
   top: -2px;
   left: 3px;
   color: white;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
 }
 
 /* Buttons — layout only; the action colours are global (assets/actions.css). */
@@ -356,7 +356,7 @@ textarea {
 /* Warning */
 .warning {
   margin-top: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
   background: #fde8e8;
   padding: 8px;

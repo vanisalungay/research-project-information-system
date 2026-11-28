@@ -163,8 +163,8 @@ function formatDate(value) {
   border-radius: 6px;
   color: #4f46e5;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   padding: 2px 8px;
   cursor: pointer;
 }
@@ -175,8 +175,8 @@ function formatDate(value) {
 }
 
 .trigger-icon {
-  font-size: 12px;
-  line-height: 1;
+  font-size: var(--ui-icon-xl);
+  line-height: var(--ui-line-none);
 }
 
 .remark-box {
@@ -201,9 +201,9 @@ function formatDate(value) {
 }
 
 .remark-flag {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #92400e;
 }
@@ -213,8 +213,8 @@ function formatDate(value) {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
   cursor: pointer;
 }
@@ -225,8 +225,8 @@ function formatDate(value) {
 
 .remark-text {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #3f3f46;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -237,24 +237,24 @@ function formatDate(value) {
   flex-wrap: wrap;
   gap: 6px;
   margin: 2px 0 0;
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   color: #78716c;
 }
 
 .remark-meta-item {
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   color: #a16207;
 }
 
 .remark-role {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #92400e;
 }
 
 .remark-position {
   color: #b45309;
-  font-weight: 600;
-  font-size: 10px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-caption);
 }
 
 .remark-editor {
@@ -266,10 +266,10 @@ function formatDate(value) {
 
 .editor-label {
   display: block;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ui-tracking-caps);
   color: #6b7280;
   margin-bottom: 4px;
 }
@@ -280,8 +280,8 @@ textarea {
   border: 1px solid #d1d5db;
   border-radius: 5px;
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-snug);
   padding: 6px 8px;
   resize: vertical;
   color: #1f2937;
@@ -303,8 +303,8 @@ textarea:focus {
 .btn-cancel {
   border-radius: 5px;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   cursor: pointer;
 }
@@ -316,7 +316,7 @@ textarea:focus {
 
 .remark-error {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
 }
 </style>

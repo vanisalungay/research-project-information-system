@@ -114,8 +114,8 @@ function onClick() {
   color: var(--bb-text);
   font-family: inherit;
   font-size: var(--ui-control-font-md, 14px);
-  font-weight: 600;
-  line-height: 1;
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;

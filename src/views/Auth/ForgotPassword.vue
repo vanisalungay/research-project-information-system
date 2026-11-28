@@ -73,9 +73,9 @@ import BackButton from '@/components/BackButton.vue'
 }
 
 .title {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
 }
 
 .title span {
@@ -84,7 +84,7 @@ import BackButton from '@/components/BackButton.vue'
 
 .school-name {
   margin-top: 40px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .right-panel {
@@ -93,8 +93,8 @@ import BackButton from '@/components/BackButton.vue'
 }
 
 .welcome {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
   margin-bottom: 25px;
 }
 
@@ -108,20 +108,20 @@ import BackButton from '@/components/BackButton.vue'
 }
 
 .card-icon {
-  font-size: 48px;
+  font-size: var(--ui-font-display);
   margin-bottom: 16px;
 }
 
 .contact-admin-card h3 {
-  font-size: 20px;
+  font-size: var(--ui-font-card-title);
   color: #1f2937;
   margin-bottom: 12px;
 }
 
 .instruction {
   color: #4b5563;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   margin-bottom: 20px;
 }
 
@@ -141,21 +141,21 @@ import BackButton from '@/components/BackButton.vue'
 }
 
 .detail-label {
-  font-weight: 600;
-  color: #64748b;
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   min-width: 100px;
-  font-size: 14px;
+  font-size: var(--ui-font-label);
 }
 
 .detail-value {
   color: #1e293b;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .note {
   color: #6b7280;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 .back {

@@ -45,6 +45,9 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // User Sign-up/Registration is
                                                                                     // public
+                        // The sign-up form's email preview: the same address the server would
+                        // generate for that name, including the duplicate suffix.
+                        .requestMatchers(HttpMethod.GET, "/api/users/registration-email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health", "/api/health/ready").permitAll()
                         // Actuator liveness only, and with component details suppressed
                         // (management.endpoint.health.show-details=never), so the load
@@ -215,10 +218,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/special-order-draft")
                         .hasRole(UserRoles.OC)
 
-                        // Returning an awaiting proposal to OVCRIGE is a Chancellor's
-                        // Office decision. The record goes back to REC_APPROVED (the
-                        // existing OVCRIGE-owned state); the service requires the
-                        // proposal to still be at FOR_OC_APPROVAL.
+                        // Returning an awaiting proposal to ORPS is a Chancellor's
+                        // Office decision. The record goes back to RETURNED_TO_RPS (the
+                        // existing hand-off state); the service requires the proposal to
+                        // still be at FOR_OC_APPROVAL. The former
+                        // `return-to-ovcrige` path is kept as an alias of the same action.
+                        .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-to-orps")
+                        .hasRole(UserRoles.OC)
                         .requestMatchers(HttpMethod.PUT, "/api/proposals/*/return-to-ovcrige")
                         .hasRole(UserRoles.OC)
 

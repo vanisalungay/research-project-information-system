@@ -671,17 +671,17 @@ const refreshOnClose = () => {
   width: auto;
   background: transparent;
   color: #262342;
-  font-size: var(--fs-xl, 1.5rem);
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 .subtitle {
   margin: 4px 0 0;
   color: #5b6478;
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 .top-bar-actions {
@@ -701,8 +701,8 @@ const refreshOnClose = () => {
   border-radius: 10px;
   background: #fff0db;
   color: #c2410c;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   box-shadow: 0 1px 2px rgba(194, 65, 12, 0.08);
   transition:
     background-color 0.15s ease,
@@ -728,8 +728,8 @@ const refreshOnClose = () => {
   min-height: 42px;
   padding: 0 18px;
   border-radius: 10px;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   box-shadow: 0 4px 12px rgba(36, 82, 255, 0.18);
   transition:
     background-color 0.15s ease,
@@ -774,7 +774,7 @@ const refreshOnClose = () => {
   border-radius: 10px;
   background: #fbfbff;
   color: #262342;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-field-font);
 }
 
 .filters select {
@@ -785,8 +785,8 @@ const refreshOnClose = () => {
   border-radius: 10px;
   background: #fbfbff;
   color: #262342;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 500;
+  font-size: var(--ui-field-font);
+  font-weight: var(--ui-weight-medium);
   cursor: pointer;
 }
 
@@ -806,7 +806,7 @@ const refreshOnClose = () => {
   border: 1px dashed #e3ddf2;
   border-radius: 14px;
   color: #6b7591;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
 }
 
 .state-message.state-error {
@@ -835,7 +835,7 @@ const refreshOnClose = () => {
   table-layout: fixed;
   border-collapse: collapse;
   background: #ffffff;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
 }
 
 .col-id { width: 150px; }
@@ -849,9 +849,9 @@ const refreshOnClose = () => {
   padding: 14px 16px;
   background: #4b3f72;
   color: #ffffff;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
@@ -886,9 +886,9 @@ const refreshOnClose = () => {
 
 /* Proposal ID */
 .cell-id {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #4b3f72;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -898,7 +898,7 @@ const refreshOnClose = () => {
 
 /* Title: two lines maximum, so every row keeps the same height. */
 .cell-title {
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   color: #262342;
 }
 
@@ -909,7 +909,7 @@ const refreshOnClose = () => {
   overflow: hidden;
   min-height: 2.9em;
   max-height: 2.9em;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
@@ -929,9 +929,9 @@ const refreshOnClose = () => {
   align-items: center;
   padding: 5px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   white-space: nowrap;
 }
 
@@ -964,9 +964,9 @@ const refreshOnClose = () => {
   margin: 0;
   padding: 0 8px;
   border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
   white-space: nowrap;
   transform: none;
 }
@@ -1076,7 +1076,8 @@ const refreshOnClose = () => {
 
 @media (max-width: 640px) {
   .page-title {
-    font-size: 1.25rem;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 
   .filters {

@@ -661,13 +661,36 @@
                 </p>
                 <p v-if="proposal.submittedByDate" class="text-content">Date: {{ proposal.submittedByDate }}</p>
                 <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'submittedByName'" field-label="Submitted By (name)" :remarks="remarksForField('submittedByName')" readonly />
-                <div v-if="proposal.submittedByFileName || proposal.submittedByFilePath" class="file-attachment">
+                <div v-if="submittedByFile" class="file-attachment">
                   <div class="file-icon">📄</div>
                   <div class="file-info">
                     <p class="file-name">{{ proposal.submittedByFileName || 'Signature' }}</p>
                     <p class="file-type">Signature</p>
                   </div>
-                  <button class="btn-download" @click="downloadFile(proposal.submittedByFilePath || proposal.submittedByFileName)">DOWNLOAD</button>
+                  <div class="file-actions">
+                    <button
+                      type="button"
+                      class="btn-view-file btn-view"
+                      :disabled="viewingFile === submittedByFile"
+                      :aria-label="`View ${proposal.submittedByFileName || 'signature'}`"
+                      @click="viewFile(submittedByFile, proposal.submittedByFileName)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      VIEW
+                    </button>
+                    <button class="btn-download" @click="downloadFile(submittedByFile)">DOWNLOAD</button>
+                  </div>
                 </div>
               </div>
 
@@ -680,13 +703,36 @@
                 </p>
                 <p v-if="proposal.endorsedByDate" class="text-content">Date: {{ proposal.endorsedByDate }}</p>
                 <FieldRemarkControl :proposal-id="proposal.id" :section-key="'28'" :field-key="'endorsedByName'" field-label="Endorsed By (name)" :remarks="remarksForField('endorsedByName')" readonly />
-                <div v-if="proposal.endorsementFileName || proposal.endorsementFilePath" class="file-attachment">
+                <div v-if="endorsementFile" class="file-attachment">
                   <div class="file-icon">📄</div>
                   <div class="file-info">
                     <p class="file-name">{{ proposal.endorsementFileName || 'Endorsement Document' }}</p>
                     <p class="file-type">PDF Document</p>
                   </div>
-                  <button class="btn-download" @click="downloadFile(proposal.endorsementFilePath || proposal.endorsementFileName)">DOWNLOAD</button>
+                  <div class="file-actions">
+                    <button
+                      type="button"
+                      class="btn-view-file btn-view"
+                      :disabled="viewingFile === endorsementFile"
+                      :aria-label="`View ${proposal.endorsementFileName || 'endorsement document'}`"
+                      @click="viewFile(endorsementFile, proposal.endorsementFileName)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      VIEW
+                    </button>
+                    <button class="btn-download" @click="downloadFile(endorsementFile)">DOWNLOAD</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -794,7 +840,13 @@ import api from '@/utils/api'
 import BackButton from '@/components/BackButton.vue'
 import { downloadProposalRecord } from '@/utils/proposalDetailsDocument'
 import { budgetDocumentName } from '@/utils/budgetDocument'
-import { downloadUploadedFile } from '@/utils/fileDownload'
+import { downloadUploadedFile, previewUploadedFile } from '@/utils/fileDownload'
+import {
+  PREVIEW_UNSUPPORTED,
+  fileExtension,
+  fileTypeLabel,
+  previewKindOf,
+} from '@/utils/documentPreview'
 import SubmissionHistory from '@/components/SubmissionHistory.vue'
 import ProponentCallForProposal from './ProponentCallForProposal.vue'
 import SdgChecklist from '@/components/SdgChecklist.vue'
@@ -929,6 +981,18 @@ const hasCertificationData = computed(
   () => hasSubmittedByData.value || hasEndorsedByData.value
 )
 
+/**
+ * The two files of section 28, resolved exactly the way Download already resolves them:
+ * the stored path is preferred, and a legacy record that carries only the uploaded name
+ * falls back to it. View and Download therefore always address the same file.
+ */
+const submittedByFile = computed(
+  () => proposal.value.submittedByFilePath || proposal.value.submittedByFileName || '',
+)
+const endorsementFile = computed(
+  () => proposal.value.endorsementFilePath || proposal.value.endorsementFileName || '',
+)
+
 const hasPriorityAgendas = computed(() => {
   if (!proposal.value.priorityAgendas) return false
   return Object.values(proposal.value.priorityAgendas).some(agenda => agenda.selected)
@@ -973,6 +1037,47 @@ const formatDate = (dateString) => {
     month: 'short',
     day: 'numeric'
   })
+}
+
+/**
+ * The file whose preview is being fetched, so a second click cannot open a second tab
+ * while the authenticated bytes are still on their way.
+ */
+const viewingFile = ref('')
+
+/**
+ * Opens one of the section-28 attachments in the browser's own viewer, from the same
+ * authenticated `/api/files` route Download uses. A PDF renders in the viewer and an
+ * uploaded signature image renders as an image; a format the browser cannot display is
+ * reported honestly instead of opening an empty tab, and Download stays available.
+ */
+const viewFile = async (path, fileName) => {
+  if (!path || viewingFile.value) return
+  const nameForKind = fileExtension(fileName) ? fileName : path
+  if (previewKindOf(nameForKind) === PREVIEW_UNSUPPORTED) {
+    const label = fileTypeLabel(nameForKind)
+    await showAlert(
+      `In-browser preview is not available for ${label === 'FILE' ? 'this file type' : `${label} files`}. Use Download to open it in its own application.`,
+      { type: 'info', title: 'Preview Not Available' },
+    )
+    return
+  }
+
+  viewingFile.value = path
+  try {
+    await previewUploadedFile(path)
+  } catch (err) {
+    console.error('Previewing the uploaded file failed:', err?.response?.status ?? err)
+    const status = err?.response?.status
+    await showAlert(
+      status === 404
+        ? 'The stored file could not be found on the server.'
+        : 'The file could not be opened for preview.',
+      { type: 'error', title: 'File Not Retrieved' },
+    )
+  } finally {
+    viewingFile.value = ''
+  }
 }
 
 const downloadFile = async (fileName) => {
@@ -1062,8 +1167,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .header-info h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0 0 8px 0;
 }
@@ -1076,23 +1181,23 @@ const formatReviewerPosition = (position) => {
 }
 
 .proposal-id {
-  font-size: 13px;
-  color: #64748b;
-  font-family: monospace;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-mono);
 }
 
 .document-id {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #4b3f72;
-  font-family: monospace;
-  font-weight: 600;
+  font-family: var(--ui-font-mono);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .revision-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: #e0e7ff;
   color: #3730a3;
 }
@@ -1101,8 +1206,8 @@ const formatReviewerPosition = (position) => {
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .header-actions {
@@ -1116,8 +1221,8 @@ const formatReviewerPosition = (position) => {
 .btn-secondary {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1126,8 +1231,8 @@ const formatReviewerPosition = (position) => {
 .btn-duplicate {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1154,16 +1259,16 @@ const formatReviewerPosition = (position) => {
 
 .copy-action-text h2 {
   margin: 0 0 4px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-lg);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
 .copy-action-text p {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-control-font-md);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 .copy-action-bar .btn-duplicate {
@@ -1177,8 +1282,8 @@ const formatReviewerPosition = (position) => {
   gap: 6px;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1187,8 +1292,8 @@ const formatReviewerPosition = (position) => {
 .btn-primary {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1225,7 +1330,7 @@ const formatReviewerPosition = (position) => {
 
 .error-state p {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* CONTENT GRID */
@@ -1270,14 +1375,14 @@ const formatReviewerPosition = (position) => {
   background: #4f46e5;
   color: #fff;
   border-radius: 50%;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   flex-shrink: 0;
 }
 
 .card-header h2 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
 }
@@ -1310,24 +1415,24 @@ const formatReviewerPosition = (position) => {
 }
 
 .info-item label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-item p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   margin: 0;
 }
 
 /* TEXT CONTENT */
 .text-content {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #475569;
   margin: 0;
   white-space: pre-wrap;
@@ -1347,8 +1452,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .subsection h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 8px 0;
 }
@@ -1373,8 +1478,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .certification-block .subsection-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 8px 0;
 }
@@ -1394,15 +1499,15 @@ const formatReviewerPosition = (position) => {
 }
 
 .objectives strong {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .objectives p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
   margin: 0;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
 }
 
 /* TYPE BADGE */
@@ -1410,8 +1515,8 @@ const formatReviewerPosition = (position) => {
   display: inline-block;
   padding: 6px 16px;
   border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: #eef2ff;
   color: #4f46e5;
 }
@@ -1442,11 +1547,11 @@ const formatReviewerPosition = (position) => {
 
 .agenda-item strong {
   color: #4f46e5;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .agenda-item span {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
 }
 
@@ -1458,7 +1563,7 @@ const formatReviewerPosition = (position) => {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .data-table thead {
@@ -1468,7 +1573,7 @@ const formatReviewerPosition = (position) => {
 .data-table th {
   padding: 10px 12px;
   text-align: left;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
@@ -1499,7 +1604,7 @@ const formatReviewerPosition = (position) => {
   justify-content: center;
   background: #fff;
   border-radius: 10px;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   border: 1px solid #e2e8f0;
 }
 
@@ -1509,15 +1614,15 @@ const formatReviewerPosition = (position) => {
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 2px 0;
 }
 
 .file-type {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -1525,10 +1630,45 @@ const formatReviewerPosition = (position) => {
 .btn-download {
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
+}
+
+/* View + Download of a section-28 attachment, side by side on the right. */
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Geometry only; the blue tonal colour comes from assets/actions.css (.btn-view). */
+.btn-view-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-view-file svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.btn-view-file:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* SIDEBAR */
@@ -1547,12 +1687,12 @@ const formatReviewerPosition = (position) => {
 }
 
 .sidebar-card h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 16px 0;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 /* STATUS CARD */
@@ -1573,8 +1713,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .status-text {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
@@ -1583,8 +1723,8 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .status-meta p {
@@ -1609,17 +1749,17 @@ const formatReviewerPosition = (position) => {
 }
 
 .info-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* DOCUMENT LIST */
@@ -1636,7 +1776,7 @@ const formatReviewerPosition = (position) => {
   padding: 10px 12px;
   background: #f8fafc;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
@@ -1644,7 +1784,7 @@ const formatReviewerPosition = (position) => {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-control-font-lg);
   padding: 4px;
   transition: transform 0.15s;
 }
@@ -1657,7 +1797,7 @@ const formatReviewerPosition = (position) => {
 .empty-text {
   color: #94a3b8;
   font-style: italic;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* REVIEW INFO CARD */
@@ -1679,25 +1819,25 @@ const formatReviewerPosition = (position) => {
 }
 
 .review-info-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .review-info-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .reviewer-position-badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: #dcfce7;
   color: #166534;
   width: fit-content;
@@ -1781,13 +1921,13 @@ const formatReviewerPosition = (position) => {
   background: rgba(255, 255, 255, 0.16);
   color: var(--rpis-accent, #ffd000);
   border-radius: 8px;
-  font-size: var(--fs-xs, 0.75rem);
+  font-size: var(--ui-font-caption);
 }
 
 .card-header h2 {
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-tight);
   color: #ffffff;
 }
 
@@ -1819,10 +1959,10 @@ const formatReviewerPosition = (position) => {
 
 .header-info h1 {
   margin: 0 0 6px;
-  font-size: var(--fs-xl, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
@@ -1835,7 +1975,7 @@ const formatReviewerPosition = (position) => {
 }
 
 .document-id {
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
   color: #5b5b7a;
   overflow-wrap: anywhere;
 }
@@ -1857,9 +1997,9 @@ const formatReviewerPosition = (position) => {
 }
 
 .sidebar-card h3 {
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-tight);
   color: #1c1a3c;
 }
 
@@ -1880,6 +2020,16 @@ const formatReviewerPosition = (position) => {
 
   .card-body {
     padding: 14px;
+  }
+
+  /* The two file actions move under the file details instead of overflowing the card. */
+  .file-attachment {
+    flex-wrap: wrap;
+  }
+
+  .file-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>

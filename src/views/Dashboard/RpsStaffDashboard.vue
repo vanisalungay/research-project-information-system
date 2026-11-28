@@ -598,8 +598,8 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -643,9 +643,9 @@ onMounted(() => {
 
 .section-sub {
   margin: 2px 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 
 .section-link {
@@ -657,8 +657,8 @@ onMounted(() => {
   background: transparent;
   color: var(--btn-link-text);
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -669,19 +669,19 @@ onMounted(() => {
 }
 
 .section-link-arrow {
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
 }
 
 /* The count a list panel already shows above its rows. */
 .panel-summary {
   margin: 0;
-  font-size: 0.8125rem;
-  color: #78809a;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .panel-summary strong {
-  font-size: 1.125rem;
+  font-size: var(--ui-font-section-title);
   color: #1c1a3c;
   font-variant-numeric: tabular-nums;
 }
@@ -689,8 +689,8 @@ onMounted(() => {
 /* Loading, error and empty messages. */
 .panel-state {
   padding: 10px 2px;
-  font-size: 0.875rem;
-  color: #78809a;
+  font-size: var(--ui-font-body);
+  color: var(--ui-text-muted);
 }
 
 .error-text {
@@ -761,19 +761,19 @@ onMounted(() => {
 }
 
 .status-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
 }
 
 .status-badge {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 /* The call's state keeps the shared status palette: open is green, upcoming/pending is
@@ -804,9 +804,9 @@ onMounted(() => {
 
 .announcement-title {
   margin: 12px 0 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-snug);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
@@ -827,19 +827,19 @@ onMounted(() => {
 
 .meta-label {
   display: block;
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #78809a;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
 }
 
 .meta-value {
   display: block;
   margin-top: 2px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #25245b;
 }
 
@@ -890,8 +890,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   margin-top: 6px;
-  font-size: 0.6875rem;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 
@@ -934,17 +934,17 @@ onMounted(() => {
 }
 
 .item-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
 
 .item-meta {
   margin-top: 3px;
-  font-size: 0.75rem;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 
@@ -957,7 +957,7 @@ onMounted(() => {
 
 .item-icon {
   display: inline-flex;
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 .item-icon :deep(svg) {
@@ -973,8 +973,8 @@ onMounted(() => {
   display: inline-block;
   padding: 4px 11px;
   border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -987,8 +987,8 @@ onMounted(() => {
   padding: 0 14px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1002,8 +1002,8 @@ onMounted(() => {
 }
 
 .row-btn-arrow {
-  font-size: 0.8125rem;
-  line-height: 1;
+  font-size: var(--ui-control-font-md);
+  line-height: var(--ui-line-none);
 }
 
 /* ===== Budget filters ===== */
@@ -1020,8 +1020,8 @@ onMounted(() => {
   background: #ffffff;
   color: #4b5570;
   font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -1043,7 +1043,7 @@ onMounted(() => {
 .panel-table th {
   background: #f6f7fd;
   color: #1c1a3c;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .panel-table th.text-right,
@@ -1060,13 +1060,13 @@ onMounted(() => {
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 .cell-id {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #5b6484;
   white-space: nowrap;
 }

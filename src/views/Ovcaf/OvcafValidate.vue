@@ -362,7 +362,7 @@ const downloadProject = async () => {
 
 <style scoped>
 .page-wrapper {
-  font-family: Arial, sans-serif;
+  font-family: var(--ui-font-ui);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -372,12 +372,12 @@ const downloadProject = async () => {
   background: #1c2145;
   padding: 20px 30px;
   color: white;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
 }
 .header-banner h1 {
   margin: 0;
-  font-size: 28px;
-  letter-spacing: 1px;
+  font-size: var(--ui-font-page-title);
+  letter-spacing: var(--ui-tracking-caps);
 }
 .action-buttons {
   width: 100%;
@@ -398,9 +398,9 @@ const downloadProject = async () => {
 .btn-yellow {
   padding: 15px 25px;
   border-radius: 10px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--ui-control-font-lg);
 }
 .btn-yellow:disabled {
   opacity: 0.6;
@@ -409,12 +409,12 @@ const downloadProject = async () => {
 .proposal-body h4 {
   margin-top: 35px;
   margin-bottom: 10px;
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-section-title);
 }
 .proposal-body p {
-  line-height: 1.6;
-  font-size: 15px;
+  line-height: var(--ui-line-body);
+  font-size: var(--ui-font-body);
 }
 .two-column {
   display: flex;
@@ -428,7 +428,7 @@ const downloadProject = async () => {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
-  font-size: 15px;
+  font-size: var(--ui-font-body);
 }
 .impl-table th, .impl-table td {
   border: 1px solid black;
@@ -450,14 +450,14 @@ const downloadProject = async () => {
   gap: 10px;
 }
 .budget-doc-name {
-  font-size: 15px;
+  font-size: var(--ui-font-body);
   overflow-wrap: anywhere;
 }
 .budget-doc-row .download-btn {
   margin: 0;
   display: inline-block;
   padding: 8px 16px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
 }
 .budget-doc-empty {
   color: #6b7280;
@@ -484,8 +484,8 @@ const downloadProject = async () => {
   text-align: center;
 }
 .confirm-text {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: 35px;
 }
 .confirm-actions {
@@ -497,13 +497,13 @@ const downloadProject = async () => {
 .btn-confirm {
   padding: 12px 35px;
   border-radius: 15px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-cancel {
   padding: 12px 35px;
   border-radius: 15px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .success-box {
@@ -511,8 +511,8 @@ const downloadProject = async () => {
   color: #ffd700;
   padding: 15px 40px;
   border-radius: 40px;
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-section-title);
 }
 .reason-input {
   width: 80%;
@@ -520,7 +520,7 @@ const downloadProject = async () => {
   border-radius: 10px;
   border: none;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #000;
 }
 .error-text { color: #dc2626; }
@@ -528,6 +528,6 @@ const downloadProject = async () => {
 .status-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 </style>

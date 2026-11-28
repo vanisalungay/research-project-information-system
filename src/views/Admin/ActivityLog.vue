@@ -345,14 +345,15 @@ onMounted(() => {
 
 .header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   color: #1f2937;
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
   margin: 6px 0 0;
   color: #6b7280;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
   max-width: 720px;
 }
 
@@ -368,8 +369,8 @@ onMounted(() => {
   border-radius: 999px;
   background: #eef2ff;
   color: #2452ff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .toolbar {
@@ -386,7 +387,7 @@ onMounted(() => {
   padding: 9px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1f2937;
   background: #fff;
 }
@@ -407,7 +408,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #6b7280;
 }
 
@@ -419,14 +420,14 @@ onMounted(() => {
   background: #fff;
   color: #374151;
   padding: 9px 14px;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
   cursor: pointer;
 }
 
 /* The View action colour comes from the shared action system (assets/actions.css). */
 .view-btn {
   padding: 9px 14px;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
 }
 
 .clear-btn:hover,
@@ -451,7 +452,7 @@ onMounted(() => {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 thead th {
@@ -459,7 +460,7 @@ thead th {
   padding: 12px 14px;
   background: #f9fafb;
   color: #374151;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
 }
@@ -480,7 +481,7 @@ tbody tr:hover {
 }
 
 .activity-cell {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #111827;
 }
 
@@ -499,8 +500,8 @@ tbody tr:hover {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .loading-state,
@@ -546,7 +547,7 @@ tbody tr:hover {
 .range-label,
 .page-label {
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--ui-font-label);
 }
 
 .pager {
@@ -585,15 +586,15 @@ tbody tr:hover {
 
 .modal-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
   color: #1f2937;
 }
 
 .close-btn {
   border: none;
   background: none;
-  font-size: 22px;
-  line-height: 1;
+  font-size: var(--ui-icon-xl);
+  line-height: var(--ui-line-none);
   cursor: pointer;
   color: #6b7280;
 }
@@ -618,13 +619,13 @@ tbody tr:hover {
 
 .detail-list dt {
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .detail-list dd {
   margin: 0;
   color: #1f2937;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 @media (max-width: 640px) {

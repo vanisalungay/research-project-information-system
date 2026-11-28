@@ -394,7 +394,7 @@ export default {
 /* BASE */
 * {
   box-sizing: border-box;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 .app {
@@ -425,7 +425,7 @@ export default {
 
 .proposal-id {
   color: black;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .header-actions button {
@@ -459,7 +459,7 @@ export default {
 }
 
 label {
-  font-size: 12px;
+  font-size: var(--ui-font-label);
   color: gray;
 }
 
@@ -495,7 +495,7 @@ label {
 .badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 /* DECISION */
@@ -525,14 +525,14 @@ label {
   padding: 10px;
   width: 100%;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
 }
 
 .secondary {
   padding: 10px;
   width: 100%;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
 }
 
 /* FILES */
@@ -572,7 +572,7 @@ label {
   overflow-y: auto;
   border-radius: 6px;
   padding: 25px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .proposal-header {
@@ -585,19 +585,19 @@ label {
 .download-btn {
   padding: 6px 12px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--ui-control-font-sm);
 }
 
 .close-btn {
   border: none;
   background: none;
-  font-size: 18px;
+  font-size: var(--ui-icon-md);
   cursor: pointer;
 }
 
 .proposal-body h4 {
   margin-top: 20px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .two-column {

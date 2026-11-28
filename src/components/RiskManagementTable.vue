@@ -160,8 +160,8 @@ const removeRow = (index) => {
   background: #f8faff;
   border-left: 4px solid #4f46e5;
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -172,20 +172,20 @@ const removeRow = (index) => {
 .rmp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .rmp-table th {
   background: #f8fafc;
   color: #1e293b;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   padding: 10px 12px;
   text-align: left;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--ui-font-table-header);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .rmp-table td {
@@ -197,7 +197,7 @@ const removeRow = (index) => {
 .rmp-index-col {
   width: 34px;
   text-align: center;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
 }
 
@@ -217,7 +217,7 @@ const removeRow = (index) => {
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   font-family: inherit;
   color: #1e293b;
   background: #ffffff;
@@ -253,15 +253,15 @@ const removeRow = (index) => {
 .rmp-field-error {
   display: block;
   margin-top: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #dc2626;
 }
 
 .rmp-readonly-value {
   display: block;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #1e293b;
 }
 
@@ -275,7 +275,7 @@ const removeRow = (index) => {
   border-radius: 6px;
   background: none;
   color: #94a3b8;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -294,8 +294,8 @@ const removeRow = (index) => {
   border: 1px dashed #cbd5e1;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
   color: #4f46e5;
   cursor: pointer;
   transition: all 0.15s;
@@ -308,8 +308,8 @@ const removeRow = (index) => {
 
 .rmp-empty {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* On a phone the table becomes a stack of labelled cards, so no column (and no
@@ -348,11 +348,11 @@ const removeRow = (index) => {
     content: attr(data-label);
     display: block;
     margin-bottom: 3px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-bold);
+    letter-spacing: var(--ui-tracking-caps);
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--ui-text-muted);
   }
 
   .rmp-action-col {

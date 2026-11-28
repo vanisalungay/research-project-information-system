@@ -85,9 +85,9 @@ test('the endorsement request table pages its rows with the shared pager', () =>
 })
 
 test('the table header is readable on the blue band behind it', () => {
-  // The application paints #3c3b6e behind every table head, and the shared .end-table th
-  // rule overrides that rule's white label with #64748b - 2.2:1, unreadable. The Dean pages
-  // set the pair explicitly, so the label stays white whatever the shared rule does.
+  // The shared .end-table th rule defaults to a dark label on a light band. The Dean
+  // pages paint their own navy band and set the pair explicitly, so the label stays
+  // white whatever the default does.
   const header = /\.end-page--dean \.end-table thead th\s*\{([^}]*)\}/.exec(STYLES)
   assert.ok(header, 'the Dean table header rule must exist')
   assert.match(header[1], /background:\s*#3c3b6e/, 'the header must keep the blue band')
@@ -102,8 +102,8 @@ test('the corrected text colours are the darker, readable ones', () => {
   )
   assert.match(
     STYLES,
-    /\.end-page--dean \.end-muted\s*\{[^}]*color:\s*#64748b/,
-    'the muted metadata must be readable on white',
+    /\.end-page--dean \.end-muted\s*\{[^}]*color:\s*var\(--ui-text-muted\)/,
+    'the muted metadata must use the readable muted token',
   )
 })
 
@@ -112,7 +112,7 @@ test('the shared endorsement styles stay untouched', () => {
   // must remain what the other endorsement screens are laid out with.
   assert.match(
     STYLES,
-    /\.end-page \{\s*max-width: 1040px;?\s*\}/,
+    /\.end-page \{[^}]*max-width:\s*1040px;?[^}]*\}/,
     'the shared .end-page cap must be unchanged',
   )
   assert.match(

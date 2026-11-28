@@ -220,7 +220,7 @@ onActivated(() => {
 <style scoped>
 .panel {
   width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 /* TABS */
@@ -237,8 +237,8 @@ onActivated(() => {
   border: 1px solid #e3e6ef;
   background: #ffffff;
   color: #25245b;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
   font-family: inherit;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -257,17 +257,17 @@ onActivated(() => {
   background: #25245b;
   border-color: #25245b;
   color: #ffd400;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .muted {
-  color: #78809a;
-  font-size: 12px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
 }
 
 .error {
   color: #dc2626;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 /* CARDS */
@@ -288,8 +288,8 @@ onActivated(() => {
 
 .card-top h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #20234f;
 }
 
@@ -297,8 +297,8 @@ onActivated(() => {
 .badge {
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -311,21 +311,21 @@ onActivated(() => {
 
 .meta label {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .meta span {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #20234f;
 }
 
 .meta .overdue {
   color: #dc2626;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .remarks {
@@ -337,17 +337,17 @@ onActivated(() => {
 
 .remarks label {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .remarks p {
   margin: 4px 0 0;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   white-space: pre-wrap;
 }
 
@@ -366,11 +366,11 @@ onActivated(() => {
 
 .section-flags label {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .section-flag + .section-flag {
@@ -381,14 +381,14 @@ onActivated(() => {
 
 .section-flag-head {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #3730a3;
 }
 
 .section-flag-text {
   margin: 3px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #475569;
   white-space: pre-wrap;
 }
@@ -402,14 +402,14 @@ onActivated(() => {
   padding: 8px 15px;
   border-radius: 7px;
   text-decoration: none;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-control-font-sm);
   transition: background-color 0.15s ease;
 }
 
 .hint {
-  color: #78809a;
-  font-size: 11px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
   margin: 10px 0 0;
 }
 </style>

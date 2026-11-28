@@ -74,9 +74,9 @@ function formatDate(value) {
 }
 
 .notice-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #92400e;
 }
@@ -89,8 +89,8 @@ function formatDate(value) {
 
 .remark-text {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #3f3f46;
   white-space: pre-wrap;
 }
@@ -101,12 +101,12 @@ function formatDate(value) {
   align-items: center;
   gap: 8px;
   margin: 6px 0 0;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #78716c;
 }
 
 .remark-role {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #92400e;
   background: #fde68a;
   border-radius: 999px;

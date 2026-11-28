@@ -48,19 +48,19 @@ const gotoLoginPage = () => {
 
 .text h1 {
   margin: 0;
-  font-size: 70px;
+  font-size: var(--ui-font-display);
 }
 
 h1 {
-  line-height: 1.2;
+  line-height: var(--ui-line-display);
 }
 
 .bold {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .normal {
-  font-weight: 400;
+  font-weight: var(--ui-weight-regular);
 }
 
 .white {
@@ -72,7 +72,7 @@ h1 {
 }
 
 .description {
-  font-size: 25px;
+  font-size: var(--ui-font-body-lg);
   margin-top: 50px;
 }
 
@@ -88,8 +88,8 @@ h1 {
   width: 150px;
   height: 66px;
   border-radius: 80px;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

@@ -38,15 +38,15 @@ defineProps({
 
 .gad-interpretation-title {
   margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 
 .gad-interpretation-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .gad-interpretation-table th,
@@ -59,17 +59,17 @@ defineProps({
 
 .gad-interpretation-table th {
   background: #f1f5f9;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .gad-interpretation-range {
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   width: 110px;
 }
 
 .gad-interpretation-table tr.is-active td {
   background: #dcfce7;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 </style>

@@ -788,7 +788,7 @@ const copyBoth = async () => {
   padding: 10px 14px;
   margin-bottom: 20px;
   color: #991b1b;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
 }
 
 .error-icon {
@@ -836,15 +836,15 @@ const copyBoth = async () => {
 
 .credentials-title {
   margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
 }
 
 .credentials-note {
   margin: 0 0 14px;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #5b5b7a;
 }
 
@@ -862,23 +862,23 @@ const copyBoth = async () => {
 }
 
 .cred-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b6b8c;
 }
 
 .cred-value {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
 
 .cred-password {
-  font-family: monospace;
-  letter-spacing: 0.02em;
+  font-family: var(--ui-font-mono);
+  letter-spacing: var(--ui-tracking-label);
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
@@ -886,8 +886,8 @@ const copyBoth = async () => {
   padding: 5px 12px;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -897,14 +897,14 @@ const copyBoth = async () => {
   padding: 10px 16px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   cursor: pointer;
 }
 
 .copy-message {
   margin: 10px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: var(--status-approved-text);
 }
 
@@ -962,18 +962,18 @@ const copyBoth = async () => {
 
 .dean-heading h2 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
 }
 
 .dean-heading p {
   margin: 3px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: #777d91;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 
 .dean-close {
@@ -1045,7 +1045,7 @@ const copyBoth = async () => {
   margin-bottom: 0;
   padding: 8px 10px;
   border-radius: 7px;
-  font-size: 11.5px;
+  font-size: var(--ui-font-caption);
 }
 
 .dean-field {
@@ -1057,8 +1057,8 @@ const copyBoth = async () => {
 
 .dean-field label,
 .created-label {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #3b3d55;
   text-align: left;
 }
@@ -1073,7 +1073,7 @@ const copyBoth = async () => {
   background: #ffffff;
   color: #1c1a3c;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
 }
 
 .dean-field input::placeholder {
@@ -1117,8 +1117,8 @@ const copyBoth = async () => {
 
 .dean-hint {
   margin: 0;
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #81869a;
   overflow-wrap: anywhere;
 }
@@ -1140,9 +1140,9 @@ const copyBoth = async () => {
   align-items: center;
   gap: 6px;
   color: #2b3567;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
 }
 
@@ -1170,8 +1170,8 @@ const copyBoth = async () => {
   border-radius: 8px;
   background: #ffffff;
   color: #262342;
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
@@ -1207,8 +1207,8 @@ const copyBoth = async () => {
   padding: 0 12px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }

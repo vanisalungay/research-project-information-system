@@ -289,12 +289,12 @@ onMounted(load)
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 .cell-id {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   color: #5b6484;
   white-space: nowrap;
 }
@@ -302,7 +302,7 @@ onMounted(load)
 /* A table row action is smaller than a page action. */
 .row-btn {
   padding: 7px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--ui-control-font-md);
 }
 
 /* The error card keeps its Retry button at the start of its own row. */
@@ -320,8 +320,8 @@ onMounted(load)
   background: transparent;
   color: #315bff;
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   text-decoration: none;
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -338,7 +338,7 @@ onMounted(load)
 }
 
 .section-link-arrow {
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
 }
 </style>

@@ -150,8 +150,8 @@ function clearResponse(itemKey) {
   border-radius: 10px;
   background: #e8eeff;
   color: #263553;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .gad-instruction p {
@@ -180,8 +180,8 @@ function clearResponse(itemKey) {
   border-radius: 8px;
   background: #fdf2f2;
   color: #a83232;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== OVERALL SCORE ===== */
@@ -195,10 +195,10 @@ function clearResponse(itemKey) {
 .gad-summary-title {
   margin: 0 0 9px;
   color: #24274a;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-tracking-label);
+  line-height: var(--ui-line-snug);
 }
 
 .gad-summary-grid {
@@ -218,25 +218,25 @@ function clearResponse(itemKey) {
 
 .gad-summary-label {
   color: #6b7190;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-label);
   text-transform: uppercase;
 }
 
 .gad-summary-value {
   color: #23294a;
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-display);
+  line-height: var(--ui-line-display);
 }
 
 .gad-summary-incomplete {
   margin: 9px 0 0;
   color: #a66a12;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .gad-summary-interpretation {
@@ -245,9 +245,9 @@ function clearResponse(itemKey) {
   border-radius: 8px;
   background: #ddf5e8;
   color: #248b58;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 @media (max-width: 640px) {

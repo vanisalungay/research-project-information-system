@@ -86,8 +86,8 @@ function confirmEndorsement() {
 }
 
 .page-title {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   margin-bottom: 5px;
 }
 
@@ -115,7 +115,7 @@ function confirmEndorsement() {
 }
 
 .proposal-info p {
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   color: #444;
 }
 
@@ -141,10 +141,10 @@ function confirmEndorsement() {
   margin-top: 25px;
   width: 100%;
   padding: 12px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   border-radius: 10px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--ui-control-font-lg);
 }
 
 .endorse-btn:hover {
@@ -189,7 +189,7 @@ function confirmEndorsement() {
 .confirm-btn {
   padding: 10px 20px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -202,7 +202,7 @@ function confirmEndorsement() {
   color: white;
   padding: 12px 20px;
   border-radius: 10px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   z-index: 1000;
   box-shadow: 0 0 10px #aaa;
 }

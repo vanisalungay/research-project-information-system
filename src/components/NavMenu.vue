@@ -423,9 +423,9 @@ const signOut = async () => {
 .menu-label {
   margin: 0 0 18px;
   padding: 0 24px;
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   color: var(--rpis-on-dark-muted);
 }
 
@@ -478,9 +478,9 @@ li.active::before {
   min-height: 51px;
   padding: 0 20px 0 26px;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-tight);
   color: var(--rpis-icon);
   transition: color 0.18s ease;
 }
@@ -491,7 +491,7 @@ li.active::before {
 
 li.active .nav-link {
   color: var(--rpis-on-dark);
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .nav-link:focus-visible {
@@ -538,9 +538,9 @@ li.active .nav-link {
   border-radius: 999px;
   background: var(--rpis-badge);
   color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
 }
 
 
@@ -555,16 +555,16 @@ li.active .nav-link {
 
 .help-title {
   margin: 0 0 4px;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: var(--rpis-on-dark);
 }
 
 .help-text {
   margin: 0;
-  font-size: 12.5px;
-  font-weight: 400;
-  line-height: 17.5px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-tight);
   color: var(--rpis-on-dark-soft);
 }
 
@@ -599,8 +599,8 @@ li.active .nav-link {
   min-height: 46px;
   padding: 0 16px;
   gap: 12px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
 }
 
@@ -636,8 +636,8 @@ li.active .nav-link {
   background: transparent;
   color: var(--rpis-on-dark-muted, #aab0c5);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   text-align: left;
   cursor: pointer;
 }
@@ -691,7 +691,7 @@ li.active .nav-link {
   height: 18px;
   margin: 0;
   padding: 0 4px;
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
 }
 
 .sidebar-nav.is-collapsed .nav-divider {

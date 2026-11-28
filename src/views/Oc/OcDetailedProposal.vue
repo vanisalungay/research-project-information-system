@@ -86,11 +86,7 @@
       <p>Public Health, Environment</p>
     </section>
     <section>
-<<<<<<< HEAD
       <h2>(8) APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
-=======
-      <h2>(😎 APPLICABLE SUSTAINABLE DEVELOPMENT GOAL (SDG)</h2>
->>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
       <p>Clean Water and Sanitation; Good Health and Well-Being</p>
     </section>
     <section>
@@ -128,13 +124,7 @@
       </p>
     </section>
 
-    <!-- 11.
-<<<<<<< HEAD
-=======
-
->>>>>>> 4dca1a44a15ed023945701cda40f73ce74839a50
-xarxhaa, [29/12/2025 11:01 pm]
-Review of Literature -->
+    <!-- 11. Review of Literature -->
     <section>
       <h2>(11) REVIEW OF LITERATURE</h2>
       <p>
@@ -251,29 +241,30 @@ import BackButton from '@/components/BackButton.vue'
   max-width: 900px;
   margin: 24px auto;
   padding: 16px;
-  font-family: sans-serif;
-  line-height: 1.6;
+  font-family: var(--ui-font-ui);
+  line-height: var(--ui-line-body);
 }
 
 h1 {
-  font-size: 22px;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   margin-bottom: 4px;
 }
 .subtitle {
-  font-size: 14px;
+  font-size: var(--ui-font-small);
   color: #555;
   margin-bottom: 16px;
 }
 h2 {
-  font-size: 16px;
+  font-size: var(--ui-font-section-title);
   margin-top: 16px;
   margin-bottom: 8px;
   border-bottom: 1px solid #ccc;
   padding-bottom: 2px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
 }
 h3 {
-  font-size: 14px;
+  font-size: var(--ui-font-card-title);
   margin-top: 8px;
   margin-bottom: 4px;
 }

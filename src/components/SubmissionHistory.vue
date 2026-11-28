@@ -404,18 +404,18 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-header h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .sh-count {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   background: #f1f5f9;
   padding: 3px 10px;
   border-radius: 12px;
@@ -423,7 +423,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-muted {
   color: #94a3b8;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   font-style: italic;
 }
 
@@ -489,19 +489,19 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-version-label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
 .sh-current-badge {
   background: var(--status-approved-bg);
   color: var(--status-approved-text);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 3px 10px;
   border-radius: 12px;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .sh-meta-grid {
@@ -517,17 +517,17 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-meta-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .sh-meta-value {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 .sh-remarks {
@@ -540,10 +540,10 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-remarks p {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
   font-style: italic;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 .sh-btn {
@@ -551,8 +551,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   background: #fff;
   border: 1px solid #d1d5db;
   color: #475569;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -584,7 +584,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-snapshot-item .sh-meta-value {
   white-space: pre-wrap;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .sh-files {
@@ -598,13 +598,13 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-files li {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
   padding: 4px 0;
 }
 
 .sh-file-name {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #334155;
 }
 
@@ -626,7 +626,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 .sh-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .sh-table th,
@@ -642,7 +642,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 .sh-table th {
   background: #f8fafc;
   color: #475569;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -695,9 +695,9 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-header h3 {
   margin: 0;
-  font-size: var(--fs-lg, 1.125rem);
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
   text-transform: none;
   color: #ffffff;
 }
@@ -705,8 +705,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 .sh-subtitle {
   margin: 0;
   color: rgba(255, 255, 255, 0.72);
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .sh-count {
@@ -714,15 +714,15 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 
 .sh-muted {
   margin: 0;
   padding: 18px;
   color: #6b6b8c;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
   font-style: normal;
 }
 
@@ -731,7 +731,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   margin: 0;
   padding: 28px 22px;
   color: #6b6b8c;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
 }
 
 .sh-state-error {
@@ -746,15 +746,15 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-empty-title {
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
 }
 
 .sh-empty p {
   margin: 0;
   color: #6b6b8c;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
 }
 
 .sh-timeline {
@@ -815,13 +815,13 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-version-label {
-  font-size: var(--fs-lg, 1.125rem);
-  font-weight: 700;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 .sh-activity {
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
   color: #6b6b8c;
 }
 
@@ -839,8 +839,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   gap: 7px;
   padding: 5px 12px;
   border-radius: 999px;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -849,8 +849,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   border-radius: 999px;
   background: var(--status-approved-bg, #e7f7ec);
   color: var(--status-approved-text, #15803d);
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -863,16 +863,16 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 }
 
 .sh-meta-label {
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b6b8c;
 }
 
 .sh-meta-value {
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
@@ -895,7 +895,7 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 
 .sh-remarks p {
   margin: 6px 0 0;
-  line-height: 1.55;
+  line-height: var(--ui-line-body);
   overflow-wrap: anywhere;
 }
 
@@ -907,8 +907,8 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
   background: #ffffff;
   color: #262342;
   font-family: inherit;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -922,15 +922,15 @@ watch(() => props.proposalId, fetchVersions, { immediate: true })
 .sh-table td {
   border: 1px solid #e8e8f5;
   padding: 8px 10px;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-table-header);
   color: #1c1a3c;
 }
 
 .sh-table th {
   background: #f5f5fc;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #4b4b6b;
 }

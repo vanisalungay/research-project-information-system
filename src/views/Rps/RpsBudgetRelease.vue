@@ -917,7 +917,7 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 /* Reviewer Panel Styles */
 
 .review-card h3 {
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
   color: #1f2937;
   margin-bottom: 4px;
 }
@@ -930,8 +930,8 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 }
 
 .form-group label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
 }
 
@@ -939,14 +939,14 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
   width: 100%;
   height: 42px;     
   padding: 0 12px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   border: 1px solid #d1d5db;
   border-radius: 6px;
 }
 
 .form-group select {
   padding: 10px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   border: 1px solid #d1d5db;
   border-radius: 6px;
   outline: none;
@@ -968,7 +968,7 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 }
 
 .section-block h3 {
-  font-size: 15px;
+  font-size: var(--ui-font-body);
   margin-bottom: 10px;
   color: #1f2937;
 }
@@ -980,15 +980,15 @@ box-shadow:0 8px 24px rgba(0,0,0,.06);
 }
 
 .grid-2 span {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
 }
 
 .grid-2 p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #111827;
   margin: 2px 0 0;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 .proposal-table{
@@ -1001,14 +1001,14 @@ margin-top:10px;
 background:#2563eb;
 color:#fff;
 padding:10px;
-font-size:13px;
+font-size:var(--ui-font-table-header);
 text-align:left;
 }
 
 .proposal-table td{
 border:1px solid #e5e7eb;
 padding:10px;
-font-size:13px;
+font-size:var(--ui-font-table-cell);
 }
 
 .document-box{
@@ -1017,8 +1017,8 @@ padding:14px;
 background:#f9fafb;
 border:1px solid #e5e7eb;
 border-radius:6px;
-line-height:1.7;
-font-size:14px;
+line-height:var(--ui-line-body);
+font-size:var(--ui-font-body);
 white-space:pre-wrap;
 }
 
@@ -1057,18 +1057,18 @@ ATTACHMENT CARDS
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
 }
 
 .attachment-details h4 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #111827;
   margin-bottom: 4px;
 }
 
 .attachment-details p {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
 }
 
@@ -1082,7 +1082,7 @@ ATTACHMENT CARDS
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   transition: .2s;
 }
 
@@ -1091,7 +1091,7 @@ ATTACHMENT CARDS
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   transition: .2s;
 }
 
@@ -1130,8 +1130,8 @@ padding:16px;
 }
 
 .review-section h4{
-font-size:15px;
-font-weight:700;
+font-size:var(--ui-font-body);
+font-weight:var(--ui-weight-bold);
 color:#1e3a8a;
 margin-bottom:12px;
 padding-bottom:6px;
@@ -1145,8 +1145,8 @@ margin-bottom:14px;
 }
 
 .form-group label{
-font-size:13px;
-font-weight:600;
+font-size:var(--ui-font-label);
+font-weight:var(--ui-weight-semibold);
 margin-bottom:6px;
 color:#374151;
 }
@@ -1157,7 +1157,7 @@ width:100%;
 padding:10px;
 border:1px solid #d1d5db;
 border-radius:6px;
-font-size:14px;
+font-size:var(--ui-field-font);
 outline:none;
 transition:.2s;
 }
@@ -1179,7 +1179,7 @@ margin-top:10px;
 border:1px solid #d1d5db;
 border-radius:6px;
 resize:vertical;
-font-size:13px;
+font-size:var(--ui-field-font);
 }
 
 .review-section select{
@@ -1187,7 +1187,7 @@ width:100%;
 padding:10px;
 border:1px solid #d1d5db;
 border-radius:6px;
-font-size:14px;
+font-size:var(--ui-field-font);
 }
 
 .readonly-box{
@@ -1197,7 +1197,7 @@ font-size:14px;
   padding:12px;
   min-height:90px;
   color:#334155;
-  line-height:1.6;
+  line-height:var(--ui-line-body);
   white-space:pre-wrap;
 }
 
@@ -1214,8 +1214,8 @@ font-size:14px;
   padding:12px;
   border:none;
   border-radius:8px;
-  font-size:14px;
-  font-weight:600;
+  font-size:var(--ui-control-font-md);
+  font-weight:var(--ui-weight-semibold);
   cursor:pointer;
   transition:.2s;
 }
@@ -1243,7 +1243,7 @@ align-items:center;
 justify-content:center;
 background:#eef4ff;
 border-radius:8px;
-font-size:22px;
+font-size:var(--ui-icon-xl);
 flex-shrink:0;
 }
 
@@ -1254,8 +1254,8 @@ min-width:0;
 
 .budget-file-info strong{
 display:block;
-font-size:13px;
-font-weight:600;
+font-size:var(--ui-font-small);
+font-weight:var(--ui-weight-semibold);
 color:#1e3a8a;
 overflow:hidden;
 text-overflow:ellipsis;
@@ -1263,8 +1263,8 @@ white-space:nowrap;
 }
 
 .budget-file-info small{
-font-size:11px;
-color:#64748b;
+font-size:var(--ui-font-caption);
+color: var(--ui-text-muted);
 }
 
 .budget-file-actions{
@@ -1280,7 +1280,7 @@ padding:0;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:14px;
+font-size:var(--ui-control-font-md);
 border-radius:8px;
 }
 
@@ -1301,8 +1301,8 @@ STATUS BADGES
   padding:12px;
   border-radius:8px;
   text-align:center;
-  font-weight:700;
-  font-size:14px;
+  font-weight:var(--ui-weight-bold);
+  font-size:var(--ui-font-body);
 }
 
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
@@ -1324,14 +1324,14 @@ INFO ROWS
 }
 
 .info-row label{
-  font-size:13px;
-  font-weight:600;
+  font-size:var(--ui-font-label);
+  font-weight:var(--ui-weight-semibold);
   color:#6b7280;
 }
 
 .info-row p{
-  font-size:14px;
-  font-weight:600;
+  font-size:var(--ui-font-body);
+  font-weight:var(--ui-weight-semibold);
   color:#111827;
 }
 </style>

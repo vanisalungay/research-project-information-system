@@ -162,8 +162,8 @@ defineExpose({ loadAgencies })
 
 .ca-status {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .ca-status-error {
@@ -172,7 +172,7 @@ defineExpose({ loadAgencies })
 
 .ca-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   font-style: italic;
 }
@@ -188,8 +188,8 @@ defineExpose({ loadAgencies })
   padding: 0;
   border: none;
   background: none;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
   text-decoration: underline;
   cursor: pointer;
@@ -207,9 +207,9 @@ defineExpose({ loadAgencies })
   gap: 8px;
   margin: 0;
   padding: 6px 8px;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-line-snug);
   color: #475569;
   border-radius: 6px;
   cursor: pointer;
@@ -237,7 +237,7 @@ defineExpose({ loadAgencies })
 
 .ca-legacy-note {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   font-style: italic;
 }
@@ -248,8 +248,8 @@ defineExpose({ loadAgencies })
   margin: 0;
   padding-top: 10px;
   border-top: 1px solid #f1f5f9;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 </style>

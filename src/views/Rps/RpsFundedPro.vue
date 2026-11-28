@@ -127,7 +127,7 @@ export default {
 <style scoped>
 .page {
     padding: 25px;
-    font-family: Segoe UI, sans-serif;
+    font-family: var(--ui-font-ui);
     background: #f5f7fb;
     min-height: 100vh;
     width: 136%;
@@ -139,15 +139,15 @@ export default {
 
 .page-header h2 {
     margin: 0;
-    font-size: 28px;
-    font-weight: 700;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
     color: #1e293b;
 }
 
 .page-header p {
     margin-top: 5px;
-    font-size: 14px;
-    color: #64748b;
+    font-size: var(--ui-font-body);
+    color: var(--ui-text-muted);
 }
 
 .toolbar {
@@ -159,7 +159,7 @@ export default {
     padding: 12px 15px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: var(--ui-font-body);
     outline: none;
     box-sizing: border-box;
 }
@@ -189,7 +189,7 @@ export default {
 .table td {
     padding: 15px;
     text-align: left;
-    font-size: 14px;
+    font-size: var(--ui-font-table-header);
 }
 
 .table td {
@@ -205,8 +205,8 @@ export default {
 .status {
     padding: 6px 12px;
     border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
     display: inline-block;
     text-align: center;
     min-width: 140px;
@@ -217,7 +217,7 @@ export default {
     padding: 8px 18px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--ui-control-font-md);
 }
 
 .empty {

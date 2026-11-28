@@ -35,8 +35,8 @@
   background: #1c1a3c;
   padding: 18px;
   color: #ffd429;
-  font-size: 28px;
-  font-weight: bold;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
 }
 
 .tab-button {
@@ -61,7 +61,7 @@
 
 .section-title {
   color: #ffd429;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: 10px;
 }
 

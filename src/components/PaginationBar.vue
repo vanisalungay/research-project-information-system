@@ -94,12 +94,12 @@ function onPageSizeChange(event) {
   border-top: 1px solid #e3e6ef;
   background: #fff;
   color: #5b6278;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .pagination-summary {
   margin: 0;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 .pagination-controls {
@@ -135,7 +135,7 @@ function onPageSizeChange(event) {
   background: #fff;
   color: #3b4160;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

@@ -243,7 +243,7 @@ class NotificationWorkflowAcceptanceApiTest {
     }
 
     @Test
-    void aRecRejectionGoesToOrpsAndARecReturnNotifiesOnlyRps() throws Exception {
+    void aRecRejectionGoesToOrpsAndARecReturnNotifiesRpsAndTheProponent() throws Exception {
         Proposal rejected = proposalAt("UNDER_REVIEW", "Will be rejected");
         mockMvc.perform(put("/api/proposals/{id}/reject", rejected.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + recToken)
@@ -280,8 +280,8 @@ class NotificationWorkflowAcceptanceApiTest {
                 .andExpect(status().isOk());
 
         assertEquals(1, count(rpsStaff, NotificationTypes.REVISION, "Revision Request Received"));
-        assertEquals(0, count(proponent, NotificationTypes.REVISION, "Proposal Returned for Revision"),
-                "an office return goes to RPS first; the Proponent learns when RPS forwards it");
+        assertEquals(1, count(proponent, NotificationTypes.REVISION, "Proposal Returned for Revision"),
+                "the Proponent is told their proposal was returned for revision by the office");
     }
 
     @Test

@@ -407,8 +407,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .header-info h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0 0 8px 0;
 }
@@ -420,9 +420,9 @@ const formatReviewerPosition = (position) => {
 }
 
 .proposal-id {
-  font-size: 13px;
-  color: #64748b;
-  font-family: monospace;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-mono);
 }
 
 /* STATUS BADGES
@@ -430,8 +430,8 @@ const formatReviewerPosition = (position) => {
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .header-actions {
@@ -446,8 +446,8 @@ const formatReviewerPosition = (position) => {
   gap: 6px;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -455,8 +455,8 @@ const formatReviewerPosition = (position) => {
 .btn-primary {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -488,7 +488,7 @@ const formatReviewerPosition = (position) => {
 
 .error-state p {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* CONTENT GRID */
@@ -530,14 +530,14 @@ const formatReviewerPosition = (position) => {
   background: #4f46e5;
   color: #fff;
   border-radius: 50%;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   flex-shrink: 0;
 }
 
 .card-header h2 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
 }
@@ -567,24 +567,24 @@ const formatReviewerPosition = (position) => {
 }
 
 .info-item label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-item p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
   margin: 0;
 }
 
 /* TEXT CONTENT */
 .text-content {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #475569;
   margin: 0;
   white-space: pre-wrap;
@@ -604,8 +604,8 @@ const formatReviewerPosition = (position) => {
 }
 
 .subsection h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 8px 0;
 }
@@ -623,15 +623,15 @@ const formatReviewerPosition = (position) => {
 }
 
 .objectives strong {
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .objectives p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
   margin: 0;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
 }
 
 /* FILE ATTACHMENT */
@@ -653,7 +653,7 @@ const formatReviewerPosition = (position) => {
   justify-content: center;
   background: #fff;
   border-radius: 10px;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   border: 1px solid #e2e8f0;
 }
 
@@ -662,15 +662,15 @@ const formatReviewerPosition = (position) => {
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 2px 0;
 }
 
 .file-type {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -679,8 +679,8 @@ const formatReviewerPosition = (position) => {
   display: inline-block;
   padding: 6px 16px;
   border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: #eef2ff;
   color: #4f46e5;
 }
@@ -711,11 +711,11 @@ const formatReviewerPosition = (position) => {
 
 .agenda-item strong {
   color: #4f46e5;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .agenda-item span {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
 }
 
@@ -727,7 +727,7 @@ const formatReviewerPosition = (position) => {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .data-table thead {
@@ -737,7 +737,7 @@ const formatReviewerPosition = (position) => {
 .data-table th {
   padding: 10px 12px;
   text-align: left;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
@@ -774,7 +774,7 @@ const formatReviewerPosition = (position) => {
   justify-content: center;
   background: #fff;
   border-radius: 10px;
-  font-size: 24px;
+  font-size: var(--ui-font-page-title);
   border: 1px solid #e2e8f0;
 }
 
@@ -783,15 +783,15 @@ const formatReviewerPosition = (position) => {
 }
 
 .doc-info h4 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 2px 0;
 }
 
 .doc-info p {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -799,8 +799,8 @@ const formatReviewerPosition = (position) => {
 .btn-download {
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -820,12 +820,12 @@ const formatReviewerPosition = (position) => {
 }
 
 .sidebar-card h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 16px 0;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 /* STATUS CARD */
@@ -834,8 +834,8 @@ const formatReviewerPosition = (position) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .status-meta p {
@@ -860,17 +860,17 @@ const formatReviewerPosition = (position) => {
 }
 
 .info-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* REVIEWER ACCOUNTABILITY */
@@ -887,9 +887,9 @@ const formatReviewerPosition = (position) => {
 }
 
 .accountability-card label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
 }
 
@@ -899,13 +899,13 @@ const formatReviewerPosition = (position) => {
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   background: #fff;
   color: #1e293b;
 }
 
 .reviewer-input {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .reviewer-input::placeholder {
@@ -920,7 +920,7 @@ const formatReviewerPosition = (position) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-label);
   color: #475569;
   cursor: pointer;
 }
@@ -943,8 +943,8 @@ const formatReviewerPosition = (position) => {
   padding: 12px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -962,7 +962,7 @@ const formatReviewerPosition = (position) => {
 .empty-text {
   color: #94a3b8;
   font-style: italic;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* REVIEW INFO CARD */
@@ -984,25 +984,25 @@ const formatReviewerPosition = (position) => {
 }
 
 .review-info-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .review-info-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .reviewer-position {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: #dcfce7;
   color: #166534;
   width: fit-content;

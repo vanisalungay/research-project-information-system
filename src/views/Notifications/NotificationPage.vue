@@ -393,19 +393,19 @@ onMounted(() => {
 }
 
 .header-left h1 {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
 
 .badge {
-  background: #ef4444;
+  background: #dc2626;
   color: #fff;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .header-actions {
@@ -417,8 +417,8 @@ onMounted(() => {
 .btn-mark-all {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -445,7 +445,7 @@ onMounted(() => {
   padding: 12px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   background: #fff;
   transition: all 0.15s;
 }
@@ -460,7 +460,7 @@ onMounted(() => {
   padding: 12px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   background: #fff;
   cursor: pointer;
   min-width: 180px;
@@ -496,15 +496,15 @@ onMounted(() => {
 
 .error-text {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Layout only; the action colours come from assets/actions.css. */
 .btn-retry {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -524,8 +524,8 @@ onMounted(() => {
   border: 1px solid #c7d2fe;
   border-radius: 10px;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #3730a3;
   text-align: left;
 }
@@ -537,8 +537,8 @@ onMounted(() => {
   background: #4f46e5;
   border-radius: 999px;
   color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   text-align: center;
 }
 
@@ -616,8 +616,8 @@ onMounted(() => {
 }
 
 .notification-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
   flex: 1;
@@ -626,15 +626,15 @@ onMounted(() => {
 }
 
 .notification-time {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
 .notification-message {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #475569;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   margin: 0 0 12px 0;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -655,9 +655,9 @@ onMounted(() => {
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .call-status-dot {
@@ -668,8 +668,8 @@ onMounted(() => {
 }
 
 .call-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #334155;
 }
 
@@ -694,18 +694,18 @@ onMounted(() => {
   border-radius: 6px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   overflow-wrap: anywhere;
 }
 
 .notification-type {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .type-proposal { background: #dbeafe; color: #1e40af; }
@@ -721,15 +721,15 @@ onMounted(() => {
 .btn-mark-read {
   padding: 6px 14px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 /* ARROW */
 .notification-arrow {
-  color: #94a3b8;
+  color: var(--ui-text-muted);
   flex-shrink: 0;
   margin-top: 4px;
 }
@@ -754,17 +754,17 @@ onMounted(() => {
 }
 
 .empty-state h3 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
-  font-size: 14px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
   max-width: 400px;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   margin: 0;
 }
 

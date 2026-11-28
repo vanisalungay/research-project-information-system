@@ -106,19 +106,12 @@ public class UserService {
             user.setName(PersonNameFormatter.format(user.getName()));
         }
 
-        // One normalized form for every address that enters the system, so the account that
-        // is created is the account the sign-in form later finds.
-        user.setEmail(EmailNormalizer.normalize(user.getEmail()));
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IllegalArgumentException("An email address is required.");
-        }
-        if (!InstitutionalCredentialsService.isInstitutionalAddress(user.getEmail())) {
-            throw new IllegalArgumentException(
-                    "Only MSU Naawan email addresses are allowed.");
-        }
-        if (userRepository.findByNormalizedEmail(user.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already exists.");
-        }
+        // The institutional address is derived from the name here, on the server, exactly the
+        // way an administrator-created account gets one (InstitutionalCredentialsService).
+        // The browser's preview is never trusted, and the existing duplicate rule - the plain
+        // local part, then 2, 3, ... before the domain - is applied here so a self-registration
+        // can never collide with an existing account.
+        user.setEmail(credentialsService.availableEmailFor(user.getName()));
 
         String role = EmailNormalizer.normalizeRole(user.getRole());
         if (role == null) {

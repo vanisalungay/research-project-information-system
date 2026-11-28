@@ -279,6 +279,32 @@ public class ProposalNotificationPolicy {
     }
 
     /**
+     * Tells the Proponent that their proposal was returned for revision.
+     *
+     * <p>This is the Proponent-facing half of a return: the responsible office is still
+     * named (so the message does not read as an anonymous decision) and the remarks the
+     * office recorded travel with it. ORPS is told separately through the
+     * {@code RETURNED_TO_RPS} recipient rule, so neither side misses the event. The
+     * returned-at timestamp is part of the dedupe key: a retried request within the same
+     * return writes one row, while a later return of the same proposal is a new event.
+     */
+    public void notifyProponentRevisionReturned(Proposal proposal, String office) {
+        if (proposal == null) {
+            return;
+        }
+        String source = office == null || office.isBlank() ? "ORPS" : office.trim();
+        String dedupeKey = "proposal:" + proposal.getId()
+                + ":revision-returned:" + proposal.getReturnedAt();
+        notifyProponent(proposal,
+                "Your proposal \"" + proposal.getProjectTitle()
+                        + "\" has been returned for revision by " + source
+                        + ". ORPS is reviewing it and will forward the request with the"
+                        + " revision deadline." + remarksSentence(proposal),
+                "Proposal Returned for Revision", NotificationTypes.REVISION,
+                NotificationEvent.STATUS_UPDATED.withDedupeKey(dedupeKey));
+    }
+
+    /**
      * OVCAF returning a proposal is a hand-off to ORPS, not a proponent decision. The
      * remarks the reviewer wrote travel with the notification so ORPS can act on them.
      */

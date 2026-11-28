@@ -306,14 +306,15 @@ const goToReview = id => {
 }
 
 .ovc-banner .dash-banner-title {
-  font-size: 1.375rem;
-  line-height: 1.2;
+  font-size: var(--ui-font-page-title);
+  line-height: var(--ui-line-display);
   margin-bottom: 3px;
+  font-weight: var(--ui-weight-bold);
 }
 
 .ovc-banner .dash-banner-sub {
-  font-size: 0.8375rem;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   max-width: 72ch;
 }
 
@@ -348,14 +349,14 @@ const goToReview = id => {
 }
 
 .dash-stat .dash-stat-label {
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: var(--ui-font-label);
+  line-height: var(--ui-line-snug);
 }
 
 .dash-stat .dash-stat-value {
-  font-size: 2rem;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
+  font-size: var(--ui-font-stat);
+  line-height: var(--ui-line-display);
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 @media (min-width: 1024px) {
@@ -422,8 +423,8 @@ const goToReview = id => {
   background: transparent;
   color: #315bff;
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -439,8 +440,8 @@ const goToReview = id => {
 }
 
 .section-link-arrow {
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
 }
 
 /* ===== Endorsed proposals table =====
@@ -454,16 +455,16 @@ const goToReview = id => {
 }
 
 .ovc-table {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
 }
 
 .ovc-table th {
   background: #f6f7fd;
   color: #1c1a3c;
   padding: 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -508,8 +509,8 @@ const goToReview = id => {
 }
 
 .cell-id {
-  font-size: 0.6875rem;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #5b6484;
 }
 
@@ -526,7 +527,7 @@ const goToReview = id => {
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
@@ -537,31 +538,31 @@ const goToReview = id => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-  line-height: 1.35;
+  line-height: var(--ui-line-snug);
 }
 
 .cell-proponent {
-  font-size: 0.78rem;
+  font-size: var(--ui-font-small);
   color: #1f2937;
   overflow-wrap: anywhere;
 }
 
 .ovc-table .end-badge {
   padding: 2px 7px;
-  font-size: 0.656rem;
+  font-size: var(--ui-font-caption);
 }
 
 .ovc-empty {
   padding: 24px 12px;
   text-align: center;
-  color: #78809a;
+  color: var(--ui-text-muted);
 }
 
 /* A table row action is smaller than a page action and never wraps. */
 .row-btn {
   padding: 6px 10px;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: var(--ui-control-font-sm);
   white-space: nowrap;
 }
 
@@ -578,7 +579,8 @@ const goToReview = id => {
   }
 
   .ovc-banner .dash-banner-title {
-    font-size: 1.2rem;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 }
 

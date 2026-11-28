@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -193,6 +194,51 @@ class ProposalDraftPersistenceServiceTest {
         request.setGadChecklist(checklist(Map.of("1.1", "PARTLY"), Map.of()));
 
         assertNotNull(service.saveProposal(request, null).getGadChecklist());
+    }
+
+    // ===================== Save Draft on a returned revision =====================
+
+    private Proposal returnedRevision() {
+        Proposal proposal = new Proposal();
+        proposal.setId(PROPOSAL_ID);
+        proposal.setProponent(proponent());
+        proposal.setProposalCode("MSUN-ORPS-DA-001-2026");
+        proposal.setStatus("RPS_RETURNED");
+        proposal.setRevisionNumber(2);
+        proposal.setDocumentId("MSUN-ORPS-DA-001-2026-REV02");
+        when(proposalRepository.findByIdForUpdate(PROPOSAL_ID)).thenReturn(Optional.of(proposal));
+        when(versionService.isRevisionStatus("RPS_RETURNED")).thenReturn(true);
+        return proposal;
+    }
+
+    @Test
+    void aDraftSaveOnAReturnedRevisionKeepsTheRevisionStateAndDoesNotAdvanceIt() {
+        returnedRevision();
+
+        // Save Draft sends no submission status: this must store the edits only.
+        Proposal saved = service.saveProposal(request(null), PROPOSAL_ID);
+
+        assertEquals("RPS_RETURNED", saved.getStatus(),
+                "a draft save must not move the proposal out of revision");
+        assertEquals(Integer.valueOf(2), saved.getRevisionNumber(),
+                "a draft save is not a resubmission");
+        assertEquals("MSUN-ORPS-DA-001-2026-REV02", saved.getDocumentId());
+        verify(versionService, never()).ensureBaseline(any());
+        verify(versionService, never()).recordSubmission(any(), anyBoolean(), any());
+    }
+
+    @Test
+    void submittingTheReturnedRevisionStillAdvancesTheRevision() {
+        Proposal proposal = returnedRevision();
+        when(versionService.isSubmissionStatus("FOR REVIEW")).thenReturn(true);
+
+        Proposal saved = service.saveProposal(request("SUBMITTED"), PROPOSAL_ID);
+
+        assertEquals("FOR REVIEW", saved.getStatus());
+        assertEquals(Integer.valueOf(3), saved.getRevisionNumber(),
+                "a real resubmission increments the revision number exactly once");
+        verify(versionService).ensureBaseline(proposal);
+        verify(versionService).recordSubmission(eq(saved), eq(true), any());
     }
 
     @Test

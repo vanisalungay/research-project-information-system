@@ -286,7 +286,7 @@
           <div class="end-card">
             <h3 class="end-section-title">Audit history</h3>
             <ul v-if="events.length" class="end-timeline">
-              <li v-for="(event, index) in events" :key="index">
+              <li v-for="(event, index) in orderedEvents" :key="index">
                 <span class="end-timeline-title">{{ eventLabel(event.eventType) }}</span>
                 {{ event.detail }}
                 <div class="end-muted">
@@ -349,6 +349,7 @@ import {
   rejectEndorsementRequest,
   reissueEndorsementLetter,
   saveDocumentBlob,
+  sortEndorsementEventsNewestFirst,
   suggestedLetterFileName,
   todayISO,
   validateApproval,
@@ -390,6 +391,10 @@ const rejectionErrors = computed(() => validateRejection(rejectionForm))
 const blockedReason = computed(() =>
   approveBlockedReason(request.value, { hasSignature: hasSignature.value }),
 )
+
+// The API returns the audit trail oldest first; the Dean reads the most recent entry
+// first, so the display order is applied here without changing the shared endpoint.
+const orderedEvents = computed(() => sortEndorsementEventsNewestFirst(events.value))
 
 const EVENT_LABELS = {
   CREATED: 'Request created',

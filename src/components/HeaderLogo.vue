@@ -391,10 +391,10 @@ onUnmounted(() => {
 
 .brand-name {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 20px;
-  letter-spacing: 0.2px;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
+  letter-spacing: var(--ui-tracking-caps);
   white-space: nowrap;
 }
 
@@ -408,9 +408,9 @@ onUnmounted(() => {
 
 .brand-subtitle {
   margin: 0;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 16px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-tight);
   color: var(--rpis-on-dark-soft);
   white-space: nowrap;
 }
@@ -464,9 +464,9 @@ onUnmounted(() => {
   border-radius: 9px;
   background: var(--rpis-accent);
   color: #1b1b1b;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 17px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   text-align: center;
   box-shadow: 0 0 0 2px var(--rpis-surface-control);
 }
@@ -526,9 +526,9 @@ onUnmounted(() => {
 
 .user-name {
   margin: 0;
-  font-size: 13.5px;
-  font-weight: 700;
-  line-height: 17px;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
   color: var(--rpis-on-dark);
   white-space: nowrap;
   overflow: hidden;
@@ -537,9 +537,9 @@ onUnmounted(() => {
 
 .user-role {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 15px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: var(--rpis-accent);
   white-space: nowrap;
   overflow: hidden;
@@ -581,13 +581,13 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   color: var(--rpis-accent);
   border-radius: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--ui-tracking-caps);
   transition: background 0.15s ease;
 }
 
@@ -646,11 +646,11 @@ onUnmounted(() => {
   right: 16px;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: var(--ui-icon-2xl);
   color: #94a3b8;
   cursor: pointer;
   padding: 4px;
-  line-height: 1;
+  line-height: var(--ui-line-none);
 }
 
 .dialog-close:hover {
@@ -658,15 +658,15 @@ onUnmounted(() => {
 }
 
 .dialog-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1f2937;
   margin: 0 0 4px 0;
 }
 
 .dialog-subtitle {
-  font-size: 14px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
   margin: 0 0 24px 0;
 }
 
@@ -676,8 +676,8 @@ onUnmounted(() => {
 }
 
 .login-form label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
   margin-top: 14px;
@@ -691,7 +691,7 @@ onUnmounted(() => {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   outline: none;
   transition: border-color 0.15s ease;
 }
@@ -708,8 +708,8 @@ onUnmounted(() => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   margin-top: 20px;
   transition: background 0.15s ease;
 }
@@ -725,7 +725,7 @@ onUnmounted(() => {
 
 .error {
   color: #dc2626;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   margin-top: 12px;
   background: #fef2f2;
   padding: 8px 12px;
@@ -769,6 +769,13 @@ onUnmounted(() => {
 
   .brand-subtitle {
     display: none;
+  }
+
+  /* The 18px wordmark needs 5px more than a 390px header has beside the bell and
+     avatar; one step down keeps the full name visible without hiding the mark. */
+  .brand-name {
+    font-size: var(--ui-control-font-md);
+    letter-spacing: var(--ui-tracking-label);
   }
 
   .header-right {

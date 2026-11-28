@@ -453,8 +453,7 @@ onBeforeUnmount(() => {
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 8px 10px -6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 /* ---------- Header ---------- */
@@ -473,17 +472,17 @@ onBeforeUnmount(() => {
 
 .ref-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #0f172a;
 }
 
 .ref-subtitle {
   margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 .ref-close {
@@ -497,7 +496,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #64748b;
+  color: var(--ui-text-muted);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -568,10 +567,10 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 0 10px;
   border-radius: 32px;
-  color: #64748b;
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.2;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
   text-align: center;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -584,7 +583,7 @@ onBeforeUnmount(() => {
 .ref-switch-option--active,
 .ref-switch-option--active:hover {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .ref-switch-icon {
@@ -649,28 +648,28 @@ onBeforeUnmount(() => {
 }
 
 .ref-label {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #334155;
 }
 
 .ref-required {
   margin-left: 3px;
   color: #dc2626;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .ref-hint {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 .ref-error {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-body);
   color: #dc2626;
 }
 
@@ -691,8 +690,8 @@ onBeforeUnmount(() => {
   background: #ffffff;
   color: #0f172a;
   font-family: inherit;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: var(--ui-field-font);
+  line-height: var(--ui-line-snug);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease,
@@ -742,28 +741,28 @@ onBeforeUnmount(() => {
 .ref-preview-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .ref-preview-text {
   margin: 0;
   padding-left: 36px;
   text-indent: -36px;
-  font-size: 13.5px;
-  line-height: 1.7;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #0f172a;
   overflow-wrap: anywhere;
 }
 
 .ref-preview-empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   font-style: italic;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
   color: #94a3b8;
 }
 
@@ -787,9 +786,9 @@ onBeforeUnmount(() => {
   border: 1px solid transparent;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -877,7 +876,7 @@ onBeforeUnmount(() => {
     min-height: 40px;
     padding: 8px;
     gap: 6px;
-    font-size: 12.5px;
+    font-size: var(--ui-font-small);
   }
 
   .ref-body {

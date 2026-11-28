@@ -10,6 +10,10 @@
  */
 .end-page {
   max-width: 1040px;
+  /* Let the shell's lavender content canvas show through, the same way the Proponent's
+     My Projects page does. A white page surface here made My Endorsements look like a
+     different application next to every other role page. */
+  background: transparent;
 }
 
 /* Pages whose main content is a wide table use the whole area between the sidebar and the
@@ -46,22 +50,23 @@
    its details: larger than a field value, smaller than the page title. */
 .end-call-name {
   margin: 0 0 6px;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
 }
 
 .end-page-header h2 {
   margin: 0 0 6px;
-  font-size: 1.5rem;
+  font-size: var(--ui-font-page-title);
   color: #1e293b;
+  font-weight: var(--ui-weight-bold);
 }
 
 .end-subtitle {
   margin: 0 0 24px;
-  color: #64748b;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
 }
 
 .end-card {
@@ -83,13 +88,13 @@
 
 .end-card.is-empty {
   text-align: center;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .end-section-title {
   margin: 0 0 14px;
-  font-size: 0.9375rem;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
@@ -108,17 +113,17 @@
 
 .end-field label,
 .end-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #64748b;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
 }
 
 .end-value {
-  font-size: 0.9375rem;
+  font-size: var(--ui-font-body);
   color: #1f2937;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
   word-break: break-word;
 }
 
@@ -132,7 +137,7 @@
   padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   font-family: inherit;
   color: #1f2937;
   background: #ffffff;
@@ -153,7 +158,7 @@
 }
 
 .end-field-error {
-  font-size: 0.75rem;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
 }
 /* Program Title and Project Title: two separate fields side by side, exactly as the
@@ -186,8 +191,8 @@
   border-radius: 8px;
   background: #ffffff;
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -206,9 +211,9 @@
 /* An explanatory line under a field (why the list is empty, or why it could not be
    loaded). It is only a warning, never an error, unless it says so. */
 .end-field-hint {
-  font-size: 0.75rem;
-  color: #64748b;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
+  line-height: var(--ui-line-snug);
 }
 
 .end-field-hint.is-error {
@@ -229,9 +234,9 @@
   border-radius: 8px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
   color: #334155;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .end-note.is-warning {
@@ -247,9 +252,9 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 8px;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   margin-bottom: 18px;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .end-banner.is-success {
@@ -271,7 +276,7 @@
 }
 
 .end-banner-link {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: inherit;
   text-decoration: underline;
   white-space: nowrap;
@@ -284,8 +289,8 @@
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -305,21 +310,23 @@
 .end-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-table-cell);
 }
 
-/* The RPIS table head is the blue band painted behind every table head (see main.css), so
-   the label has to be light: the old #64748b grey sat at ~2.2:1 on that band and was
-   unreadable. A page that lightens the band sets its own darker label (see the dashboards'
-   .*-table th rules). */
+/* Default header: dark label on the light band painted by the global `th` rule. A page
+   that deliberately paints a dark head restores white in its own modifier (Dean,
+   Proponent). Keeping the default legible means a plain `.end-table` never inherits
+   white-on-white from a page that forgot the modifier. */
 .end-table th {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 0.75rem;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #ffffff;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-soft);
+  background: var(--color-background-soft);
 }
 
 .end-table td {
@@ -376,8 +383,8 @@
   background: #ffffff;
   color: #25245b;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
@@ -395,7 +402,7 @@
   background: #25245b;
   border-color: #25245b;
   color: #ffd400;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* How many requests the tracking section holds, so the count is visible without
@@ -410,8 +417,8 @@
   border-radius: 999px;
   background: #f1f5f9;
   color: #25245b;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 
 .end-tab.active .end-tab-count {
@@ -433,8 +440,8 @@
 }
 
 .end-muted {
-  color: #94a3b8;
-  font-size: 0.8125rem;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
 }
 
 .end-timeline {
@@ -447,7 +454,7 @@
   position: relative;
   padding: 0 0 16px 20px;
   border-left: 2px solid #e2e8f0;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
@@ -468,7 +475,7 @@
 }
 
 .end-timeline-title {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
   display: block;
 }
@@ -497,16 +504,16 @@
 
 .end-stat-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--ui-font-label);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #64748b;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
   margin-bottom: 6px;
 }
 
 .end-stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
 }
 
@@ -541,7 +548,7 @@
 
 .end-page--dean .end-page-header h2 {
   margin-bottom: 8px;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 /* Secondary text is a shade darker than the shared grey: #64748b is only 4.4:1 on the
@@ -567,7 +574,7 @@
 
 .end-page--dean .end-section-title {
   margin-bottom: 16px;
-  font-size: 1rem;
+  font-size: var(--ui-font-section-title);
 }
 
 /* A section title that shares its row with an action takes no bottom gap: the toolbar
@@ -596,8 +603,8 @@
 }
 
 .end-page--dean .end-stat-value {
-  font-size: 1.75rem;
-  line-height: 1.15;
+  font-size: var(--ui-font-stat);
+  line-height: var(--ui-line-display);
   font-variant-numeric: tabular-nums;
 }
 
@@ -625,7 +632,9 @@
 .end-page--dean .end-table thead th {
   background: #3c3b6e;
   color: #ffffff;
-  font-weight: 700;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   padding: 12px;
   border-bottom: none;
 }
@@ -637,7 +646,7 @@
 /* The second line of a cell (program title, e-mail, funding program) is metadata: a shade
    darker than the shared #94a3b8, which is only 2.6:1 on white. */
 .end-page--dean .end-muted {
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 /* The row under the pointer is the one being read. */
@@ -673,7 +682,8 @@
 
 @media (max-width: 640px) {
   .end-page--dean .end-page-header h2 {
-    font-size: 1.35rem;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 
   /* One card per row: two cards would leave the third one alone underneath. */
@@ -722,8 +732,8 @@
   background: #ffffff;
   color: #2f3248;
   font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -784,8 +794,8 @@
 
 .end-version-title {
   margin: 0 0 10px;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #1e293b;
 }
 
@@ -823,8 +833,8 @@
 }
 
 .end-version-number {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
@@ -834,15 +844,15 @@
   border-radius: 999px;
   background: #dcfce7;
   color: #166534;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .end-version-superseded {
   margin-left: 6px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
 }
 
 .end-version-actions {
@@ -853,5 +863,113 @@
 
 .end-version-actions .end-btn {
   padding: 5px 10px;
-  font-size: 0.75rem;
+  font-size: var(--ui-control-font-sm);
+}
+
+/* ===========================================================================
+   Proponent — My Endorsements table
+   ---------------------------------------------------------------------------
+   The shared `.end-table th` now defaults to a dark label on the light band, so a
+   table outside a dark-head modifier stays readable. This page deliberately paints
+   its head in the RPIS navy, separates the columns with hairlines and tints
+   alternate rows, so the structure reads at a glance without heavy borders.
+
+   Scoped to this page only: the Dean, REC and other endorsement screens keep
+   their own table treatment.
+   =========================================================================== */
+.end-page--proponent .end-card.end-table-scroll {
+  padding: 0;
+  border-color: #dfe6f2;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(28, 26, 60, 0.04);
+}
+
+.end-page--proponent .end-table {
+  min-width: 980px;
+  font-size: var(--ui-font-table-cell-compact);
+}
+
+/* The head: one solid band, white uppercase labels, hairline separators. */
+.end-page--proponent .end-table thead th {
+  padding: 10px;
+  background: #3c3b6e;
+  color: #ffffff;
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-table-header);
+  letter-spacing: var(--ui-tracking-caps);
+  border-bottom: 1px solid #3c3b6e;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.end-page--proponent .end-table thead th:last-child {
+  border-right: 0;
+}
+
+/* The body: readable rows, a hairline under each, a faint tint on alternating rows. */
+.end-page--proponent .end-table tbody td {
+  padding: 10px;
+  color: #1f2937;
+  vertical-align: top;
+  border-bottom: 1px solid #e8edf6;
+  border-right: 1px solid #eef2f8;
+}
+
+.end-page--proponent .end-table tbody td:last-child {
+  border-right: 0;
+}
+
+.end-page--proponent .end-table tbody tr:nth-child(even) td {
+  background: #fafbff;
+}
+
+.end-page--proponent .end-table tbody tr:hover td {
+  background: #f4f7ff;
+}
+
+.end-page--proponent .end-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* The Action column keeps its content on one line and sits at the right edge. */
+.end-page--proponent .end-table th:last-child,
+.end-page--proponent .end-table td:last-child {
+  text-align: right;
+}
+
+/* Reference, Submitted, Status and Action must not wrap; the title, call and
+   college columns keep enough width for their long real values. */
+.end-page--proponent .end-table--requests th:nth-child(1),
+.end-page--proponent .end-table--requests td:nth-child(1),
+.end-page--proponent .end-table--requests th:nth-child(5),
+.end-page--proponent .end-table--requests td:nth-child(5),
+.end-page--proponent .end-table--requests th:nth-child(6),
+.end-page--proponent .end-table--requests td:nth-child(6),
+.end-page--proponent .end-table--requests th:nth-child(7),
+.end-page--proponent .end-table--requests td:nth-child(7) {
+  white-space: nowrap;
+}
+
+.end-page--proponent .end-table--requests th:nth-child(2),
+.end-page--proponent .end-table--requests td:nth-child(2) {
+  min-width: 180px;
+}
+
+.end-page--proponent .end-table--requests th:nth-child(3),
+.end-page--proponent .end-table--requests td:nth-child(3) {
+  min-width: 120px;
+}
+
+.end-page--proponent .end-table--requests th:nth-child(4),
+.end-page--proponent .end-table--requests td:nth-child(4) {
+  min-width: 150px;
+}
+
+/* The View action is a compact real button (the shared blue tonal `is-view`),
+   not a text link, so it is clearly an action inside the row. */
+.end-page--proponent .end-table .end-btn {
+  min-height: 30px;
+  padding: 5px 12px;
+  font-size: var(--ui-control-font-sm);
+  border-radius: 7px;
 }

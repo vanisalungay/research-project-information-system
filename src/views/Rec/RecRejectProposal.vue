@@ -240,20 +240,20 @@ const rejectProposal = async () => {
 
 .page-header h2 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
 }
 
 /* Geometry only; the rejected tone comes from assets/status.css. */
 .badge-danger {
   padding: 4px 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
 }
 
 .subtitle {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
   color: #777;
 }
 
@@ -282,12 +282,12 @@ const rejectProposal = async () => {
 }
 
 .info-box label {
-  font-size: 12px;
+  font-size: var(--ui-font-label);
   color: #777;
 }
 
 .info-box p {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   margin-top: 4px;
 }
 
@@ -302,7 +302,7 @@ textarea {
   border-radius: 6px;
   border: 1px solid #ccc;
   margin-top: 6px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
 }
 
 /* Warning Box */
@@ -311,7 +311,7 @@ textarea {
   border-left: 4px solid #d32f2f;
   padding: 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #a62828;
 }
 
@@ -320,7 +320,7 @@ textarea {
 }
 
 .summary-note {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #555;
   margin-bottom: 12px;
 }
@@ -339,7 +339,7 @@ textarea {
 .side-list {
   padding-left: 18px;
   margin: 14px 0;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 /* Layout only; the reject/cancel colours come from assets/actions.css. */
@@ -349,7 +349,7 @@ textarea {
   border-radius: 6px;
   cursor: pointer;
   margin-top: 10px;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
 }
 
 .cancel-btn {
@@ -358,7 +358,7 @@ textarea {
   border-radius: 6px;
   cursor: pointer;
   margin-top: 10px;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
 }
 
 .note-box {
@@ -366,7 +366,7 @@ textarea {
   padding: 12px;
   border-radius: 6px;
   margin-top: 15px;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #7a6a00;
 }
 </style>

@@ -33,6 +33,7 @@ import {
   isRejected,
   issuedLetterCount,
   normalizeEndorsementStatus,
+  sortEndorsementEventsNewestFirst,
   suggestedLetterFileName,
   validateApproval,
   validateEndorsementRequest,
@@ -448,4 +449,34 @@ test('dates are shown in the official long form', () => {
   assert.equal(formatEndorsementDate(''), '')
   assert.equal(formatEndorsementDate(null), '')
   assert.equal(formatEndorsementDate('not-a-date'), 'not-a-date')
+})
+
+test('audit history is ordered newest first for the Dean and the Proponent', () => {
+  const oldest = { eventType: 'CREATED', createdAt: '2026-10-01T08:00:00' }
+  const middle = { eventType: 'ASSIGNED', createdAt: '2026-10-02T08:00:00' }
+  const newest = { eventType: 'APPROVED', createdAt: '2026-10-03T08:00:00' }
+  const noDate = { eventType: 'LEGACY', createdAt: null }
+
+  const sorted = sortEndorsementEventsNewestFirst([oldest, newest, noDate, middle])
+
+  assert.deepEqual(sorted.map((event) => event.eventType), [
+    'APPROVED',
+    'ASSIGNED',
+    'CREATED',
+    'LEGACY',
+  ])
+  // The source list is never mutated.
+  assert.equal(oldest.eventType, 'CREATED')
+})
+
+test('audit history sorting tolerates a missing list and unparseable dates', () => {
+  assert.deepEqual(sortEndorsementEventsNewestFirst(null), [])
+  const events = [
+    { eventType: 'BROKEN', createdAt: 'not-a-date' },
+    { eventType: 'VALID', createdAt: '2026-10-03T08:00:00' },
+  ]
+  assert.deepEqual(
+    sortEndorsementEventsNewestFirst(events).map((event) => event.eventType),
+    ['VALID', 'BROKEN'],
+  )
 })

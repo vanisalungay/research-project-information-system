@@ -238,28 +238,28 @@ const formatShort = (v) => {
     width: 54px;
     height: 54px;
     border-radius: var(--border-radius-sm);
-    font-size: 1.5rem;
+    font-size: var(--ui-font-page-title);
     flex-shrink: 0;
 }
 
 .ov-label {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--ui-tracking-caps);
     margin-bottom: 0.125rem;
 }
 
 .ov-value {
-    font-size: 1.65rem;
-    font-weight: 700;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
     color: var(--text-primary);
-    line-height: 1.2;
+    line-height: var(--ui-line-display);
 }
 
 .ov-sub {
-    font-size: 0.725rem;
+    font-size: var(--ui-font-caption);
     color: var(--text-muted);
     margin-top: 0.125rem;
 }
@@ -298,18 +298,18 @@ const formatShort = (v) => {
 }
 
 .stat-label {
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--ui-tracking-caps);
     margin-bottom: 0.375rem;
 }
 
 .stat-val {
-    font-size: 2.25rem;
-    font-weight: 700;
-    line-height: 1.1;
+    font-size: var(--ui-font-display);
+    font-weight: var(--ui-weight-bold);
+    line-height: var(--ui-line-display);
     color: var(--text-primary);
 }
 
@@ -330,7 +330,7 @@ const formatShort = (v) => {
 }
 
 .stat-sub {
-    font-size: 0.75rem;
+    font-size: var(--ui-font-caption);
     margin-top: 0.25rem;
 }
 
@@ -355,18 +355,18 @@ const formatShort = (v) => {
 }
 
 .section-sub {
-    font-size: 0.825rem;
+    font-size: var(--ui-font-caption);
     color: var(--text-muted);
     margin-top: -0.375rem;
     margin-bottom: 1rem;
 }
 
 .font-mono {
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-family: var(--ui-font-mono);
 }
 
 .font-medium {
-    font-weight: 500;
+    font-weight: var(--ui-weight-medium);
 }
 
 .text-center {
@@ -385,8 +385,8 @@ const formatShort = (v) => {
 }
 
 .share-pct {
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-medium);
     color: var(--text-primary);
     width: 40px;
     text-align: right;
@@ -443,13 +443,13 @@ const formatShort = (v) => {
 }
 
 .metric-budget {
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-primary);
 }
 
 .metric-sub {
-    font-size: 0.725rem;
+    font-size: var(--ui-font-caption);
     color: var(--text-muted);
 }
 
@@ -469,14 +469,14 @@ const formatShort = (v) => {
 }
 
 .month-name {
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-bold);
     color: var(--text-primary);
 }
 
 .month-budget {
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-bold);
     color: var(--color-primary);
 }
 
@@ -488,8 +488,8 @@ const formatShort = (v) => {
 }
 
 .mini-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
     padding: 2px 5px;
     border-radius: 3px;
 }
@@ -515,8 +515,8 @@ const formatShort = (v) => {
 
 .card-title{
     margin-bottom:4px;
-    font-size:18px;
-    font-weight:700;
+    font-size:var(--ui-font-card-title);
+    font-weight:var(--ui-weight-semibold);
 }
 
 .section-sub{
@@ -538,8 +538,8 @@ const formatShort = (v) => {
     justify-content:center;
     padding:6px 12px;
     border-radius:999px;
-    font-size:.75rem;
-    font-weight:600;
+    font-size:var(--ui-font-caption);
+    font-weight:var(--ui-weight-semibold);
 }
 
 .badge-approved{

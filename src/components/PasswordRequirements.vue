@@ -1,5 +1,10 @@
 <template>
-  <section :id="id" class="pw-req" :aria-labelledby="`${id}-title`">
+  <section
+    :id="id"
+    class="pw-req"
+    :class="{ 'pw-req--two-col': columns === 2 }"
+    :aria-labelledby="`${id}-title`"
+  >
     <p :id="`${id}-title`" class="pw-req__title">Password Requirements</p>
     <p class="pw-req__intro">{{ PASSWORD_REQUIREMENT_INTRO }}</p>
 
@@ -23,6 +28,8 @@
         </span>
       </li>
     </ul>
+
+    <p v-if="showProgress" class="pw-req__progress" aria-hidden="true">{{ status }}</p>
 
     <p v-if="showMatch" class="pw-req__match" :class="{ 'is-met': match }">
       <span class="pw-req__icon" aria-hidden="true">
@@ -64,6 +71,10 @@ const props = defineProps({
    * does not confirm the password (none of the RPIS forms do today).
    */
   confirm: { type: String, default: null },
+  /** 2 lays the five checks out in two balanced columns where the form is wide enough. */
+  columns: { type: Number, default: 1 },
+  /** Show the "x of y requirements met." count visually (screen readers always get it). */
+  showProgress: { type: Boolean, default: false },
 })
 
 const checks = computed(() => passwordChecks(props.password))
@@ -77,20 +88,26 @@ const status = computed(() => {
 
 <style scoped>
 .pw-req {
+  /* The live-region text below is visually hidden with position:absolute. Without a
+     positioned ancestor it resolves against the initial containing block and escapes the
+     page's scroll container, extending the document by the checklist's offset - which is
+     what produced a second, page-level scrollbar next to the registration panel's own.
+     This section is deliberately the containing block for that element. */
+  position: relative;
   padding: 12px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
   color: #334155;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-snug);
 }
 
 .pw-req__title {
   margin: 0 0 4px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
 }
 
 .pw-req__intro {
@@ -106,11 +123,31 @@ const status = computed(() => {
   gap: 4px;
 }
 
+/* A wide registration column can carry the five checks in two balanced columns. */
+.pw-req--two-col .pw-req__list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+  row-gap: 6px;
+}
+
+@media (max-width: 700px) {
+  .pw-req--two-col .pw-req__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pw-req__progress {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+}
+
 .pw-req__item {
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .pw-req__item.is-met {
@@ -143,7 +180,7 @@ const status = computed(() => {
   align-items: center;
   gap: 7px;
   margin: 8px 0 0;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #b91c1c;
 }
 
@@ -167,8 +204,8 @@ const status = computed(() => {
   border-radius: 4px;
   background: #eef2ff;
   color: #1c1a3c;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 

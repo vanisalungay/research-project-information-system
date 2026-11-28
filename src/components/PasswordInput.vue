@@ -96,7 +96,7 @@ function toggle(event) {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #64748b;
+  color: var(--ui-text-muted);
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }

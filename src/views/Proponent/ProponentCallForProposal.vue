@@ -285,8 +285,8 @@ onBeforeUnmount(() => {
 }
 
 .header-left h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
@@ -294,8 +294,8 @@ onBeforeUnmount(() => {
 .header-badge {
   background: #eef2ff;
   color: #4f46e5;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   border-radius: 8px;
@@ -346,8 +346,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   background: #e2e8f0;
   color: #94a3b8;
   transition: all 0.2s;
@@ -359,14 +359,14 @@ onBeforeUnmount(() => {
 }
 
 .step-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
 }
 
 .progress-step.active .step-label {
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-line {
@@ -388,16 +388,16 @@ onBeforeUnmount(() => {
 }
 
 .call-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 6px 0;
 }
 
 .call-instruction {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -438,8 +438,8 @@ onBeforeUnmount(() => {
   gap: 6px;
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
@@ -453,10 +453,10 @@ onBeforeUnmount(() => {
 
 .call-card-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
@@ -475,27 +475,27 @@ onBeforeUnmount(() => {
 }
 
 .call-meta-row dt {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .call-meta-row dd {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #1e293b;
 }
 
 .call-deadline {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .call-description {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #475569;
   /* The saved announcement text can be long: keep the cards the same height. */
   display: -webkit-box;
@@ -509,7 +509,7 @@ onBeforeUnmount(() => {
   margin-top: auto;
   justify-content: center;
   width: 100%;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   padding: 10px 16px;
 }
 
@@ -527,13 +527,13 @@ onBeforeUnmount(() => {
 
 .call-notice {
   margin: 8px 0 0 0;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #b45309;
 }
 
 .call-opening {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* An upcoming card keeps the same shape, with a quieter border. */
@@ -548,8 +548,8 @@ onBeforeUnmount(() => {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
 }
 
 /* ===== LOADING / ERROR / EMPTY STATES ===== */
@@ -564,9 +564,9 @@ onBeforeUnmount(() => {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   text-align: center;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 .state-card p {
@@ -608,8 +608,8 @@ onBeforeUnmount(() => {
 .btn-secondary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -620,8 +620,8 @@ onBeforeUnmount(() => {
   gap: 6px;
   padding: 10px 24px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -646,7 +646,7 @@ onBeforeUnmount(() => {
   }
 
   .step-label {
-    font-size: 12px;
+    font-size: var(--ui-font-label);
   }
 
   .progress-line {

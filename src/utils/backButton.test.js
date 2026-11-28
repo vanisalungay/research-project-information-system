@@ -78,8 +78,8 @@ test('the default pill matches the reference measurements', () => {
   assert.match(COMPONENT, /width:\s*var\(--ui-control-icon-size, 30px\)/)
   assert.match(COMPONENT, /height:\s*var\(--ui-control-icon-size, 30px\)/)
   assert.match(COMPONENT, /border:\s*1px solid var\(--bb-border\)/)
-  assert.match(COMPONENT, /font-size:\s*var\(--ui-control-font-md, 14px\)/)
-  assert.match(COMPONENT, /font-weight:\s*600/)
+  assert.match(COMPONENT, /font-size:\s*var\(--ui-control-font-md(?:,\s*14px)?\)/)
+  assert.match(COMPONENT, /font-weight:\s*var\(--ui-weight-semibold\)/)
 })
 
 test('the navy variant keeps the yellow circle and light label', () => {

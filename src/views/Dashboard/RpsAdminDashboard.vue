@@ -66,41 +66,130 @@
       </div>
     </div>
 
-    <!-- Pending Approvals Table -->
-    <div class="main-panel">
-      <div class="panel-header">
-        <h3>PENDING APPROVALS</h3>
-        <button class="view-all-btn" @click="$router.push('/user-accounts')">View All &rarr;</button>
-      </div>
+    <!-- Pending Approvals: one compact card - header with the live pending count and the
+         link to the full list, then the account rows with their two decisions. -->
+    <section class="pending-panel" aria-labelledby="pending-approvals-title">
+      <header class="pending-header">
+        <div class="pending-heading">
+          <h3 id="pending-approvals-title" class="pending-title">Pending Approvals</h3>
+          <span
+            class="pending-count"
+            :aria-label="`${pendingUsers} pending ${pendingUsers === 1 ? 'account' : 'accounts'}`"
+          >{{ pendingUsers }}</span>
+        </div>
+
+        <router-link to="/user-accounts" class="view-all-btn">
+          <span>View All</span>
+          <svg
+            class="view-all-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </router-link>
+      </header>
 
       <div v-if="isLoading" class="loading-state">
         <div class="loading-spinner"></div>
         <p>Loading user accounts...</p>
       </div>
 
-      <div v-else-if="pendingUsersList.length > 0" class="table-container">
-        <table class="proposal-table">
+      <div v-else-if="pendingUsersList.length > 0" class="pending-table-scroll">
+        <table class="pending-table">
+          <colgroup>
+            <col class="col-applicant" />
+            <col class="col-email" />
+            <col class="col-role" />
+            <col class="col-registered" />
+            <col class="col-actions" />
+          </colgroup>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Registered</th>
-              <th class="text-right">Actions</th>
+              <th scope="col">Applicant</th>
+              <th scope="col">Email Address</th>
+              <th scope="col">Role</th>
+              <th scope="col">Registered</th>
+              <th scope="col" class="actions-heading">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="user in pendingUsersList" :key="user.id">
-              <td class="font-bold">{{ user.name || 'Unknown' }}</td>
-              <td>{{ user.email || 'N/A' }}</td>
               <td>
-                <span class="role-badge" :class="getRoleClass(user.role)">{{ formatRole(user.role) }}</span>
+                <div class="applicant">
+                  <span class="avatar" aria-hidden="true">{{ initialsOf(user.name) }}</span>
+                  <span class="applicant-name">{{ user.name || 'Unknown' }}</span>
+                </div>
               </td>
-              <td>{{ formatDate(user.dateRegistered) }}</td>
-              <td class="text-right">
+              <td class="email-cell">{{ user.email || 'N/A' }}</td>
+              <td>
+                <span class="role-pill">{{ formatRole(user.role) }}</span>
+              </td>
+              <td class="date-cell">{{ formatDate(user.dateRegistered) }}</td>
+              <td class="actions-cell">
                 <div class="action-btns">
-                  <button class="approve-btn btn-approve" @click="approveUser(user)" :disabled="actionLoading">✓ Approve</button>
-                  <button class="reject-btn btn-reject" @click="rejectUser(user)" :disabled="actionLoading">✕ Reject</button>
+                  <button
+                    type="button"
+                    class="approve-btn"
+                    :disabled="actionLoading"
+                    :aria-busy="isActing(user.id, 'approve')"
+                    @click="approveUser(user)"
+                  >
+                    <span
+                      v-if="isActing(user.id, 'approve')"
+                      class="btn-spinner"
+                      aria-hidden="true"
+                    ></span>
+                    <svg
+                      v-else
+                      class="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Approve</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="reject-btn"
+                    :disabled="actionLoading"
+                    :aria-busy="isActing(user.id, 'reject')"
+                    @click="rejectUser(user)"
+                  >
+                    <span
+                      v-if="isActing(user.id, 'reject')"
+                      class="btn-spinner"
+                      aria-hidden="true"
+                    ></span>
+                    <svg
+                      v-else
+                      class="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    <span>Reject</span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -112,7 +201,7 @@
         <h3>No Pending Approvals</h3>
         <p>All user accounts have been reviewed.</p>
       </div>
-    </div>
+    </section>
 
     <NotificationPreview
       title="Notifications"
@@ -148,6 +237,10 @@ const { dialogState, showConfirm } = useDialog()
 const users = ref([])
 const isLoading = ref(true)
 const actionLoading = ref(false)
+// Which row and which decision is in flight, so only that button shows a spinner while
+// both decisions stay disabled everywhere.
+const actingId = ref(null)
+const actingAction = ref('')
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref('success')
@@ -161,13 +254,25 @@ const pendingUsersList = computed(() => users.value.filter(u => u.status === 'PE
 
 const formatRole = (role) => {
   const map = { PROPONENT: 'Proponent', DEAN: 'Dean', RPS_ADMIN: 'RPS Admin', RPS_STAFF: 'RPS Staff', OVCRIGE: 'OVCRIGE', OVCAF: 'OVCAF', REC: 'REC', OC: 'Chancellor' }
-  return map[role] || role
+  return map[role] || role || '—'
 }
 
-const getRoleClass = (role) => {
-  const map = { PROPONENT: 'role-proponent', DEAN: 'role-dean', RPS_ADMIN: 'role-admin', RPS_STAFF: 'role-staff', OVCRIGE: 'role-ovcrige', OVCAF: 'role-ovcaf', REC: 'role-rec', OC: 'role-oc' }
-  return map[role] || ''
+/**
+ * The avatar initials, taken from the account's real name: first letter of the first and
+ * the last word ("Juan Dela Cruz" -> "JC"). A single-word name uses its first two letters.
+ */
+const initialsOf = (name) => {
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
+
+/** True while this row's decision is the one in flight. */
+const isActing = (id, action) => actingId.value === id && actingAction.value === action
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
@@ -189,6 +294,8 @@ const approveUser = async (user) => {
   )
   if (!confirmed) return
   actionLoading.value = true
+  actingId.value = user.id
+  actingAction.value = 'approve'
   try {
     await api.put(`/api/users/${user.id}/approve`)
     user.status = 'APPROVED'
@@ -198,6 +305,8 @@ const approveUser = async (user) => {
     showNotification('Failed to approve user.', 'error')
   } finally {
     actionLoading.value = false
+    actingId.value = null
+    actingAction.value = ''
   }
 }
 
@@ -209,6 +318,8 @@ const rejectUser = async (user) => {
   )
   if (!confirmed) return
   actionLoading.value = true
+  actingId.value = user.id
+  actingAction.value = 'reject'
   try {
     await api.put(`/api/users/${user.id}/reject`)
     user.status = 'REJECTED'
@@ -218,6 +329,8 @@ const rejectUser = async (user) => {
     showNotification('Failed to reject user.', 'error')
   } finally {
     actionLoading.value = false
+    actingId.value = null
+    actingAction.value = ''
   }
 }
 
@@ -263,15 +376,15 @@ onMounted(loadDashboardData)
 }
 
 .header-text h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0 0 4px 0;
 }
 
 .header-text p {
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: var(--ui-font-body);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -280,8 +393,8 @@ onMounted(loadDashboardData)
   border: 1px solid #cbd5e1;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
   cursor: pointer;
   display: flex;
@@ -299,11 +412,11 @@ onMounted(loadDashboardData)
 
 /* Section Title */
 .section-title {
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
   margin: 0;
 }
 
@@ -338,21 +451,21 @@ onMounted(loadDashboardData)
 .stat-meta { text-align: left; }
 
 .stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
   display: block;
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
-  line-height: 1.2;
+  line-height: var(--ui-line-display);
 }
 
 .stat-icon-wrapper {
@@ -371,169 +484,384 @@ onMounted(loadDashboardData)
 .yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 .red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 
-/* Main Panel */
-.main-panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+/* ===== Pending Approvals =====
+   One compact card: header (title, live count, View All) -> table -> account rows.
+   Flat surface, thin blue-grey border, no heavy shadow. */
+.pending-panel {
+  background: #ffffff;
+  border: 1px solid #dce5f0;
   border-radius: 14px;
-  padding: 24px;
+  overflow: hidden;
 }
 
-.panel-header {
+/* Header */
+.pending-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 12px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e8edf4;
 }
 
-.panel-header h3 {
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #1e293b;
+.pending-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pending-title {
   margin: 0;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  color: #17243a;
+  line-height: var(--ui-line-display);
+  white-space: nowrap;
 }
 
+/* The live number of pending accounts, never a fixed value. */
+.pending-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 2px 7px;
+  border-radius: 11px;
+  background: #fff2c7;
+  color: #7a5200;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
+}
+
+/* A text link, not a button: the existing User Accounts route. */
 .view-all-btn {
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
   border: none;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #2452ff;
+  background: transparent;
+  color: #1d4ed8;
+  font-family: inherit;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  padding: 4px;
+  transition: color 0.15s ease;
 }
 
-.view-all-btn:hover { text-decoration: underline; }
+.view-all-btn:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}
 
-/* Loading */
+.view-all-btn:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.view-all-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+/* Table: the card clips; on a narrow screen this inner box scrolls sideways. */
+.pending-table-scroll {
+  overflow-x: auto;
+}
+
+.pending-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.col-applicant { width: 24%; }
+.col-email { width: 27%; }
+.col-role { width: 12%; }
+.col-registered { width: 16%; }
+.col-actions { width: 21%; }
+
+.pending-table th {
+  padding: 11px 16px;
+  background: #fbfcfe;
+  border-bottom: 1px solid #eff3f9;
+  color: var(--ui-text-soft);
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pending-table td {
+  padding: 12px 16px;
+  color: #1e293b;
+  font-size: var(--ui-font-table-cell-compact);
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* A hairline only between rows, never under the last one. */
+.pending-table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.actions-heading,
+.actions-cell {
+  text-align: right;
+}
+
+/* Scoped selectors need the table element too: `.pending-table th/td` is more specific
+   than a bare `.actions-heading`, and would otherwise force these cells back to left. */
+.pending-table .actions-heading {
+  padding-right: 18px;
+  text-align: right;
+}
+
+.pending-table .actions-cell {
+  padding-right: 18px;
+  padding-left: 8px;
+  text-align: right;
+}
+
+/* Applicant: initial avatar + real name */
+.applicant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 1px solid #d7e7ff;
+  color: #1d4ed8;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
+}
+
+.applicant-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1e293b;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-medium);
+}
+
+/* `.pending-table td` is more specific than a bare cell class, so the table is repeated
+   here to keep the muted metadata colour. */
+.pending-table .email-cell,
+.pending-table .date-cell {
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Role: one compact blue pill, whatever the role. */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border: 1px solid #d7e7ff;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
+  white-space: nowrap;
+}
+
+/* Actions: equal Approve / Reject, side by side, right-aligned */
+.action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: nowrap;
+}
+
+/* One box for both: the same width, height, radius, font and spacing, so neither label
+   can make one button larger. */
+.approve-btn,
+.reject-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+  width: 75px;
+  height: 28px;
+  /* RecRejectProposal.vue ships an unscoped reject-button margin-top rule, which would
+     otherwise drop Reject below Approve. The pair is aligned here explicitly. */
+  margin: 0;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Filled green: the positive decision. */
+.approve-btn {
+  background: #047857;
+  border: 1px solid #059669;
+  color: #ffffff;
+}
+
+.approve-btn:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+}
+
+/* Outlined red: the negative decision, visually lighter than Approve. */
+.reject-btn {
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.reject-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.approve-btn:focus-visible,
+.reject-btn:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.approve-btn:disabled,
+.reject-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+/* The in-flight indicator replaces the icon, so the box never changes size. */
+.btn-spinner {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.reject-btn .btn-spinner {
+  border-color: rgba(220, 38, 38, 0.25);
+  border-top-color: #dc2626;
+}
+
+/* Loading and empty states stay compact inside the card. */
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 20px;
-  gap: 12px;
+  gap: 10px;
+  padding: 28px 18px;
 }
 
 .loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(36, 82, 255, 0.2);
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(36, 82, 255, 0.2);
   border-top-color: #2452ff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .loading-state p {
-  font-size: 0.875rem;
-  color: #64748b;
   margin: 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
 }
 
-/* Table */
-.table-container {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.proposal-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.proposal-table th,
-.proposal-table td {
-  padding: 12px 16px;
-  font-size: 0.8125rem;
-}
-
-.proposal-table th {
-  background: #f8fafc;
-  color: #64748b;
-  font-weight: 600;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.proposal-table td {
-  border-bottom: 1px solid #f1f5f9;
-  color: #1f2937;
-  text-align: left;
-}
-
-.proposal-table tr:last-child td { border-bottom: none; }
-.font-bold { font-weight: 600; }
-.text-right { text-align: right !important; }
-
-/* Role Badges */
-.role-badge {
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.role-proponent { background: #dbeafe; color: #1e40af; }
-.role-admin { background: #fce7f3; color: #9d174d; }
-.role-dean { background: #cffafe; color: #155e75; }
-.role-staff { background: #e0e7ff; color: #3730a3; }
-.role-ovcrige { background: #d1fae5; color: #065f46; }
-.role-ovcaf { background: #fef3c7; color: #92400e; }
-.role-rec { background: #ede9fe; color: #6d28d9; }
-.role-oc { background: #fee2e2; color: #991b1b; }
-
-/* Action Buttons */
-.action-btns {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-/* Approve and Reject keep their size; the colours come from the shared action system
-   (assets/actions.css), so they match every other Approve/Reject button in RPIS. */
-.approve-btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.approve-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.reject-btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.reject-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Empty State */
 .empty-state {
+  padding: 28px 18px;
   text-align: center;
-  padding: 40px 20px;
 }
 
 .empty-state h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 4px 0;
+  margin: 0 0 4px;
+  color: #17243a;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .empty-state p {
-  font-size: 0.8125rem;
-  color: #64748b;
   margin: 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+}
+
+/* The 12px header labels need a little less gutter before the table outgrows a
+   tablet-width content area; the desktop gutters stay as designed. */
+@media (max-width: 1200px) {
+  .pending-table {
+    min-width: 820px;
+  }
+
+  .pending-table th,
+  .pending-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* Keep the whole institutional address visible on a tablet: two lines beat a
+     truncated domain. */
+  .pending-table .email-cell {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 640px) {
+  .pending-header {
+    padding: 12px 14px;
+  }
+
+  .pending-table th,
+  .pending-table td {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .actions-heading,
+  .actions-cell {
+    padding-right: 14px;
+  }
 }
 
 /* Toast */
@@ -543,8 +871,8 @@ onMounted(loadDashboardData)
   right: 24px;
   padding: 12px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   z-index: 1000;
   animation: slideIn 0.3s ease;
 }

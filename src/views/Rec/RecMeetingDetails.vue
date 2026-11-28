@@ -395,13 +395,16 @@ watch(
 
 .title {
   margin: 0;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
 }
 
 /* Layout only; the tone colours come from the shared status system (assets/status.css). */
 .status {
   padding: 4px 12px;
   border-radius: 20px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   margin-left: 10px;
 }
 
@@ -436,7 +439,7 @@ watch(
 }
 
 .label {
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   color: #777;
 }
 
@@ -478,7 +481,7 @@ watch(
 .btn {
   padding: 10px 16px;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 </style>

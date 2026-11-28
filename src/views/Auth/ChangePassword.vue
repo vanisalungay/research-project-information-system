@@ -154,15 +154,15 @@ const submit = async () => {
 
 .cp-title {
   margin: 0 0 8px;
-  font-size: var(--fs-xl, 1.5rem);
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
 }
 
 .cp-sub {
   margin: 0 0 20px;
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #5b5b7a;
 }
 
@@ -174,9 +174,9 @@ const submit = async () => {
 .cp-field label {
   display: block;
   margin-bottom: 6px;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b6b8c;
 }
@@ -199,7 +199,7 @@ const submit = async () => {
   border: 1px solid #d8d8ec;
   border-radius: var(--radius-md, 8px);
   font-family: inherit;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-field-font);
   color: #1c1a3c;
 }
 
@@ -211,7 +211,7 @@ const submit = async () => {
 
 .cp-hint {
   margin: 0;
-  font-size: var(--fs-xs, 0.75rem);
+  font-size: var(--ui-font-caption);
   color: #92400e;
 }
 
@@ -221,7 +221,7 @@ const submit = async () => {
   border-radius: var(--radius-md, 8px);
   background: #fee2e2;
   color: #991b1b;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
 }
 
 .cp-success {
@@ -230,7 +230,7 @@ const submit = async () => {
   border-radius: var(--radius-md, 8px);
   background: #dcfce7;
   color: #166534;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
 }
 
 .cp-submit {
@@ -240,8 +240,8 @@ const submit = async () => {
   background: #315bff;
   color: #ffffff;
   font-family: inherit;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 700;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

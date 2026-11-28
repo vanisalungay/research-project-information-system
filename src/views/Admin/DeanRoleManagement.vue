@@ -422,17 +422,17 @@ onMounted(loadAssignments)
 
 .page-heading h2 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
 }
 
 .page-heading p {
   margin: 3px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #7b8298;
 }
 
@@ -445,8 +445,8 @@ onMounted(loadAssignments)
   padding: 0 14px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -471,8 +471,8 @@ onMounted(loadAssignments)
   gap: 12px;
   padding: 9px 12px;
   border-radius: 8px;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   margin-bottom: 12px;
 }
 
@@ -493,8 +493,8 @@ onMounted(loadAssignments)
   padding: 0 10px;
   border-radius: 7px;
   font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -527,8 +527,8 @@ onMounted(loadAssignments)
   background: #ffffff;
   color: #3b3d55;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -559,9 +559,9 @@ onMounted(loadAssignments)
   border-radius: 999px;
   background: #eef1f8;
   color: #4a5169;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-none);
 }
 
 .filter-pill.active .filter-count {
@@ -602,7 +602,7 @@ onMounted(loadAssignments)
   outline: none;
   background: transparent;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--ui-font-small);
   color: #1c1a3c;
 }
 
@@ -632,10 +632,10 @@ thead th {
   padding: 8px 14px;
   background: #f7f8fc;
   border-bottom: 1px solid #eef0f6;
-  color: #7b8298;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  color: var(--ui-text-soft);
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-align: left;
   white-space: nowrap;
 }
@@ -657,8 +657,8 @@ tbody td {
   padding: 8px 14px;
   border-bottom: 1px solid #eef0f6;
   color: #2f3248;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--ui-font-table-cell-compact);
+  line-height: var(--ui-line-snug);
   vertical-align: middle;
 }
 
@@ -692,9 +692,9 @@ tbody tr:hover {
   border-radius: 50%;
   background: #e9eefb;
   color: #262342;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-tracking-label);
 }
 
 .dean-identity {
@@ -705,9 +705,9 @@ tbody tr:hover {
 }
 
 .dean-name {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
   white-space: nowrap;
   overflow: hidden;
@@ -717,8 +717,8 @@ tbody tr:hover {
 .dean-email {
   max-width: 230px;
   color: #8a90a5;
-  font-size: 10px;
-  line-height: 1.3;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-tight);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -735,8 +735,8 @@ tbody tr:hover {
 
 .college-name {
   color: #2f3248;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
@@ -747,10 +747,10 @@ tbody tr:hover {
   border-radius: 999px;
   background: #e6edfc;
   color: #31539b;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
+  line-height: var(--ui-line-body);
 }
 
 /* Status */
@@ -760,9 +760,9 @@ tbody tr:hover {
   gap: 5px;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
   white-space: nowrap;
 }
 
@@ -787,7 +787,7 @@ tbody tr:hover {
 /* Dates */
 .date-cell {
   color: #5b6280;
-  font-size: 10.5px;
+  font-size: var(--ui-font-caption);
 }
 
 .is-muted {
@@ -811,8 +811,8 @@ tbody tr:hover {
   background: #eaf0ff;
   color: #2f57c9;
   font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -842,7 +842,7 @@ tbody tr:hover {
   padding: 30px 16px;
   text-align: center;
   color: #7b8298;
-  font-size: 11.5px;
+  font-size: var(--ui-font-caption);
 }
 
 .state-icon {
@@ -869,8 +869,8 @@ tbody tr:hover {
   border-top: 1px solid #eef0f6;
   background: #ffffff;
   color: #8a90a5;
-  font-size: 10px;
-  letter-spacing: 0.01em;
+  font-size: var(--ui-font-caption);
+  letter-spacing: var(--ui-tracking-label);
 }
 
 /* ===== Responsive ===== */

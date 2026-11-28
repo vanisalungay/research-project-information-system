@@ -62,8 +62,8 @@
   background: #ffffff;
   color: #262342;
   font-family: inherit;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s, border-color 0.15s;
@@ -80,10 +80,10 @@
 
 .rv-title {
   margin: 0 0 6px;
-  font-size: var(--fs-xl, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
@@ -101,15 +101,15 @@
   flex-wrap: wrap;
   gap: 6px;
   min-width: 0;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
   color: #5b5b7a;
   overflow-wrap: anywhere;
 }
 
 .rv-id-label {
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #8a8aa8;
 }
@@ -128,16 +128,16 @@
   gap: 8px;
   padding: 5px 14px;
   border-radius: 999px;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   /* No text-transform: the shared label supplies the casing ("For Review"). */
 }
 
 .rv-status-line {
   width: 100%;
   padding: 12px 16px;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
 }
 
 .rv-status::before,
@@ -178,8 +178,8 @@
   background: #ffffff;
   color: #262342;
   font-family: inherit;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -237,8 +237,8 @@
   padding: 14px 18px;
   background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
   color: #ffffff;
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
 }
 
 .rv-card-head-icon {
@@ -277,16 +277,16 @@
 }
 
 .rv-row-label {
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #6b6b8c;
 }
 
 .rv-row-value {
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
   text-align: left;
   overflow-wrap: anywhere;
@@ -355,7 +355,7 @@
 
 .rv-empty {
   margin: 0;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
   color: #6b6b8c;
 }
 

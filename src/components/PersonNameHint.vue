@@ -15,8 +15,8 @@ import { PERSON_NAME_EXAMPLE, PERSON_NAME_FORMAT } from '@/utils/personName'
 .person-name-hint {
   display: block;
   margin-top: 4px;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: inherit;
   opacity: 0.72;
 }

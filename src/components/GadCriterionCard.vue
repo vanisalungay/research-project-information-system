@@ -69,9 +69,9 @@ const max = GAD_CRITERION_MAX
   border-radius: 7px;
   background: #211d43;
   color: #ffd21f;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-tracking-label);
 }
 
 .gad-card-heading {
@@ -82,16 +82,16 @@ const max = GAD_CRITERION_MAX
 .gad-card-title {
   margin: 0;
   color: #24274a;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
 }
 
 .gad-card-note {
   margin: 1px 0 0;
   color: #6f7694;
-  font-size: 9.5px;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 @media (max-width: 480px) {

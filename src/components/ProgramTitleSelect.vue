@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   background: #fff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
   color: #1e293b;
   text-align: left;
   cursor: pointer;
@@ -244,8 +244,8 @@ onBeforeUnmount(() => {
 .pts-option {
   padding: 9px 12px;
   border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-snug);
   color: #1e293b;
   cursor: pointer;
 }
@@ -255,7 +255,7 @@ onBeforeUnmount(() => {
 }
 
 .pts-option.is-selected {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The create action: the application's blue with white text, so it stands out from
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
 .pts-option--create {
   background: #4f46e5;
   color: #ffffff;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: 4px;
 }
 

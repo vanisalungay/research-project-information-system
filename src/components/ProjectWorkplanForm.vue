@@ -308,21 +308,21 @@ function removeObjective() {
 
 .wp-card-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #172b4d;
 }
 
 .wp-card-head--navy .wp-card-title {
-  font-size: 14.5px;
+  font-size: var(--ui-font-card-title);
   color: #ffffff;
 }
 
 .wp-card-sub {
   margin: 2px 0 0;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #b9c6da;
 }
 
@@ -340,9 +340,9 @@ function removeObjective() {
   align-items: center;
   gap: 6px;
   flex: none;
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
   color: #b9c6da;
@@ -355,13 +355,13 @@ function removeObjective() {
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   font: inherit;
-  font-size: 10.5px;
+  font-size: var(--ui-font-small);
   color-scheme: dark;
   outline: none;
 }
 
 .wp-as-of-text {
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   color: #b9c6da;
   white-space: nowrap;
 }
@@ -376,8 +376,8 @@ function removeObjective() {
   background: #2454e8;
   color: #ffffff;
   font: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -404,10 +404,10 @@ function removeObjective() {
   background: #eff3f8;
   border-bottom: 1px solid #dce5f0;
   color: #40506b;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  line-height: 1.3;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  line-height: var(--ui-line-tight);
   text-align: center;
   text-transform: uppercase;
 }
@@ -478,8 +478,8 @@ function removeObjective() {
   background: #e9effa !important;
   border-left: 1px solid #dce5f0;
   color: #172b4d !important;
-  font-size: 8.5px !important;
-  line-height: 1.25;
+  font-size: var(--ui-font-caption) !important;
+  line-height: var(--ui-line-tight);
   white-space: normal;
 }
 
@@ -509,8 +509,8 @@ function removeObjective() {
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   resize: vertical;
   outline: none;
 }
@@ -523,8 +523,8 @@ function removeObjective() {
 .wp-objective-text {
   display: block;
   padding-right: 4px;
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -546,7 +546,7 @@ function removeObjective() {
   border-radius: 5px;
   background: #ffffff;
   color: #172b4d;
-  font-size: 11px;
+  font-size: var(--ui-font-small);
   text-align: center;
 }
 
@@ -564,7 +564,7 @@ function removeObjective() {
 .wp-month-value {
   display: block;
   padding: 7px 2px;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -579,9 +579,9 @@ function removeObjective() {
 
 .wp-total-value {
   display: block;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
   color: #172b4d;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -598,8 +598,8 @@ function removeObjective() {
 
 .wp-hint {
   margin: 0;
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #7a879c;
 }
 
@@ -614,8 +614,8 @@ function removeObjective() {
   background: #ffffff;
   color: #d64545;
   font: inherit;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -650,8 +650,8 @@ function removeObjective() {
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   resize: vertical;
   outline: none;
 }
@@ -663,8 +663,8 @@ function removeObjective() {
 
 .wp-note-text {
   display: block;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -678,9 +678,9 @@ function removeObjective() {
   margin: 0;
   padding-bottom: 10px;
   border-bottom: 1px solid #e6edf6;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #63708a;
 }
@@ -704,9 +704,9 @@ function removeObjective() {
 }
 
 .wp-sign-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #7a879c;
 }
@@ -715,16 +715,16 @@ function removeObjective() {
   min-height: 24px;
   padding: 2px 0 9px;
   border-bottom: 1px solid #c9d5e5;
-  font-size: 15.5px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-snug);
   color: #172b4d;
   overflow-wrap: anywhere;
 }
 
 .wp-sign-role {
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #63708a;
 }
 
@@ -733,9 +733,9 @@ function removeObjective() {
   align-items: center;
   gap: 5px;
   margin-top: 4px;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .wp-status svg {

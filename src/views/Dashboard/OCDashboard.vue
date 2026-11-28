@@ -340,7 +340,7 @@ onMounted(loadDashboard)
 .oc-table th {
   background: #f6f7fd;
   color: #1c1a3c;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -358,12 +358,12 @@ onMounted(loadDashboard)
 }
 
 .cell-title {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
 .cell-id {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-small);
   color: #5b6484;
   white-space: nowrap;
 }
@@ -371,7 +371,7 @@ onMounted(loadDashboard)
 /* A table row action is smaller than a page action. */
 .row-btn {
   padding: 7px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--ui-control-font-md);
 }
 
 /* The two row actions sit side by side and wrap on a narrow screen. */
@@ -396,8 +396,8 @@ onMounted(loadDashboard)
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
 }
 
 /* ===== Loading ===== */
@@ -406,8 +406,8 @@ onMounted(loadDashboard)
   align-items: center;
   gap: 10px;
   padding: 12px 4px;
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
 }
 
 .loading-spinner {

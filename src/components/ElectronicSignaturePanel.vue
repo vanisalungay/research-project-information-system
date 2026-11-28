@@ -522,13 +522,13 @@ onBeforeUnmount(() => {
   padding-bottom: 18px;
 }
 .panel-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   margin: 0 0 6px 0;
 }
 .panel-header p {
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
   margin: 0;
 }
@@ -546,16 +546,16 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 .block-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-heading, #1e293b);
   border-left: 3px solid #2452ff;
   padding-left: 10px;
   margin: 0;
 }
 .state-pill {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -594,18 +594,18 @@ onBeforeUnmount(() => {
   background: #ffffff;
 }
 .preview-state {
-  font-size: 0.875rem;
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
   text-align: center;
 }
 .block-note {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
   margin: 0;
 }
 .inline-error {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #dc2626;
   margin: 0;
 }
@@ -621,8 +621,8 @@ onBeforeUnmount(() => {
   border: none;
   border-bottom: 2px solid transparent;
   padding: 10px 16px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-text-soft, #64748b);
   cursor: pointer;
   border-radius: 8px 8px 0 0;
@@ -663,7 +663,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-small);
   color: #94a3b8;
   pointer-events: none;
 }
@@ -676,7 +676,7 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 .method-note {
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
 }
 .file-input {
@@ -689,8 +689,8 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 .draft-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #92400e;
 }
 
@@ -712,8 +712,8 @@ onBeforeUnmount(() => {
 .save-btn {
   padding: 11px 22px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -727,8 +727,8 @@ onBeforeUnmount(() => {
   color: var(--btn-neutral-text);
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }

@@ -550,7 +550,7 @@ const getTlClass = (action) => {
     padding: 6px 14px;
     height: 34px;
 
-    font-size: .78rem;
+    font-size: var(--ui-control-font-sm);
     border-radius: 8px;
 }
 
@@ -596,14 +596,14 @@ const getTlClass = (action) => {
     padding: 0.45rem 1rem !important;
     min-height: 36px !important;
     height: 36px !important;
-    line-height: 1 !important;
+    line-height: var(--ui-line-none) !important;
 
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    font-size: 0.82rem !important;
-    font-weight: 600;
+    font-size: var(--ui-control-font-md) !important;
+    font-weight: var(--ui-weight-semibold);
     border-radius: 6px !important;
 }
 
@@ -612,7 +612,7 @@ const getTlClass = (action) => {
     padding: 0.35rem 0.9rem !important;
     min-height: 32px !important;
     height: 32px !important;
-    font-size: 0.78rem !important;
+    font-size: var(--ui-control-font-sm) !important;
 }
 
 /* Download button */
@@ -649,16 +649,16 @@ const getTlClass = (action) => {
 }
 
 .proposal-id {
-    font-weight: 700;
-    font-size: 1.05rem;
+    font-weight: var(--ui-weight-bold);
+    font-size: var(--ui-font-body-lg);
     color: var(--text-secondary);
-    font-family: ui-monospace, monospace;
+    font-family: var(--ui-font-mono);
 }
 
 .proposal-title {
-    font-size: 1.45rem;
-    font-weight: 700;
-    line-height: 1.3;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
+    line-height: var(--ui-line-tight);
     color: var(--text-primary);
     margin-bottom: 0.75rem;
 }
@@ -667,7 +667,7 @@ const getTlClass = (action) => {
     display: flex;
     gap: 1.5rem;
     flex-wrap: wrap;
-    font-size: 0.85rem;
+    font-size: var(--ui-font-small);
     color: var(--text-secondary);
 }
 
@@ -682,16 +682,16 @@ const getTlClass = (action) => {
 }
 
 .budget-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 0.4rem;
 }
 
 .budget-document-name {
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-primary);
     overflow-wrap: anywhere;
 }
@@ -720,20 +720,20 @@ const getTlClass = (action) => {
 }
 
 .budget-document-empty {
-    font-size: 0.85rem;
+    font-size: var(--ui-font-small);
     font-style: italic;
     color: var(--text-muted);
 }
 
 .document-error {
     margin-top: 0.5rem;
-    font-size: 0.8rem;
+    font-size: var(--ui-font-caption);
     color: #dc2626;
 }
 
 .download-error {
     margin: -1rem 0 1rem;
-    font-size: 0.85rem;
+    font-size: var(--ui-font-small);
     color: #dc2626;
 }
 
@@ -750,12 +750,12 @@ const getTlClass = (action) => {
 
 .sections-note {
     margin-bottom: 1.25rem;
-    font-size: 0.85rem;
+    font-size: var(--ui-font-small);
     color: var(--text-muted);
 }
 
 .sections-loading {
-    font-size: 0.9rem;
+    font-size: var(--ui-font-body);
     color: var(--text-muted);
 }
 
@@ -782,8 +782,8 @@ const getTlClass = (action) => {
 }
 
 .abstract-text {
-    font-size: 0.95rem;
-    line-height: 1.65;
+    font-size: var(--ui-font-body);
+    line-height: var(--ui-line-body);
     color: var(--text-secondary);
 }
 
@@ -797,16 +797,16 @@ const getTlClass = (action) => {
 }
 
 .field-label {
-    font-size: 0.7rem;
+    font-size: var(--ui-font-label);
     text-transform: uppercase;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: var(--ui-weight-semibold);
     display: block;
 }
 
 .field-value {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-medium);
     color: var(--text-primary);
 }
 
@@ -815,15 +815,15 @@ const getTlClass = (action) => {
 }
 
 .font-mono {
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-family: var(--ui-font-mono);
 }
 
 .font-medium {
-    font-weight: 500;
+    font-weight: var(--ui-weight-medium);
 }
 
 .font-semibold {
-    font-weight: 600;
+    font-weight: var(--ui-weight-semibold);
 }
 
 .primary-text {
@@ -838,8 +838,8 @@ const getTlClass = (action) => {
     display: inline-block;
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
 }
 
 .cat-ps {
@@ -865,17 +865,17 @@ const getTlClass = (action) => {
 .total-row td {
     border-top: 2px solid #94a3b8;
     border-bottom: none;
-    font-weight: 700;
+    font-weight: var(--ui-weight-bold);
 }
 
 .total-label {
     text-align: right;
-    font-size: 1rem;
+    font-size: var(--ui-font-label);
     color: var(--text-primary);
 }
 
 .total-amount {
-    font-size: 1.05rem;
+    font-size: var(--ui-font-body-lg);
     color: var(--color-primary);
 }
 
@@ -890,13 +890,13 @@ const getTlClass = (action) => {
 }
 
 .doc-name {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-medium);
     color: var(--text-primary);
 }
 
 .doc-meta {
-    font-size: 0.725rem;
+    font-size: var(--ui-font-caption);
     color: var(--text-muted);
 }
 
@@ -907,7 +907,7 @@ const getTlClass = (action) => {
 .chancellor-quote {
     font-style: italic;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--ui-font-body);
     border-left: 2px solid #cbd5e1;
     padding-left: 0.75rem;
     margin: 0;
@@ -940,8 +940,8 @@ const getTlClass = (action) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-bold);
     color: white;
     flex-shrink: 0;
 }
@@ -952,7 +952,7 @@ const getTlClass = (action) => {
 }
 
 .checklist-text {
-    font-size: 0.85rem;
+    font-size: var(--ui-font-body);
     color: var(--text-secondary);
 }
 
@@ -964,8 +964,8 @@ const getTlClass = (action) => {
 }
 
 .remarks-label {
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-secondary);
     text-transform: uppercase;
     display: block;
@@ -973,7 +973,7 @@ const getTlClass = (action) => {
 }
 
 .remarks-text {
-    font-size: 0.85rem;
+    font-size: var(--ui-font-body);
     font-style: italic;
     color: var(--text-secondary);
 }
@@ -1041,8 +1041,8 @@ const getTlClass = (action) => {
 }
 
 .stage-label {
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     text-transform: uppercase;
     background-color: #e2e8f0;
     color: var(--text-secondary);
@@ -1051,24 +1051,24 @@ const getTlClass = (action) => {
 }
 
 .tl-date {
-    font-size: 0.725rem;
+    font-size: var(--ui-font-caption);
     color: var(--text-muted);
 }
 
 .tl-action {
-    font-size: 0.925rem;
-    font-weight: 600;
+    font-size: var(--ui-control-font-lg);
+    font-weight: var(--ui-weight-semibold);
     color: var(--text-primary);
 }
 
 .tl-user {
-    font-size: 0.8rem;
+    font-size: var(--ui-font-small);
     color: var(--text-secondary);
 }
 
 .tl-notes {
     margin-top: 0.5rem;
-    font-size: 0.8rem;
+    font-size: var(--ui-font-small);
     font-style: italic;
     color: var(--text-secondary);
     background-color: white;
@@ -1083,14 +1083,14 @@ const getTlClass = (action) => {
 }
 
 .empty-title {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-bold);
     color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .empty-desc {
-    font-size: 0.875rem;
+    font-size: var(--ui-font-small);
     color: var(--text-muted);
     margin-bottom: 1rem;
 }

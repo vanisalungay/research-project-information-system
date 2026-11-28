@@ -313,10 +313,10 @@ test('the detail view renders the logical framework, budget and certification', 
     'the budget downloads from the stored path')
   assert.ok(DETAIL.includes('hasSubmittedByData'), 'the Submitted By block is shown')
   assert.ok(DETAIL.includes('hasEndorsedByData'), 'the Endorsed By block is shown')
-  assert.ok(DETAIL.includes('proposal.submittedByFilePath || proposal.submittedByFileName'),
-    'the submitted signature can be downloaded')
-  assert.ok(DETAIL.includes('proposal.endorsementFilePath || proposal.endorsementFileName'),
-    'the endorsement PDF can be downloaded')
+  assert.ok(DETAIL.includes('proposal.value.submittedByFilePath || proposal.value.submittedByFileName'),
+    'the submitted signature is resolved from the stored path')
+  assert.ok(DETAIL.includes('proposal.value.endorsementFilePath || proposal.value.endorsementFileName'),
+    'the endorsement PDF is resolved from the stored path')
 })
 
 test('the OVC review view uses the real budget fields and shows the new documents', () => {

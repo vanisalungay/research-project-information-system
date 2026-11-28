@@ -137,7 +137,7 @@ export default {
 
 .section-title {
   margin: 16px 0;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .criteria-table,
@@ -153,7 +153,8 @@ export default {
   border: 2px solid #1e3a8a;
   padding: 10px;
   text-align: left;
-  font-weight: bold;
+  color: #1e293b;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .criteria-table td,
@@ -171,6 +172,6 @@ export default {
 
 .group {
   background: #f9fafb;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 </style>

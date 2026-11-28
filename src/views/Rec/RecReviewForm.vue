@@ -20,6 +20,11 @@
       <!-- PROPOSAL INFO -->
       <div class="info-grid">
         <div>
+          <label>Proposal ID</label>
+          <p>{{ proposal.proposalId || '-' }}</p>
+        </div>
+
+        <div>
           <label>Title</label>
           <p>{{ proposal.title || '-' }}</p>
         </div>
@@ -477,6 +482,9 @@ const loadProposal = async () => {
     }
     proposal.value = {
       id: data.id,
+      // The stored, human-readable identifier (e.g. MSUN-ORPS-DA-028-2026-REV00).
+      // Falls back to the proposal code for older rows saved before document ids.
+      proposalId: data.documentId || data.proposalCode || '',
       title: data.projectTitle || data.title || '',
       proponent: data.projectLeader || data.proponent?.name || '',
       department: data.college || data.proponent?.departmentOffice || '',
@@ -650,14 +658,14 @@ onBeforeUnmount(() => {
 
 /* Breadcrumb */
 .breadcrumb {
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
   margin-bottom: var(--space-3, 12px);
   overflow-wrap: anywhere;
 }
 
 .breadcrumb .active {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: var(--color-primary, #2452ff);
 }
 
@@ -671,7 +679,7 @@ onBeforeUnmount(() => {
 }
 
 .review-title {
-  font-size: var(--fs-xl, 24px);
+  font-size: var(--ui-font-card-title);
   margin: 0;
 }
 
@@ -694,24 +702,24 @@ onBeforeUnmount(() => {
 .info-grid label {
   display: block;
   margin-bottom: var(--space-1, 4px);
-  font-weight: 600;
-  font-size: var(--fs-xs, 12px);
+  font-weight: var(--ui-weight-semibold);
+  font-size: var(--ui-font-label);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
   color: var(--color-text-soft, #64748b);
 }
 
 .info-grid p {
   margin: 0;
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-body);
   overflow-wrap: anywhere;
 }
 
 /* Section title */
 .section-title {
-  font-size: var(--fs-lg, 18px);
+  font-size: var(--ui-font-section-title);
   margin: var(--space-5, 20px) 0 var(--space-3, 12px);
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* Tables */
@@ -744,7 +752,7 @@ onBeforeUnmount(() => {
 .criteria-table td {
   border: 1px solid var(--color-border, #ccc);
   padding: 10px 12px;
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-table-header);
   vertical-align: top;
 }
 
@@ -755,7 +763,7 @@ onBeforeUnmount(() => {
 
 .evaluation-hint {
   margin: 0 0 var(--space-3, 12px);
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-caption);
   color: var(--color-text-soft, #64748b);
 }
 
@@ -775,8 +783,8 @@ onBeforeUnmount(() => {
 
 .score-group-head h4 {
   margin: 0;
-  font-size: var(--fs-sm, 14px);
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
 }
 
 .score-item {
@@ -794,8 +802,8 @@ onBeforeUnmount(() => {
 
 .score-label {
   margin: 0;
-  font-size: var(--fs-sm, 14px);
-  line-height: 1.45;
+  font-size: var(--ui-font-label);
+  line-height: var(--ui-line-snug);
   overflow-wrap: anywhere;
 }
 
@@ -834,8 +842,8 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: var(--color-card-background, #ffffff);
   color: var(--color-text, #1e293b);
-  font-size: var(--fs-sm, 14px);
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -868,7 +876,7 @@ onBeforeUnmount(() => {
 /* Comments */
 .comment-label {
   display: block;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: var(--space-1, 4px);
 }
 
@@ -880,7 +888,7 @@ onBeforeUnmount(() => {
   margin-top: 5px;
   resize: vertical;
   font-family: inherit;
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-body);
   color: var(--color-text, #1e293b);
   background: var(--color-card-background, #ffffff);
 }
@@ -894,15 +902,15 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   background: var(--status-warning-bg, #fffbeb);
   color: #7c4a03;
-  font-size: var(--fs-sm, 13px);
-  line-height: 1.45;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-snug);
 }
 
 /* Decision Submission */
 .decision-title {
   margin: var(--space-6, 24px) 0 var(--space-3, 12px);
-  font-size: var(--fs-lg, 18px);
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .decision-buttons {
@@ -955,12 +963,12 @@ onBeforeUnmount(() => {
 
 .confirm-heading {
   margin: 0 0 var(--space-2, 8px);
-  font-size: var(--fs-lg, 18px);
+  font-size: var(--ui-font-section-title);
 }
 
 .confirm-message {
   margin: 0 0 var(--space-5, 20px);
-  font-size: var(--fs-sm, 14px);
+  font-size: var(--ui-font-body);
   color: var(--color-text-soft, #64748b);
 }
 

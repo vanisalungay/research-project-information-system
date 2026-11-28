@@ -67,10 +67,13 @@
             <option value="FOR_OVCAF_APPROVAL">{{ proposalStatusLabel('FOR_OVCAF_APPROVAL') }}</option>
             <option value="FOR_OC_APPROVAL">{{ proposalStatusLabel('FOR_OC_APPROVAL') }}</option>
             <option value="APPROVED">{{ proposalStatusLabel('APPROVED') }}</option>
+            <option value="READY_FOR_RELEASE">{{ proposalStatusLabel('READY_FOR_RELEASE') }}</option>
             <option value="COMPLETED">{{ proposalStatusLabel('COMPLETED') }}</option>
             <option value="RELEASED">{{ proposalStatusLabel('RELEASED') }}</option>
             <option value="RPS_RETURNED">{{ proposalStatusLabel('RPS_RETURNED') }}</option>
             <option value="REC_REVISION">{{ proposalStatusLabel('REC_REVISION') }}</option>
+            <option value="RETURNED_TO_RPS">{{ proposalStatusLabel('RETURNED_TO_RPS') }}</option>
+            <option value="REVISION">{{ proposalStatusLabel('REVISION') }}</option>
             <option value="RETURNED">{{ proposalStatusLabel('RETURNED') }}</option>
             <option value="REJECTED">{{ proposalStatusLabel('REJECTED') }}</option>
           </select>
@@ -312,15 +315,26 @@ const BASE_STAGES = [
 const OVCAF_STAGE = { key: 'FOR_OVCAF_APPROVAL', label: proposalStatusLabel('FOR_OVCAF_APPROVAL') }
 const APPROVED_STAGE = { key: 'APPROVED', label: proposalStatusLabel('APPROVED') }
 
-// Statuses that are already past the 100% approval milestone.
-const POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']
+// Statuses that are already past the 100% approval milestone. READY_FOR_RELEASE is
+// final approval completed and awaiting fund release; RELEASED and COMPLETED follow it.
+const POST_APPROVAL_STATUSES = ['READY_FOR_RELEASE', 'RELEASED', 'IMPLEMENTATION', 'COMPLETED']
 
 // The "approved for implementation" statuses come from the shared quarterly-report
 // rule, so the dashboard count and the Create Quarterly Report action can never
 // disagree about which projects are in implementation.
 
-// Terminal/negative statuses that should show special state
-const terminalStatuses = ['REJECTED', 'REC_REJECTED', 'RPS_RETURNED', 'REC_REVISION', 'RETURNED']
+// Terminal/negative statuses that should show special state. RETURNED_TO_RPS is the
+// reviewing-office hand-off a returned proposal passes through before RPS forwards it;
+// it must render as a return, not as an unknown stage (which showed 0% with no marker).
+const terminalStatuses = [
+  'REJECTED',
+  'REC_REJECTED',
+  'RPS_RETURNED',
+  'REC_REVISION',
+  'REVISION',
+  'RETURNED',
+  'RETURNED_TO_RPS'
+]
 
 // Build the approval timeline for a proposal based on its budget requirement.
 // A proposal without budget (needsBudget === false) does not include OVCAF.
@@ -623,16 +637,16 @@ onMounted(fetchProposals)
 }
 
 .page-header h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
 
 .subtitle {
-  color: #64748b;
+  color: var(--ui-text-muted);
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Stats Grid */
@@ -679,16 +693,16 @@ onMounted(fetchProposals)
 }
 
 .stat-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
-  line-height: 1.1;
+  line-height: var(--ui-line-display);
 }
 
 .stat-icon {
@@ -754,10 +768,10 @@ onMounted(fetchProposals)
 }
 
 .filter-group label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .form-input,
@@ -765,7 +779,7 @@ onMounted(fetchProposals)
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   height: 42px;
   background: #f8fafc;
 }
@@ -781,7 +795,7 @@ onMounted(fetchProposals)
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   background: #f8fafc;
   resize: vertical;
   width: 100%;
@@ -792,8 +806,8 @@ onMounted(fetchProposals)
   background: #e2e8f0;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   height: 42px;
 }
@@ -861,14 +875,14 @@ onMounted(fetchProposals)
 }
 
 .proposal-id {
-  font-family: monospace;
-  font-size: 12px;
-  color: #64748b;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .proposal-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
 }
@@ -876,8 +890,8 @@ onMounted(fetchProposals)
 .status-badge {
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
@@ -891,7 +905,7 @@ onMounted(fetchProposals)
   flex-wrap: wrap;
   gap: 24px;
   margin-bottom: 20px;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #475569;
 }
 
@@ -912,16 +926,16 @@ onMounted(fetchProposals)
 }
 
 .timeline-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--ui-tracking-label);
 }
 
 .timeline-progress {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
 }
 
@@ -978,8 +992,8 @@ onMounted(fetchProposals)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   flex-shrink: 0;
 }
 
@@ -988,8 +1002,8 @@ onMounted(fetchProposals)
   top: 34px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   text-align: center;
   white-space: nowrap;
 }
@@ -1009,7 +1023,7 @@ onMounted(fetchProposals)
 
 /* Timeline States */
 .timeline-step.complete .step-dot {
-  background: #22c55e;
+  background: #15803d;
   color: white;
 }
 
@@ -1020,21 +1034,21 @@ onMounted(fetchProposals)
 }
 
 .timeline-step.returned .step-dot {
-  background: #ef4444;
+  background: #b91c1c;
   color: white;
 }
 
 .timeline-step.pending .step-dot {
   background: #e2e8f0;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .check-icon {
-  font-size: 14px;
+  font-size: var(--ui-icon-sm);
 }
 
 .current-icon {
-  font-size: 8px;
+  font-size: var(--ui-font-caption);
 }
 
 /* Progress Bar */
@@ -1071,8 +1085,8 @@ onMounted(fetchProposals)
 .btn-revise {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1085,8 +1099,8 @@ onMounted(fetchProposals)
 .btn-primary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1099,8 +1113,8 @@ onMounted(fetchProposals)
 .btn-secondary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -1114,19 +1128,19 @@ onMounted(fetchProposals)
 }
 
 .empty-icon {
-  font-size: 48px;
+  font-size: var(--ui-font-small);
   margin-bottom: 16px;
 }
 
 .empty-state h3 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0 0 8px;
 }
 
 .empty-state p {
-  color: #64748b;
+  color: var(--ui-text-muted);
   margin: 0 0 20px;
 }
 
@@ -1159,8 +1173,8 @@ onMounted(fetchProposals)
 }
 
 .modal-header h2 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   margin: 0;
 }
 
@@ -1171,7 +1185,7 @@ onMounted(fetchProposals)
   border: none;
   background: #f1f5f9;
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-icon-md);
 }
 
 .close-btn:hover {
@@ -1183,8 +1197,8 @@ onMounted(fetchProposals)
 }
 
 .modal-subtitle {
-  color: #64748b;
-  font-size: 13px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
   margin: 0 0 20px;
 }
 
@@ -1193,14 +1207,14 @@ onMounted(fetchProposals)
 }
 
 .upload-section h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   margin: 0 0 4px;
 }
 
 .upload-desc {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
   margin: 0 0 8px;
 }
 
@@ -1223,11 +1237,11 @@ onMounted(fetchProposals)
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .upload-icon {
-  font-size: 24px;
+  font-size: var(--ui-icon-2xl);
 }
 
 .file-selected {
@@ -1253,8 +1267,8 @@ onMounted(fetchProposals)
 
 .form-group label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   margin-bottom: 6px;
 }
 
@@ -1273,7 +1287,7 @@ onMounted(fetchProposals)
   right: 24px;
   padding: 16px 24px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   z-index: 1100;
   animation: slideIn 0.3s ease;
 }

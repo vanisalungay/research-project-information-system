@@ -8,6 +8,7 @@ import com.rpis.backend.model.User;
 import com.rpis.backend.model.UserRoles;
 import com.rpis.backend.security.CurrentUser;
 import com.rpis.backend.service.DeanAccountService;
+import com.rpis.backend.service.InstitutionalCredentialsService;
 import com.rpis.backend.service.UserService;
 import com.rpis.backend.service.UserSignatureService;
 import com.rpis.backend.util.EmailNormalizer;
@@ -39,6 +40,7 @@ public class UserController {
     private final TokenService tokenService;
     private final UserSignatureService signatureService;
     private final DeanAccountService deanAccountService;
+    private final InstitutionalCredentialsService credentialsService;
     private final CurrentUser currentUser;
 
     @GetMapping
@@ -68,6 +70,26 @@ public class UserController {
             // A rejected registration - a weak password, a non-institutional address or a
             // duplicate account - is a client error, not a server failure. The message is
             // the one the registration form shows; it never contains the password.
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * The institutional address a self-registration with this name would receive.
+     *
+     * <p>It is the same derivation and the same duplicate rule an administrator-created
+     * account uses ({@link InstitutionalCredentialsService#availableEmailFor}), so the
+     * sign-up form can show the address the server will actually assign - including the
+     * numbered suffix when the plain address is already taken. The endpoint is public
+     * because the registration form is public; it returns only the next free candidate
+     * for the submitted name, never an existing account's details.
+     */
+    @GetMapping("/registration-email")
+    public ResponseEntity<?> registrationEmail(
+            @RequestParam(value = "name", required = false) String name) {
+        try {
+            return ResponseEntity.ok(Map.of("email", credentialsService.availableEmailFor(name)));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

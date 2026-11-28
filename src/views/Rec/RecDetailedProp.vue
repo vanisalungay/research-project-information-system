@@ -273,7 +273,7 @@ const goBack = () => {
    this one page read differently from the rest of the application. */
 .proposal-view {
   width: 100%;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
 }
 
 /* HEADER */
@@ -289,12 +289,13 @@ const goBack = () => {
 }
 
 .header-info h1 {
-  font-size: 22px;
+  font-size: var(--ui-font-page-title);
   margin-bottom: 4px;
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: var(--ui-font-small);
   color: #555;
   margin-bottom: 0;
 }
@@ -327,15 +328,15 @@ const goBack = () => {
 
 .error-state p {
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* Layout only; the primary colour comes from assets/actions.css. */
 .btn-primary {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -349,17 +350,17 @@ const goBack = () => {
 }
 
 .content-section h2 {
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
   margin-top: 0;
   margin-bottom: 12px;
   border-bottom: 1px solid #ccc;
   padding-bottom: 4px;
-  font-weight: bold;
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 
 .content-section h3 {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   margin-top: 12px;
   margin-bottom: 6px;
   color: #1e293b;
@@ -399,11 +400,11 @@ const goBack = () => {
 
 .agenda-item strong {
   color: #4f46e5;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .agenda-item span {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
 }
 
@@ -423,12 +424,12 @@ table td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
-  font-size: 14px;
+  font-size: var(--ui-font-table-header);
 }
 
 table th {
   background: #f8fafc;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
 }
 

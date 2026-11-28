@@ -314,14 +314,14 @@ onMounted(fetchProjects)
 }
 .page-header h1 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 .subtitle {
   margin: 4px 0 0;
-  color: #64748b;
-  font-size: 14px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-small);
 }
 .sub-header {
   display: flex;
@@ -331,7 +331,7 @@ onMounted(fetchProjects)
 }
 .sub-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--ui-font-small);
 }
 /* Layout only; the action colours are global (assets/actions.css). */
 .state {
@@ -340,7 +340,7 @@ onMounted(fetchProjects)
   padding: 32px;
   border-radius: 8px;
   text-align: center;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 .state.error {
   color: #dc2626;
@@ -361,13 +361,13 @@ onMounted(fetchProjects)
   padding: 12px 14px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
+  font-size: var(--ui-font-table-header);
 }
 .project-table th,
 .report-table th {
   background: #f1f5f9;
   color: #475569;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
 }
 /* The submitted-reports table keeps its four columns readable on smaller
    screens by scrolling horizontally instead of overlapping the columns. */
@@ -378,21 +378,21 @@ onMounted(fetchProjects)
   min-width: 720px;
 }
 .report-name {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
 }
 .report-date {
-  color: #64748b;
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 .cell-actions {
   white-space: nowrap;
 }
 .id-cell {
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 .title-cell {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
 }
 /* Layout only; the action colours are global (assets/actions.css). */
@@ -400,13 +400,13 @@ onMounted(fetchProjects)
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 .status-badge {
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 /* The `.is-*` tone colours come from the shared status system (assets/status.css). */
 .modal-overlay {
@@ -440,7 +440,7 @@ onMounted(fetchProjects)
 }
 .modal-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
 }
 .close-btn {
   width: 32px;
@@ -486,8 +486,8 @@ onMounted(fetchProjects)
 }
 .modal-header-sub {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 .modal-header-actions {
   flex-shrink: 0;
@@ -505,7 +505,7 @@ onMounted(fetchProjects)
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The report is authored for a printed Letter page (terminalReportDocument.css), so it is
@@ -517,38 +517,38 @@ onMounted(fetchProjects)
     min-height: 0;
   }
   .modal--terminal-doc :deep(.tr-cover-title) {
-    font-size: 22pt;
+    font-size: var(--ui-font-stat);
   }
   .modal--terminal-doc :deep(.tr-cover-team) {
-    font-size: 11pt;
+    font-size: var(--ui-font-body);
   }
   .modal--terminal-doc :deep(.tr-cover-report) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-front-heading),
   .modal--terminal-doc :deep(.tr-section-heading) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-subsection-heading) {
-    font-size: 13pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-body-title) {
-    font-size: 14pt;
+    font-size: var(--ui-font-section-title);
   }
   .modal--terminal-doc :deep(.tr-paragraph),
   .modal--terminal-doc :deep(.tr-reference),
   .modal--terminal-doc :deep(.tr-keywords) {
-    font-size: 11.5pt;
+    font-size: var(--ui-font-body-lg);
   }
   .modal--terminal-doc :deep(.tr-table-caption),
   .modal--terminal-doc :deep(.tr-list-entry) {
-    font-size: 12pt;
+    font-size: var(--ui-font-small);
   }
   .modal--terminal-doc :deep(.tr-grid) {
-    font-size: 10.5pt;
+    font-size: var(--ui-font-body);
   }
   .modal--terminal-doc :deep(.tr-page-number) {
-    font-size: 12pt;
+    font-size: var(--ui-font-body-lg);
   }
 }
 </style>

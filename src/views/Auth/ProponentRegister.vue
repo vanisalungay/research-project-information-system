@@ -181,9 +181,9 @@ const handleRegister = async () => {
 }
 
 .title {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
 }
 
 .title span {
@@ -192,7 +192,7 @@ const handleRegister = async () => {
 
 .school-name {
   margin-top: 40px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .right-panel {
@@ -201,8 +201,8 @@ const handleRegister = async () => {
 }
 
 .welcome {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
@@ -219,7 +219,7 @@ const handleRegister = async () => {
 .register-form label {
   color: #1f1a3d;
   margin-bottom: 5px;
-  font-weight: 500;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .register-form input {
@@ -243,7 +243,7 @@ const handleRegister = async () => {
   align-items: flex-start;
   gap: 8px;
   margin: 15px 0;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .terms input {
@@ -258,7 +258,7 @@ const handleRegister = async () => {
   border-radius: 6px;
   cursor: pointer;
   margin-top: 10px;
-  font-size: 15px;
+  font-size: var(--ui-control-font-lg);
 }
 
 .register-btn:hover {
@@ -280,7 +280,7 @@ const handleRegister = async () => {
 .signin-link a {
   color: #2452ff;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .signin-link a:hover {
@@ -327,7 +327,7 @@ const handleRegister = async () => {
   }
 
   .welcome {
-    font-size: 1.6rem;
+    font-size: var(--ui-font-display);
   }
 }
 </style>

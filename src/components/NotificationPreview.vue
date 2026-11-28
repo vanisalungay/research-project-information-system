@@ -146,34 +146,34 @@ function handleItemKeydown(event, notification) {
 
 .preview-heading h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
 }
 
 .preview-badge {
-  background: #ef4444;
+  background: #dc2626;
   color: #fff;
   border-radius: 999px;
   padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .preview-view-all {
   background: none;
   border: none;
   color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   padding: 4px;
 }
 
 .preview-empty {
   margin: 0;
-  color: #64748b;
-  font-size: 13px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
 }
 
 .preview-list {
@@ -219,16 +219,16 @@ function handleItemKeydown(event, notification) {
 
 .preview-title {
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
 }
 
 .preview-message {
   margin: 2px 0 4px;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #475569;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -236,8 +236,8 @@ function handleItemKeydown(event, notification) {
 }
 
 .preview-time {
-  font-size: 11px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* ===========================================================================
@@ -266,9 +266,9 @@ function handleItemKeydown(event, notification) {
 }
 
 .notification-preview.is-compact .preview-heading h2 {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   color: #1c1a3c;
 }
 
@@ -278,9 +278,9 @@ function handleItemKeydown(event, notification) {
   border: 1px solid #c7d2fe;
   border-radius: 999px;
   padding: 1px 8px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-body);
   white-space: nowrap;
 }
 
@@ -292,8 +292,8 @@ function handleItemKeydown(event, notification) {
   padding: 4px 8px;
   border-radius: 8px;
   color: #315bff;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -309,8 +309,8 @@ function handleItemKeydown(event, notification) {
 }
 
 .notification-preview.is-compact .preview-view-all-arrow {
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-none);
 }
 
 .notification-preview.is-compact .preview-list {
@@ -368,41 +368,41 @@ function handleItemKeydown(event, notification) {
 }
 
 .notification-preview.is-compact .preview-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .notification-preview.is-compact .preview-item.is-unread .preview-title {
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .notification-preview.is-compact .preview-message {
   margin: 2px 0 3px;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #5b6484;
 }
 
 .notification-preview.is-compact .preview-doc-id {
   margin: 0 0 3px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #8a92ab;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-label);
+  color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
 .notification-preview.is-compact .preview-time {
-  font-size: 0.6875rem;
-  color: #8a92ab;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .notification-preview.is-compact .preview-empty {
   padding: 10px 0;
-  font-size: 0.8125rem;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 /* When the dashboard stacks its panels, the notification panel gets the full content

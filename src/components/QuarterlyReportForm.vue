@@ -546,21 +546,21 @@ defineExpose({ buildPayload, periodLabel })
 
 .qpr-card-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #172b4d;
 }
 
 .qpr-card-head--navy .qpr-card-title {
-  font-size: 14.5px;
+  font-size: var(--ui-font-card-title);
   color: #ffffff;
 }
 
 .qpr-card-sub {
   margin: 3px 0 0;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #7a879c;
 }
 
@@ -574,8 +574,8 @@ defineExpose({ buildPayload, periodLabel })
   padding: 4px 9px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 5px;
-  font-size: 10px;
-  font-weight: 500;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #d8e2f2;
   white-space: nowrap;
 }
@@ -583,7 +583,7 @@ defineExpose({ buildPayload, periodLabel })
 .qpr-word-count {
   margin-left: auto;
   flex: none;
-  font-size: 10.5px;
+  font-size: var(--ui-font-caption);
   color: #94a1b5;
   white-space: nowrap;
 }
@@ -600,8 +600,8 @@ defineExpose({ buildPayload, periodLabel })
   background: #ffffff;
   color: #0e9f6e;
   font: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -643,9 +643,9 @@ defineExpose({ buildPayload, periodLabel })
 }
 
 .qpr-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #63708a;
 }
@@ -661,9 +661,9 @@ defineExpose({ buildPayload, periodLabel })
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-snug);
 }
 
 .qpr-value {
@@ -685,7 +685,7 @@ defineExpose({ buildPayload, periodLabel })
 .qpr-value--source {
   background: #f8fafd;
   color: #33415c;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ---------- Tables ---------- */
@@ -704,10 +704,10 @@ defineExpose({ buildPayload, periodLabel })
   background: #eff3f8;
   border-bottom: 1px solid #dce5f0;
   color: #40506b;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1.35;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  line-height: var(--ui-line-snug);
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
@@ -753,8 +753,8 @@ defineExpose({ buildPayload, periodLabel })
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   resize: vertical;
   outline: none;
 }
@@ -770,8 +770,8 @@ defineExpose({ buildPayload, periodLabel })
 
 .qpr-cell-text {
   display: block;
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -790,8 +790,8 @@ defineExpose({ buildPayload, periodLabel })
   border: 1px solid #dce5f0;
   border-radius: 6px;
   background: #ffffff;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #33415c;
 }
 
@@ -824,8 +824,8 @@ defineExpose({ buildPayload, periodLabel })
   border: 1px solid #dce5f0;
   border-radius: 6px;
   background: #ffffff;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #33415c;
 }
 
@@ -883,9 +883,9 @@ defineExpose({ buildPayload, periodLabel })
 }
 
 .qpr-output-type {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #40506b;
   white-space: nowrap;
@@ -909,8 +909,8 @@ defineExpose({ buildPayload, periodLabel })
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   resize: vertical;
   outline: none;
 }
@@ -927,8 +927,8 @@ defineExpose({ buildPayload, periodLabel })
 
 .qpr-note-text {
   display: block;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -948,8 +948,8 @@ defineExpose({ buildPayload, periodLabel })
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #40506b;
 }
 
@@ -961,7 +961,7 @@ defineExpose({ buildPayload, periodLabel })
   background: #ffffff;
   color: #172b4d;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   outline: none;
 }
 
@@ -969,9 +969,9 @@ defineExpose({ buildPayload, periodLabel })
 .field-error {
   display: block;
   margin-top: 5px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #c0392b;
 }
 

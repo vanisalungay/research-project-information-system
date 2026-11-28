@@ -391,8 +391,8 @@ const collectionState = computed(() => {
 
 .pf-section h3 {
   margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #1f2937;
 }
 
@@ -415,23 +415,23 @@ const collectionState = computed(() => {
 
 .pf-label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .pf-value {
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #1f2937;
   overflow-wrap: anywhere;
 }
 
 .pf-long {
   white-space: pre-wrap;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .pf-field + .pf-field {
@@ -440,8 +440,8 @@ const collectionState = computed(() => {
 
 .pf-subhead {
   margin: 0 0 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
 }
 
@@ -449,7 +449,7 @@ const collectionState = computed(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #1f2937;
 }
 
@@ -459,21 +459,21 @@ const collectionState = computed(() => {
   color: var(--btn-download-text);
   border-radius: 5px;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   padding: 3px 9px;
   cursor: pointer;
 }
 
 .pf-empty {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #9ca3af;
 }
 
 .proposal-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   margin-top: 8px;
 }
 
@@ -487,8 +487,8 @@ const collectionState = computed(() => {
 
 .proposal-table th {
   background: #f8fafc;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
   color: #475569;
 }
 
@@ -519,18 +519,18 @@ const collectionState = computed(() => {
 
 .pf-unmatched-title {
   margin: 0;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ui-tracking-caps);
   color: #991b1b;
 }
 
 .pf-unmatched-note {
   margin: 4px 0 8px;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #7f1d1d;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 
 .pf-unmatched-item + .pf-unmatched-item {
@@ -541,20 +541,20 @@ const collectionState = computed(() => {
 
 .pf-unmatched-label {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #991b1b;
 }
 
 .pf-unmatched-text {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #3f3f46;
   white-space: pre-wrap;
 }
 
 .pf-unmatched-meta {
-  font-size: 10px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
 }
 
@@ -592,9 +592,9 @@ const collectionState = computed(() => {
   padding: 14px 20px;
   background: linear-gradient(100deg, #262342 0%, #2f2b63 100%);
   color: #ffffff;
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 /* Two columns where the section asks for one, with a divider under every field so long
@@ -616,24 +616,24 @@ const collectionState = computed(() => {
 
 .pf-label {
   margin-bottom: 4px;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   color: #6b6b8c;
 }
 
 .pf-value {
   margin: 0;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-body);
   color: #1c1a3c;
 }
 
 /* Narrative sections read better lighter, with a roomier line height. */
 .pf-long {
-  line-height: 1.6;
-  font-weight: 400;
+  line-height: var(--ui-line-body);
+  font-weight: var(--ui-weight-regular);
   color: #2b2b45;
 }
 
@@ -652,20 +652,20 @@ const collectionState = computed(() => {
 
 .pf-subhead {
   margin: 0 0 4px;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   color: #6b6b8c;
 }
 
 .pf-file {
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
   color: #1c1a3c;
 }
 
 .btn-download-sm {
   border-radius: var(--radius-sm, 6px);
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
 }
 
@@ -675,13 +675,13 @@ const collectionState = computed(() => {
 
 .pf-empty {
   margin: 0;
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-caption);
   color: #6b6b8c;
 }
 
 /* Repeated entries: a light band with dark text, readable whatever else is on the page. */
 .proposal-table {
-  font-size: var(--fs-sm, 0.875rem);
+  font-size: var(--ui-font-body);
   margin-top: 10px;
 }
 
@@ -693,9 +693,9 @@ const collectionState = computed(() => {
 
 .proposal-table th {
   background: #f5f5fc;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-table-header);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   color: #4b4b6b;
 }
 

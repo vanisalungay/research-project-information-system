@@ -56,17 +56,17 @@
 
 .dash-banner-title {
   margin: 0 0 4px;
-  font-size: var(--fs-xl, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-tight);
   color: #ffffff;
 }
 
 .dash-banner-sub {
   margin: 0;
   max-width: 68ch;
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.55;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: var(--rpis-on-dark-soft, #c8c8e8);
 }
 
@@ -81,9 +81,9 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  font-size: var(--fs-lg, 1.125rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-label);
   color: #ffffff;
 }
 
@@ -132,8 +132,8 @@
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: var(--fs-base, 1rem);
-  font-weight: 700;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
 }
 
@@ -164,9 +164,9 @@
 
 .dash-call-title {
   margin: 0;
-  font-size: var(--fs-lg, 1.125rem);
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-snug);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
@@ -174,8 +174,8 @@
 .dash-call-desc {
   margin: 0;
   max-width: 90ch;
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.6;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #4b5570;
   white-space: pre-line;
 }
@@ -219,16 +219,16 @@
 
 .dash-meta-label {
   display: block;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: #78809a;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  color: var(--ui-text-muted);
 }
 
 .dash-meta-value {
   display: block;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #25245b;
   overflow-wrap: anywhere;
 }
@@ -242,8 +242,8 @@
   border-radius: 999px;
   background: #fff5d6;
   border: 1px solid #ffe49a;
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #8a5a00;
 }
 
@@ -330,17 +330,17 @@
 }
 
 .dash-stat-label {
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   color: #6b7591;
   overflow-wrap: anywhere;
 }
 
 .dash-stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.1;
+  font-size: var(--ui-font-stat);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
   color: var(--dash-accent, #25245b);
   font-variant-numeric: tabular-nums;
 }
@@ -426,17 +426,17 @@
 }
 
 .dash-note-title {
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #1c1a3c;
   overflow-wrap: anywhere;
 }
 
 .dash-note-text {
   margin: 2px 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 
@@ -449,8 +449,8 @@
 }
 
 .dash-note-date {
-  font-size: var(--fs-xs, 0.75rem);
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .dash-note-action {
@@ -475,8 +475,8 @@
   border-radius: var(--radius-lg, 12px);
   background: #fdfdff;
   color: #25245b;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   text-decoration: none;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
@@ -533,9 +533,9 @@
 }
 
 .dash-action-hint {
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: 500;
-  color: #78809a;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
 }
 
 .dash-action--primary .dash-action-hint {
@@ -545,9 +545,9 @@
 /* ===== Empty and loading states ===== */
 .dash-empty {
   margin: 0;
-  font-size: var(--fs-sm, 0.875rem);
-  line-height: 1.55;
-  color: #78809a;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 
 /* Skeleton placeholders while a section loads: the same shape as the content that
@@ -603,13 +603,14 @@
   }
 
   .dash-banner-title {
-    font-size: 1.25rem;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 
   .dash-avatar {
     width: 44px;
     height: 44px;
-    font-size: var(--fs-base, 1rem);
+    font-size: var(--ui-font-body-lg);
   }
 
   .dash-section {

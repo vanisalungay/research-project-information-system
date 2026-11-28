@@ -81,7 +81,7 @@ const handleLogin = async () => {
 }
 </script>
 
-<style>
+<style scoped>
 .login-wrapper {
   display: flex;
   height: 100vh;
@@ -101,9 +101,9 @@ const handleLogin = async () => {
 }
 
 .title {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-display);
 }
 
 
@@ -113,7 +113,7 @@ const handleLogin = async () => {
 
 .school-name {
   margin-top: 40px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .right-panel {
@@ -122,8 +122,8 @@ const handleLogin = async () => {
 }
 
 .welcome {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: var(--ui-font-display);
+  font-weight: var(--ui-weight-bold);
 }
 
 .subtitle {
@@ -154,12 +154,12 @@ const handleLogin = async () => {
 
 .role-box h3 {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .role-box p {
   margin: 5px 0 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .login-form label {
@@ -192,7 +192,7 @@ const handleLogin = async () => {
 }
 
 .remember label {
-  font-size: 14px;
+  font-size: var(--ui-font-label);
   color: #1f1a3d;
   cursor: pointer;
 }

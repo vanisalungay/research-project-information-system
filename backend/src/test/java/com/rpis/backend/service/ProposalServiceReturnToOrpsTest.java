@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,13 +31,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * The Chancellor's Office returning a proposal to OVCRIGE: a real, audited status
- * transition to the existing OVCRIGE-owned state {@code REC_APPROVED}. The tests pin
- * down what the workflow promises - one transition, recorded with its actor and
- * remarks, no invented status or Special Order change, and a refusal once the record
- * is no longer awaiting the Chancellor.
+ * The Chancellor's Office returning a proposal to ORPS instead of deciding it: a real,
+ * audited hand-off to the existing {@code RETURNED_TO_RPS} state that every reviewing
+ * office already uses. The tests pin down what the workflow promises - one transition,
+ * recorded with its actor and remarks, no invented status or Special Order change, ORPS
+ * notified, and a refusal once the record is no longer awaiting the Chancellor.
  */
-class ProposalServiceReturnToOvcrigeTest {
+class ProposalServiceReturnToOrpsTest {
 
     private static final Long PROPOSAL_ID = 77L;
     private static final Long ACTOR_ID = 7L;
@@ -78,6 +79,7 @@ class ProposalServiceReturnToOvcrigeTest {
         when(proposalRepository.save(any(Proposal.class))).thenAnswer(inv -> inv.getArgument(0));
 
         when(currentUser.getUserId()).thenReturn(ACTOR_ID);
+        when(currentUser.requireUserId()).thenReturn(ACTOR_ID);
         when(currentUser.getRole()).thenReturn("OC");
         User actor = new User();
         actor.setId(ACTOR_ID);
@@ -88,17 +90,22 @@ class ProposalServiceReturnToOvcrigeTest {
     }
 
     @Test
-    void returningMovesTheProposalToTheOvcrigeOwnedStateAndRecordsTheTransition() {
-        Proposal saved = service.returnToOvcrige(PROPOSAL_ID, "  Please re-check the budget routing.  ");
+    void returningMovesTheProposalToOrpsAndRecordsTheTransition() {
+        Proposal saved = service.returnToOrps(PROPOSAL_ID, "  Please re-check the budget routing.  ");
 
-        assertEquals("REC_APPROVED", saved.getStatus());
+        assertEquals("RETURNED_TO_RPS", saved.getStatus());
+        assertEquals("REVISION", saved.getReturnKind());
+        assertEquals("OC", saved.getReturnedByOffice());
+        assertEquals(ACTOR_ID, saved.getReturnedByUserId());
+        assertNotNull(saved.getReturnedAt());
         assertEquals("Please re-check the budget routing.", saved.getRemarks(),
                 "the remarks are trimmed and stored on the proposal");
+        assertEquals("Please re-check the budget routing.", saved.getReturnRemarks());
 
         assertEquals(1, saved.getStatusHistory().size(), "exactly one transition is recorded");
         ProposalStatusHistory entry = saved.getStatusHistory().get(0);
         assertEquals("FOR_OC_APPROVAL", entry.getFromStatus());
-        assertEquals("REC_APPROVED", entry.getToStatus());
+        assertEquals("RETURNED_TO_RPS", entry.getToStatus());
         assertEquals(ACTOR_ID, entry.getActorUserId(), "the actor is recorded");
         assertEquals("OC", entry.getActorRole());
         assertEquals("The Chancellor", entry.getActorName());
@@ -113,9 +120,9 @@ class ProposalServiceReturnToOvcrigeTest {
     void returningWithoutRemarksInventNoText() {
         proposal.setRemarks("REC reviewer note");
 
-        Proposal saved = service.returnToOvcrige(PROPOSAL_ID, "   ");
+        Proposal saved = service.returnToOrps(PROPOSAL_ID, "   ");
 
-        assertEquals("REC_APPROVED", saved.getStatus());
+        assertEquals("RETURNED_TO_RPS", saved.getStatus());
         assertEquals("REC reviewer note", saved.getRemarks(),
                 "an existing note is not replaced by a blank one");
         assertNull(saved.getStatusHistory().get(0).getRemarks());
@@ -126,7 +133,7 @@ class ProposalServiceReturnToOvcrigeTest {
         proposal.setStatus("FOR_OVCAF_APPROVAL");
 
         IllegalStateException error = assertThrows(IllegalStateException.class,
-                () -> service.returnToOvcrige(PROPOSAL_ID, "Too early"));
+                () -> service.returnToOrps(PROPOSAL_ID, "Too early"));
 
         assertTrue(error.getMessage().contains("FOR_OC_APPROVAL"));
         assertEquals("FOR_OVCAF_APPROVAL", proposal.getStatus(), "the refused record is unchanged");
@@ -136,11 +143,11 @@ class ProposalServiceReturnToOvcrigeTest {
 
     @Test
     void aSecondReturnIsRefusedBecauseTheProposalHasLeftTheChancellor() {
-        service.returnToOvcrige(PROPOSAL_ID, null);
+        service.returnToOrps(PROPOSAL_ID, null);
 
-        assertThrows(IllegalStateException.class, () -> service.returnToOvcrige(PROPOSAL_ID, null));
+        assertThrows(IllegalStateException.class, () -> service.returnToOrps(PROPOSAL_ID, null));
 
-        assertEquals("REC_APPROVED", proposal.getStatus());
+        assertEquals("RETURNED_TO_RPS", proposal.getStatus());
         assertEquals(1, proposal.getStatusHistory().size(), "the first transition is not duplicated");
         verify(proposalRepository, times(1)).save(proposal);
     }
@@ -150,25 +157,39 @@ class ProposalServiceReturnToOvcrigeTest {
         when(proposalRepository.findByIdForUpdate(eq(404L))).thenReturn(Optional.empty());
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.returnToOvcrige(404L, null));
+                () -> service.returnToOrps(404L, null));
 
         assertEquals(404, error.getStatusCode().value());
         verify(proposalRepository, never()).save(any(Proposal.class));
     }
 
     @Test
-    void theOvcrigeOfficeIsNotifiedThroughTheExistingRecApprovedRecipients() {
-        User ovcrige = new User();
-        ovcrige.setId(11L);
-        ovcrige.setRole("OVCRIGE");
-        when(userRepository.findByRoleIn(List.of("OVCRIGE"))).thenReturn(List.of(ovcrige));
-
-        service.returnToOvcrige(PROPOSAL_ID, "Returned");
+    void orpsIsNotifiedThroughTheExistingReturnedToRpsRule() {
+        service.returnToOrps(PROPOSAL_ID, "Returned");
 
         verify(notificationService, times(1)).notifyRoles(
-                eq(List.of("OVCRIGE")), anyString(),
-                eq("Proposal Returned by the Chancellor's Office"), eq("REVISION"), eq(PROPOSAL_ID), any(NotificationEvent.class));
-        verify(notificationService, never()).notifyUsers(any(), anyString(), anyString(), anyString(), any(), any(com.rpis.backend.util.NotificationEvent.class));
+                eq(List.of("RPS_ADMIN", "RPS_STAFF")), anyString(),
+                eq("Revision Request Received"), eq("REVISION"), eq(PROPOSAL_ID),
+                any(NotificationEvent.class));
+        verify(notificationService, never()).notifyUsers(any(), anyString(), anyString(),
+                anyString(), any(), any(NotificationEvent.class));
+    }
+
+    @Test
+    void theProponentIsToldTheProposalWasReturnedByTheChancellor() {
+        User proponent = new User();
+        proponent.setId(21L);
+        proponent.setName("Returned Proponent");
+        proponent.setRole("PROPONENT");
+        proposal.setProponent(proponent);
+
+        service.returnToOrps(PROPOSAL_ID, "Please revise the budget.");
+
+        verify(notificationService, times(1)).notifyUsers(
+                eq(List.of(proponent)),
+                contains("returned for revision by OC"),
+                eq("Proposal Returned for Revision"), eq("REVISION"), eq(PROPOSAL_ID),
+                any(NotificationEvent.class), eq("PROPONENT"));
     }
 
     @Test
@@ -178,7 +199,7 @@ class ProposalServiceReturnToOvcrigeTest {
         proposal.setSoFilePath("special-orders/stored_so.pdf");
         proposal.setNeedsBudget(true);
 
-        Proposal saved = service.returnToOvcrige(PROPOSAL_ID, null);
+        Proposal saved = service.returnToOrps(PROPOSAL_ID, null);
 
         assertEquals("SO-2026-010", saved.getSoNumber());
         assertEquals("SO.pdf", saved.getSoFileName());

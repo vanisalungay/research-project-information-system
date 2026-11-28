@@ -500,12 +500,12 @@ export default {
 }
 
 .header-title h2 {
-  font-size: 20px;
+  font-size: var(--ui-font-section-title);
   color: #1f2937;
 }
 
 .header-title span {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #6b7280;
 }
 
@@ -536,7 +536,7 @@ export default {
 }
 
 .section-block h3 {
-  font-size: 16px;
+  font-size: var(--ui-font-body-lg);
   color: #1f2937;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 8px;
@@ -550,13 +550,13 @@ export default {
 }
 
 .grid-2 span {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #888;
   display: block;
 }
 
 .grid-2 p {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   margin-top: 4px;
 }
 
@@ -570,7 +570,7 @@ export default {
 .proposal-table td {
   border: 1px solid #e5e7eb;
   padding: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-table-header);
   text-align: left;
 }
 
@@ -594,19 +594,19 @@ export default {
 }
 
 .review-card h2 {
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
   color: #1f2937;
 }
 
 .review-section h4 {
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #6b7280;
   margin-bottom: 8px;
 }
 
 .remarks-empty {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #9ca3af;
 }
 
@@ -632,8 +632,8 @@ export default {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #4f46e5;
   text-align: left;
   cursor: pointer;
@@ -645,15 +645,15 @@ export default {
 
 .remarks-preview {
   display: block;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
   margin-top: 2px;
 }
 
 .remarks-error {
   margin: 8px 0 0;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
 }
 
@@ -662,8 +662,8 @@ export default {
   display: inline-block;
   padding: 6px 14px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 textarea {
@@ -671,7 +671,7 @@ textarea {
   padding: 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   resize: vertical;
 }
 
@@ -681,7 +681,7 @@ textarea {
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   background: #fff;
   color: #1e293b;
   margin-top: 4px;
@@ -699,7 +699,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-label);
   color: #475569;
   cursor: pointer;
   margin-top: 4px;
@@ -724,8 +724,8 @@ textarea {
 .reject-btn {
   padding: 12px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 
@@ -740,7 +740,7 @@ textarea {
   padding: 12px;
   background: #fef3c7;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .modal-overlay {
@@ -763,7 +763,7 @@ textarea {
 
 .modal-box p {
   margin-bottom: 16px;
-  font-size: 15px;
+  font-size: var(--ui-font-body);
 }
 
 .error-text {
@@ -774,7 +774,7 @@ textarea {
   padding: 10px 24px;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .full-width {
@@ -782,8 +782,8 @@ textarea {
 }
 
 .text-content {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #475569;
   white-space: pre-wrap;
   margin: 0;
@@ -792,7 +792,7 @@ textarea {
 .empty-text {
   color: #94a3b8;
   font-style: italic;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 .subsection {
@@ -808,8 +808,8 @@ textarea {
 }
 
 .subsection h4 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
   margin: 0 0 6px 0;
 }
@@ -825,12 +825,12 @@ textarea {
   background: #f8fafc;
   border-radius: 6px;
   border-left: 3px solid #4f46e5;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .agenda-item strong {
   color: #4f46e5;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .file-row {
@@ -841,14 +841,14 @@ textarea {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
 .section-block p {
   margin: 4px 0;
   color: #334155;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
 }
 
 .section-block p strong {

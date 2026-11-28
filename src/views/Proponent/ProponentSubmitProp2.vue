@@ -989,8 +989,8 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .header-left h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
@@ -998,8 +998,8 @@ const viewCriteria = () => emit('openCriteria')
 .header-badge {
   background: #eef2ff;
   color: #4f46e5;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -1017,8 +1017,8 @@ const viewCriteria = () => emit('openCriteria')
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1031,7 +1031,7 @@ const viewCriteria = () => emit('openCriteria')
   justify-content: center;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   border-radius: 8px;
@@ -1068,8 +1068,8 @@ const viewCriteria = () => emit('openCriteria')
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   background: #e2e8f0;
   color: #94a3b8;
   transition: all 0.2s;
@@ -1084,24 +1084,24 @@ const viewCriteria = () => emit('openCriteria')
 .progress-step.completed .step-number {
   background: #10b981;
   color: #fff;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .step-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
   white-space: nowrap;
 }
 
 .progress-step.active .step-label {
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-step.completed .step-label {
   color: #10b981;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-line {
@@ -1129,10 +1129,10 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .banner-icon {
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #dc2626;
   flex-shrink: 0;
-  line-height: 1;
+  line-height: var(--ui-line-none);
 }
 
 .banner-content {
@@ -1141,7 +1141,7 @@ const viewCriteria = () => emit('openCriteria')
 
 .banner-content strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #991b1b;
   margin-bottom: 6px;
 }
@@ -1153,10 +1153,10 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .banner-content li {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
   margin-bottom: 2px;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 /* ===== BODY ===== */
@@ -1179,8 +1179,8 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .section-number {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #ffffff;
   background: #4f46e5;
   padding: 2px 8px;
@@ -1188,14 +1188,14 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .section-header h3 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
 
 .section-sub {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
   font-style: italic;
 }
@@ -1224,8 +1224,8 @@ const viewCriteria = () => emit('openCriteria')
 }
 
 .cert-text {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #475569;
   margin: 0;
 }
@@ -1246,7 +1246,7 @@ const viewCriteria = () => emit('openCriteria')
 /* ===== VALIDATION ERROR STYLES ===== */
 .req {
   color: #dc2626;
-  font-weight: 400;
+  font-weight: var(--ui-weight-regular);
 }
 
 .has-error input,
@@ -1265,10 +1265,10 @@ const viewCriteria = () => emit('openCriteria')
 
 .field-error {
   display: block;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
   margin-top: 4px;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* ===== FORM ELEMENTS ===== */
@@ -1289,8 +1289,8 @@ const viewCriteria = () => emit('openCriteria')
 
 .form-group label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   margin-bottom: 6px;
 }
@@ -1300,7 +1300,7 @@ input {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--ui-field-font);
   color: #1e293b;
   background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -1332,8 +1332,8 @@ input[type="date"] {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
-  color: #64748b;
-  font-size: 14px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
 }
 
 .upload-area:hover {
@@ -1344,8 +1344,8 @@ input[type="date"] {
 /* The rule line of an upload field ("Accepted file format: PDF (.pdf)") and the size. */
 .upload-helper {
   margin: 6px 0 0;
-  font-size: 12.5px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 
@@ -1358,7 +1358,7 @@ input[type="date"] {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
 }
 
@@ -1367,7 +1367,7 @@ input[type="date"] {
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-control-font-md);
   padding: 4px;
 }
 
@@ -1380,8 +1380,8 @@ input[type="date"] {
    area above stays the same dashed control the step already used. */
 .signature-state {
   margin: 0 0 8px;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  color: var(--ui-text-muted);
 }
 
 .signature-selected {
@@ -1408,7 +1408,7 @@ input[type="date"] {
 
 .signature-note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: #475569;
 }
 
@@ -1425,7 +1425,7 @@ input[type="date"] {
 
 .signature-error {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
 }
 
@@ -1434,8 +1434,8 @@ input[type="date"] {
   padding: 0;
   border: none;
   background: none;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4f46e5;
   text-decoration: underline;
   cursor: pointer;
@@ -1490,7 +1490,7 @@ input[type="date"] {
 .signature-option-name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   color: #475569;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1501,8 +1501,8 @@ input[type="date"] {
   flex-shrink: 0;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #4338ca;
   background: #e0e7ff;
   white-space: nowrap;
@@ -1567,8 +1567,8 @@ input[type="date"] {
   gap: 6px;
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1579,8 +1579,8 @@ input[type="date"] {
   gap: 6px;
   padding: 10px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1591,8 +1591,8 @@ input[type="date"] {
   gap: 6px;
   padding: 10px 24px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1630,8 +1630,8 @@ input[type="date"] {
 
 .endorsed-note {
   margin: 4px 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
   color: #475569;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
@@ -1641,7 +1641,7 @@ input[type="date"] {
 
 .endorsed-note a {
   color: #1e40af;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* The global .btn-outline dark rule sets a neutral tone; this modifier keeps the

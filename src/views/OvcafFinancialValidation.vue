@@ -335,16 +335,16 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 /* ---------------- Summary ---------------- */
 
 .proposal-id{
-    font-family:ui-monospace,monospace;
-    font-size:.95rem;
-    font-weight:700;
-    color:#64748b;
+    font-family:var(--ui-font-mono);
+    font-size:var(--ui-font-body);
+    font-weight:var(--ui-weight-bold);
+    color: var(--ui-text-muted);
 }
 
 .proposal-title-text{
-    font-size:2rem;
-    font-weight:700;
-    line-height:1.25;
+    font-size:var(--ui-font-display);
+    font-weight:var(--ui-weight-bold);
+    line-height:var(--ui-line-tight);
     color:#0f172a;
     margin:.5rem 0 1.4rem;
 }
@@ -359,37 +359,37 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 
 .chip-label{
     display:block;
-    font-size:.72rem;
+    font-size:var(--ui-font-caption);
     text-transform:uppercase;
-    letter-spacing:.08em;
-    font-weight:700;
+    letter-spacing:var(--ui-tracking-caps);
+    font-weight:var(--ui-weight-semibold);
     color:#94a3b8;
     margin-bottom:5px;
 }
 
 .chip-value{
-    font-size:1rem;
-    font-weight:500;
+    font-size:var(--ui-font-caption);
+    font-weight:var(--ui-weight-semibold);
     color:#334155;
 }
 
 .primary-text{
     color:#8b0000;
-    font-weight:700;
+    font-weight:var(--ui-weight-bold);
 }
 
 /* ---------------- Checklist ---------------- */
 
 .card-title{
-    font-size:1.45rem;
-    font-weight:700;
+    font-size:var(--ui-font-card-title);
+    font-weight:var(--ui-weight-semibold);
     color:#16213d;
     margin-bottom:8px;
 }
 
 .checklist-hint{
-    color:#64748b;
-    font-size:.9rem;
+    color: var(--ui-text-muted);
+    font-size:var(--ui-font-small);
     margin-bottom:22px;
 }
 
@@ -433,7 +433,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
     display:flex;
     justify-content:center;
     align-items:center;
-    font-weight:700;
+    font-weight:var(--ui-weight-bold);
     color:#fff;
     transition:.25s;
     flex-shrink:0;
@@ -445,9 +445,9 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 }
 
 .cb-label{
-    font-size:.93rem;
+    font-size:var(--ui-font-label);
     color:#475569;
-    line-height:1.5;
+    line-height:var(--ui-line-body);
 }
 
 .all-checked-banner{
@@ -457,7 +457,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
     color:#15803d;
     padding:14px 18px;
     border-radius:12px;
-    font-weight:600;
+    font-weight:var(--ui-weight-semibold);
 }
 
 /* ---------------- Evaluation ---------------- */
@@ -465,11 +465,11 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 .section-label{
     display: block;
     margin-bottom: 18px;
-    font-size: .95rem;
-    font-weight: 700;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     color: #16213d;
 
-    line-height:1.9;
+    line-height:var(--ui-line-body);
     min-height:48px;  
 }
 
@@ -555,8 +555,8 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 
 .option-title{
     display:block;
-    font-size:1rem;
-    font-weight:700;
+    font-size:var(--ui-font-body-lg);
+    font-weight:var(--ui-weight-bold);
     margin-bottom:6px;
 }
 
@@ -573,9 +573,9 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 }
 
 .option-desc{
-    color:#64748b;
-    font-size:.92rem;
-    line-height:1.6;
+    color: var(--ui-text-muted);
+    font-size:var(--ui-font-small);
+    line-height:var(--ui-line-body);
 }
 
 /* ---------------- Form ---------------- */
@@ -589,7 +589,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
     padding:15px;
     border:1px solid #d5dce6;
     border-radius:12px;
-    font-size:.95rem;
+    font-size:var(--ui-font-body);
     color:#334155;
     transition:.2s;
 }
@@ -622,7 +622,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 
 .btn{
     border-radius:10px;
-    font-weight:600;
+    font-weight:var(--ui-weight-semibold);
     transition:.25s;
 }
 
@@ -677,20 +677,20 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 }
 
 .modal-title{
-    font-size:1.2rem;
-    font-weight:700;
+    font-size:var(--ui-font-card-title);
+    font-weight:var(--ui-weight-semibold);
 }
 
 .modal-close-btn{
     border:none;
     background:none;
-    font-size:28px;
+    font-size:var(--ui-icon-xl);
     cursor:pointer;
 }
 
 .modal-message{
     color:#475569;
-    line-height:1.6;
+    line-height:var(--ui-line-body);
 }
 
 .modal-actions{
@@ -722,12 +722,12 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-PH', { style: 'currency'
 }
 
 .empty-title{
-    font-size:1.2rem;
-    font-weight:700;
+    font-size:var(--ui-font-small);
+    font-weight:var(--ui-weight-bold);
 }
 
 .empty-desc{
-    color:#64748b;
+    color: var(--ui-text-muted);
     margin-top:8px;
 }
 

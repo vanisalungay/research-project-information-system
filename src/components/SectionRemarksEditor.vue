@@ -84,16 +84,16 @@ const clearRemark = (key) => {
 
 .editor-header h4 {
   margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #1f2937;
 }
 
 .helper {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
   max-width: 60ch;
 }
 
@@ -103,14 +103,14 @@ const clearRemark = (key) => {
   border-radius: 999px;
   background: #fef3c7;
   color: #92400e;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   white-space: nowrap;
 }
 
 .flagged-count.none {
   background: #f1f5f9;
-  color: #64748b;
+  color: var(--ui-text-muted);
 }
 
 .section-list {
@@ -137,9 +137,9 @@ const clearRemark = (key) => {
 }
 
 .section-number {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   color: #4338ca;
   background: #eef2ff;
   border-radius: 4px;
@@ -147,8 +147,8 @@ const clearRemark = (key) => {
 }
 
 .section-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
   color: #374151;
   flex: 1;
 }
@@ -157,8 +157,8 @@ const clearRemark = (key) => {
   background: none;
   border: none;
   color: #dc2626;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   padding: 0 2px;
 }
@@ -170,8 +170,8 @@ textarea {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-snug);
   resize: vertical;
   color: #1f2937;
 }

@@ -1,5 +1,11 @@
 <template>
   <div class="end-page end-page--fluid">
+    <!-- The view had no way back to the list it was opened from; the standard Back
+         control sits above the header so it is always available, whether the request
+         loaded, failed or is still loading. -->
+    <div class="end-back-row">
+      <BackButton label="Back to My Endorsements" to="/endorsements" />
+    </div>
     <div class="end-page-header">
       <h2>Endorsement Request</h2>
       <p class="end-subtitle">
@@ -148,7 +154,7 @@
       <div class="end-card">
         <h3 class="end-section-title">History</h3>
         <ul v-if="events.length" class="end-timeline">
-          <li v-for="(event, index) in events" :key="index">
+          <li v-for="(event, index) in orderedEvents" :key="index">
             <span class="end-timeline-title">{{ eventLabel(event.eventType) }}</span>
             {{ event.detail }}
             <div class="end-muted">
@@ -164,7 +170,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import '@/assets/endorsement.css'
 import BackButton from '@/components/BackButton.vue'
@@ -183,6 +189,7 @@ import {
   isRejected,
   openDocumentBlob,
   saveDocumentBlob,
+  sortEndorsementEventsNewestFirst,
   suggestedLetterFileName,
 } from '@/utils/endorsement.js'
 
@@ -210,6 +217,10 @@ const EVENT_LABELS = {
 }
 
 const eventLabel = (type) => EVENT_LABELS[type] || type
+
+// The API returns the history oldest first; the Proponent reads the most recent entry
+// first, so the display order is applied here without changing the shared endpoint.
+const orderedEvents = computed(() => sortEndorsementEventsNewestFirst(events.value))
 
 async function load() {
   loading.value = true
@@ -262,3 +273,9 @@ function continueToProposal() {
 
 onMounted(load)
 </script>
+
+<style scoped>
+.end-back-row {
+  margin-bottom: 12px;
+}
+</style>

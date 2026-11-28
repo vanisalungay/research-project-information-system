@@ -123,8 +123,10 @@ test('the monitoring timeline labels its final stage through the helper', () => 
     'the OVCAF timeline stage must use the canonical label',
   )
   assert.ok(
-    PROPONENT_MONITORING.includes("POST_APPROVAL_STATUSES = ['RELEASED', 'COMPLETED']"),
-    'post-approval progress keeps RELEASED and COMPLETED distinct from APPROVED',
+    PROPONENT_MONITORING.includes(
+      "POST_APPROVAL_STATUSES = ['READY_FOR_RELEASE', 'RELEASED', 'IMPLEMENTATION', 'COMPLETED']",
+    ),
+    'post-approval progress keeps every status past final approval distinct from APPROVED',
   )
 })
 

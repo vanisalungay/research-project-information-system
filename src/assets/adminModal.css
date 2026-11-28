@@ -68,18 +68,18 @@
 
 .adm-heading h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
+  letter-spacing: var(--ui-tracking-tight);
   color: #1c1a3c;
 }
 
 .adm-heading p {
   margin: 3px 0 0;
-  font-size: 11.5px;
-  line-height: 1.4;
-  color: #777d91;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 
 .adm-close {
@@ -152,8 +152,8 @@
   border-radius: 9px;
   background: #fef2f2;
   color: #991b1b;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .adm-error svg {
@@ -170,8 +170,8 @@
   border-radius: 9px;
   background: #ecfdf5;
   color: #065f46;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 
 .adm-field {
@@ -182,9 +182,9 @@
 }
 
 .adm-field label {
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #475569;
 }
 
@@ -199,8 +199,8 @@
   background: #ffffff;
   color: #1f2937;
   font-family: inherit;
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-tight);
 }
 
 .adm-select {
@@ -234,7 +234,7 @@
   height: 38px;
   padding: 0 11px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: var(--ui-field-font);
 }
 
 .adm-modal input.adm-input[type="password"] {
@@ -242,7 +242,7 @@
   /* Room for the PasswordInput eye toggle. */
   padding: 0 44px 0 11px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: var(--ui-field-font);
 }
 
 .adm-modal input.adm-input:focus {
@@ -259,8 +259,8 @@
 
 .adm-hint {
   margin: 0;
-  font-size: 10.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #7b8298;
 }
 
@@ -287,9 +287,9 @@
   gap: 6px;
   margin: 0;
   color: #315bff;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
 }
 
@@ -307,9 +307,9 @@
 }
 
 .adm-panel-field > label {
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   color: #475569;
 }
 
@@ -324,9 +324,9 @@
   border: 1px dashed #c7cede;
   border-radius: 9px;
   background: #ffffff;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.2;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-display);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -353,9 +353,9 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #64748b;
+  color: var(--ui-text-muted);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--ui-font-small);
 }
 
 .adm-preview input::placeholder {
@@ -386,8 +386,8 @@
   padding: 0 12px;
   border-radius: 10px;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -451,16 +451,16 @@
 
 .adm-created-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-bold);
   color: #1c1a3c;
 }
 
 .adm-created-note {
   margin: 0;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 
 .adm-credential-row {
@@ -477,24 +477,24 @@
 .adm-credential-label {
   flex: 0 0 auto;
   color: #7b8298;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .adm-credential-value {
   min-width: 0;
   overflow-wrap: anywhere;
   color: #1c1a3c;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .adm-copy-message {
   margin: 0;
   color: #16794a;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
 }
 
 @media (max-width: 480px) {

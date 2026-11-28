@@ -37,9 +37,9 @@ const selected = computed(() => sdgToSet(props.value))
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #475569;
-  line-height: 1.5;
+  line-height: var(--ui-line-body);
 }
 
 .sdg-check {
@@ -47,7 +47,7 @@ const selected = computed(() => sdgToSet(props.value))
   width: 18px;
   text-align: center;
   color: #94a3b8;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 
 .sdg-item--selected .sdg-check {
@@ -56,6 +56,6 @@ const selected = computed(() => sdgToSet(props.value))
 
 .sdg-item--selected .sdg-name {
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 </style>

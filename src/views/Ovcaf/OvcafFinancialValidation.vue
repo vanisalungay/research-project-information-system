@@ -803,11 +803,11 @@ const resetForm = () => {
     border-radius: 999px;
     background: rgba(255, 255, 255, .12);
     color: #d9ddf1;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: .7rem;
-    font-weight: 700;
-    line-height: 1.4;
-    letter-spacing: .03em;
+    font-family: var(--ui-font-mono);
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-snug);
+    letter-spacing: var(--ui-tracking-caps);
 }
 
 .oc-doc-icon {
@@ -825,10 +825,10 @@ const resetForm = () => {
 .oc-title {
     margin: 16px 0 0;
     color: #fff;
-    font-size: 1.35rem;
-    font-weight: 700;
-    line-height: 1.35;
-    letter-spacing: .01em;
+    font-size: var(--ui-font-section-title);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-snug);
+    letter-spacing: var(--ui-tracking-label);
     overflow-wrap: anywhere;
 }
 
@@ -860,10 +860,10 @@ const resetForm = () => {
     display: block;
     margin-bottom: 9px;
     color: var(--oc-muted);
-    font-size: .67rem;
-    font-weight: 700;
-    line-height: 1.4;
-    letter-spacing: .09em;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-snug);
+    letter-spacing: var(--ui-tracking-caps);
     text-transform: uppercase;
 }
 
@@ -884,17 +884,17 @@ const resetForm = () => {
     border-radius: 50%;
     background: var(--oc-navy);
     color: var(--oc-yellow);
-    font-size: .84rem;
-    font-weight: 700;
-    letter-spacing: .02em;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-bold);
+    letter-spacing: var(--ui-tracking-label);
 }
 
 .oc-leader-name,
 .oc-college-name {
     color: var(--oc-ink);
-    font-size: .875rem;
-    font-weight: 600;
-    line-height: 1.45;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-snug);
     overflow-wrap: anywhere;
 }
 
@@ -916,10 +916,10 @@ const resetForm = () => {
     border-radius: 999px;
     background: #e8edff;
     color: #2563eb;
-    font-size: .66rem;
-    font-weight: 700;
-    line-height: 1.5;
-    letter-spacing: .05em;
+    font-size: var(--ui-font-caption);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-body);
+    letter-spacing: var(--ui-tracking-caps);
 }
 
 /* ---------------- In-line Item Budget ---------------- */
@@ -964,9 +964,9 @@ const resetForm = () => {
 /* Long upload names ellipsize; the actions never get pushed out of the container. */
 .oc-file-name {
     color: var(--oc-ink);
-    font-size: .8rem;
-    font-weight: 600;
-    line-height: 1.35;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-snug);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -974,8 +974,8 @@ const resetForm = () => {
 
 .oc-file-meta {
     color: var(--oc-muted);
-    font-size: .7rem;
-    line-height: 1.4;
+    font-size: var(--ui-font-caption);
+    line-height: var(--ui-line-snug);
 }
 
 .oc-file-actions {
@@ -1004,8 +1004,8 @@ const resetForm = () => {
     border: none;
     background: #e8edff;
     color: var(--oc-royal);
-    font-size: .8rem;
-    font-weight: 700;
+    font-size: var(--ui-control-font-md);
+    font-weight: var(--ui-weight-semibold);
 }
 
 .oc-view-btn:hover {
@@ -1043,7 +1043,7 @@ const resetForm = () => {
     border: 1px dashed var(--oc-panel-border);
     border-radius: 12px;
     color: var(--oc-muted);
-    font-size: .82rem;
+    font-size: var(--ui-font-small);
 }
 
 .oc-file-state-error {
@@ -1067,8 +1067,8 @@ const resetForm = () => {
     background: var(--oc-royal);
     color: #fff;
     font-family: inherit;
-    font-size: .92rem;
-    font-weight: 700;
+    font-size: var(--ui-control-font-lg);
+    font-weight: var(--ui-weight-semibold);
     cursor: pointer;
     transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
@@ -1205,21 +1205,21 @@ const resetForm = () => {
 
 .btn-sm {
     padding: 8px 16px;
-    font-size: .85rem;
+    font-size: var(--ui-control-font-md);
 }
 
 /* ---------------- Checklist ---------------- */
 
 .card-title {
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: var(--ui-font-card-title);
+    font-weight: var(--ui-weight-semibold);
     color: #16213d;
     margin-bottom: 8px;
 }
 
 .checklist-hint {
-    color: #64748b;
-    font-size: .9rem;
+    color: var(--ui-text-muted);
+    font-size: var(--ui-font-small);
     margin-bottom: 22px;
 }
 
@@ -1267,7 +1267,7 @@ const resetForm = () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-weight: 700;
+    font-weight: var(--ui-weight-bold);
     color: #fff;
     transition: .25s;
     flex-shrink: 0;
@@ -1279,9 +1279,9 @@ const resetForm = () => {
 }
 
 .cb-label {
-    font-size: .93rem;
+    font-size: var(--ui-font-label);
     color: #475569;
-    line-height: 1.5;
+    line-height: var(--ui-line-body);
 }
 
 .all-checked-banner {
@@ -1291,7 +1291,7 @@ const resetForm = () => {
     color: var(--status-approved-text);
     padding: 14px 18px;
     border-radius: 12px;
-    font-weight: 600;
+    font-weight: var(--ui-weight-semibold);
 }
 
 /* Inline SVG icons: one size/alignment everywhere, no emoji glyphs. */
@@ -1348,9 +1348,9 @@ const resetForm = () => {
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
     color: #334155;
-    font-size: .9rem;
-    font-weight: 600;
-    line-height: 1.5;
+    font-size: var(--ui-font-body);
+    font-weight: var(--ui-weight-semibold);
+    line-height: var(--ui-line-body);
 }
 
 .checklist-missing {
@@ -1360,15 +1360,15 @@ const resetForm = () => {
     background: #fffbeb;
     border: 1px solid #fde68a;
     color: #92400e;
-    font-size: .88rem;
-    line-height: 1.5;
+    font-size: var(--ui-font-body);
+    line-height: var(--ui-line-body);
 }
 
 .checklist-missing-title {
     display: flex;
     align-items: center;
     margin: 0 0 6px;
-    font-weight: 700;
+    font-weight: var(--ui-weight-bold);
 }
 
 .checklist-missing ul {
@@ -1378,7 +1378,7 @@ const resetForm = () => {
 
 .field-hint {
     margin: 6px 0 0;
-    font-size: .8rem;
+    font-size: var(--ui-font-caption);
     color: #b45309;
 }
 
@@ -1387,11 +1387,11 @@ const resetForm = () => {
 .section-label {
     display: block;
     margin-bottom: 18px;
-    font-size: .95rem;
-    font-weight: 700;
+    font-size: var(--ui-font-label);
+    font-weight: var(--ui-weight-semibold);
     color: #16213d;
 
-    line-height: 1.9;
+    line-height: var(--ui-line-body);
     min-height: 48px;
 }
 
@@ -1480,8 +1480,8 @@ const resetForm = () => {
 
 .option-title {
     display: block;
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: var(--ui-font-body-lg);
+    font-weight: var(--ui-weight-bold);
     margin-bottom: 6px;
 }
 
@@ -1498,9 +1498,9 @@ const resetForm = () => {
 }
 
 .option-desc {
-    color: #64748b;
-    font-size: .92rem;
-    line-height: 1.6;
+    color: var(--ui-text-muted);
+    font-size: var(--ui-font-small);
+    line-height: var(--ui-line-body);
 }
 
 /* ---------------- Form ---------------- */
@@ -1514,7 +1514,7 @@ const resetForm = () => {
     padding: 15px;
     border: 1px solid #d5dce6;
     border-radius: 12px;
-    font-size: .95rem;
+    font-size: var(--ui-font-body);
     color: #334155;
     transition: .2s;
 }
@@ -1547,7 +1547,7 @@ const resetForm = () => {
 
 .btn {
     border-radius: 10px;
-    font-weight: 600;
+    font-weight: var(--ui-weight-semibold);
     transition: .25s;
 }
 
@@ -1591,20 +1591,20 @@ const resetForm = () => {
 }
 
 .modal-title {
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: var(--ui-font-card-title);
+    font-weight: var(--ui-weight-semibold);
 }
 
 .modal-close-btn {
     border: none;
     background: none;
-    font-size: 28px;
+    font-size: var(--ui-icon-xl);
     cursor: pointer;
 }
 
 .modal-message {
     color: #475569;
-    line-height: 1.6;
+    line-height: var(--ui-line-body);
 }
 
 .modal-actions {
@@ -1765,15 +1765,15 @@ const resetForm = () => {
 
 .proposal-details-heading h2 {
     margin: 0;
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: var(--ui-font-card-title);
+    font-weight: var(--ui-weight-semibold);
     color: #0f172a;
 }
 
 .proposal-details-subtitle {
     margin: 2px 0 0;
-    font-size: .8rem;
-    color: #64748b;
+    font-size: var(--ui-font-caption);
+    color: var(--ui-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1789,9 +1789,9 @@ const resetForm = () => {
     border: none;
     background: none;
     border-radius: 8px;
-    font-size: 22px;
-    line-height: 1;
-    color: #64748b;
+    font-size: var(--ui-icon-lg);
+    line-height: var(--ui-line-none);
+    color: var(--ui-text-muted);
     cursor: pointer;
     transition: background-color .15s ease, color .15s ease;
 }
@@ -1882,12 +1882,12 @@ const resetForm = () => {
 }
 
 .empty-title {
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: var(--ui-font-small);
+    font-weight: var(--ui-weight-bold);
 }
 
 .empty-desc {
-    color: #64748b;
+    color: var(--ui-text-muted);
     margin-top: 8px;
 }
 

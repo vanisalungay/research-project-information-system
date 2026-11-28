@@ -516,7 +516,7 @@ export default {
   max-width: 100%;
   padding: 2px 0 16px;
   color: #1f2a44;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--ui-font-ui);
 }
 
 /* ===== Heading ===== */
@@ -535,17 +535,17 @@ export default {
   padding: 0;
   background: transparent;
   color: #101c3f;
-  font-size: 23px;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
+  letter-spacing: var(--ui-tracking-tight);
 }
 
 .monitoring-subtitle {
   margin: 5px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 /* ===== Filter panel ===== */
@@ -577,10 +577,10 @@ export default {
 
 .field label {
   color: #6b7892;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.055em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
 }
 
@@ -594,8 +594,8 @@ export default {
   background: #ffffff;
   color: #26324c;
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-display);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -657,8 +657,8 @@ export default {
   background: #ffffff;
   color: #1c2a4a;
   font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -721,9 +721,9 @@ export default {
   min-width: 0;
   overflow: hidden;
   color: #8a96ab;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.015em;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-caption);
+  letter-spacing: var(--ui-tracking-label);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -739,9 +739,9 @@ export default {
   overflow: hidden;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   white-space: nowrap;
 }
 
@@ -770,9 +770,9 @@ export default {
   margin: 11px 0 0;
   overflow: hidden;
   color: #142142;
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .proponent-row {
@@ -793,9 +793,9 @@ export default {
   border-radius: 50%;
   background: #e9eeff;
   color: #3158d9;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-label);
   text-transform: uppercase;
 }
 
@@ -804,7 +804,7 @@ export default {
   min-width: 0;
   overflow: hidden;
   color: #5d6b85;
-  font-size: 10.5px;
+  font-size: var(--ui-font-caption);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -817,9 +817,9 @@ export default {
   border-radius: 999px;
   background: #f2f5fb;
   color: #68758c;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
   white-space: nowrap;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -835,9 +835,9 @@ export default {
   justify-content: space-between;
   gap: 8px;
   color: #5f6d87;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 
 .office-text {
@@ -888,17 +888,17 @@ export default {
 
 .submitted-label {
   color: #97a2b5;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-display);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
 }
 
 .submitted-date {
   color: #1c2a4a;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   white-space: nowrap;
 }
 
@@ -915,8 +915,8 @@ export default {
   background: #e8edff;
   color: #3158d9;
   font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -985,23 +985,23 @@ export default {
 .empty-state h2 {
   margin: 0;
   color: #17233f;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
 }
 
 .empty-state p {
   max-width: 340px;
   margin: 6px 0 0;
   color: #74819a;
-  font-size: 11.5px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 .error-text {
   margin: 0 0 14px;
   color: #b42318;
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
 }
 
 .retry-btn {
@@ -1012,8 +1012,8 @@ export default {
   background: #3158d9;
   color: #ffffff;
   font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
@@ -1187,11 +1187,12 @@ export default {
 
 @media (max-width: 767px) {
   .monitoring-title {
-    font-size: 20px;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
 
   .monitoring-subtitle {
-    font-size: 11.5px;
+    font-size: var(--ui-font-caption);
   }
 
   .proposal-grid {

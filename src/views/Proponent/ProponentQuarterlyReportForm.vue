@@ -1194,14 +1194,14 @@ onMounted(async () => {
 }
 .page-header h1 {
   margin: 0;
-  font-size: 26px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
 }
 .subtitle {
   margin: 4px 0 0;
-  color: #64748b;
-  font-size: 15.5px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-small);
 }
 .page-header-text {
   min-width: 0;
@@ -1214,9 +1214,9 @@ onMounted(async () => {
 }
 .subtitle--terminal {
   margin-top: 3px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
   text-transform: uppercase;
   color: #1c2145;
 }
@@ -1226,14 +1226,14 @@ onMounted(async () => {
   padding: 24px;
   border-radius: 8px;
   text-align: center;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.5;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
 }
 .state.error {
   color: #dc2626;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
 }
 .state.notice {
   color: #92400e;
@@ -1249,17 +1249,17 @@ onMounted(async () => {
 }
 .doc-card h2 {
   margin: 0 0 8px;
-  font-size: 18px;
+  font-size: var(--ui-font-card-title);
   color: #0f172a;
 }
 .doc-card h3 {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: var(--ui-font-card-title);
   color: #0f172a;
 }
 .doc-desc {
-  color: #64748b;
-  font-size: 13px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-caption);
   margin: 0 0 12px;
 }
 .req {
@@ -1277,16 +1277,16 @@ onMounted(async () => {
 }
 .terminal-card-title {
   margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #1c2145;
 }
 .terminal-card-desc {
   margin: 0 0 16px;
   max-width: 760px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-body);
+  color: var(--ui-text-muted);
 }
 .terminal-step {
   display: flex;
@@ -1301,9 +1301,9 @@ onMounted(async () => {
   border-radius: 50%;
   background: #1c2145;
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-none);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1314,8 +1314,8 @@ onMounted(async () => {
 }
 .terminal-step-title {
   margin: 1px 0 8px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #1c2145;
 }
 .terminal-format-actions {
@@ -1329,8 +1329,8 @@ onMounted(async () => {
   gap: 6px;
   padding: 7px 12px;
   border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   color: #1c2145;
   text-decoration: none;
   background: #fff;
@@ -1388,17 +1388,17 @@ onMounted(async () => {
 }
 .terminal-dropzone-text {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--ui-font-small);
   color: #1c2145;
 }
 .terminal-browse {
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
   text-decoration: underline;
   color: #1c2145;
 }
 .terminal-dropzone-hint {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #94a3b8;
 }
 .terminal-file-item {
@@ -1425,9 +1425,9 @@ onMounted(async () => {
   border-radius: 8px;
   background: #e2e8f0;
   color: #475569;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: var(--ui-icon-xs);
+  font-weight: var(--ui-weight-bold);
+  letter-spacing: var(--ui-tracking-caps);
 }
 .terminal-file-icon--pdf {
   background: #fee2e2;
@@ -1445,8 +1445,8 @@ onMounted(async () => {
   gap: 3px;
 }
 .terminal-file-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #1c2145;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1457,14 +1457,14 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 .terminal-file-status {
   padding: 1px 7px;
   border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   background: var(--status-neutral-bg);
   color: var(--status-neutral-text);
 }
@@ -1494,7 +1494,7 @@ onMounted(async () => {
 }
 .terminal-upload-error {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #dc2626;
 }
 .terminal-divider {
@@ -1512,8 +1512,8 @@ onMounted(async () => {
 .terminal-cancel {
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   cursor: pointer;
 }
 .terminal-submit {
@@ -1522,8 +1522,8 @@ onMounted(async () => {
   gap: 7px;
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .terminal-submit:disabled {
@@ -1532,20 +1532,20 @@ onMounted(async () => {
 }
 .existing-file {
   margin: 10px 0 0;
-  font-size: 15px;
+  font-size: var(--ui-font-body);
   color: var(--status-approved-text);
 }
 /* Layout only; the action colours are global (assets/actions.css). */
 .btn-secondary {
   padding: 12px 22px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-submit {
   padding: 12px 22px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-submit:disabled {
@@ -1581,10 +1581,10 @@ onMounted(async () => {
 
 .qpr-eyebrow {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-label);
+  line-height: var(--ui-line-snug);
   color: #7a879c;
 }
 
@@ -1594,10 +1594,10 @@ onMounted(async () => {
 
 .qpr-title {
   margin: 2px 0 0;
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-size: var(--ui-font-section-title);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-tight);
+  line-height: var(--ui-line-tight);
   color: #172b4d;
 }
 
@@ -1618,9 +1618,9 @@ onMounted(async () => {
   border-radius: 6px;
   background: #ffffff;
   font: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1718,8 +1718,8 @@ onMounted(async () => {
   border-radius: 50%;
   background: #dce5f0;
   color: #63708a;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 
 .qpr-step-marker svg {
@@ -1744,10 +1744,10 @@ onMounted(async () => {
 }
 
 .qpr-step-label {
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.3;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: var(--ui-tracking-caps);
+  line-height: var(--ui-line-tight);
   color: #7a879c;
 }
 
@@ -1761,16 +1761,16 @@ onMounted(async () => {
 
 .qpr-step-title {
   margin-top: 1px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
+  line-height: var(--ui-line-snug);
   color: #172b4d;
 }
 
 .qpr-step-desc {
   margin-top: 2px;
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
   color: #7a879c;
 }
 
@@ -1784,9 +1784,9 @@ onMounted(async () => {
   border-radius: 8px;
   background: #fef2f2;
   color: #dc2626;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 /* "Create a Copy" notice: shown when this report was started from a previous one. It is
    information, not a validation message, so it never blocks the workflow. */
@@ -1814,9 +1814,9 @@ onMounted(async () => {
 }
 .copy-notice-text {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 /* The same notice slot reports why nothing could be copied. */
 .copy-notice--error {
@@ -1825,9 +1825,9 @@ onMounted(async () => {
   border-left-color: #dc2626;
   background: #fef2f2;
   color: #b91c1c;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
 }
 /* Bottom navigation: Previous Page on the left, the page indicator in the
    centre and the forward / final action on the right. */
@@ -1853,8 +1853,8 @@ onMounted(async () => {
 }
 
 .qpr-page-indicator {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #7a879c;
   text-align: center;
   white-space: nowrap;
@@ -1868,9 +1868,9 @@ onMounted(async () => {
   padding: 7px 13px;
   border-radius: 6px;
   font: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1924,7 +1924,7 @@ onMounted(async () => {
 .review-footer .btn-secondary {
   min-height: 46px;
   padding: 12px 26px;
-  font-size: 15.5px;
+  font-size: var(--ui-control-font-lg);
 }
 
 .review-footer-right {
@@ -1965,14 +1965,14 @@ onMounted(async () => {
 }
 .review-title {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--ui-font-card-title);
   color: #1c2145;
 }
 .review-sub {
   margin: 6px 0 0;
-  font-size: 15px;
-  line-height: 1.45;
-  color: #64748b;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-snug);
+  color: var(--ui-text-muted);
 }
 .review-body {
   padding: 18px 20px 8px;
@@ -2002,7 +2002,7 @@ onMounted(async () => {
 .btn-draft {
   padding: 12px 22px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 .btn-draft:disabled {
@@ -2045,9 +2045,9 @@ onMounted(async () => {
   background: #f8fafc;
   color: #475569;
   font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--ui-control-font-lg);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-snug);
   text-align: left;
   cursor: pointer;
 }
@@ -2061,8 +2061,8 @@ onMounted(async () => {
   border-radius: 50%;
   background: #e2e8f0;
   color: #475569;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-bold);
 }
 .tr-progress-label {
   min-width: 0;
@@ -2088,12 +2088,12 @@ onMounted(async () => {
 }
 .tr-progress-meta {
   margin: 10px 0 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 .tr-progress-unsaved {
   color: #b45309;
-  font-weight: 700;
+  font-weight: var(--ui-weight-bold);
 }
 .terminal-doc-panel {
   margin: 16px 0;
@@ -2112,8 +2112,8 @@ onMounted(async () => {
 }
 .review-success-text {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-semibold);
   color: #166534;
 }
 
@@ -2126,12 +2126,12 @@ onMounted(async () => {
     padding: 16px 0 8px;
   }
   .qpr-form-page :deep(.tr-title-report) {
-    font-size: 13px;
-    letter-spacing: 2.4px;
+    font-size: var(--ui-font-small);
+    letter-spacing: var(--ui-tracking-caps);
   }
   .qpr-form-page :deep(.tr-title-heading) {
     margin-bottom: 22px;
-    font-size: 26px;
+    font-size: var(--ui-font-page-title);
   }
   .qpr-form-page :deep(.tr-title-fields) {
     max-width: 720px;
@@ -2148,49 +2148,49 @@ onMounted(async () => {
   .qpr-form-page :deep(.tr-input),
   .qpr-form-page :deep(.tr-select) {
     padding: 8px 10px;
-    font-size: 16px;
+    font-size: var(--ui-font-body-lg);
   }
   .qpr-form-page :deep(.tr-area) {
     min-height: 160px;
     padding: 10px 12px;
-    font-size: 16px;
+    font-size: var(--ui-font-body-lg);
   }
   .qpr-form-page :deep(.tr-para) {
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: var(--ui-font-body-lg);
+    line-height: var(--ui-line-body);
   }
   .qpr-form-page :deep(.tr-counter),
   .qpr-form-page :deep(.tr-error),
   .qpr-form-page :deep(.tr-empty) {
-    font-size: 14px;
+    font-size: var(--ui-font-small);
   }
   .qpr-form-page :deep(.tr-required) {
-    font-size: 12px;
+    font-size: var(--ui-font-caption);
   }
   .qpr-form-page :deep(.tr-entry) {
     margin-bottom: 12px;
     padding: 12px 14px;
   }
   .qpr-form-page :deep(.tr-entry-index) {
-    font-size: 13px;
+    font-size: var(--ui-font-small);
   }
   .qpr-form-page :deep(.tr-entry-grid) {
     gap: 12px 16px;
   }
   .qpr-form-page :deep(.tr-btn) {
     padding: 8px 14px;
-    font-size: 14px;
+    font-size: var(--ui-control-font-md);
   }
   .qpr-form-page :deep(.tr-actions) {
     gap: 12px;
     margin: 8px 0 18px;
   }
   .qpr-form-page :deep(.tr-ref-item) {
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: var(--ui-font-body-lg);
+    line-height: var(--ui-line-body);
   }
   .qpr-form-page :deep(.tr-hint) {
-    font-size: 14.5px;
+    font-size: var(--ui-font-small);
   }
   .qpr-form-page :deep(.tr-list-block) {
     margin-bottom: 18px;
@@ -2235,10 +2235,11 @@ onMounted(async () => {
     padding: 0 0 14px;
   }
   .page-header h1 {
-    font-size: 22px;
+    font-size: var(--ui-font-page-title);
+    font-weight: var(--ui-weight-bold);
   }
   .qpr-title {
-    font-size: 18px;
+    font-size: var(--ui-font-section-title);
   }
   .qpr-progress {
     grid-template-columns: minmax(0, 1fr);

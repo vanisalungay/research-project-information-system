@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
   box-sizing: border-box;
 }
 
@@ -203,9 +203,9 @@ onBeforeUnmount(() => {
 
 .ap-empty {
   padding: 10px 12px;
-  font-size: 12.5px;
+  font-size: var(--ui-font-caption);
   color: #6b7280;
-  line-height: 1.45;
+  line-height: var(--ui-line-snug);
 }
 
 .ap-option {
@@ -228,8 +228,8 @@ onBeforeUnmount(() => {
 .ap-option.is-create {
   background: #4f46e5;
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .ap-option.is-create.is-active,
@@ -239,8 +239,8 @@ onBeforeUnmount(() => {
 
 .ap-name {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   color: #1e293b;
 }
 
@@ -255,21 +255,21 @@ onBeforeUnmount(() => {
   padding: 1px 8px;
   border-radius: 999px;
   background: #f1f5f9;
-  font-size: 11px;
+  font-size: var(--ui-font-caption);
   color: #475569;
 }
 
 .ap-sub {
-  font-size: 11px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .ap-flag {
   padding: 1px 8px;
   border-radius: 999px;
   background: #fef3c7;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   color: #92400e;
 }
 </style>

@@ -1100,8 +1100,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .header-left h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-page-title);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
@@ -1109,8 +1109,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 .header-badge {
   background: #eef2ff;
   color: #4f46e5;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ui-font-caption);
+  font-weight: var(--ui-weight-semibold);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -1129,7 +1129,7 @@ async function linkEndorsementIfNeeded(proposalId) {
   justify-content: center;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #94a3b8;
   cursor: pointer;
   border-radius: 8px;
@@ -1166,8 +1166,8 @@ async function linkEndorsementIfNeeded(proposalId) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-semibold);
   background: #e2e8f0;
   color: #94a3b8;
   transition: all 0.2s;
@@ -1182,24 +1182,24 @@ async function linkEndorsementIfNeeded(proposalId) {
 .progress-step.completed .step-number {
   background: #10b981;
   color: #fff;
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
 }
 
 .step-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
   color: #94a3b8;
   white-space: nowrap;
 }
 
 .progress-step.active .step-label {
   color: #1e293b;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-step.completed .step-label {
   color: #10b981;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 .progress-line {
@@ -1234,8 +1234,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .section-number {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ui-font-small);
+  font-weight: var(--ui-weight-bold);
   color: #ffffff;
   background: #4f46e5;
   padding: 2px 8px;
@@ -1243,8 +1243,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .section-header h3 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--ui-font-body-lg);
+  font-weight: var(--ui-weight-bold);
   color: #0f172a;
   margin: 0;
 }
@@ -1271,17 +1271,17 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .summary-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--ui-font-label);
+  font-weight: var(--ui-weight-semibold);
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--ui-tracking-caps);
 }
 
 .summary-value {
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #1e293b;
-  font-weight: 500;
+  font-weight: var(--ui-weight-medium);
 }
 
 /* ===== FILES SUMMARY ===== */
@@ -1304,8 +1304,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .review-reference {
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--ui-font-small);
+  line-height: var(--ui-line-body);
   color: #1e293b;
 }
 
@@ -1318,8 +1318,8 @@ async function linkEndorsementIfNeeded(proposalId) {
 
 .review-empty {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: var(--ui-font-caption);
+  color: var(--ui-text-muted);
 }
 
 .file-row {
@@ -1335,19 +1335,19 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-font-body);
+  font-weight: var(--ui-weight-medium);
   color: #475569;
 }
 
 .file-status {
-  font-size: 13px;
+  font-size: var(--ui-font-caption);
   color: var(--status-neutral-text) !important;
 }
 
 .file-row.attached .file-status {
   color: var(--status-approved-text) !important;
-  font-weight: 600;
+  font-weight: var(--ui-weight-semibold);
 }
 
 /* ===== CONFIRM CARD ===== */
@@ -1388,13 +1388,13 @@ async function linkEndorsementIfNeeded(proposalId) {
 .confirm-checkbox input:checked+.checkmark::after {
   content: '✓';
   color: #fff;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--ui-field-font);
+  font-weight: var(--ui-weight-bold);
 }
 
 .confirm-text {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--ui-font-body);
+  line-height: var(--ui-line-body);
   color: #475569;
 }
 
@@ -1434,21 +1434,21 @@ async function linkEndorsementIfNeeded(proposalId) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--ui-icon-2xl);
+  font-weight: var(--ui-weight-bold);
 }
 
 .success-state h3 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ui-font-card-title);
+  font-weight: var(--ui-weight-semibold);
   color: #0f172a;
   margin: 0;
 }
 
 .success-state p {
-  color: #64748b;
+  color: var(--ui-text-muted);
   max-width: 400px;
-  line-height: 1.6;
+  line-height: var(--ui-line-body);
 }
 
 .error-banner {
@@ -1457,7 +1457,7 @@ async function linkEndorsementIfNeeded(proposalId) {
   border-radius: 10px;
   padding: 12px 16px;
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--ui-font-small);
 }
 
 /* ===== FOOTER ===== */
@@ -1483,8 +1483,8 @@ async function linkEndorsementIfNeeded(proposalId) {
   gap: 6px;
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1500,8 +1500,8 @@ async function linkEndorsementIfNeeded(proposalId) {
   gap: 6px;
   padding: 10px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1517,8 +1517,8 @@ async function linkEndorsementIfNeeded(proposalId) {
   gap: 6px;
   padding: 10px 24px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--ui-control-font-md);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1547,10 +1547,10 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .banner-icon {
-  font-size: 20px;
+  font-size: var(--ui-icon-xl);
   color: #dc2626;
   flex-shrink: 0;
-  line-height: 1;
+  line-height: var(--ui-line-none);
 }
 
 .banner-content {
@@ -1559,7 +1559,7 @@ async function linkEndorsementIfNeeded(proposalId) {
 
 .banner-content strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--ui-font-body);
   color: #991b1b;
   margin-bottom: 6px;
 }
@@ -1571,10 +1571,10 @@ async function linkEndorsementIfNeeded(proposalId) {
 }
 
 .banner-content li {
-  font-size: 12px;
+  font-size: var(--ui-font-caption);
   color: #b91c1c;
   margin-bottom: 2px;
-  line-height: 1.4;
+  line-height: var(--ui-line-snug);
 }
 
 /* Each missing item opens the details form, which then lists the incomplete
@@ -1603,8 +1603,8 @@ async function linkEndorsementIfNeeded(proposalId) {
   background: #ffffff;
   color: #991b1b;
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--ui-control-font-sm);
+  font-weight: var(--ui-weight-semibold);
   cursor: pointer;
 }
 

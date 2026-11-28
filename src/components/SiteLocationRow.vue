@@ -243,7 +243,7 @@ defineExpose({ validate })
   background: #ffffff;
   color: #1e293b;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--ui-font-small);
 }
 
 .site-control:focus {
@@ -262,7 +262,7 @@ defineExpose({ validate })
   display: block;
   margin-top: 4px;
   color: #b45309;
-  font-size: 10.5px;
-  line-height: 1.35;
+  font-size: var(--ui-font-caption);
+  line-height: var(--ui-line-snug);
 }
 </style>
